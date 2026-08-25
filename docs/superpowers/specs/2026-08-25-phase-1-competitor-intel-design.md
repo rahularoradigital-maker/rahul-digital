@@ -1,7 +1,13 @@
 # Phase 1 — Competitor Intel to AI Test Plan (Design)
 
 **Date:** 2026-08-25
-**Status:** Approved design, ready for implementation planning
+**Status:** SUPERSEDED (2026-08-25) by `2026-08-25-phase-1-account-cockpit-design.md`
+
+> Repointed to own-account-first after the owner supplied the "Yamin cockpit" reference
+> and directed "connect account first, then pull data." Competitor intel (ScrapeCreators)
+> is retained but demoted to the Share-of-Voice section of the cockpit. ScrapeCreators +
+> Gemini + the triples Brand Brain decisions from this doc still hold; the flow and primary
+> data source changed. Kept for history.
 **Depends on:** Phase 0 (foundation) complete
 **Supersedes:** ADR-0001's heavy video pipeline (see §Provider + architecture change)
 
