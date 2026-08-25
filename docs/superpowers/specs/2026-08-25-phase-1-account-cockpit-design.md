@@ -146,6 +146,27 @@ Even though all 9 sections are in scope, build in this order so each step is tes
 5. **Data volume / cost** — daily metric pulls per ad can be large; cap history window at MVP
    (e.g. 30-60 days) and paginate.
 
+## 11b. Engineering review findings (focused)
+
+- **Token storage (P1):** OAuth access/refresh tokens are the crown jewels (they can spend the
+  user's money). Store them encrypted at rest (Supabase Vault or app-level encryption), never in
+  a client-readable table, never in `NEXT_PUBLIC_*`. `ad_accounts.token_ref` points to the vault,
+  not the raw token. Refresh-token rotation handled server-side only.
+- **Incremental sync, not full re-pull (P1):** Meta/Google insights are rate-limited and paged.
+  Pull incrementally by date since `last_synced_at`; upsert `ad_metrics` on `(ad_id, date)`.
+  A nightly cron refreshes; on-demand refresh is debounced. Never re-pull the whole history per view.
+- **Rules engine must be deterministic + tested (P1):** fatigue, waste, will-break, funnel grade,
+  health score are pure functions of `ad_metrics`. Implement as plain testable functions with fixture
+  inputs → asserted outputs (one runnable check each). AI only narrates them; it never computes the
+  number. This is what makes "show the working" honest.
+- **Write-back is a payment-adjacent action (P1):** pausing ads / changing budgets spends or saves
+  real money. v1 = manual-apply (show the exact change). If API write-back is added, require a typed
+  per-batch confirm, a dry-run preview, and an audit row in `changes`. Never auto-apply.
+- **Forecast labeling (P2):** "will break in N days" / "projected ROAS" are model outputs; store the
+  inputs and render an estimate treatment, never a hard fact.
+- **Provider abstraction (P2):** wrap Meta and Google behind one `AdSource` interface (list ads,
+  fetch metrics) so the cockpit is source-agnostic and Google can land late without touching the UI.
+
 ## 12. Design-review status
 
 - Pass 1 Information Architecture: reference + §4 → strong.
