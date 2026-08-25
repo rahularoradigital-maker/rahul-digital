@@ -3,153 +3,113 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
 const FEATURES = [
-  { name: "Signals", desc: "Surface what is trending in your niche before it saturates." },
-  { name: "Scan", desc: "Pull competitor ads from the Meta Ad Library, automatically." },
-  { name: "Deconstruct", desc: "Break every ad into hook, angle, format, and claim." },
-  { name: "Plan", desc: "Get a ranked weekly test plan with confidence scores." },
-  { name: "Brain", desc: "A knowledge graph that remembers what wins in your market." },
+  { name: "Connect", desc: "Link your Meta account in one click. Your real ads and spend flow in automatically." },
+  { name: "Verdict", desc: "Every ad gets a call: scale, refresh, do-not-kill-yet, or kill. With the reason." },
+  { name: "Diagnose", desc: "When something drops, we rule out measurement, auction, funnel, stock, saturation before blaming the creative." },
+  { name: "Fatigue", desc: "See which creatives are wearing out before the numbers crater, on the exposure curve." },
+  { name: "Competitors", desc: "Paste an Ad Library link. We pull what they are running and where your white space is." },
+  { name: "Brain", desc: "A memory of what wins in your market, so next week's plan is sharper than this week's." },
 ];
 
 const STEPS = [
-  { n: 1, t: "Add your brand", d: "Tell AdBrain your niche and your competitors." },
-  { n: 2, t: "We scan the ads", d: "AdBrain collects the creative your competitors are running." },
-  { n: 3, t: "AI deconstructs them", d: "Every ad becomes structured facts in your Brand Brain." },
-  { n: 4, t: "You get a test plan", d: "A ranked list of what to test next, and why." },
-  { n: 5, t: "The Brain learns", d: "Results feed back, so next week's plan is sharper." },
-];
-
-const COMPARE = [
-  ["Tells you what to test next", true, false, false],
-  ["Explains why an ad works", true, false, false],
-  ["Learns from your past results", true, false, false],
-  ["Shows what already happened", true, true, false],
-  ["Generates raw creative", true, false, true],
+  { n: "01", t: "Connect Meta", d: "One click. We read your account, never change it." },
+  { n: "02", t: "We read the account", d: "Real spend, ROAS, and frequency, ad by ad." },
+  { n: "03", t: "The brain decides", d: "Winner, loser, refresh, hold — with the working shown." },
+  { n: "04", t: "You act", d: "A ranked do-this list. You make each change in Meta." },
 ];
 
 export default function Home() {
   return (
     <>
+      {/* Announcement bar — accent blue */}
+      <div className="bg-[var(--accent)] px-4 py-2 text-center text-sm text-white">
+        Meta-first creative and media intelligence. Google coming next.
+      </div>
       <SiteHeader />
+
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:linear-gradient(var(--foreground)_1px,transparent_1px),linear-gradient(90deg,var(--foreground)_1px,transparent_1px)] [background-size:40px_40px]" />
-          <div className="mx-auto max-w-6xl px-6 py-24 text-center">
-            <span className="inline-block rounded-full border border-[var(--border)] px-3 py-1 text-xs text-[var(--muted)]">
-              Creative Decision Intelligence for Meta growth teams
-            </span>
-            <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
-              Know what to test next, before you spend on it.
-            </h1>
-            <p className="mx-auto mt-6 max-w-xl text-lg text-[var(--muted)]">
-              Ideas are not the problem. Which one to test is. AdBrain turns your competitors&apos;
-              ads into a ranked weekly test plan you can trust.
-            </p>
-            <div className="mt-9 flex items-center justify-center gap-3">
-              <Link
-                href="/signup"
-                className="rounded-lg bg-[var(--brand)] px-6 py-3 font-medium text-[var(--brand-foreground)] transition hover:opacity-90"
-              >
-                Get started free
-              </Link>
-              <a
-                href="#how"
-                className="rounded-lg border border-[var(--border)] px-6 py-3 font-medium hover:bg-[var(--card)]"
-              >
-                See how it works
-              </a>
-            </div>
+        <section className="mx-auto max-w-5xl px-6 pt-20 pb-16 text-center">
+          <span className="inline-block rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-1.5 text-sm text-[var(--ink-muted)]">
+            Creative Decision Intelligence
+          </span>
+          <h1 className="mx-auto mt-8 max-w-3xl text-5xl leading-[1.05] tracking-tight sm:text-6xl">
+            Know what to test next,
+            <br />
+            <span className="text-[var(--ink-muted)]">before you spend on it.</span>
+          </h1>
+          <p className="mx-auto mt-6 max-w-xl text-lg text-[var(--ink-muted)]">
+            AdBrain reads your real Meta ads and tells you what to scale, refresh, or kill — and why.
+            Not another dashboard. A decision.
+          </p>
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/signup"
+              className="rounded-[var(--radius-pill)] bg-[var(--ink)] px-7 py-3 font-medium text-white transition hover:opacity-90"
+            >
+              Get started free
+            </Link>
+            <a
+              href="#how"
+              className="rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-7 py-3 font-medium text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
+            >
+              See how it works
+            </a>
           </div>
         </section>
 
         {/* Problem */}
-        <section className="mx-auto max-w-3xl px-6 py-16 text-center">
-          <h2 className="text-2xl font-semibold sm:text-3xl">
-            You do not need more ideas. You need to know which one to bet on.
-          </h2>
-          <p className="mt-4 text-[var(--muted)]">
-            Reporting tools tell you what already happened. AI generators give you more to choose
-            from. Neither answers the only question that matters at spend time.
+        <section className="mx-auto max-w-3xl px-6 py-20 text-center">
+          <h2 className="text-3xl sm:text-4xl">You do not need more ideas. You need to know which one to bet on.</h2>
+          <p className="mt-5 text-[var(--ink-muted)]">
+            Reporting tools tell you what already happened. AI generators give you more to choose from.
+            Neither answers the only question that matters at spend time.
           </p>
         </section>
 
         {/* Features */}
         <section id="features" className="mx-auto max-w-6xl px-6 py-16">
-          <h2 className="text-center text-3xl font-semibold tracking-tight">One system, five moves</h2>
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+          <h2 className="text-center text-3xl tracking-tight sm:text-4xl">One system, six moves</h2>
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
               <div
                 key={f.name}
-                className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5"
+                className="rounded-[var(--radius-card)] border border-[var(--hairline)] bg-[var(--surface)] p-6 transition hover:-translate-y-0.5 hover:shadow-sm"
               >
-                <p className="font-semibold text-[var(--brand)]">{f.name}</p>
-                <p className="mt-2 text-sm text-[var(--muted)]">{f.desc}</p>
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+                  <p className="font-medium">{f.name}</p>
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--ink-muted)]">{f.desc}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Compare */}
-        <section id="compare" className="mx-auto max-w-4xl px-6 py-16">
-          <h2 className="text-center text-3xl font-semibold tracking-tight">
-            Not a dashboard. Not a generator.
-          </h2>
-          <div className="mt-10 overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="text-left">
-                  <th className="p-3" />
-                  <th className="p-3 font-semibold text-[var(--brand)]">AdBrain</th>
-                  <th className="p-3 font-medium text-[var(--muted)]">Reporting tools</th>
-                  <th className="p-3 font-medium text-[var(--muted)]">AI generators</th>
-                </tr>
-              </thead>
-              <tbody>
-                {COMPARE.map((row) => (
-                  <tr key={row[0] as string} className="border-t border-[var(--border)]">
-                    <td className="p-3">{row[0]}</td>
-                    {row.slice(1).map((cell, i) => (
-                      <td key={i} className="p-3">
-                        {cell ? (
-                          <span className="text-[var(--brand)]">Yes</span>
-                        ) : (
-                          <span className="text-[var(--muted)]">No</span>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* How it works */}
+        <section id="how" className="mx-auto max-w-5xl px-6 py-16">
+          <h2 className="text-center text-3xl tracking-tight sm:text-4xl">How it works</h2>
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((s) => (
+              <div key={s.n} className="rounded-[var(--radius-card)] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+                <div className="text-sm text-[var(--accent)]">{s.n}</div>
+                <p className="mt-3 font-medium">{s.t}</p>
+                <p className="mt-1.5 text-sm text-[var(--ink-muted)]">{s.d}</p>
+              </div>
+            ))}
           </div>
         </section>
 
-        {/* How it works */}
-        <section id="how" className="mx-auto max-w-5xl px-6 py-16">
-          <h2 className="text-center text-3xl font-semibold tracking-tight">How it works</h2>
-          <ol className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-            {STEPS.map((s) => (
-              <li key={s.n} className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-                <div className="grid h-8 w-8 place-items-center rounded-full bg-[var(--brand)] text-sm font-bold text-[var(--brand-foreground)]">
-                  {s.n}
-                </div>
-                <p className="mt-4 font-semibold">{s.t}</p>
-                <p className="mt-1 text-sm text-[var(--muted)]">{s.d}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        {/* CTA */}
-        <section className="mx-auto max-w-4xl px-6 py-20">
-          <div className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-12 text-center">
-            <h2 className="text-3xl font-semibold tracking-tight">Stop guessing which ad to test.</h2>
-            <p className="mx-auto mt-3 max-w-md text-[var(--muted)]">
-              Set up your first brand in minutes and get a test plan backed by real competitor ads.
+        {/* Dark CTA band */}
+        <section className="mx-auto max-w-6xl px-6 py-16">
+          <div className="rounded-2xl bg-[var(--ink)] px-8 py-16 text-center text-white">
+            <h2 className="text-3xl tracking-tight sm:text-4xl">Stop guessing which ad to test.</h2>
+            <p className="mx-auto mt-4 max-w-md text-white/70">
+              Connect your Meta account and get a decision, backed by your own data, in minutes.
             </p>
             <Link
               href="/signup"
-              className="mt-8 inline-block rounded-lg bg-[var(--brand)] px-6 py-3 font-medium text-[var(--brand-foreground)] transition hover:opacity-90"
+              className="mt-9 inline-block rounded-[var(--radius-pill)] bg-white px-7 py-3 font-medium text-[var(--ink)] transition hover:opacity-90"
             >
               Get started free
             </Link>

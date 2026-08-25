@@ -1,16 +1,44 @@
 @import "tailwindcss";
 
+/* Telli design system (from the owner's handoff). Light-only, mono ink on light
+   ground, blue as an accent never a field, everything rounded, headlines LIGHT. */
 :root {
-  --background: #ffffff;
-  --foreground: #0b1020;
-  --muted: #5b6474;
-  --card: #ffffff;
-  --border: #e7e9ee;
-  --brand: #4f46e5;
+  --bg: #f7f7f7;
+  --surface: #ffffff;
+  --surface-alt: #efefef;
+  --ink: #252525;
+  --ink-muted: #6b6b6b;
+  --accent: #038bf7;
+  --accent-soft: #e6f2fe;
+  --hairline: #e4e4e4;
+
+  /* verdict / semantic (app) */
+  --good-ink: #0f8a4d;
+  --good-bg: #e7f4ec;
+  --warn-ink: #b06b00;
+  --warn-bg: #fbf1df;
+  --bad-ink: #c0392b;
+  --bad-bg: #fbecea;
+
+  /* back-compat aliases used across existing components */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --muted: var(--ink-muted);
+  --card: var(--surface);
+  --border: var(--hairline);
+  --brand: var(--ink); /* primary buttons = ink fill (telli) */
   --brand-foreground: #ffffff;
 }
 
 @theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-hairline: var(--hairline);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -18,24 +46,23 @@
   --color-border: var(--border);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b1020;
-    --foreground: #f2f4f8;
-    --muted: #9aa3b2;
-    --card: #12172a;
-    --border: #232a41;
-    --brand: #7c7bff;
-    --brand-foreground: #0b1020;
-  }
+  --font-sans: var(--font-inter);
+  --radius-card: 10px;
+  --radius-pill: 70px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Telli: headlines are weight 400 (LIGHT). Never bold them. */
+h1,
+h2,
+h3 {
+  font-weight: 400;
+  letter-spacing: -0.02em;
 }

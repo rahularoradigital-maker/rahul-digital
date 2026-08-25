@@ -9,16 +9,16 @@ import type { CockpitView, Verdict, Priority } from "@/lib/cockpit/analyze";
 const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
 const VERDICT_STYLE: Record<Verdict, { label: string; cls: string }> = {
-  winner: { label: "Winner", cls: "bg-emerald-100 text-emerald-800" },
-  refresh: { label: "Refresh", cls: "bg-amber-100 text-amber-800" },
-  do_not_kill_yet: { label: "Do not kill yet", cls: "bg-sky-100 text-sky-800" },
-  loser: { label: "Loser", cls: "bg-red-100 text-red-800" },
+  winner: { label: "Winner", cls: "bg-[var(--good-bg)] text-[var(--good-ink)]" },
+  refresh: { label: "Refresh", cls: "bg-[var(--warn-bg)] text-[var(--warn-ink)]" },
+  do_not_kill_yet: { label: "Do not kill yet", cls: "bg-[var(--accent-soft)] text-[var(--accent)]" },
+  loser: { label: "Loser", cls: "bg-[var(--bad-bg)] text-[var(--bad-ink)]" },
 };
 
 const PRIORITY_STYLE: Record<Priority, { label: string; cls: string }> = {
-  DO_NOW: { label: "Do now", cls: "bg-red-100 text-red-800" },
-  DO_NEXT: { label: "Do next", cls: "bg-amber-100 text-amber-800" },
-  WATCH: { label: "Watch", cls: "bg-slate-100 text-slate-700" },
+  DO_NOW: { label: "Do now", cls: "bg-[var(--bad-bg)] text-[var(--bad-ink)]" },
+  DO_NEXT: { label: "Do next", cls: "bg-[var(--warn-bg)] text-[var(--warn-ink)]" },
+  WATCH: { label: "Watch", cls: "bg-[var(--surface-alt)] text-[var(--ink-muted)]" },
 };
 
 export default async function DashboardPage() {
@@ -46,7 +46,7 @@ function ConnectPrompt({ error }: { error?: string }) {
       </p>
       <a
         href="/api/connect/meta/authorize"
-        className="mt-8 inline-block rounded-lg bg-[var(--brand)] px-6 py-3 font-medium text-[var(--brand-foreground)] transition hover:opacity-90"
+        className="mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--ink)] px-7 py-3 font-medium text-white transition hover:opacity-90"
       >
         Connect Meta
       </a>
@@ -73,7 +73,7 @@ function Cockpit({ view, accountName, adsAnalyzed }: { view: CockpitView; accoun
       </div>
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 sm:col-span-1">
+        <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-5 sm:col-span-1">
           <div className="text-sm text-[var(--muted)]">Account Health</div>
           <div className="mt-1 text-3xl font-semibold">{health.score}<span className="text-lg text-[var(--muted)]">/100</span></div>
           <div className="mt-1 text-xs text-[var(--muted)]">{health.basis} · {health.factLabel}</div>
@@ -86,7 +86,7 @@ function Cockpit({ view, accountName, adsAnalyzed }: { view: CockpitView; accoun
       {view.doThis.length > 0 && (
         <section>
           <h2 className="text-lg font-semibold">Do this next</h2>
-          <div className="mt-3 divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-[var(--card)]">
+          <div className="mt-3 divide-y divide-[var(--border)] rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
             {view.doThis.map((a, i) => {
               const p = PRIORITY_STYLE[a.priority];
               return (
@@ -106,7 +106,7 @@ function Cockpit({ view, accountName, adsAnalyzed }: { view: CockpitView; accoun
 
       <section>
         <h2 className="text-lg font-semibold">Creative leaderboard</h2>
-        <div className="mt-3 overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)]">
+        <div className="mt-3 overflow-x-auto rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
           <table className="w-full text-sm">
             <thead className="text-left text-[var(--muted)]">
               <tr className="border-b border-[var(--border)]">
@@ -143,7 +143,7 @@ function Cockpit({ view, accountName, adsAnalyzed }: { view: CockpitView; accoun
       {view.waste.status === "ok" && (
         <section>
           <h2 className="text-lg font-semibold">Wasted spend</h2>
-          <div className="mt-3 rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+          <div className="mt-3 rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-5">
             <div className="text-2xl font-semibold">{rupees.format(view.waste.totalWastedRs)}</div>
             <div className="mt-1 text-sm text-[var(--muted)]">
               {Math.round(view.waste.shareOfSpend * 100)}% of spend is going to ads the engine flags as spent. Clearing the Do-now list is where this comes back.
@@ -157,7 +157,7 @@ function Cockpit({ view, accountName, adsAnalyzed }: { view: CockpitView; accoun
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+    <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-5">
       <div className="text-sm text-[var(--muted)]">{label}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
     </div>
