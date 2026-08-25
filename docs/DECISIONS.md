@@ -68,7 +68,10 @@ decisions co-owned with Claude (implementer). Governing docs linked per entry.
 - **Context:** Scoping the first cockpit build.
 - **Options:** lean action core; core + money/breakage; full cockpit.
 - **Rationale:** owner chose completeness over a thin first slice.
-- **Status:** Active. **Revisit-by:** if the build is not shipping and needs to be cut down. (Trade-off noted: weeks, not days, to usable.)
+- **Status:** Active, **re-affirmed 2026-08-25** after the opportunity analysis
+  (`docs/discovery/feature-request-analysis.md`) recommended a leaner core. Owner chose to keep
+  all 9. Do not re-litigate. **Revisit-by:** if the build stalls / time-to-usable becomes a problem.
+  (Trade-off accepted: weeks, not days, to usable; some sections unvalidated.)
 
 ### D10 — Adopt the "Yamin cockpit" design language
 - **Decision:** Warm paper palette, Schibsted Grotesk + JetBrains Mono, action-dashboard ethos, "show the working" drawer. Retire Phase 0's indigo/dark look.
