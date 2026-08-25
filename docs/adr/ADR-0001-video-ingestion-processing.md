@@ -1,8 +1,16 @@
 # ADR-0001: Background processing model for Phase 1 ad ingestion (incl. full video analysis)
 
-**Status:** Proposed
+**Status:** Superseded (2026-08-25)
 **Date:** 2026-08-25
 **Deciders:** Rahul (owner), Claude (implementer)
+
+> **Superseded by** `docs/superpowers/specs/2026-08-25-phase-1-competitor-intel-design.md`.
+> The owner chose an all-Google, free-first stack: **Gemini analyzes video natively**, which
+> removes the entire heavy pipeline this ADR was built around (ffmpeg frame extraction,
+> ElevenLabs transcription, and the QStash queue). The replacement is a simple `jobs` table
+> drained by a Vercel background function, one Gemini call per ad. The queue/worker analysis
+> below is retained only as the documented upgrade path if per-ad volume ever outgrows batched
+> serverless functions.
 
 ## Context
 
