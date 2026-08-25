@@ -5,6 +5,28 @@ The design system for AdBrain, derived from the approved reference
 Every UI decision calibrates against this file. This REPLACES the Phase 0
 indigo-on-dark look, which was generic and off-brand.
 
+## 0. Design principles (decision rules)
+
+Use these to settle a design argument without escalating. Each takes a side and
+names the cost it accepts. If a principle never settles a real call, retire it.
+
+1. **Decisions over dashboards.** Every screen ends in an action, not a number to
+   admire. (Cost: less open-ended exploration.)
+2. **Show the working over "trust us."** No number ships without its source, formula,
+   and reason one click away; the AI narrates, the rules engine computes. (Cost: more
+   build effort per metric; no black-box scores.)
+3. **Money over metrics.** Quantify impact in currency and confidence, not vanity
+   stats. (Cost: we must model money impact even when a raw metric is easier.)
+4. **One honest number over five.** Prefer a single actionable composite over a wall
+   of KPIs. (Cost: composites hide detail, so principle 2 is mandatory alongside it.)
+5. **Distinctive over default.** Look unmistakably like AdBrain, never the generic
+   AI-SaaS template. (Cost: more design care; harder to restyle wholesale.)
+6. **Confirmed over automatic, when real money moves.** Anything that spends or moves
+   the user's money waits for an explicit human yes. (Cost: fewer autopilot moments.)
+
+Candidate (probation): **Real data over rules of thumb** — recommendations come from
+the user's own numbers, not generic best practice. Retire if 1-3 already cover it.
+
 ## 1. The ethos: an action dashboard, not a report
 
 AdBrain tells the user what to DO and shows its working. Every screen:
