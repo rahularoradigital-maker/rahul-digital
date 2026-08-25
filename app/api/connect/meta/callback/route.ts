@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { storeToken } from "@/lib/oauth-store";
+import { listMetaAdAccounts } from "@/lib/meta-source";
 
 // Meta OAuth callback: exchange the code for a token, create an ad_accounts row, store the
 // ENCRYPTED token. Token values are never returned to the client (audit F4 boundary).
@@ -35,14 +36,23 @@ export async function GET(request: NextRequest) {
   const body = (await res.json()) as { access_token?: string; expires_in?: number };
   if (!body.access_token) return NextResponse.redirect(new URL("/app?connect=error", request.url));
 
-  // Follow-up: resolve the specific Meta ad account via GET /me/adaccounts when the sync is built.
-  // For the scaffold, one ad_accounts row per user connection.
+  // Resolve the user's REAL Meta ad account(s) and store the first one. (Account picker
+  // for multiple accounts is a follow-up; v1 connects the first accessible account.)
+  const token = { accessToken: body.access_token };
+  let accounts: { externalId: string; name: string }[] = [];
+  try {
+    accounts = await listMetaAdAccounts(token);
+  } catch {
+    return NextResponse.redirect(new URL("/app?connect=error", request.url));
+  }
+  if (accounts.length === 0) return NextResponse.redirect(new URL("/app?connect=no_accounts", request.url));
+  const chosen = accounts[0];
+
   const admin = createAdminClient();
-  const externalId = `meta-${user.id.slice(0, 8)}`;
   const { data: acct, error: acctErr } = await admin
     .from("ad_accounts")
     .upsert(
-      { user_id: user.id, platform: "meta", external_id: externalId, status: "connected" },
+      { user_id: user.id, platform: "meta", external_id: chosen.externalId, name: chosen.name, status: "connected" },
       { onConflict: "user_id,platform,external_id" },
     )
     .select("id")

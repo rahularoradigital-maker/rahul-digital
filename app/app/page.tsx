@@ -1,9 +1,10 @@
-import { analyzeAccount, type Verdict, type Priority } from "@/lib/cockpit/analyze";
-import { SAMPLE_ADS } from "@/lib/sample/account";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { fetchLiveCockpit } from "@/lib/meta-sync";
+import type { CockpitView, Verdict, Priority } from "@/lib/cockpit/analyze";
 
-// The account cockpit. Runs the real decision engines over the account and shows
-// what to do next. Today it analyzes a SAMPLE account (clearly bannered as such);
-// when a live Meta/Google account is connected the same call takes live ads.
+// The account cockpit. Shows REAL data from the user's connected Meta account (no dummy
+// data). If nothing is connected yet, it shows a Connect screen instead.
 
 const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -20,25 +21,57 @@ const PRIORITY_STYLE: Record<Priority, { label: string; cls: string }> = {
   WATCH: { label: "Watch", cls: "bg-slate-100 text-slate-700" },
 };
 
-export default function DashboardPage() {
-  const view = analyzeAccount(SAMPLE_ADS);
-  const health = view.accountHealth;
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
+  const live = await fetchLiveCockpit(user.id);
+
+  if (live.status === "not_connected") return <ConnectPrompt />;
+  if (live.status === "error") return <ConnectPrompt error={live.message} />;
+
+  return <Cockpit view={live.view} accountName={live.accountName} adsAnalyzed={live.adsAnalyzed} />;
+}
+
+function ConnectPrompt({ error }: { error?: string }) {
+  return (
+    <div className="mx-auto max-w-lg py-16 text-center">
+      <h1 className="text-2xl font-semibold tracking-tight">Connect your Meta ad account</h1>
+      <p className="mt-3 text-[var(--muted)]">
+        AdBrain reads your real ads and tells you what to do next — what to scale, refresh, or kill,
+        and why. Connect Meta to pull your live account. Nothing is ever changed automatically.
+      </p>
+      <a
+        href="/api/connect/meta/authorize"
+        className="mt-8 inline-block rounded-lg bg-[var(--brand)] px-6 py-3 font-medium text-[var(--brand-foreground)] transition hover:opacity-90"
+      >
+        Connect Meta
+      </a>
+      {error && (
+        <p className="mt-6 text-sm text-red-500">
+          Could not sync: {error}. Try connecting again.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Cockpit({ view, accountName, adsAnalyzed }: { view: CockpitView; accountName: string; adsAnalyzed: number }) {
+  const health = view.accountHealth;
   return (
     <div className="space-y-8">
-      {view.dataSource === "SAMPLE" && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          <strong>Sample data.</strong> These are illustrative numbers so you can see the cockpit working.
-          Connect your Meta or Google ad account to run this on your real ads. Nothing here is your live performance.
-        </div>
-      )}
+      <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <strong>Live — {accountName}.</strong> Analyzing {adsAnalyzed} of your real ads from the last 30 days.
+      </div>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Account cockpit</h1>
         <p className="mt-1 text-[var(--muted)]">What to do next, with the reason behind every call.</p>
       </div>
 
-      {/* Top line: one honest health number + the money. */}
       <div className="grid gap-4 sm:grid-cols-4">
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 sm:col-span-1">
           <div className="text-sm text-[var(--muted)]">Account Health</div>
@@ -50,27 +83,27 @@ export default function DashboardPage() {
         <Stat label="ROAS" value={view.totals.roas === null ? "n/a" : `${view.totals.roas.toFixed(2)}x`} />
       </div>
 
-      {/* Do this next: the action queue, most urgent first. */}
-      <section>
-        <h2 className="text-lg font-semibold">Do this next</h2>
-        <div className="mt-3 divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-[var(--card)]">
-          {view.doThis.map((a, i) => {
-            const p = PRIORITY_STYLE[a.priority];
-            return (
-              <div key={`${a.adId}-${i}`} className="flex items-start gap-3 p-4">
-                <span className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${p.cls}`}>{p.label}</span>
-                <div className="min-w-0">
-                  <div className="font-medium">{a.label} <span className="text-[var(--muted)]">— {a.adName}</span></div>
-                  <div className="text-sm text-[var(--muted)]">{a.why}</div>
+      {view.doThis.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold">Do this next</h2>
+          <div className="mt-3 divide-y divide-[var(--border)] rounded-xl border border-[var(--border)] bg-[var(--card)]">
+            {view.doThis.map((a, i) => {
+              const p = PRIORITY_STYLE[a.priority];
+              return (
+                <div key={`${a.adId}-${i}`} className="flex items-start gap-3 p-4">
+                  <span className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${p.cls}`}>{p.label}</span>
+                  <div className="min-w-0">
+                    <div className="font-medium">{a.label} <span className="text-[var(--muted)]">— {a.adName}</span></div>
+                    <div className="text-sm text-[var(--muted)]">{a.why}</div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-        <p className="mt-2 text-xs text-[var(--muted)]">Nothing is applied automatically. You make each change in your ad account.</p>
-      </section>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-xs text-[var(--muted)]">Nothing is applied automatically. You make each change in your ad account.</p>
+        </section>
+      )}
 
-      {/* Verdict leaderboard: every ad, its verdict, and the working behind it. */}
       <section>
         <h2 className="text-lg font-semibold">Creative leaderboard</h2>
         <div className="mt-3 overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--card)]">
@@ -107,7 +140,6 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Wasted spend. */}
       {view.waste.status === "ok" && (
         <section>
           <h2 className="text-lg font-semibold">Wasted spend</h2>
