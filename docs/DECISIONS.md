@@ -123,6 +123,15 @@ decisions co-owned with Claude (implementer). Governing docs linked per entry.
 
 ---
 
+### D15 — Production, at 10k users/day scale (design-for-scale, provision-for-now)
+- **Decision:** AdBrain ships as a live web product designed for 10k DAU. Build the MVP behind
+  clean seams (queue, cache, AdSource) so scaling is a swap, not a rewrite. Fingerprint-once is the
+  primary cost control. Production-readiness gates (security/privacy/legal/ops) are blocking before launch.
+- **Context:** Owner: "going live on the web, not an artifact" + "plan it for 10k users/day."
+- **Rationale:** free tiers fail at ~20 users; a rewrite later is the expensive thing; seams avoid it.
+- **Status:** Active. Supersedes ADR-0003 (MVP queue) for scale. Governs `docs/adr/ADR-0004`,
+  `docs/production-readiness.md`, the approved 10k plan.
+
 ## Superseded / historical
 - **ADR-0001** (queue+ffmpeg+ElevenLabs video worker) — superseded by D7.
 - **Competitor-first Phase 1 spec** — superseded by D8.

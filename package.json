@@ -11,7 +11,8 @@
     "check:crypto": "node --experimental-strip-types scripts/check-crypto.ts",
     "check:rules": "node --experimental-strip-types scripts/check-rules.ts",
     "check:validator": "node --experimental-strip-types scripts/check-validator.ts",
-    "check:backtest": "node --experimental-strip-types scripts/check-backtest.ts"
+    "check:backtest": "node --experimental-strip-types scripts/check-backtest.ts",
+    "check:cache": "node --experimental-strip-types scripts/check-cache.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

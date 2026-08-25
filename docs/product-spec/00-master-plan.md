@@ -42,8 +42,10 @@ OBSERVATION → DIAGNOSIS → PREDICTION → RECOMMENDATION → ACTION, with con
 - [17] Dashboard IA · [18] Ad-Level · [19] Creative-Level · [20] Account-Level · [21] Executive
 - [22] Day-Wise Analytics Spec · [25] Explainability Spec
 
-**Quality:**
+**Quality + production:**
 - [26] QA/Test Framework · [27] Benchmark Source Library · [28] Edge Case Library
+- [29] Legal / Privacy / Compliance · [30] Production Ops & Observability
+  (added per the live-web / 10k-users mandate; see `docs/production-readiness.md` + `docs/adr/ADR-0004`)
 
 ## Build sequence (decision-critical first, per the decision gate)
 1. Foundation: 02 (done) → 01 → 24 → 23.
