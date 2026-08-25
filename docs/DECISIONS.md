@@ -132,6 +132,20 @@ decisions co-owned with Claude (implementer). Governing docs linked per entry.
 - **Status:** Active. Supersedes ADR-0003 (MVP queue) for scale. Governs `docs/adr/ADR-0004`,
   `docs/production-readiness.md`, the approved 10k plan.
 
+### D16 — Adopt the owner's buyer-judgment rulebook (logic yes, identity no)
+- **Decision:** The rules and logic from the owner's prior tool's rulebook (spend floor at ingest,
+  same-objective comparison, the causality ladder, exposure-curve fatigue + death dates, trust
+  gates, source-connection confidence ladder, change-log attribution, verdict engine, four-reference
+  blend, ledger outcome loop, the 28 situations as acceptance criteria) are adopted as the
+  judgment source of truth — de-branded (no prior-tool name, styling, or identity). Where they
+  conflict with earlier softer spec language, the judgment rules win. Thresholds enter as
+  INTERNAL CALIBRATION (owner-decided anchors, editable), not as fabricated truth.
+- **Context:** Owner supplied the rulebook + winner/loser framework + metric breakdown and asked
+  to use the logic without the identity.
+- **Rationale:** it encodes concrete top-buyer judgment our spec lacked; our engineering/honesty
+  architecture (fact labels, validator, tested code) is kept — the merge is strictly stronger.
+- **Status:** Active. Governs: `docs/product-spec/buyer-judgment-rules.md` (J1-J15 + integration order).
+
 ## Superseded / historical
 - **ADR-0001** (queue+ffmpeg+ElevenLabs video worker) — superseded by D7.
 - **Competitor-first Phase 1 spec** — superseded by D8.
