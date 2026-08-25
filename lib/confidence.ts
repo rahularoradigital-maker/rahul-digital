@@ -5,6 +5,11 @@
 // a thin sample or a confounded read, and zero observable signals is never a score.
 // Pure: no I/O, no deps, no Date.
 
+// J7 source-connection confidence ladder (buyer-judgment-rules.md). The
+// connected data sources, in the order they earn trust. meta is the base tier.
+export const SOURCE_LEVELS = ["meta", "ga4", "shopify", "third_party"] as const;
+export type ConnectedSource = "meta" | "ga4" | "shopify" | "third_party";
+
 export type ConfidenceInput = {
   dataCompleteness: number; // 0-1
   sampleSize: number;
@@ -13,6 +18,11 @@ export type ConfidenceInput = {
   signalsTotal: number;
   historicalConsistency?: number; // 0-1
   confounders?: string[];
+  // J7: when BOTH are present the final score is capped at the ceiling this
+  // action class can reach on the connected sources. Absent → behaviour is
+  // byte-identical to before (economic/creative distinction never applied).
+  connectedSources?: ConnectedSource[];
+  actionClass?: "creative_delivery" | "economic";
 };
 
 export type ConfidenceBand = "low" | "medium" | "high";
@@ -93,9 +103,79 @@ export function computeConfidence(input: ConfidenceInput): ConfidenceResult {
     reasons.push(`sample ${input.sampleSize} >= min ${input.minSample}`);
   }
 
+  // J7: source-connection ceiling. Only binds when BOTH new fields are given,
+  // so callers that omit them get the exact pre-J7 result (regression-safe).
+  if (input.connectedSources !== undefined && input.actionClass !== undefined) {
+    const lvl = sourceLevel(input.connectedSources);
+    const ceiling = actionConfidenceCeiling(input.actionClass, input.connectedSources);
+    if (score > ceiling) {
+      score = ceiling; // the binding (lowest) cap wins over any earlier cap
+      capped = `${input.actionClass} action on source level L${lvl}: capped at ${ceiling}`;
+    }
+    reasons.push(`source level L${lvl} (${input.actionClass}) ceiling ${Math.round(ceiling * 100)}%`);
+    const uplift = nextSourceUplift(input.actionClass, input.connectedSources);
+    if (uplift) reasons.push(`connect ${uplift.connect} to raise this to ${uplift.toPercent}%`);
+  }
+
   return capped === undefined
     ? { status: "ok", score, band: band(score), reasons }
     : { status: "ok", score, band: band(score), reasons, capped };
+}
+
+// ---- J7: confidence rises with connected sources ----
+// conf(META-only) <= conf(+GA4) <= conf(+Shopify) <= conf(+3P) — non-decreasing.
+// Ceilings per action class, indexed by sourceLevel (L0..L3). INTERNAL
+// CALIBRATION, calibrate-at-build — non-decreasing by construction (each is a
+// non-decreasing array read at the level index, so the ladder can never dip).
+const CEILING_CREATIVE = [0.9, 0.92, 0.93, 0.95] as const; // Meta owns creative/delivery: confident on Meta alone.
+const CEILING_ECONOMIC = [0.45, 0.6, 0.9, 0.95] as const; // contribution ROAS / nCAC: LOW until Shopify + finance land.
+
+function ceilingTable(actionClass: "creative_delivery" | "economic"): readonly number[] {
+  return actionClass === "economic" ? CEILING_ECONOMIC : CEILING_CREATIVE;
+}
+
+/**
+ * Level = the highest CONTIGUOUS tier present starting from meta.
+ * meta absent → 0 (note: without Meta even the base tier is unconfirmed, and a
+ * non-contiguous source — e.g. Shopify without GA4 — cannot lift the level; the
+ * missing lower tier breaks the chain).
+ */
+export function sourceLevel(connected: ConnectedSource[]): 0 | 1 | 2 | 3 {
+  if (!connected.includes("meta")) return 0;
+  let level: 0 | 1 | 2 | 3 = 0;
+  for (let i = 1; i < SOURCE_LEVELS.length; i++) {
+    if (connected.includes(SOURCE_LEVELS[i])) level = i as 1 | 2 | 3;
+    else break;
+  }
+  return level;
+}
+
+/** The confidence ceiling this action class can reach on the connected sources. */
+export function actionConfidenceCeiling(
+  actionClass: "creative_delivery" | "economic",
+  connected: ConnectedSource[],
+): number {
+  return ceilingTable(actionClass)[sourceLevel(connected)];
+}
+
+/**
+ * The one line "connect X to raise this to Y%": the next source (in ladder
+ * order) whose connection lifts this action's ceiling, and the new ceiling as a
+ * percent. null when already maxed (nothing left to connect raises it).
+ */
+export function nextSourceUplift(
+  actionClass: "creative_delivery" | "economic",
+  connected: ConnectedSource[],
+): { connect: ConnectedSource; toPercent: number } | null {
+  const current = actionConfidenceCeiling(actionClass, connected);
+  const have = [...connected];
+  for (const src of SOURCE_LEVELS) {
+    if (have.includes(src)) continue;
+    have.push(src); // walk the ladder in order; the first source that lifts the ceiling is the ask
+    const lifted = actionConfidenceCeiling(actionClass, have);
+    if (lifted > current) return { connect: src, toPercent: Math.round(lifted * 100) };
+  }
+  return null;
 }
 
 /** One plain sentence. Uses only numbers already present in the result. */

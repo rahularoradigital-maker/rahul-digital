@@ -55,3 +55,12 @@ jobs:
 
       - name: Check confidence + data quality
         run: npm run check:quality
+
+      - name: Check trust gates + spend floor
+        run: npm run check:gates
+
+      - name: Check causality ladder
+        run: npm run check:causality
+
+      - name: Check change-log attribution
+        run: npm run check:changelog

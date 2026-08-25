@@ -17,7 +17,10 @@
     "check:fatigue2": "node --experimental-strip-types scripts/check-fatigue2.ts",
     "check:diversity": "node --experimental-strip-types scripts/check-diversity.ts",
     "check:account": "node --experimental-strip-types scripts/check-account.ts",
-    "check:quality": "node --experimental-strip-types scripts/check-quality.ts"
+    "check:quality": "node --experimental-strip-types scripts/check-quality.ts",
+    "check:gates": "node --experimental-strip-types scripts/check-gates.ts",
+    "check:causality": "node --experimental-strip-types scripts/check-causality.ts",
+    "check:changelog": "node --experimental-strip-types scripts/check-change-log.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

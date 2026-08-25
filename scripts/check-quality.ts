@@ -1,7 +1,13 @@
 // Runnable check for lib/confidence.ts + lib/data-quality.ts. No env needed.
 //   node --experimental-strip-types scripts/check-quality.ts
 import { strict as assert } from "node:assert";
-import { computeConfidence, describeConfidence } from "../lib/confidence.ts";
+import {
+  computeConfidence,
+  describeConfidence,
+  sourceLevel,
+  actionConfidenceCeiling,
+  nextSourceUplift,
+} from "../lib/confidence.ts";
 import { assessDataQuality, gateRecommendation } from "../lib/data-quality.ts";
 import type { MetricsRow } from "../lib/ad-source.ts";
 
@@ -62,6 +68,75 @@ const sentence = describeConfidence(high);
 assert(
   sentence.includes(`${Math.round(high.score * 100)}%`),
   "description must contain the score percentage",
+);
+
+// ---- J7: source-connection confidence ladder ----
+
+// contiguous level from meta
+assert.equal(sourceLevel(["meta"]), 0, "meta-only is L0");
+assert.equal(sourceLevel(["meta", "ga4", "shopify"]), 2, "meta+ga4+shopify is L2");
+assert.equal(sourceLevel([]), 0, "no meta is L0 (documented note)");
+assert.equal(sourceLevel(["meta", "shopify"]), 0, "non-contiguous (ga4 missing) stays L0");
+
+// strong signals so nothing but the source ceiling can hold the score down
+const strong = { dataCompleteness: 1, sampleSize: 200, minSample: 7, signalsAgreeing: 5, signalsTotal: 5 };
+const econ = (connected: Parameters<typeof actionConfidenceCeiling>[1]) =>
+  computeConfidence({ ...strong, connectedSources: connected, actionClass: "economic" });
+
+const econL0 = econ(["meta"]);
+const econL1 = econ(["meta", "ga4"]);
+const econL2 = econ(["meta", "ga4", "shopify"]);
+const econL3 = econ(["meta", "ga4", "shopify", "third_party"]);
+for (const r of [econL0, econL1, econL2, econL3]) assert(r.status === "ok", "economic ladder must score");
+
+// economic on Meta-only is capped LOW even with perfect signals
+assert(econL0.status === "ok" && econL0.score <= 0.45, "economic meta-only must cap <= 0.45");
+assert(econL0.status === "ok" && !!econL0.capped, "economic meta-only cap must name why");
+// and rises once Shopify connects
+assert(
+  econL0.status === "ok" && econL2.status === "ok" && econL2.score > econL0.score,
+  "economic confidence must rise when Shopify connects",
+);
+// non-decreasing (monotonic) across all four levels
+const econScores = [econL0, econL1, econL2, econL3].map((r) => (r.status === "ok" ? r.score : NaN));
+for (let i = 1; i < econScores.length; i++) {
+  assert(econScores[i] >= econScores[i - 1], "economic ladder must be non-decreasing across levels");
+}
+// the ceiling function itself is non-decreasing across levels too
+const econCeilings = [["meta"], ["meta", "ga4"], ["meta", "ga4", "shopify"], ["meta", "ga4", "shopify", "third_party"]]
+  .map((c) => actionConfidenceCeiling("economic", c as Parameters<typeof actionConfidenceCeiling>[1]));
+for (let i = 1; i < econCeilings.length; i++) {
+  assert(econCeilings[i] >= econCeilings[i - 1], "economic ceilings must be monotonic");
+}
+
+// creative/delivery is confident on Meta alone (Meta owns that data)
+const creativeMeta = computeConfidence({ ...strong, connectedSources: ["meta"], actionClass: "creative_delivery" });
+assert(
+  creativeMeta.status === "ok" && creativeMeta.band === "high",
+  "creative_delivery must reach high band on meta-only",
+);
+
+// the "connect X to raise this to Y%" line, for an economic meta-only action
+const uplift = nextSourceUplift("economic", ["meta"]);
+assert(
+  uplift !== null && (uplift.connect === "ga4" || uplift.connect === "shopify") && uplift.toPercent > 45,
+  "economic meta-only uplift must point at the next source with a higher ceiling",
+);
+assert.equal(
+  nextSourceUplift("economic", ["meta", "ga4", "shopify", "third_party"]),
+  null,
+  "a fully-connected action has no uplift left",
+);
+
+// regression guard: WITHOUT the new fields the result is byte-identical to before.
+// `high` above shares these exact inputs and predates J7, so it is the baseline.
+const baseInput = { dataCompleteness: 1, sampleSize: 14, minSample: 7, signalsAgreeing: 5, signalsTotal: 5 };
+assert.deepEqual(computeConfidence(baseInput), high, "no new fields → pre-J7 result unchanged");
+// one field alone must not trigger the ceiling either (both are required)
+assert.deepEqual(
+  computeConfidence({ ...baseInput, actionClass: "economic" }),
+  high,
+  "actionClass without connectedSources must not change output",
 );
 
 // ---- data quality ----
