@@ -70,3 +70,6 @@ jobs:
 
       - name: Check verdict engine
         run: npm run check:verdict
+
+      - name: Check cockpit integration
+        run: npm run check:cockpit

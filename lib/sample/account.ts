@@ -1,0 +1,117 @@
+// SAMPLE account data — NOT real performance. It exists so the cockpit renders
+// real engine output (verdicts, diagnoses, waste) before a live Meta/Google
+// account is connected. When OAuth ingest lands, live-derived ads replace this
+// array and analyzeAccount() is called with dataSource "LIVE"; nothing else changes.
+// Values are illustrative and rounded; every one is fictional.
+
+import type { CockpitAdInput } from "../cockpit/analyze.ts";
+
+export const SAMPLE_ADS: CockpitAdInput[] = [
+  {
+    id: "ad_hero_ugc",
+    name: "UGC — founder story (hero)",
+    objective: "conversion",
+    performance: 88,
+    trend: 82,
+    fatigue: 22,
+    funnel: 84,
+    conversions: 210,
+    days: 34,
+    stable: true,
+    roomToScale: true,
+    spendRs: 240000,
+    revenueRs: 1080000,
+    wastedRs: 0,
+  },
+  {
+    id: "ad_carousel_sale",
+    name: "Carousel — 20% sale",
+    objective: "conversion",
+    performance: 24,
+    trend: 18,
+    fatigue: 81,
+    funnel: 47,
+    conversions: 140,
+    days: 26,
+    stable: false,
+    roomToScale: false,
+    spendRs: 96000,
+    revenueRs: 120000,
+    wastedRs: 61000,
+    // Dropping, and the causality ladder ruled out every non-creative cause: real loser.
+    diagnosis: {
+      status: "ok",
+      cause: "creative_fatigue",
+      rung: 7,
+      severity: "red",
+      ruledOut: ["measurement", "tracking_attribution", "auction_cpm", "landing_checkout", "stock_out", "audience_saturation", "change_volatility"],
+      note: "worn out",
+    },
+  },
+  {
+    id: "ad_reels_demo",
+    name: "Reels — product demo",
+    objective: "conversion",
+    performance: 40,
+    trend: 26,
+    fatigue: 38,
+    funnel: 70,
+    conversions: 96,
+    days: 19,
+    stable: false,
+    roomToScale: false,
+    spendRs: 72000,
+    revenueRs: 150000,
+    wastedRs: 8000,
+    // Dropped because CPM spiked (festival auction), NOT the creative: do not kill.
+    diagnosis: {
+      status: "ok",
+      cause: "auction_cpm",
+      rung: 2,
+      severity: "amber",
+      ruledOut: ["measurement", "tracking_attribution"],
+      note: "cpm spiked",
+    },
+  },
+  {
+    id: "ad_static_offer",
+    name: "Static — free shipping",
+    objective: "conversion",
+    performance: 58,
+    trend: 44,
+    fatigue: 72,
+    funnel: 73,
+    conversions: 120,
+    days: 21,
+    stable: true,
+    roomToScale: false,
+    spendRs: 54000,
+    revenueRs: 138000,
+    wastedRs: 6000,
+    // Worn creative, funnel still healthy: refresh, do not kill.
+    diagnosis: {
+      status: "ok",
+      cause: "creative_fatigue",
+      rung: 7,
+      severity: "amber",
+      ruledOut: ["measurement", "tracking_attribution", "auction_cpm", "landing_checkout", "stock_out", "audience_saturation", "change_volatility"],
+      note: "worn but converting",
+    },
+  },
+  {
+    id: "ad_new_angle",
+    name: "New angle — dermatologist",
+    objective: "conversion",
+    performance: 95,
+    trend: 90,
+    fatigue: 12,
+    funnel: 88,
+    conversions: 6, // tiny sample: high headline number, NOT a winner (the coin-toss guard)
+    days: 4,
+    stable: true,
+    roomToScale: true,
+    spendRs: 18000,
+    revenueRs: 130000,
+    wastedRs: 0,
+  },
+];
