@@ -7,6 +7,13 @@ Claude health check). The Phase 1 cockpit is NOT built and NOT covered here.
 > Reality notes: no CI, no staging, no monitoring, and no git remote are set up yet. No
 > source-control / CI / monitoring connectors are available, so every check below is manual.
 
+> Re-verified 2026-08-25 (after 21 commits): build still GREEN, tree clean, `.env.local`
+> ignored, still no remote. The commits since are design docs + DORMANT Phase 1 foundation
+> (`lib/crypto.ts`, `lib/ad-source.ts`, migration `0002`, `TOKEN_ENC_KEY`) not wired into any
+> running path — so Phase 0 deploy readiness is UNCHANGED. For a Phase 0 deploy, running
+> migration `0001` is enough; `0002` and `TOKEN_ENC_KEY` are Phase 1 (harmless if set early,
+> not required). Blockers remain the SETUP.md owner steps.
+
 ## Pre-Deploy
 
 - [x] `node`/build gate green: `npm run build` (verified 2026-08-25)
