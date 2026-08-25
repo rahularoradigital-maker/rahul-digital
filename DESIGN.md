@@ -111,5 +111,8 @@ No gradients. No indigo/violet. Semantic status colors only, used consistently
 - Body text >= 12.5px mono / 13px sans; contrast >= 4.5:1 (ink on cream passes).
 - Touch targets >= 44px on mobile.
 - Every status color pairs with a text label (never color alone).
+- Status colors as SMALL TEXT must hit 4.5:1 on cream. `--watch` `#A8761F` is only 3.65:1, so
+  for watch/ochre TEXT use a darker `--watch-text` (~`#7A5510`, >=4.5:1); keep `#A8761F` for dots
+  and large text only. (green/rust/link already pass.) See `docs/audits/accessibility-audit-cockpit-2026-08-25.md`.
 - Visible focus rings; full keyboard nav on the approve/deny queue and drawers.
 - Visited vs unvisited link distinction preserved.
