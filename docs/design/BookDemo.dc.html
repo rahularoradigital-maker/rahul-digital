@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #F7F7F7; color: #252525; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: #038BF7; }
+  ::selection { background: #d9e2ff; }
+  input, textarea { font-family: inherit; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</helmet>
+<div style="max-width:100%;min-height:100vh;overflow-x:hidden;">
+
+  <nav style="background:#fff;border-bottom:1px solid #E4E4E4;">
+    <div style="max-width:1220px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;">
+      <a href="AdBrain AI.dc.html" style="display:flex;align-items:center;gap:9px;font-weight:800;font-size:21px;letter-spacing:-.03em;">
+        <span style="width:27px;height:27px;border-radius:8px;background:#252525;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800;">d</span>
+        AdBrain AI
+      </a>
+      <a href="AdBrain AI.dc.html" style="font-size:14px;font-weight:600;color:#3a3a40;">← Back to home</a>
+    </div>
+  </nav>
+
+  <main style="max-width:1120px;margin:0 auto;padding:70px 24px;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start;animation:fadeUp .6s ease both;">
+    <div style="position:sticky;top:40px;">
+      <div style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#6B6B6B;background:#fff;border:1px solid #E4E4E4;padding:6px 13px;border-radius:999px;margin-bottom:24px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#17b26a;"></span>Talk to the founders
+      </div>
+      <h1 style="font-size:48px;line-height:1.04;letter-spacing:-.04em;font-weight:800;margin-bottom:18px;text-wrap:balance;">See your first weekly test plan, live.</h1>
+      <p style="font-size:18px;line-height:1.5;color:#6B6B6B;margin-bottom:34px;max-width:440px;">Book 30 minutes. We'll connect your account and build a ranked creative plan from your own data — no slides, just decisions.</p>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <sc-for list="{{ perks }}" as="p" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="width:26px;height:26px;border-radius:8px;background:#E6F2FE;color:#038BF7;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;">✓</span>
+            <div><div style="font-weight:700;font-size:15px;">{{ p.h }}</div><div style="font-size:14px;color:#6B6B6B;">{{ p.d }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="margin-top:36px;padding-top:24px;border-top:1px solid #E4E4E4;">
+        <p style="font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a0a0a6;margin-bottom:14px;">Trusted by growth teams at</p>
+        <div style="display:flex;gap:22px;flex-wrap:wrap;">
+          <sc-for list="{{ logos }}" as="l" hint-placeholder-count="4"><span style="font-size:17px;font-weight:700;color:#bcbcb8;">{{ l }}</span></sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#fff;border:1px solid #E4E4E4;border-radius:22px;padding:34px;box-shadow:0 30px 70px -50px rgba(37,37,37,.4);">
+      <sc-if value="{{ submitted }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;padding:40px 10px;">
+          <div style="width:60px;height:60px;border-radius:50%;background:#e7f4ec;color:#0f8a4d;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 20px;">✓</div>
+          <h2 style="font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px;">Thanks — you're booked.</h2>
+          <p style="font-size:16px;color:#6B6B6B;max-width:340px;margin:0 auto 24px;">A founder will reach out within one business day to confirm your slot.</p>
+          <a href="AdBrain AI.dc.html" style="background:#252525;color:#f5f5f3;padding:12px 24px;border-radius:999px;font-weight:600;display:inline-block;">Back to home</a>
+        </div>
+      </sc-if>
+      <sc-if value="{{ notSubmitted }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <h2 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:22px;">Request your demo</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">First name</label><input placeholder="Jordan" style="width:100%;border:1px solid #E4E4E4;border-radius:12px;padding:13px;font-size:15px;outline:none;"></div>
+            <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Last name</label><input placeholder="Rivera" style="width:100%;border:1px solid #E4E4E4;border-radius:12px;padding:13px;font-size:15px;outline:none;"></div>
+          </div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Work email</label><input placeholder="you@brand.com" style="width:100%;border:1px solid #E4E4E4;border-radius:12px;padding:13px;font-size:15px;outline:none;"></div>
+          <div style="margin-bottom:14px;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Brand or agency</label><input placeholder="Acme Co." style="width:100%;border:1px solid #E4E4E4;border-radius:12px;padding:13px;font-size:15px;outline:none;"></div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">Monthly Meta ad spend</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <sc-for list="{{ spends }}" as="s" hint-placeholder-count="4">
+                <button onClick="{{ s.onClick }}" style="{{ s.style }}">{{ s.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div style="margin-bottom:20px;"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:6px;">What do you want to fix?</label><textarea placeholder="e.g. we keep retesting angles that don't work" rows="3" style="width:100%;border:1px solid #E4E4E4;border-radius:12px;padding:13px;font-size:15px;outline:none;resize:vertical;"></textarea></div>
+          <button onClick="{{ submit }}" style="width:100%;background:#038BF7;color:#fff;border:none;cursor:pointer;font-weight:600;font-size:16px;padding:15px;border-radius:12px;">Request demo</button>
+          <p style="font-size:12px;color:#a0a0a6;line-height:1.4;margin-top:12px;">By requesting a demo you agree to be contacted for marketing purposes.</p>
+        </div>
+      </sc-if>
+    </div>
+  </main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1220,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { submitted:false, spend:1 };
+  renderVals(){
+    const perks=[
+      {h:'Built from your real data',d:'We connect your Meta account and show a live plan.'},
+      {h:'No slideware',d:'Straight to decisions your team can act on Monday.'},
+      {h:'Founder-led',d:'You talk to the people who built the agents.'},
+    ];
+    const logos=['Pilgrim','Ghar Soaps','Hair Originals','NexTen'];
+    const opts=['< $10k','$10k–50k','$50k–200k','$200k+'];
+    const spends=opts.map((label,i)=>({label,onClick:()=>this.setState({spend:i}),
+      style:`border:1px solid ${this.state.spend===i?'#038BF7':'#E4E4E4'};background:${this.state.spend===i?'#E6F2FE':'#fff'};color:${this.state.spend===i?'#038BF7':'#3a3a40'};cursor:pointer;font-family:inherit;font-weight:600;font-size:13px;padding:9px 14px;border-radius:999px;`}));
+    return {perks,logos,spends,submit:()=>this.setState({submitted:true}),submitted:this.state.submitted,notSubmitted:!this.state.submitted};
+  }
+}
+</script>
+</body>
+</html>

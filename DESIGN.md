@@ -1,118 +1,77 @@
 # AdBrain DESIGN.md
 
-The design system for AdBrain, derived from the approved reference
-("Yamin media cockpit", `~/Downloads/Yamin Action Dashboard v2 Jayant.html`).
-Every UI decision calibrates against this file. This REPLACES the Phase 0
-indigo-on-dark look, which was generic and off-brand.
+The design system for AdBrain AI, from the owner's design handoff (telli.com style), 2026-08-25.
+Source of truth: `docs/design/HANDOFF.md` + the artboards in `docs/design/*.dc.html`
+(Deepsolv=landing, Product, BookDemo, Dashboard=11-screen app). Every UI decision calibrates here.
 
-> Implementation status (2026-08-25): this system is the TARGET, not yet applied in code.
-> The shipped app still uses the Phase 0 indigo/dark tokens; the re-base is a Phase 1 build
-> step. See audit F2.
+> This SUPERSEDES the earlier "Yamin warm-paper / Schibsted-Grotesk" direction (decision D10) and
+> the `cockpit-v1.html` mockup. Both are kept only as history. Implementation status: this is the
+> TARGET; the shipped app still uses Phase 0 indigo/dark until the re-base.
 
-## 0. Design principles (decision rules)
+## 0. Design principles (decision rules — unchanged, still hold)
+1. **Decisions over dashboards** — every screen ends in an action.
+2. **Show the working over "trust us"** — no number without source/formula/reason; AI narrates, code computes.
+3. **Money over metrics** — quantify impact in currency + confidence.
+4. **One honest number over five** — a single actionable composite (e.g. Account Health 0-100).
+5. **Distinctive over default** — look like AdBrain (the telli system below), not a generic template.
+6. **Confirmed over automatic, when money moves** — explicit human yes before spend changes.
+Candidate (probation): **Real data over rules of thumb**.
 
-Use these to settle a design argument without escalating. Each takes a side and
-names the cost it accepts. If a principle never settles a real call, retire it.
+## 1. Ethos
+Decision-first, not a report. Every recommendation: Observation → Diagnosis → Evidence (+ rule ID)
+→ Confidence → Action → Expected impact. Fact-label every value (OFFICIAL / RESEARCH-BACKED /
+BENCHMARK / INTERNAL CALCULATION / MODEL ESTIMATE / INFERENCE). Guardrails: small samples flagged,
+"insufficient data != waste", "active != winning", confidence on all forecasts, no arbitrary
+thresholds as truth. Voice: plain, direct. No em dashes.
 
-1. **Decisions over dashboards.** Every screen ends in an action, not a number to
-   admire. (Cost: less open-ended exploration.)
-2. **Show the working over "trust us."** No number ships without its source, formula,
-   and reason one click away; the AI narrates, the rules engine computes. (Cost: more
-   build effort per metric; no black-box scores.)
-3. **Money over metrics.** Quantify impact in currency and confidence, not vanity
-   stats. (Cost: we must model money impact even when a raw metric is easier.)
-4. **One honest number over five.** Prefer a single actionable composite over a wall
-   of KPIs. (Cost: composites hide detail, so principle 2 is mandatory alongside it.)
-5. **Distinctive over default.** Look unmistakably like AdBrain, never the generic
-   AI-SaaS template. (Cost: more design care; harder to restyle wholesale.)
-6. **Confirmed over automatic, when real money moves.** Anything that spends or moves
-   the user's money waits for an explicit human yes. (Cost: fewer autopilot moments.)
-
-Candidate (probation): **Real data over rules of thumb** — recommendations come from
-the user's own numbers, not generic best practice. Retire if 1-3 already cover it.
-
-## 1. The ethos: an action dashboard, not a report
-
-AdBrain tells the user what to DO and shows its working. Every screen:
-- Leads with a verdict in one plain sentence.
-- Ends in a decision the user can take (approve / deny / apply).
-- Can open a "show the working" drawer that names the source, the formula, and
-  the reason. Rule: if you cannot see the source, the formula, and the reason, it
-  does not ship.
-- Quantifies impact in money and confidence, not vanity metrics.
-
-Voice: plain, direct, human. "Do this today." "Money on the table." "What will
-break, and when." No hype, no jargon, no em dashes.
-
-## 2. Color tokens
-
+## 2. Color tokens (telli)
 | Token | Value | Use |
 |---|---|---|
-| `--bg` | `#F7F5EF` | page background (warm paper) |
-| `--ink` | `#17170F` | primary text, primary buttons, dark panels |
-| `--muted` | `#6B6A5E` | secondary text, labels |
-| `--border` | `#DED9CC` | hairline borders on cards/sections |
-| `--border-soft` | `#EAE6DA` / `#EFEBDF` | inner dividers |
-| `--card` | `#FFFFFF` | card surfaces on the cream bg |
-| `--good` | `#3F7A55` (light `#7FB98F`) | scale / healthy / positive |
-| `--stop` | `#A83A2E` | stop / danger / waste |
-| `--watch` | `#A8761F` | watch / warning / will-break |
-| `--link` | `#2E4A7D` | links and "working" pills |
-| `--selection` | `#E5DFC9` | text selection |
+| `--bg` | `#F7F7F7` | page background |
+| `--surface` | `#FFFFFF` | cards / inputs |
+| `--surface-alt` | `#EFEFEF` | subtle fills, tracks, inactive |
+| `--ink` | `#252525` | primary text + dark buttons/bands |
+| `--ink-muted` | `#6B6B6B` | secondary text |
+| `--accent` | `#038BF7` | brand blue — dots, active states, links, key CTAs. NEVER a field fill |
+| `--accent-soft` | `#E6F2FE` | blue-tint backgrounds |
+| `--hairline` | `#E4E4E4` | borders / dividers |
 
-No gradients. No indigo/violet. Semantic status colors only, used consistently
-(green = scale, rust = stop, ochre = watch).
+Semantic (verdict) colors, app only:
+Scale/Won `#0f8a4d` on `#e7f4ec` · Iterate/warn `#b06b00` on `#fbf1df` ·
+Kill/Failed `#c0392b` on `#fbecea` · Neutral chip `#6B6B6B` on `#EFEFEF`.
+
+Rule: mono ink on light ground; blue is an accent, never a field. Near-black `#252525` bands for contrast.
 
 ## 3. Typography
-
-- **Display + body:** `Schibsted Grotesk` (weights 400-800). Load via Google Fonts.
-- **Numbers, labels, status tags, metadata:** `JetBrains Mono` (400-600).
-- Labels are uppercase, ~9-10px, letter-spacing 0.06-0.1em, in `--muted`.
-- Big numbers (scores, ROAS, money) are mono, 22-46px, weight 600, tight tracking.
-- Display headlines: Schibsted Grotesk, 26-31px, weight 700, letter-spacing -0.02em.
-- Body: 12.5-14.5px, line-height 1.5-1.6. Never below 12px for real content.
+- Font: **`Inter`**, 'Helvetica Neue', Arial, sans-serif (telli ships proprietary "Review"; Inter is the free match).
+- **Headlines are weight 400 (LIGHT) — do not bold.** h1 56-64px/400 · h2 40px/400 · h3 18-22px/500.
+- Body 15-18px/400 · small 12-14px.
 
 ## 4. Components
-
-- **Card:** white, `1px solid --border`, radius 5px, generous padding (18-30px).
-- **Pill / tag:** radius 999px, 1px border, mono uppercase micro-label. Filled ink
-  pill = active; outline = inactive.
-- **Status dot:** 6px circle in a status color, paired with a mono label.
-- **Sparkline:** inline SVG polyline, 2px stroke in the status color.
-- **Progress bar:** 4-6px track (`--border-soft`), ink fill, optional rust "aim" marker.
-- **Radial gauge:** the "score" donut (one honest number, e.g. 57/70 green).
-- **"Show the working" drawer:** right-side slide-over, 520px, cream bg, rows of
-  label + value (source, formula, logic, example, next step).
-- **Fixed bottom action bar:** dark (`--ink`), live dot, projected impact, and one
-  primary Apply button. "nothing launches on its own."
-- Buttons: primary = ink fill / cream text, radius 3px; secondary = white / ink
-  border; hover shifts border or bg to `--link` or `--stop` by intent.
+- **Card:** white, `1px solid --hairline`, **radius 10px**, generous padding.
+- **Pill:** **radius 70px (fully rounded)** — buttons, inputs, tabs, chips.
+- **Buttons:** primary = ink fill (`#252525`) / white text, pill; key CTA may use accent blue; secondary = white / hairline border, pill.
+- **Chips/tags:** pill, semantic verdict colors for Scale/Iterate/Kill.
+- **Score ring:** Account Health 0-100 radial + component bars.
+- **Confidence bar / progress:** track `--surface-alt`, ink or accent fill.
+- **"Show the working":** Observation→Diagnosis→Evidence(+rule ID)→Confidence→Action→impact.
+- Charts: CSS % heights in a fixed-height flex row (`align-items:stretch`, column `height:100%`).
 
 ## 5. Layout
+- **Marketing:** ~96-112px section rhythm; section order per HANDOFF (announcement bar → nav →
+  hero w/ pill email capture → demo widget → trust → use cases → funding(dark) → how-it-works
+  stepper → features → security → testimonials → case study → final CTA(dark) → footer).
+- **Web app:** fixed **256px sidebar** (grouped nav: Decide / Creative / Media / Intelligence /
+  Account) + sticky topbar (title, "Agents live", Ask AdBrain search, source/week selector,
+  Re-scan). Client-side router via active state. 11 screens (see HANDOFF).
+- Animations: scroll-reveal fade-up, card hover lift, live pulse dot, animated bars.
 
-- Max content width 1200px, 40px side padding.
-- Sticky top nav: logo + section anchor links + live status + currency toggle.
-- Single scrolling page of sections, separated by `1px solid --border` top borders
-  and ~64px top margin. Each section: plain verb title + one supporting sentence.
-- Grids are asymmetric and purposeful (e.g. 1.7fr / 1fr cockpit), never a
-  symmetric 3-column feature grid.
-
-## 6. Anti-slop guardrails (what NOT to do)
-
-- No indigo/violet, no gradients, no glassmorphism as decoration.
-- No symmetric 3-column icon-in-circle feature grid.
-- No centered-everything. Left-align content; center only the score gauge.
-- No emoji as design elements. No decorative blobs.
-- Cards earn their place; data tables and rows are fine and often better than cards.
-- Uniform bubbly radius is banned; use the small 3-5px / pill 999px system above.
+## 6. Anti-slop guardrails
+- Blue is an accent only, never a field/background fill. No gradients except the security card.
+- Headlines stay weight 400 (bolding them is the tell). Everything rounded (10px / 70px).
+- Cards earn their place; data rows/tables are fine. Actions fire a confirmation toast.
 
 ## 7. Accessibility floor
-
-- Body text >= 12.5px mono / 13px sans; contrast >= 4.5:1 (ink on cream passes).
-- Touch targets >= 44px on mobile.
-- Every status color pairs with a text label (never color alone).
-- Status colors as SMALL TEXT must hit 4.5:1 on cream. `--watch` `#A8761F` is only 3.65:1, so
-  for watch/ochre TEXT use a darker `--watch-text` (~`#7A5510`, >=4.5:1); keep `#A8761F` for dots
-  and large text only. (green/rust/link already pass.) See `docs/audits/accessibility-audit-cockpit-2026-08-25.md`.
-- Visible focus rings; full keyboard nav on the approve/deny queue and drawers.
-- Visited vs unvisited link distinction preserved.
+- Body text >= 13px; contrast >= 4.5:1 (ink `#252525` on `#F7F7F7` passes ~13:1).
+- Verify accent blue `#038BF7` on white as TEXT (~3.6:1 — use for large text/UI/links, darken for small body text).
+- Touch targets >= 44px; every status color paired with a text label; visible focus rings; keyboard nav on all actions.

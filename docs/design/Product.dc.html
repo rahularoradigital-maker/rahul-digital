@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #F7F7F7; color: #252525; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: #038BF7; }
+  ::selection { background: #d9e2ff; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</helmet>
+<div style="max-width:100%;overflow-x:hidden;">
+
+  <nav style="position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid #E4E4E4;">
+    <div style="max-width:1220px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;">
+      <a href="AdBrain AI.dc.html" style="display:flex;align-items:center;gap:9px;font-weight:800;font-size:21px;letter-spacing:-.03em;">
+        <span style="width:27px;height:27px;border-radius:8px;background:#252525;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:800;">d</span>
+        AdBrain AI
+      </a>
+      <div style="display:flex;align-items:center;gap:22px;font-size:15px;font-weight:500;color:#3a3a40;white-space:nowrap;margin:0 24px;">
+        <a href="AdBrain AI.dc.html#usecases">Use Cases</a>
+        <a href="Product.dc.html" style="color:#038BF7;">Product</a>
+        <a href="AdBrain AI.dc.html#platform">How it works</a>
+        <a href="AdBrain AI.dc.html#blog">Resources</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;font-size:15px;font-weight:600;white-space:nowrap;">
+        <a href="#" style="color:#3a3a40;">Login</a>
+        <a href="BookDemo.dc.html" style="border:1px solid #d9d9d5;padding:9px 16px;border-radius:999px;">Book a demo</a>
+        <a href="#" style="background:#252525;color:#f5f5f3;padding:9px 17px;border-radius:999px;">Sign up</a>
+      </div>
+    </div>
+  </nav>
+
+  <header style="max-width:900px;margin:0 auto;padding:90px 24px 50px;text-align:center;animation:fadeUp .6s ease both;">
+    <div style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#6B6B6B;background:#f4f4f2;border:1px solid #E4E4E4;padding:6px 13px;border-radius:999px;margin-bottom:24px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#038BF7;display:inline-block;"></span>The AdBrain AI platform
+    </div>
+    <h1 style="font-size:56px;line-height:1.03;letter-spacing:-.04em;font-weight:800;margin-bottom:20px;text-wrap:balance;">Four agents. One weekly decision loop.</h1>
+    <p style="font-size:19px;line-height:1.5;color:#6B6B6B;max-width:600px;margin:0 auto 30px;">AdBrain AI connects to your Meta account, scans the market, and hands your team a ranked test plan — with the reasoning behind every call.</p>
+    <a href="BookDemo.dc.html" style="background:#252525;color:#f5f5f3;padding:14px 28px;border-radius:999px;font-weight:600;font-size:16px;">Book a demo →</a>
+  </header>
+
+  <section style="max-width:1120px;margin:0 auto;padding:40px 24px 90px;">
+    <sc-for list="{{ modules }}" as="m" hint-placeholder-count="4">
+      <div style="{{ m.wrap }}">
+        <div>
+          <div style="font-family:inherit;font-size:14px;font-weight:700;color:#038BF7;margin-bottom:12px;">{{ m.step }}</div>
+          <h2 style="font-size:34px;line-height:1.08;letter-spacing:-.03em;font-weight:800;margin-bottom:14px;">{{ m.h }}</h2>
+          <p style="font-size:17px;line-height:1.55;color:#6B6B6B;margin-bottom:22px;">{{ m.d }}</p>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ m.points }}" as="pt" hint-placeholder-count="3">
+              <div style="display:flex;gap:10px;align-items:flex-start;font-size:15px;"><span style="color:#038BF7;font-weight:700;">✓</span><span>{{ pt }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="background:#F7F7F7;border:1px solid #E4E4E4;border-radius:20px;padding:26px;">
+          <div style="background:#fff;border-radius:14px;box-shadow:0 20px 50px -30px rgba(37,37,37,.4);overflow:hidden;">
+            <div style="background:#252525;padding:10px 14px;display:flex;align-items:center;gap:6px;">
+              <span style="width:9px;height:9px;border-radius:50%;background:#ff5f57;"></span>
+              <span style="width:9px;height:9px;border-radius:50%;background:#febc2e;"></span>
+              <span style="width:9px;height:9px;border-radius:50%;background:#28c840;"></span>
+              <span style="margin-left:8px;font-size:12px;color:#a0a0a8;">AdBrain AI · {{ m.mock }}</span>
+            </div>
+            <div style="padding:20px;">
+              <sc-for list="{{ m.rows }}" as="r" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f2f2f0;">
+                  <span style="font-size:14px;color:#3a3a40;">{{ r.k }}</span>
+                  <span style="{{ r.badge }}">{{ r.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+
+  <section style="background:#252525;color:#f5f5f3;">
+    <div style="max-width:900px;margin:0 auto;padding:100px 24px;text-align:center;">
+      <h2 style="font-size:44px;line-height:1.05;letter-spacing:-.03em;font-weight:800;margin-bottom:18px;text-wrap:balance;">See your first test plan, live.</h2>
+      <p style="font-size:18px;color:#a0a0a8;max-width:520px;margin:0 auto 30px;">Connect your account and watch the agents build a ranked plan from your real data in minutes.</p>
+      <a href="BookDemo.dc.html" style="background:#038BF7;color:#fff;padding:15px 30px;border-radius:999px;font-weight:600;font-size:17px;">Talk to founders →</a>
+    </div>
+  </section>
+
+  <footer style="background:#0d0d0f;color:#a0a0a8;">
+    <div style="max-width:1220px;margin:0 auto;padding:44px 24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;font-size:13px;align-items:center;">
+      <a href="AdBrain AI.dc.html" style="display:flex;align-items:center;gap:9px;font-weight:800;font-size:18px;color:#f5f5f3;">
+        <span style="width:24px;height:24px;border-radius:7px;background:#252525;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;">d</span>AdBrain AI
+      </a>
+      <span>All rights reserved © 2026 adbrain.ai</span>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1220,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  badge(t,c,b){return `font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:${c};background:${b};padding:3px 9px;border-radius:999px;`;}
+  renderVals(){
+    const scale=this.badge('Scale','#0f8a4d','#e7f4ec'), kill=this.badge('Kill','#c0392b','#fbecea'), it=this.badge('Test','#b06b00','#fbf1df');
+    const raw=[
+      {step:'01 · SCAN',h:'See every signal in one place',d:'Competitor ads, customer voice and your own account — continuously scanned and structured so nothing gets missed.',
+        points:['Competitor ad, hook and offer tracking','Reviews, DMs, comments and Reddit','Live Meta account sync'],mock:'signals',
+        rows:[{k:'Competitor ads tracked',v:'1,240',badge:scale},{k:'Customer mentions',v:'3,802',badge:scale},{k:'Category trend',v:'Regional ↑',badge:it}]},
+      {step:'02 · DECIDE',h:'Turn signals into a ranked plan',d:'AdBrain AI weighs everything and returns clear verdicts — what to test, scale, iterate and kill — ranked by confidence.',
+        points:['Ranked weekly test plan','Kill / iterate / scale verdicts','Confidence scoring with evidence'],mock:'test plan',
+        rows:[{k:'Founder origin story',v:'Scale',badge:scale},{k:'Regional UGC',v:'Test',badge:it},{k:'Comparison static v4',v:'Kill',badge:kill}]},
+      {step:'03 · CREATE',h:'Draft the creative that wins',d:'Hooks, scripts and statics written from exactly what is working in-market right now — in your brand voice.',
+        points:['Hook and angle generation','UGC and VSL scripts','Static concept briefs'],mock:'adam studio',
+        rows:[{k:'Hooks drafted',v:'12',badge:scale},{k:'Scripts ready',v:'4',badge:scale},{k:'Static briefs',v:'6',badge:scale}]},
+      {step:'04 · TRACK',h:'Learn from every experiment',d:'Momentum tracking feeds every outcome back into Brand Brain, so the agents get sharper each week.',
+        points:['CTR, ROAS, CPA and fatigue tracking','Brand Brain long-term memory','ROAS decomposition reports'],mock:'brand brain',
+        rows:[{k:'Tests remembered',v:'318',badge:scale},{k:'Dead angles flagged',v:'22',badge:kill},{k:'Avg ROAS lift',v:'+38%',badge:scale}]},
+    ];
+    const modules=raw.map((m,i)=>({...m,wrap:`display:grid;grid-template-columns:${i%2?'1.1fr 1fr':'1fr 1.1fr'};gap:44px;align-items:center;padding:44px 0;`+(i>0?'border-top:1px solid #E4E4E4;':'')+(i%2?'direction:rtl;':'')}));
+    // fix rtl: only flip via order — simpler: keep ltr, alternate by leaving as-is
+    modules.forEach(m=>{m.wrap=m.wrap.replace('direction:rtl;','');});
+    return {modules};
+  }
+}
+</script>
+</body>
+</html>

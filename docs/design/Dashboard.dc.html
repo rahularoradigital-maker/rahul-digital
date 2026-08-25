@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter','Helvetica Neue',Arial,sans-serif; color: #252525; background: #F7F7F7; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  input, textarea { font-family: inherit; }
+  ::selection { background: #E6F2FE; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #E4E4E4; border-radius: 70px; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes growW { from { width: 0; } }
+  @keyframes growH { from { height: 0; } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes dashRing { from { stroke-dashoffset: 339; } }
+</style>
+</helmet>
+<div style="display:grid;grid-template-columns:256px 1fr;min-height:100vh;">
+
+  <!-- Sidebar -->
+  <aside style="background:#fff;border-right:1px solid #E4E4E4;padding:18px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;">
+    <a href="Deepsolv.dc.html" style="display:flex;align-items:center;gap:9px;font-size:19px;font-weight:600;padding:6px 8px 6px;">
+      <span style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2px;width:24px;height:24px;">
+        <span style="background:#252525;border-radius:1px;"></span><span style="background:#038BF7;border-radius:1px;"></span><span style="background:#252525;border-radius:1px;"></span>
+        <span style="background:#038BF7;border-radius:1px;"></span><span style="background:#252525;border-radius:1px;"></span><span style="background:#038BF7;border-radius:1px;"></span>
+        <span style="background:#252525;border-radius:1px;"></span><span style="background:#038BF7;border-radius:1px;"></span><span style="background:#252525;border-radius:1px;"></span>
+      </span>
+      AdBrain AI
+    </a>
+    <sc-for list="{{ navGroups }}" as="g" hint-placeholder-count="4">
+      <div style="font-size:10px;color:#B8B8B4;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:14px 10px 6px;">{{ g.header }}</div>
+      <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="3">
+        <button onClick="{{ n.onClick }}" style="{{ n.style }}"><span style="width:18px;text-align:center;">{{ n.icon }}</span>{{ n.label }}<sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}"><span style="{{ n.badgeStyle }}">{{ n.badge }}</span></sc-if></button>
+      </sc-for>
+    </sc-for>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:18px;padding:10px 8px;border-top:1px solid #F0F0EE;">
+      <span style="width:32px;height:32px;border-radius:50%;background:#252525;color:#fff;display:grid;place-items:center;font-size:13px;font-weight:600;">PN</span>
+      <div style="line-height:1.2;"><div style="font-size:13px;font-weight:500;">Priya Nair</div><div style="font-size:12px;color:#6B6B6B;">The Pant Project</div></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main style="min-width:0;position:relative;">
+    <header style="position:sticky;top:0;z-index:5;background:rgba(247,247,247,.85);backdrop-filter:blur(8px);border-bottom:1px solid #E4E4E4;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <h1 style="font-size:20px;font-weight:600;letter-spacing:-.01em;">{{ activeTitle }}</h1>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6B6B6B;"><span style="width:7px;height:7px;border-radius:50%;background:#0f8a4d;animation:pulse 2s infinite;"></span>Agents live</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E4E4E4;border-radius:70px;padding:8px 14px;font-size:13px;color:#6B6B6B;width:240px;">🔍 Ask AdBrain anything…</div>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:70px;padding:8px 14px;font-size:13px;font-weight:500;">Meta · Week 34 ▾</div>
+        <button onClick="{{ rescan }}" style="background:#252525;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:500;font-size:13px;border-radius:70px;padding:9px 16px;">{{ scanLabel }}</button>
+      </div>
+    </header>
+
+    <!-- 0: DASHBOARD OVERVIEW + ACCOUNT HEALTH -->
+    <sc-if value="{{ s0 }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:28px;max-width:1180px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:6px;">Monday, Week 34 · Meta Ads · The Pant Project</p>
+        <h2 style="font-size:26px;font-weight:600;letter-spacing:-.02em;margin-bottom:22px;">Good morning, Priya — here's what to ship this week.</h2>
+
+        <!-- Account Health -->
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:24px;margin-bottom:24px;display:grid;grid-template-columns:200px 1fr;gap:32px;align-items:center;">
+          <div style="text-align:center;">
+            <div style="position:relative;width:150px;height:150px;margin:0 auto;">
+              <svg width="150" height="150" viewBox="0 0 120 120" style="transform:rotate(-90deg);">
+                <circle cx="60" cy="60" r="54" fill="none" stroke="#EFEFEF" stroke-width="10"></circle>
+                <circle cx="60" cy="60" r="54" fill="none" stroke="#038BF7" stroke-width="10" stroke-linecap="round" stroke-dasharray="339" stroke-dashoffset="75" style="animation:dashRing 1.2s ease both;"></circle>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"><span style="font-size:38px;font-weight:600;letter-spacing:-.02em;">78</span><span style="font-size:12px;color:#6B6B6B;">/ 100 · Good</span></div>
+            </div>
+            <div style="font-size:13px;color:#0f8a4d;font-weight:600;margin-top:8px;">▲ +4 vs last week</div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div style="font-size:16px;font-weight:600;">Account Health</div><span style="font-size:11px;color:#6B6B6B;background:#F7F7F7;border:1px solid #E4E4E4;padding:2px 9px;border-radius:70px;">Internal calculation · 82% conf</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 28px;">
+              <sc-for list="{{ health }}" as="h" hint-placeholder-count="7">
+                <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span style="color:#6B6B6B;">{{ h.label }}</span><span style="font-weight:600;">{{ h.score }}</span></div><div style="height:6px;background:#EFEFEF;border-radius:70px;overflow:hidden;"><div style="height:100%;width:{{ h.bar }};background:{{ h.color }};border-radius:70px;animation:growW 1s ease both;"></div></div></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+            <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:20px;animation:fadeUp .5s ease both;">
+              <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#6B6B6B;margin-bottom:8px;">{{ k.label }}<span title="{{ k.tip }}" style="cursor:help;color:#C4C4C0;">ⓘ</span></div>
+              <div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:30px;font-weight:600;letter-spacing:-.02em;">{{ k.value }}</span><span style="{{ k.deltaStyle }}">{{ k.delta }}</span></div>
+              <div style="display:flex;gap:3px;align-items:flex-end;height:34px;margin-top:12px;">
+                <sc-for list="{{ k.spark }}" as="b" hint-placeholder-count="8"><span style="flex:1;background:{{ b.c }};height:{{ b.h }};border-radius:2px;"></span></sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.55fr 1fr;gap:16px;">
+          <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"><div><div style="font-size:16px;font-weight:600;">This week's ranked test plan</div><div style="font-size:13px;color:#6B6B6B;">Ranked by confidence · updated every Monday</div></div><span style="background:#E6F2FE;color:#038BF7;font-size:12px;font-weight:600;padding:4px 12px;border-radius:70px;">Adam · Planner</span></div>
+            <sc-for list="{{ plan }}" as="p" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:center;padding:13px 0;border-top:1px solid #F0F0EE;">
+                <span style="font-size:13px;color:#B8B8B4;font-weight:600;">{{ p.rank }}</span>
+                <div style="min-width:0;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:14px;font-weight:500;">{{ p.name }}</span><span style="font-size:11px;color:#6B6B6B;background:#F7F7F7;border:1px solid #E4E4E4;padding:1px 7px;border-radius:70px;">{{ p.type }}</span></div><div style="display:flex;align-items:center;gap:8px;margin-top:7px;"><div style="flex:1;max-width:180px;height:6px;background:#EFEFEF;border-radius:70px;overflow:hidden;"><div style="height:100%;width:{{ p.conf }};background:{{ p.confColor }};border-radius:70px;animation:growW 1s ease both;"></div></div><span style="font-size:12px;color:#6B6B6B;">{{ p.conf }} confidence</span></div></div>
+                <span style="{{ p.badge }}">{{ p.verdict }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:22px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"><div style="font-size:16px;font-weight:600;">Needs your attention</div><span style="background:#fbecea;color:#c0392b;font-size:12px;font-weight:600;padding:4px 12px;border-radius:70px;">3 do-now</span></div>
+            <sc-for list="{{ attention }}" as="a" hint-placeholder-count="4">
+              <div style="display:flex;gap:12px;padding:12px 0;border-top:1px solid #F0F0EE;"><span style="width:8px;height:8px;border-radius:50%;background:{{ a.dot }};margin-top:6px;flex-shrink:0;"></span><div><div style="font-size:13.5px;line-height:1.4;font-weight:500;">{{ a.text }}</div><div style="font-size:12px;color:#6B6B6B;margin-top:3px;">{{ a.meta }}</div></div></div>
+            </sc-for>
+            <button onClick="{{ goActions }}" style="margin-top:14px;width:100%;background:#252525;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:500;font-size:13px;border-radius:70px;padding:11px;">Open Action Center →</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 1: ACTION CENTER -->
+    <sc-if value="{{ s1 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:1000px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:16px;">Every call is Observation → Diagnosis → Evidence → Rule → Confidence → Action. Prioritized by expected value.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;"><sc-for list="{{ actionFilters }}" as="f" hint-placeholder-count="4"><button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button></sc-for></div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <sc-for list="{{ actions }}" as="a" hint-placeholder-count="4">
+            <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:22px;border-left:4px solid {{ a.accent }};">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:10px;"><span style="{{ a.bucketStyle }}">{{ a.bucket }}</span><span style="font-size:16px;font-weight:600;">{{ a.title }}</span></div>
+                <span style="font-size:11px;color:#6B6B6B;background:#F7F7F7;border:1px solid #E4E4E4;padding:2px 9px;border-radius:70px;">{{ a.tag }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;">
+                <div><div style="font-size:11px;font-weight:600;color:#B8B8B4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Observation</div><div style="font-size:13.5px;line-height:1.45;color:#3a3a40;">{{ a.observation }}</div></div>
+                <div><div style="font-size:11px;font-weight:600;color:#B8B8B4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Diagnosis</div><div style="font-size:13.5px;line-height:1.45;color:#3a3a40;">{{ a.diagnosis }}</div></div>
+              </div>
+              <div style="background:#F7F7F7;border:1px solid #E4E4E4;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+                <div style="font-size:11px;font-weight:600;color:#B8B8B4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Evidence · {{ a.rule }}</div>
+                <div style="display:flex;flex-direction:column;gap:4px;"><sc-for list="{{ a.evidence }}" as="e" hint-placeholder-count="3"><div style="font-size:13px;color:#3a3a40;">• {{ e }}</div></sc-for></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:12px;min-width:220px;">
+                  <span style="font-size:12px;color:#6B6B6B;">Confidence</span>
+                  <div style="width:120px;height:6px;background:#EFEFEF;border-radius:70px;overflow:hidden;"><div style="height:100%;width:{{ a.conf }};background:{{ a.confColor }};border-radius:70px;animation:growW 1s ease both;"></div></div>
+                  <span style="font-size:13px;font-weight:600;">{{ a.conf }}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="font-size:13px;color:#6B6B6B;">Est. impact <strong style="color:#252525;">{{ a.impact }}</strong></span>
+                  <button onClick="{{ makeBrief }}" style="background:#252525;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:500;font-size:13px;border-radius:70px;padding:10px 18px;">{{ a.cta }}</button>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 2: TEST PLAN -->
+    <sc-if value="{{ s2 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:1120px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:6px;">Ranked by confidence · what to make, skip, and why</p>
+        <h2 style="font-size:24px;font-weight:600;letter-spacing:-.02em;margin-bottom:16px;">This week's plan</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;"><sc-for list="{{ summary }}" as="p" hint-placeholder-count="3"><span style="{{ p.style }}">{{ p.label }}</span></sc-for></div>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;overflow:hidden;">
+          <sc-for list="{{ planFull }}" as="p" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:26px 1fr 150px 100px;gap:16px;align-items:center;padding:18px 22px;border-top:1px solid #F0F0EE;">
+              <span style="font-size:13px;color:#B8B8B4;font-weight:600;">{{ p.rank }}</span>
+              <div style="min-width:0;"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:15px;font-weight:600;">{{ p.name }}</span><span style="font-size:11px;color:#6B6B6B;background:#F7F7F7;border:1px solid #E4E4E4;padding:1px 7px;border-radius:70px;">{{ p.type }}</span></div><div style="font-size:13px;color:#6B6B6B;margin-top:5px;">↳ {{ p.why }}</div></div>
+              <div><div style="height:6px;background:#EFEFEF;border-radius:70px;overflow:hidden;"><div style="height:100%;width:{{ p.conf }};background:{{ p.confColor }};border-radius:70px;animation:growW 1s ease both;"></div></div><div style="font-size:12px;color:#6B6B6B;margin-top:5px;">{{ p.conf }} · {{ p.lift }}</div></div>
+              <div style="text-align:right;"><span style="{{ p.badge }}">{{ p.verdict }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 3: CREATIVE FATIGUE -->
+    <sc-if value="{{ s3 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:1120px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:6px;">Multi-signal model — frequency, CPM, CTR, CPA, retention, creative age. <span style="color:#038BF7;">Model estimate</span>, not a Meta metric.</p>
+        <h2 style="font-size:24px;font-weight:600;letter-spacing:-.02em;margin-bottom:18px;">Fatigue radar &amp; 7 / 14-day forecast</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;"><sc-for list="{{ fatStates }}" as="s" hint-placeholder-count="5"><span style="{{ s.style }}">{{ s.label }}</span></sc-for></div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ fatigueList }}" as="f" hint-placeholder-count="5">
+            <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:20px;display:grid;grid-template-columns:1.3fr 1fr 130px;gap:20px;align-items:center;">
+              <div style="min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:15px;font-weight:600;">{{ f.name }}</span><span style="{{ f.stateBadge }}">{{ f.state }}</span></div>
+                <div style="font-size:12.5px;color:#6B6B6B;line-height:1.4;">{{ f.drivers }} · active {{ f.age }}</div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-size:11px;color:#6B6B6B;width:34px;">7-day</span><div style="flex:1;height:6px;background:#EFEFEF;border-radius:70px;overflow:hidden;"><div style="height:100%;width:{{ f.p7 }};background:{{ f.p7c }};border-radius:70px;animation:growW 1s ease both;"></div></div><span style="font-size:12px;font-weight:600;width:34px;text-align:right;">{{ f.p7 }}</span></div>
+                <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;color:#6B6B6B;width:34px;">14-day</span><div style="flex:1;height:6px;background:#EFEFEF;border-radius:70px;overflow:hidden;"><div style="height:100%;width:{{ f.p14 }};background:{{ f.p14c }};border-radius:70px;animation:growW 1s ease both;"></div></div><span style="font-size:12px;font-weight:600;width:34px;text-align:right;">{{ f.p14 }}</span></div>
+                <div style="font-size:11px;color:#B8B8B4;margin-top:7px;">Forecast · {{ f.conf }} confidence</div>
+              </div>
+              <div style="text-align:right;"><button onClick="{{ makeBrief }}" style="{{ f.actionStyle }}">{{ f.action }}</button></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 4: DIVERSITY & WHITE SPACE -->
+    <sc-if value="{{ s4 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:1120px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:18px;">Diversity measured across persona, hook, angle, format, offer — not just "number of ads."</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+          <sc-for list="{{ divScores }}" as="d" hint-placeholder-count="3">
+            <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:20px;">
+              <div style="font-size:13px;color:#6B6B6B;margin-bottom:8px;">{{ d.label }}</div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;"><span style="font-size:30px;font-weight:600;letter-spacing:-.02em;">{{ d.value }}</span><span style="{{ d.tagStyle }}">{{ d.tag }}</span></div>
+              <div style="font-size:12.5px;color:#6B6B6B;line-height:1.4;">{{ d.note }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:22px;margin-bottom:16px;">
+          <div style="font-size:16px;font-weight:600;margin-bottom:4px;">Spend concentration by concept</div>
+          <div style="font-size:13px;color:#6B6B6B;margin-bottom:16px;">58% of spend rides one concept — a single fatigue event puts most of the account at risk.</div>
+          <sc-for list="{{ concentration }}" as="c" hint-placeholder-count="4">
+            <div style="padding:10px 0;border-top:1px solid #F0F0EE;"><div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;"><span style="font-weight:500;">{{ c.name }}</span><span style="color:#6B6B6B;">{{ c.pct }}</span></div><div style="height:8px;background:#EFEFEF;border-radius:70px;overflow:hidden;"><div style="height:100%;width:{{ c.pct }};background:{{ c.color }};border-radius:70px;animation:growW 1s ease both;"></div></div></div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:22px;">
+          <div style="font-size:16px;font-weight:600;margin-bottom:4px;">Creative white space</div>
+          <div style="font-size:13px;color:#6B6B6B;margin-bottom:16px;">Unoccupied persona × angle × format combinations — where you and competitors aren't playing.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <sc-for list="{{ whitespace }}" as="w" hint-placeholder-count="4">
+              <div style="border:1px solid #E4E4E4;border-radius:10px;padding:16px;transition:border-color .2s ease;" style-hover="border-color:#038BF7;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:14px;font-weight:600;">{{ w.combo }}</span><span style="font-size:11px;font-weight:600;color:#038BF7;background:#E6F2FE;padding:2px 9px;border-radius:70px;">{{ w.conf }}</span></div>
+                <div style="font-size:12.5px;color:#6B6B6B;line-height:1.45;margin-bottom:10px;">{{ w.why }}</div>
+                <button onClick="{{ makeBrief }}" style="background:#F7F7F7;border:1px solid #E4E4E4;cursor:pointer;font-family:inherit;font-weight:500;font-size:12.5px;border-radius:70px;padding:7px 14px;">Test this →</button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 5: BRAND BRAIN -->
+    <sc-if value="{{ s5 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:1000px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:16px;">Every test you've run, remembered — so you never repeat a dead angle.</p>
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E4E4E4;border-radius:70px;padding:6px;max-width:440px;margin-bottom:20px;">
+          <input placeholder="Search past angles, hooks, outcomes…" value="{{ brainQuery }}" onInput="{{ onBrainInput }}" style="flex:1;border:0;outline:0;background:transparent;padding:10px 16px;font-size:14px;">
+          <span style="padding:0 14px;color:#6B6B6B;">🔍</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <sc-for list="{{ brain }}" as="b" hint-placeholder-count="4">
+            <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:20px;border-left:3px solid {{ b.accent }};">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"><span style="font-size:15px;font-weight:600;">{{ b.angle }}</span><span style="{{ b.badge }}">{{ b.outcome }}</span></div>
+              <div style="font-size:13px;color:#6B6B6B;line-height:1.45;margin-bottom:10px;">{{ b.note }}</div>
+              <div style="font-size:12px;color:#B8B8B4;">{{ b.meta }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ brainEmpty }}" hint-placeholder-val="{{ false }}"><p style="color:#6B6B6B;font-size:14px;padding:24px 4px;">No memories match "{{ brainQuery }}".</p></sc-if>
+      </div>
+    </sc-if>
+
+    <!-- 6: BUDGET & SCALING -->
+    <sc-if value="{{ s6 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:1120px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:18px;">Where the next dollar should go — marginal economics, not blended averages.</p>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:24px;margin-bottom:16px;display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:center;">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#B8B8B4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Marginal ROAS · model estimate</div>
+            <div style="font-size:22px;font-weight:600;letter-spacing:-.01em;line-height:1.3;margin-bottom:10px;">Next <strong>+$10K/day</strong> lands at an estimated <strong style="color:#b06b00;">2.6× ROAS</strong>, down from 3.1× blended.</div>
+            <div style="font-size:13.5px;color:#6B6B6B;line-height:1.5;">Your top campaign is <strong>approaching saturation</strong>. Room remains in two underfunded ad sets before diminishing returns bite. Confidence 74%.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:stretch;height:150px;">
+            <sc-for list="{{ marginalBars }}" as="b" hint-placeholder-count="6">
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%;">
+                <div style="width:100%;background:{{ b.c }};height:{{ b.h }};border-radius:5px 5px 0 0;animation:growH 1s ease both;"></div>
+                <span style="font-size:10px;color:#6B6B6B;">{{ b.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+          <sc-for list="{{ scaleCols }}" as="col" hint-placeholder-count="3">
+            <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:20px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><span style="{{ col.badge }}">{{ col.title }}</span></div>
+              <sc-for list="{{ col.items }}" as="it" hint-placeholder-count="3">
+                <div style="padding:10px 0;border-top:1px solid #F0F0EE;"><div style="font-size:14px;font-weight:500;">{{ it.name }}</div><div style="font-size:12.5px;color:#6B6B6B;margin-top:3px;">{{ it.note }}</div></div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:22px;">
+          <div style="font-size:16px;font-weight:600;margin-bottom:4px;">Budget waste</div>
+          <div style="font-size:13px;color:#6B6B6B;margin-bottom:16px;">High spend + poor economics. Small-spend low-ROAS ads are excluded — insufficient data ≠ waste.</div>
+          <sc-for list="{{ waste }}" as="w" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:center;padding:13px 0;border-top:1px solid #F0F0EE;">
+              <div><div style="font-size:14px;font-weight:500;">{{ w.name }}</div><div style="font-size:12.5px;color:#6B6B6B;margin-top:3px;">{{ w.reason }}</div></div>
+              <div style="text-align:right;"><div style="font-size:15px;font-weight:600;color:#c0392b;">{{ w.waste }}</div><div style="font-size:11px;color:#6B6B6B;">est. weekly waste</div></div>
+              <button onClick="{{ makeBrief }}" style="background:#252525;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:500;font-size:13px;border-radius:70px;padding:9px 16px;white-space:nowrap;">{{ w.action }}</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 7: ANALYTICS -->
+    <sc-if value="{{ s7 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:1120px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:16px;">Downstream tracking — the evidence behind every decision.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+          <sc-for list="{{ anStats }}" as="a" hint-placeholder-count="3">
+            <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:20px;"><div style="font-size:13px;color:#6B6B6B;margin-bottom:8px;">{{ a.label }}</div><div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:32px;font-weight:600;letter-spacing:-.02em;">{{ a.value }}</span><span style="{{ a.deltaStyle }}">{{ a.delta }}</span></div></div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:22px;margin-bottom:16px;">
+          <div style="font-size:16px;font-weight:600;margin-bottom:4px;">ROAS by week</div>
+          <div style="font-size:13px;color:#6B6B6B;margin-bottom:20px;">Last 8 weeks · blended</div>
+          <div style="display:flex;gap:14px;align-items:stretch;height:180px;">
+            <sc-for list="{{ roasBars }}" as="b" hint-placeholder-count="8">
+              <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:8px;height:100%;">
+                <div style="width:100%;background:{{ b.c }};height:{{ b.h }};border-radius:6px 6px 0 0;animation:growH 1s ease both;"></div>
+                <span style="font-size:11px;color:#6B6B6B;">{{ b.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:22px;">
+            <div style="font-size:16px;font-weight:600;margin-bottom:16px;">Top formats by ROAS</div>
+            <sc-for list="{{ formats }}" as="f" hint-placeholder-count="4">
+              <div style="padding:11px 0;border-top:1px solid #F0F0EE;"><div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;"><span style="font-weight:500;">{{ f.name }}</span><span style="color:#6B6B6B;">{{ f.roas }}</span></div><div style="height:6px;background:#EFEFEF;border-radius:70px;overflow:hidden;"><div style="height:100%;width:{{ f.bar }};background:#038BF7;border-radius:70px;animation:growW 1s ease both;"></div></div></div>
+            </sc-for>
+          </div>
+          <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:22px;">
+            <div style="font-size:16px;font-weight:600;margin-bottom:16px;">Fatigue watch</div>
+            <sc-for list="{{ fatigue }}" as="f" hint-placeholder-count="4">
+              <div style="padding:11px 0;border-top:1px solid #F0F0EE;"><div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;"><span style="font-weight:500;">{{ f.name }}</span><span style="{{ f.lvlStyle }}">{{ f.lvl }}</span></div><div style="height:6px;background:#EFEFEF;border-radius:70px;overflow:hidden;"><div style="height:100%;width:{{ f.bar }};background:{{ f.color }};border-radius:70px;animation:growW 1s ease both;"></div></div></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 8: COMPETITORS -->
+    <sc-if value="{{ s8 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:900px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:16px;">What rivals are scaling right now. <span style="color:#6B6B6B;">Active ≠ winning — these are hypotheses, not conclusions.</span></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;"><sc-for list="{{ feedFilters }}" as="f" hint-placeholder-count="4"><button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button></sc-for></div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ feed }}" as="f" hint-placeholder-count="5">
+            <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:20px;display:flex;gap:16px;transition:border-color .2s ease;" style-hover="border-color:#038BF7;">
+              <span style="width:44px;height:44px;border-radius:8px;background:{{ f.chip }};flex-shrink:0;"></span>
+              <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><span style="{{ f.tagStyle }}">{{ f.tag }}</span><span style="font-size:12px;color:#6B6B6B;">{{ f.brand }} · {{ f.meta }}</span></div><div style="font-size:15px;line-height:1.4;">{{ f.text }}</div></div>
+              <button onClick="{{ makeBrief }}" style="align-self:center;background:#F7F7F7;border:1px solid #E4E4E4;cursor:pointer;font-family:inherit;font-weight:500;font-size:13px;border-radius:70px;padding:8px 14px;white-space:nowrap;">Add to plan</button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 9: VOICE OF CUSTOMER -->
+    <sc-if value="{{ s9 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:900px;animation:fadeUp .4s ease both;">
+        <p style="color:#6B6B6B;font-size:14px;margin-bottom:16px;">Customer voice, tagged and ready to act on. The value is the button, not the volume.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;"><sc-for list="{{ signalFilters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button></sc-for></div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <sc-for list="{{ signals }}" as="s" hint-placeholder-count="5">
+            <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:20px;display:flex;gap:16px;align-items:center;"><span style="{{ s.tagStyle }}">{{ s.tag }}</span><div style="flex:1;min-width:0;"><div style="font-size:15px;line-height:1.4;">“{{ s.text }}”</div><div style="font-size:12px;color:#6B6B6B;margin-top:4px;">{{ s.src }}</div></div><button onClick="{{ makeBrief }}" style="background:#252525;color:#fff;border:none;cursor:pointer;font-family:inherit;font-weight:500;font-size:13px;border-radius:70px;padding:9px 16px;white-space:nowrap;">Turn into brief →</button></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- 10: SETTINGS -->
+    <sc-if value="{{ s10 }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px;max-width:820px;animation:fadeUp .4s ease both;">
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:24px;margin-bottom:16px;">
+          <div style="font-size:16px;font-weight:600;margin-bottom:16px;">Workspace</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div><label style="display:block;font-size:13px;font-weight:500;margin-bottom:6px;">Brand name</label><input value="The Pant Project" style="width:100%;border:1px solid #E4E4E4;border-radius:70px;padding:11px 16px;font-size:14px;outline:none;"></div>
+            <div><label style="display:block;font-size:13px;font-weight:500;margin-bottom:6px;">Category</label><input value="Apparel · Menswear" style="width:100%;border:1px solid #E4E4E4;border-radius:70px;padding:11px 16px;font-size:14px;outline:none;"></div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:24px;margin-bottom:16px;">
+          <div style="font-size:16px;font-weight:600;margin-bottom:4px;">Data sources</div>
+          <div style="font-size:13px;color:#6B6B6B;margin-bottom:16px;">Meta Ads first; Google Ads architecture ready to follow.</div>
+          <sc-for list="{{ integrations }}" as="i" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid #F0F0EE;">
+              <div style="display:flex;align-items:center;gap:12px;"><span style="width:34px;height:34px;border-radius:8px;background:#F7F7F7;border:1px solid #E4E4E4;display:grid;place-items:center;font-size:13px;font-weight:600;color:#6B6B6B;">{{ i.abbr }}</span><span style="font-size:14px;font-weight:500;">{{ i.name }}</span></div>
+              <button onClick="{{ i.onClick }}" style="{{ i.style }}">{{ i.label }}</button>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:24px;margin-bottom:16px;">
+          <div style="font-size:16px;font-weight:600;margin-bottom:16px;">Team</div>
+          <sc-for list="{{ team }}" as="t" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #F0F0EE;"><span style="width:32px;height:32px;border-radius:50%;background:{{ t.chip }};color:#fff;display:grid;place-items:center;font-size:12px;font-weight:600;">{{ t.init }}</span><div style="flex:1;"><div style="font-size:14px;font-weight:500;">{{ t.name }}</div><div style="font-size:12px;color:#6B6B6B;">{{ t.email }}</div></div><span style="font-size:12px;color:#6B6B6B;background:#F7F7F7;border:1px solid #E4E4E4;padding:3px 12px;border-radius:70px;">{{ t.role }}</span></div>
+          </sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #E4E4E4;border-radius:10px;padding:24px;">
+          <div style="font-size:16px;font-weight:600;margin-bottom:4px;">Brand voice</div>
+          <div style="font-size:13px;color:#6B6B6B;margin-bottom:14px;">Adam drafts every hook and script in this voice.</div>
+          <textarea rows="3" style="width:100%;border:1px solid #E4E4E4;border-radius:14px;padding:14px;font-size:14px;outline:none;resize:vertical;">Confident, warm, a little witty. Speak to comfort-first commuters. Never salesy — lead with proof, not discounts.</textarea>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:fixed;bottom:24px;right:24px;background:#252525;color:#fff;font-size:14px;font-weight:500;padding:14px 20px;border-radius:10px;box-shadow:0 14px 40px -16px rgba(0,0,0,.5);animation:toastIn .3s ease both;z-index:20;">✓ Action queued — added to This Week's Plan</div>
+    </sc-if>
+  </main>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:840}}">
+class Component extends DCLogic {
+  state = { nav:0, actF:0, feedF:0, sigF:0, q:'', scanning:false, scanned:false, toast:false, conns:{Meta:true,'Google Ads':false,Shopify:true,GA4:false,Klaviyo:false,'Ads Library':true} };
+  badge(t,c,b){return `font-size:11px;font-weight:600;color:${c};background:${b};padding:3px 11px;border-radius:70px;`;}
+  tag(t,c,b){return `font-size:10px;font-weight:700;letter-spacing:.04em;color:${c};background:${b};padding:3px 9px;border-radius:70px;`;}
+  delta(p){return `font-size:13px;font-weight:600;color:${p?'#0f8a4d':'#c0392b'};`;}
+  fireToast(){ this.setState({toast:true}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:false}),2200); }
+
+  renderVals(){
+    const S=this.state;
+    const scB=this.badge('Scale','#0f8a4d','#e7f4ec'), klB=this.badge('Kill','#c0392b','#fbecea'), itB=this.badge('Iterate','#b06b00','#fbf1df');
+    const makeBrief=()=>this.fireToast();
+
+    // NAV (grouped)
+    const bs=(blue)=>`margin-left:auto;background:${blue?'#E6F2FE':'#F7F7F7'};color:${blue?'#038BF7':'#6B6B6B'};font-size:11px;font-weight:600;padding:1px 8px;border-radius:70px;`;
+    const meta=[
+      {label:'Dashboard',icon:'▦'},
+      {label:'Action Center',icon:'◎',badge:'6',badgeStyle:bs(true)},
+      {label:'Test Plan',icon:'✓',badge:'12',badgeStyle:bs(false)},
+      {label:'Creative Fatigue',icon:'◔',badge:'2',badgeStyle:bs(false)},
+      {label:'Diversity & White Space',icon:'◈'},
+      {label:'Brand Brain',icon:'◆'},
+      {label:'Budget & Scaling',icon:'⚖'},
+      {label:'Analytics',icon:'📈'},
+      {label:'Competitors',icon:'⚑',badge:'4',badgeStyle:bs(false)},
+      {label:'Voice of Customer',icon:'❝',badge:'9',badgeStyle:bs(false)},
+      {label:'Settings',icon:'⚙'},
+    ];
+    const mk=(i)=>({...meta[i],badge:meta[i].badge||false,onClick:()=>this.setState({nav:i}),
+      style:`display:flex;align-items:center;gap:11px;width:100%;text-align:left;border:none;cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:500;padding:9px 12px;border-radius:8px;`+(S.nav===i?'background:#252525;color:#fff;':'background:transparent;color:#252525;')});
+    const navGroups=[
+      {header:'Decide',items:[0,1,2].map(mk)},
+      {header:'Creative',items:[3,4,5].map(mk)},
+      {header:'Media',items:[6,7].map(mk)},
+      {header:'Intelligence',items:[8,9].map(mk)},
+      {header:'Account',items:[10].map(mk)},
+    ];
+    const titles=meta.map(m=>m.label);
+
+    // Account health
+    const hc=(s)=>s>=80?'#0f8a4d':s>=65?'#038BF7':s>=50?'#b06b00':'#c0392b';
+    const health=[
+      {label:'Creative Health',score:82},{label:'Creative Diversity',score:62},{label:'Fatigue Resistance',score:58},
+      {label:'Media Efficiency',score:84},{label:'Budget Efficiency',score:66},{label:'Landing-Page Health',score:74},{label:'Data Quality',score:88},
+    ].map(h=>({...h,bar:h.score+'%',color:hc(h.score)}));
+
+    const delta=this.delta.bind(this);
+    const spark=(vals,c)=>vals.map(h=>({h:h+'%',c}));
+    const kpis=[
+      {label:'Blended ROAS',tip:'Revenue ÷ spend, blended across the account. Source: Meta + Shopify.',value:'3.1×',delta:'+24%',deltaStyle:delta(true),spark:spark([40,55,48,62,58,74,70,88],'#038BF7')},
+      {label:'MER',tip:'Marketing efficiency ratio = total revenue ÷ total ad spend.',value:'2.7×',delta:'+8%',deltaStyle:delta(true),spark:spark([50,52,48,58,60,62,66,70],'#252525')},
+      {label:'nCAC',tip:'New-customer acquisition cost. Requires Shopify new-vs-returning.',value:'$41',delta:'-12%',deltaStyle:delta(true),spark:spark([70,64,66,58,54,50,48,44],'#038BF7')},
+      {label:'Creative concentration',tip:'% of spend on the single top concept. Internal calculation.',value:'58%',delta:'+6%',deltaStyle:delta(false),spark:spark([40,44,46,50,52,54,56,58],'#c0392b')},
+    ];
+    const plan=[
+      {rank:'01',name:'Founder origin story',type:'UGC · Video',conf:'92%',confColor:'#0f8a4d',verdict:'Scale',badge:scB},
+      {rank:'02',name:'Before/after carousel',type:'Static',conf:'86%',confColor:'#0f8a4d',verdict:'Scale',badge:scB},
+      {rank:'03',name:'Sensitive-skin angle',type:'UGC · Video',conf:'71%',confColor:'#b06b00',verdict:'Iterate',badge:itB},
+      {rank:'04',name:'Regional-language UGC',type:'Video',conf:'64%',confColor:'#b06b00',verdict:'Iterate',badge:itB},
+      {rank:'05',name:'Comparison static v4',type:'Static',conf:'18%',confColor:'#c0392b',verdict:'Kill',badge:klB},
+    ];
+    const attention=[
+      {dot:'#c0392b',text:'Comparison static v4 is burning budget at 1.3× ROAS',meta:'DO NOW · $22K spent · fatigued'},
+      {dot:'#c0392b',text:'58% of spend concentrated on one concept',meta:'DO NOW · concentration risk'},
+      {dot:'#b06b00',text:'Lifestyle still likely to fatigue within 7 days (68%)',meta:'DO NEXT · forecast'},
+      {dot:'#038BF7',text:'Two ad sets underfunded below efficient scale',meta:'DO NEXT · scaling opportunity'},
+    ];
+    const goActions=()=>this.setState({nav:1});
+
+    // Action Center
+    const fchip=(on)=>`border:0;cursor:pointer;font-family:inherit;font-weight:500;font-size:14px;border-radius:70px;padding:8px 16px;`+(on?'background:#252525;color:#fff;':'background:#fff;border:1px solid #E4E4E4;color:#6B6B6B;');
+    const actionFilters=['All','Do now','Do next','Watch'].map((label,i)=>({label,onClick:()=>this.setState({actF:i}),style:fchip(S.actF===i)}));
+    const bucketStyle=(b)=> b==='DO NOW'?this.tag('','#c0392b','#fbecea'): b==='DO NEXT'?this.tag('','#b06b00','#fbf1df'): this.tag('','#6B6B6B','#EFEFEF');
+    const acc=(b)=> b==='DO NOW'?'#c0392b': b==='DO NEXT'?'#b06b00':'#B8B8B4';
+    const actAll=[
+      {bucket:'DO NOW',title:'Pause Comparison static v4',tag:'Budget waste',observation:'$22K spent in 14 days at 1.3× ROAS while CPM rose 86%.',diagnosis:'Severe fatigue on an angle Brand Brain already marked "do not repeat."',rule:'Rule R-014 · fatigue + waste',evidence:['Frequency 4.8, up 31% wk/wk','CTR 0.8%, down 44%','CPA $61, up 52%','Tested 4× before — 2 prior fails'],conf:'91%',impact:'~$4.2K/wk saved',cta:'Pause & reallocate'},
+      {bucket:'DO NOW',title:'De-risk concept concentration',tag:'Portfolio risk',observation:'58% of spend rides the Founder-UGC concept.',diagnosis:'A single fatigue event would take most of the account down with it.',rule:'Rule R-021 · concentration',evidence:['Top concept share 58% (>50% threshold)','No backup concept above 12% share','2 white-space angles ready to test'],conf:'78%',impact:'Lower drawdown risk',cta:'Queue 2 new concepts'},
+      {bucket:'DO NEXT',title:'Scale two underfunded ad sets',tag:'Scaling',observation:'Ad sets A3 & A7 sit below efficient scale at 3.9× and 4.2× ROAS.',diagnosis:'Marginal ROAS suggests headroom before diminishing returns.',rule:'Rule R-008 · marginal ROAS',evidence:['Both under $600/day','Marginal ROAS est. 3.1× at +$10K/day','Low fatigue risk (p7 < 20%)'],conf:'74%',impact:'+$6–9K/wk revenue',cta:'Raise budgets 20%'},
+      {bucket:'WATCH',title:'Lifestyle still — emerging fatigue',tag:'Forecast',observation:'Retention slipping; frequency climbing on a 14-day-old creative.',diagnosis:'Not fatigued yet, but trending. Prepare a refresh.',rule:'Rule R-011 · emerging fatigue',evidence:['7-day fatigue probability 68%','CTR down 12% over 5 days','Similar creatives decayed at day 16–21'],conf:'69%',impact:'Avoid a hard drop',cta:'Draft refresh'},
+    ].map(a=>({...a,bucketStyle:bucketStyle(a.bucket),accent:acc(a.bucket),confColor:parseInt(a.conf)>=80?'#0f8a4d':'#b06b00',cat:a.bucket==='DO NOW'?1:a.bucket==='DO NEXT'?2:3}));
+    const actions=actAll.filter(a=>S.actF===0||a.cat===S.actF);
+
+    // Test plan full
+    const pill=(c,b)=>`font-size:13px;font-weight:600;color:${c};background:${b};padding:6px 14px;border-radius:70px;`;
+    const summary=[{label:'12 experiments ranked',style:pill('#252525','#EFEFEF')},{label:'3 to scale',style:pill('#0f8a4d','#e7f4ec')},{label:'2 to kill',style:pill('#c0392b','#fbecea')}];
+    const planFull=[
+      {rank:'01',name:'Founder origin story',type:'UGC · Video',why:'Founder-led formats dominate your category this week',conf:'92%',confColor:'#0f8a4d',lift:'+22% lift',verdict:'Scale',badge:scB},
+      {rank:'02',name:'Before/after carousel',type:'Static',why:'Strongest historical winner; a rival just scaled it too',conf:'86%',confColor:'#0f8a4d',lift:'+18% lift',verdict:'Scale',badge:scB},
+      {rank:'03',name:'Sensitive-skin angle',type:'UGC · Video',why:'28 DMs and 47 Reddit mentions raise this objection',conf:'71%',confColor:'#b06b00',lift:'+11% lift',verdict:'Iterate',badge:itB},
+      {rank:'04',name:'Regional-language UGC',type:'Video',why:'Emerging format — 2 of 4 tracked brands launched it',conf:'64%',confColor:'#b06b00',lift:'+9% lift',verdict:'Iterate',badge:itB},
+      {rank:'05',name:'Comparison static v4',type:'Static',why:'Tested 4× before — fails every time. Brand Brain flag',conf:'18%',confColor:'#c0392b',lift:'-',verdict:'Kill',badge:klB},
+    ];
+
+    // Fatigue
+    const stateTag=(c,b)=>`font-size:11px;font-weight:600;color:${c};background:${b};padding:2px 10px;border-radius:70px;`;
+    const fatStates=[
+      {label:'Healthy',style:pill('#0f8a4d','#e7f4ec')},{label:'Early warning',style:pill('#038BF7','#E6F2FE')},
+      {label:'Emerging',style:pill('#b06b00','#fbf1df')},{label:'Fatiguing',style:pill('#c0392b','#fbecea')},{label:'Fatigued',style:pill('#fff','#c0392b')},
+    ];
+    const actBtn=(dark)=>`cursor:pointer;font-family:inherit;font-weight:500;font-size:13px;border-radius:70px;padding:9px 16px;white-space:nowrap;`+(dark?'background:#252525;color:#fff;border:none;':'background:#F7F7F7;border:1px solid #E4E4E4;color:#252525;');
+    const fatigueList=[
+      {name:'Comparison static v4',state:'Fatigued',stateBadge:stateTag('#fff','#c0392b'),drivers:'Freq +31%, CTR −44%, CPA +52%',age:'19d',p7:'94%',p7c:'#c0392b',p14:'98%',p14c:'#c0392b',conf:'88%',action:'Kill now',actionStyle:actBtn(true)},
+      {name:'Lifestyle still',state:'Emerging',stateBadge:stateTag('#b06b00','#fbf1df'),drivers:'Retention −12%, Freq +18%',age:'14d',p7:'68%',p7c:'#b06b00',p14:'85%',p14c:'#c0392b',conf:'69%',action:'Draft refresh',actionStyle:actBtn(false)},
+      {name:'Before/after carousel',state:'Healthy',stateBadge:stateTag('#0f8a4d','#e7f4ec'),drivers:'ROAS +38%, no decay',age:'60d',p7:'12%',p7c:'#0f8a4d',p14:'22%',p14c:'#0f8a4d',conf:'82%',action:'Protect',actionStyle:actBtn(false)},
+      {name:'Founder origin story',state:'Healthy',stateBadge:stateTag('#0f8a4d','#e7f4ec'),drivers:'Stable freq, strong hook hold',age:'9d',p7:'9%',p7c:'#0f8a4d',p14:'18%',p14c:'#0f8a4d',conf:'76%',action:'Scale',actionStyle:actBtn(true)},
+      {name:'Regional-language UGC',state:'Early warning',stateBadge:stateTag('#038BF7','#E6F2FE'),drivers:'Small sample, CTR softening',age:'9d',p7:'34%',p7c:'#038BF7',p14:'52%',p14c:'#b06b00',conf:'54%',action:'Add variant',actionStyle:actBtn(false)},
+    ];
+
+    // Diversity
+    const divScores=[
+      {label:'Creative Diversity Score',value:'62',tag:'Moderate',tagStyle:pill('#b06b00','#fbf1df'),note:'Across persona, hook, angle, format, offer. Room to widen personas.'},
+      {label:'Concentration Risk',value:'High',tagStyle:pill('#c0392b','#fbecea'),tag:'58% on 1 concept',note:'Most spend rides Founder-UGC. Add backup concepts.'},
+      {label:'Coverage Score',value:'71',tag:'Good',tagStyle:pill('#0f8a4d','#e7f4ec'),note:'Share of relevant persona×angle cells you occupy.'},
+    ];
+    const concentration=[
+      {name:'Founder UGC',pct:'58%',color:'#c0392b'},{name:'Before/after',pct:'22%',color:'#038BF7'},
+      {name:'Regional UGC',pct:'12%',color:'#038BF7'},{name:'Comparison static',pct:'8%',color:'#B8B8B4'},
+    ];
+    const whitespace=[
+      {combo:'Expert × sensitive-skin × static',conf:'High',why:'Strong VoC demand, no creative from you or 3 of 4 rivals.'},
+      {combo:'Founder × price-objection × video',conf:'Med',why:'Recurring "too expensive" objection has no direct answer ad.'},
+      {combo:'Customer × durability × UGC',conf:'Med',why:'Reviews praise longevity; unused as an angle in-market.'},
+      {combo:'Regional × festival × carousel',conf:'High',why:'Seasonal window opening; rivals only in video so far.'},
+    ];
+
+    // Brand brain
+    const brainAll=[
+      {angle:'Comparison static',outcome:'Failed',accent:'#c0392b',badge:this.badge('Failed','#c0392b','#fbecea'),note:'Tested 4×. Low purchase intent every time — 18% CTR, 2 outright fails. Do not repeat.',meta:'Last run · Week 21'},
+      {angle:'Founder origin story',outcome:'Won',accent:'#0f8a4d',badge:this.badge('Won','#0f8a4d','#e7f4ec'),note:'Consistently our top ROAS format. Works best as 30–45s UGC with a real face.',meta:'Last run · Week 33'},
+      {angle:'Price-only messaging',outcome:'Failed',accent:'#c0392b',badge:this.badge('Failed','#c0392b','#fbecea'),note:'Attracts low-LTV buyers. ROAS 0.5×. Lead with value, not discount.',meta:'Last run · Week 18'},
+      {angle:'Cruelty-free proof',outcome:'Won',accent:'#0f8a4d',badge:this.badge('Won','#0f8a4d','#e7f4ec'),note:'Strong motivator in comments. Pairs well with sensitive-skin desire.',meta:'Last run · Week 30'},
+      {angle:'Seasonal summer hook',outcome:'Won',accent:'#0f8a4d',badge:this.badge('Won','#0f8a4d','#e7f4ec'),note:'Reliable Q2 lift. Refresh visuals each year; the structure holds.',meta:'Last run · Week 32'},
+      {angle:'Generic feature list',outcome:'Failed',accent:'#c0392b',badge:this.badge('Failed','#c0392b','#fbecea'),note:'No emotional hook. CPM +86%. Replace with a single benefit + proof.',meta:'Last run · Week 24'},
+    ];
+    const q=(S.q||'').toLowerCase();
+    const brain=brainAll.filter(b=>!q||b.angle.toLowerCase().includes(q)||b.note.toLowerCase().includes(q)||b.outcome.toLowerCase().includes(q));
+
+    // Budget & scaling
+    const mb=[3.9,3.4,3.1,2.6,2.0,1.4];
+    const marginalBars=mb.map((v,i)=>({h:Math.round(v/3.9*100)+'%',c:i<3?'#038BF7':'#f0c68a',label:'+$'+((i+1)*10)+'K'}));
+    const scaleCols=[
+      {title:'Scale',badge:pill('#0f8a4d','#e7f4ec'),items:[{name:'Founder origin story',note:'p7 fatigue 9% · raise 20%'},{name:'Ad set A3',note:'3.9× ROAS · underfunded'},{name:'Ad set A7',note:'4.2× ROAS · headroom'}]},
+      {title:'Protect',badge:pill('#038BF7','#E6F2FE'),items:[{name:'Before/after carousel',note:'60d winner · keep budget'},{name:'Cruelty-free proof',note:'stable · monitor'}]},
+      {title:'Replace',badge:pill('#c0392b','#fbecea'),items:[{name:'Comparison static v4',note:'fatigued · kill'},{name:'Generic feature list',note:'CPM +86% · retire'}]},
+    ];
+    const waste=[
+      {name:'Comparison static v4',reason:'High spend + severe fatigue + prior fails',waste:'$4.2K',action:'Pause'},
+      {name:'Broad prospecting · A9',reason:'High spend, 1.6× ROAS, low new-customer rate',waste:'$2.8K',action:'Trim 40%'},
+      {name:'Retarget · duplicate concept',reason:'Redundant with A3 — cannibalizing reach',waste:'$1.5K',action:'Consolidate'},
+    ];
+
+    // Analytics
+    const anStats=[
+      {label:'Blended ROAS',value:'3.1×',delta:'+24%',deltaStyle:delta(true)},
+      {label:'Total spend',value:'$182K',delta:'+12%',deltaStyle:delta(true)},
+      {label:'Blended CTR',value:'1.7%',delta:'+9%',deltaStyle:delta(true)},
+    ];
+    const rv=[52,60,48,68,72,64,80,92];
+    const roasBars=rv.map((v,i)=>({h:v+'%',c:i===rv.length-1?'#038BF7':'#CFE3FB',label:'W'+(27+i)}));
+    const formats=[{name:'Founder UGC',roas:'3.6×',bar:'92%'},{name:'Before/after',roas:'2.8×',bar:'74%'},{name:'Regional UGC',roas:'2.4×',bar:'62%'},{name:'Comparison static',roas:'1.3×',bar:'30%'}];
+    const flvl=(c)=>`font-size:12px;font-weight:600;color:${c};`;
+    const fatigue=[
+      {name:'Comparison static v4',lvl:'High',lvlStyle:flvl('#c0392b'),bar:'88%',color:'#c0392b'},
+      {name:'Lifestyle still',lvl:'Rising',lvlStyle:flvl('#b06b00'),bar:'60%',color:'#b06b00'},
+      {name:'Before/after carousel',lvl:'Low',lvlStyle:flvl('#0f8a4d'),bar:'20%',color:'#0f8a4d'},
+      {name:'Founder origin story',lvl:'Low',lvlStyle:flvl('#0f8a4d'),bar:'16%',color:'#0f8a4d'},
+    ];
+
+    // Competitors
+    const feedFilters=['All','New angle','New offer','New format'].map((label,i)=>({label,onClick:()=>this.setState({feedF:i}),style:fchip(S.feedF===i)}));
+    const feedAll=[
+      {cat:1,tag:'NEW ANGLE',tagStyle:this.tag('','#038BF7','#E6F2FE'),chip:'#038BF7',brand:'Rival A',meta:'live 3d',text:'Launched a founder-led origin story — already their highest-spend ad.'},
+      {cat:3,tag:'NEW FORMAT',tagStyle:this.tag('','#7c3aed','#efe7fb'),chip:'#7c3aed',brand:'Rival B',meta:'live 6d',text:'Regional-language UGC — 2 of 4 tracked brands launched this format this week.'},
+      {cat:2,tag:'NEW OFFER',tagStyle:this.tag('','#b06b00','#fbf1df'),chip:'#f59e0b',brand:'Rival C',meta:'live 2d',text:'Introduced a "buy 2 get 1" seasonal bundle across all top creatives.'},
+      {cat:1,tag:'NEW ANGLE',tagStyle:this.tag('','#038BF7','#E6F2FE'),chip:'#0ea5e9',brand:'Rival A',meta:'live 5d',text:'Testing a "dermatologist-approved" trust angle for sensitive skin.'},
+      {cat:3,tag:'NEW FORMAT',tagStyle:this.tag('','#7c3aed','#efe7fb'),chip:'#17b26a',brand:'Rival D',meta:'live 8d',text:'Shifted to split-screen comparison video — scaling fast.'},
+    ];
+    const feed=feedAll.filter(f=>S.feedF===0||f.cat===S.feedF);
+
+    // Voice of customer
+    const signalFilters=['All','Barrier','Desire','Objection','Motivator'].map((label,i)=>({label,onClick:()=>this.setState({sigF:i}),style:fchip(S.sigF===i)}));
+    const sigAll=[
+      {cat:1,tag:'BARRIER',tagStyle:this.tag('','#c0392b','#fbecea'),text:'Too expensive compared to what I\u2019m using now.',src:'Review · 31 mentions'},
+      {cat:2,tag:'DESIRE',tagStyle:this.tag('','#0f8a4d','#e7f4ec'),text:'Does it work for sensitive skin? I react to everything.',src:'Instagram DM · 28'},
+      {cat:4,tag:'MOTIVATOR',tagStyle:this.tag('','#038BF7','#E6F2FE'),text:'Obsessed it\u2019s cruelty-free.',src:'Comment · 12'},
+      {cat:3,tag:'OBJECTION',tagStyle:this.tag('','#b06b00','#fbf1df'),text:'Is it actually organic? The label is vague.',src:'Reddit · 47'},
+      {cat:2,tag:'DESIRE',tagStyle:this.tag('','#0f8a4d','#e7f4ec'),text:'Smells amazing, repurchasing.',src:'Review · 19'},
+    ];
+    const signals=sigAll.filter(s=>S.sigF===0||s.cat===S.sigF);
+
+    // Settings
+    const connMeta=[['Meta','MA'],['Google Ads','GA'],['Shopify','SH'],['GA4','G4'],['Klaviyo','KL'],['Ads Library','AL']];
+    const integrations=connMeta.map(([name,abbr])=>{
+      const on=S.conns[name];
+      return {name,abbr,onClick:()=>this.setState(st=>({conns:{...st.conns,[name]:!st.conns[name]}})),
+        label:on?'Connected ✓':'Connect',
+        style:`cursor:pointer;font-family:inherit;font-weight:500;font-size:13px;border-radius:70px;padding:8px 16px;border:1px solid ${on?'#E4E4E4':'#252525'};background:${on?'#E6F2FE':'#252525'};color:${on?'#038BF7':'#fff'};`};
+    });
+    const team=[
+      {init:'PN',chip:'#252525',name:'Priya Nair',email:'priya@thepantproject.com',role:'Owner'},
+      {init:'RS',chip:'#038BF7',name:'Rahul Shah',email:'rahul@thepantproject.com',role:'Media Buyer'},
+      {init:'MD',chip:'#7c3aed',name:'Meera Das',email:'meera@thepantproject.com',role:'Creative Strategist'},
+    ];
+
+    return {
+      navGroups, activeTitle:titles[S.nav],
+      s0:S.nav===0,s1:S.nav===1,s2:S.nav===2,s3:S.nav===3,s4:S.nav===4,s5:S.nav===5,s6:S.nav===6,s7:S.nav===7,s8:S.nav===8,s9:S.nav===9,s10:S.nav===10,
+      rescan:()=>{ this.setState({scanning:true}); setTimeout(()=>this.setState({scanning:false,scanned:true}),1400); },
+      scanLabel:S.scanning?'Scanning…':(S.scanned?'Re-scanned ✓':'Re-scan signals'),
+      health, kpis, plan, attention, goActions,
+      actionFilters, actions,
+      summary, planFull,
+      fatStates, fatigueList,
+      divScores, concentration, whitespace,
+      brain, onBrainInput:(e)=>this.setState({q:e.target.value}), brainQuery:S.q, brainEmpty:brain.length===0,
+      marginalBars, scaleCols, waste,
+      anStats, roasBars, formats, fatigue,
+      feedFilters, feed, signalFilters, signals,
+      integrations, team, makeBrief, toast:S.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

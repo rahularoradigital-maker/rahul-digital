@@ -81,7 +81,18 @@ decisions co-owned with Claude (implementer). Governing docs linked per entry.
 - **Context:** Owner provided the reference and said "want UI/UX like this."
 - **Options:** keep Phase 0 indigo/dark; adopt the reference.
 - **Rationale:** the reference is distinctive and anti-slop; Phase 0's look was generic.
-- **Status:** Active. Governs: `DESIGN.md`.
+- **Status:** SUPERSEDED (2026-08-25) by **D10b**. Kept as history.
+
+### D10b — Adopt the telli.com design system (owner's handoff)
+- **Decision:** Design system = telli.com style from the owner's design handoff: bg `#F7F7F7`,
+  ink `#252525`, accent blue `#038BF7` (accent only, never a field), Inter, 70px pill / 10px card
+  radius, LIGHT (400-weight) headlines. Brand = "AdBrain AI". Marketing structure + an 11-screen
+  web app defined in the handoff.
+- **Context:** Owner supplied `Metris slide deck design.zip` (4 .dc.html artboards + HANDOFF.md)
+  saying "here is design." Its product principles match the master brief.
+- **Options:** keep the Yamin warm-paper direction (D10); adopt the telli handoff.
+- **Rationale:** owner explicitly provided it; it's a complete, aligned system with real artboards.
+- **Status:** Active. Supersedes D10. Governs `DESIGN.md`; source `docs/design/HANDOFF.md` + `*.dc.html`.
 
 ### D11 — Winning signal = longevity + impressions (with fallback)
 - **Decision:** Treat long-running, high-impression ads as proven winners; fall back to active + variant-count if impressions/date are unavailable.
