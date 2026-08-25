@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import type { AuthState } from "@/app/(auth)/actions";
+import { GoogleButton } from "@/components/google-button";
 
 type Props = {
   title: string;
@@ -26,7 +27,17 @@ export function AuthForm({ title, cta, action, altText, altHref, altLabel }: Pro
       </Link>
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
 
-      <form action={formAction} className="mt-6 space-y-4">
+      <div className="mt-6">
+        <GoogleButton label={`${cta} with Google`} />
+      </div>
+
+      <div className="my-6 flex items-center gap-3 text-xs text-[var(--muted)]">
+        <span className="h-px flex-1 bg-[var(--border)]" />
+        or
+        <span className="h-px flex-1 bg-[var(--border)]" />
+      </div>
+
+      <form action={formAction} className="space-y-4">
         <div>
           <label htmlFor="email" className="text-sm text-[var(--muted)]">Email</label>
           <input
