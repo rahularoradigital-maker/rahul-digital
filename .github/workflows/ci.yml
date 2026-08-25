@@ -73,3 +73,6 @@ jobs:
 
       - name: Check cockpit integration
         run: npm run check:cockpit
+
+      - name: Check scoring (real metrics -> brain)
+        run: npm run check:scoring
