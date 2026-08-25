@@ -27,6 +27,6 @@ sign-in, the database, and the AI, follow **[SETUP.md](SETUP.md)**.
 - `lib/` — Supabase and Anthropic clients
 - `proxy.ts` — session refresh + `/app` route protection (Next 16 middleware)
 - `supabase/migrations/` — database schema
-- `docs/superpowers/` — the design spec and implementation plans
+- `docs/` — all design/architecture docs. **Start with [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** (system overview + a map of every other doc).
 
 Status: **Phase 0 complete** (foundation). See CLAUDE.md for the roadmap.
