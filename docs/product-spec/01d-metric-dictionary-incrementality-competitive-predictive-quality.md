@@ -10,47 +10,52 @@
 
 ### How to read this file
 
-**Dependency note (verify at build):** the three canonical foundations referenced by the program (`brief.md`, `00-master-plan.md`, `02-meta-data-mapping.md`) were **not present in the repo** when this artifact was authored. Fact-labels, data-mapping classes and the 10-question schema below follow the conventions handed down in the artifact brief. When the foundations land, re-reconcile the data-mapping class of every metric here against `02-meta-data-mapping.md` (especially the FETCH/CANNOT-KNOW calls for the Ad Library and Lift APIs).
+**Grounding (reconciled 2026-08-25).** This artifact is written against the three canonical foundations and every data-mapping class below is reconciled to them:
+- `brief.md` — the 14-category taxonomy, the 10-question per-metric discipline, and the mandatory fact-labeling. Brief is explicit for this file's scope: *"Competitor data (Ad Library/Apify/ScrapeCreators) generates HYPOTHESES not conclusions; active ad != winning ad. Competitor economics = UNKNOWN"* and *"Never present a prediction as a fact."*
+- `00-master-plan.md` — the cross-cutting disciplines (decision gate, fact labeling, level-aware, time-aware, confidence+explainability, never fabricate).
+- `02-meta-data-mapping.md` — the authoritative source class for every field. **Direct citations used below:** incremental revenue / iROAS / marginal CAC-ROAS / spend elasticity → **INFERENCE** (`INFER`, "needs experiments or MMM; MODEL ESTIMATE, never a fact"); competitor active creatives/copy/format/longevity → **EXTERNAL** (Ad Library / ScrapeCreators, "active != winning"); competitor spend/results → **CANNOT-KNOW** ("UNKNOWN — never present as fact"); iOS/privacy attribution gaps → conversions "modeled/underreported; flag attribution limits on every economics view"; MER/blended/backend → **EXTERNAL** (Shopify/CRM/finance).
+
+**Two axes, never conflated.** Every metric carries both:
+1. **Data-mapping class** (rule 4, from `02-meta-data-mapping.md`) — *how we obtain the value*: `FETCH` (Meta Marketing/Insights API returns it) · `CALC` (we derive it from FETCHed fields) · `INFER` (modeled/judgement) · `EXTERNAL` (a non-Insights system: Ad Library, Events Manager diagnostics, CRM/Shopify/GA, MMM) · `CANNOT-KNOW` (not reliably knowable at any level).
+2. **Fact-label** (rule 3) — *who is the authority for the value*. A value can be an OFFICIAL PLATFORM FACT (Meta is the authority) yet still be class `EXTERNAL` because it comes from a system other than the Insights API. The clearest case: a competitor ad's existence and start date are OFFICIAL PLATFORM FACTs *from Meta's Ad Library*, but `02` bins the Ad Library as **EXTERNAL** ("another system"), so the class is `EXTERNAL`.
 
 **Fact-label vocabulary** (rule 3 — applied to every value and every source line):
 
 | Label | Meaning |
 |---|---|
-| OFFICIAL PLATFORM FACT | A field Meta returns directly (Insights / Ad Library / dataset diagnostics). |
+| OFFICIAL PLATFORM FACT | A value Meta returns directly and authoritatively (Insights API, Ad Library, Events Manager diagnostics). |
 | INTERNAL CALCULATION (DERIVED) | We compute it from official fields. Never call it a Meta field. |
-| RESEARCH-BACKED | Supported by named public research/method; cite at build. |
-| INDUSTRY BENCHMARK | A comparison value from the market. UNKNOWN until sourced. |
-| MODEL ESTIMATE | Output of an AdBrain model (probability/forecast). Has error bars. |
+| RESEARCH-BACKED | Supported by a named public research/method; cite the method at build. |
+| INDUSTRY BENCHMARK | A comparison value from the market. UNKNOWN until sourced (rule 5 — no hardcoded generic benchmarks). |
+| MODEL ESTIMATE | Output of an AdBrain model (probability/forecast). Ships with error bars. |
 | INFERENCE | A judgement drawn from indirect signals. Not a measurement. |
-| UNKNOWN | Not knowable from our data as of Aug 2026. Verify at build or leave blank. |
-
-**Data-mapping class** (rule 4): `FETCH` (Meta returns it) · `CALC` (we derive it) · `INFER` (judgement) · `EXTERNAL` (needs a non-Meta source) · `CANNOT-KNOW` (unobtainable at any level).
+| UNKNOWN | Not knowable from our data as of Aug 2026. Verify at build or leave blank — never fabricate. |
 
 **The 10 questions** (rule 2) are answered for every metric: (1) what it measures, (2) why it matters, (3) the decision it drives, (4) inputs, (5) formula, (6) source, (7) comparison window, (8) minimum sample size, (9) limitations, (10) when NOT to trust it.
 
-**Category-level honesty rules (non-negotiable):**
-- **K Incrementality is INFERENCE / experiment-only.** Nothing here is ever an OFFICIAL PLATFORM FACT. Platform-reported ROAS ≠ incremental ROAS. If there is no holdout, there is no incrementality number — only a modelled estimate flagged as such.
-- **L Competitive: active ≠ winning.** The Ad Library tells you an ad *exists and runs*, not that it *performs*. Competitor spend, impressions, CPA and ROAS are **CANNOT-KNOW** for commercial ads (narrow EU/political carve-out only).
-- **M Predictive is MODEL ESTIMATE.** Every forecast ships with a confidence interval and a "model could be wrong when…" clause. A forecast is a decision aid, not a fact.
-- **N Data Quality gates everything.** If N flags the data as thin, stale, broken or heavily modelled, every metric in 01a–01d inherits that caveat. N runs **before** any recommendation is surfaced.
+**Category-level honesty rules (non-negotiable, traced to the foundations):**
+- **K Incrementality is INFERENCE / experiment-only.** Per `02` the whole iROAS/incremental/marginal/elasticity family is class `INFER` ("MODEL ESTIMATE, never a fact"). Nothing here is ever an OFFICIAL PLATFORM FACT. Platform-reported ROAS ≠ incremental ROAS. No holdout → no incrementality number, only a modelled estimate flagged as such.
+- **L Competitive: active ≠ winning, and the class is `EXTERNAL`.** Per `02`, competitor creative/copy/format/longevity is `EXTERNAL` (Ad Library / ScrapeCreators — not the Insights API). The Ad Library tells you an ad *exists and runs*, not that it *performs*. Competitor spend, impressions, CPA and ROAS are **CANNOT-KNOW** for commercial ads (narrow political/DSA range carve-out only).
+- **M Predictive is MODEL ESTIMATE.** Per `brief.md` "never present a prediction as a fact." Every forecast ships with a confidence interval and a "model could be wrong when…" clause. Class across M is `CALC` (models built on FETCH history), never `FETCH`.
+- **N Data Quality gates everything.** If N flags the data as thin, stale, broken or heavily modelled, every metric in 01a–01d inherits that caveat. N runs **before** any recommendation is surfaced (00-master-plan rule 6: "insufficient data → say so").
 
 ---
 
 # K. INCREMENTALITY
 
-> **Reality check:** Meta's platform-reported conversions and ROAS include conversions that would have happened anyway (brand demand, retargeting people already buying, view-through on loyal customers). Incrementality isolates the *causal lift*. It can only be **measured by an experiment** (holdout / geo test / ghost ads) and otherwise only **estimated by a model**. Class for the whole category: `INFER` (experiment output is INFERENCE about the causal world; there is no `FETCH` truth for "would this have happened anyway").
+> **Reality check:** Meta's platform-reported conversions and ROAS include conversions that would have happened anyway (brand demand, retargeting people already buying, view-through on loyal customers). Incrementality isolates the *causal lift*. Per `02-meta-data-mapping.md` the entire "incremental revenue / iROAS, marginal CAC/ROAS, spend elasticity" row is class **`INFER`** — "needs experiments or MMM; MODEL ESTIMATE, never a fact." It can only be **measured by an experiment** (holdout / geo test / ghost ads) and otherwise only **estimated by a model**. There is no `FETCH` truth for "would this have happened anyway."
 
 ## K1. Incremental Conversions (Lift)
 
 | Field | Detail |
 |---|---|
-| **Level** | Campaign / account (test cell). **Class:** `INFER` (experiment). **Label:** INFERENCE (experiment-derived), never OFFICIAL. |
+| **Level** | Campaign / account (test cell). **Class:** `INFER` (experiment) — matches `02` incrementality row. **Label:** INFERENCE (experiment-derived), never OFFICIAL. |
 | **1. Measures** | The number of conversions caused by the ads that would **not** have occurred without them, over a defined test. |
 | **2. Why it matters** | The single honest answer to "is this spend creating demand or harvesting it?" Everything downstream (iROAS, budget) is built on this. |
 | **3. Decision it drives** | Whether to keep, scale, or kill a campaign/channel on a *causal* basis — and how much platform-reported conversions overstate reality (the haircut applied to reported numbers). |
 | **4. Inputs** | Test-group conversions, control/holdout-group conversions, group sizes (or exposed vs. eligible-unexposed), test window. |
 | **5. Formula** | `Incremental conversions = ConvRate(test) × Population − ConvRate(control) × Population` (or Meta Lift's exposed-vs-holdout estimate). DERIVED from experiment cells. |
-| **6. Source** | Meta Conversion Lift / A/B test / Geo Lift output → **INFERENCE**. `INFER`. **Verify at build:** confirm which Lift/experiment APIs are still GA in Aug 2026 (Meta has repeatedly restructured Lift access). |
+| **6. Source** | Meta Conversion Lift / A/B test / Geo Lift output → **INFERENCE**. `INFER`. **Verify at build:** confirm which Lift/experiment APIs are GA in Aug 2026 (Meta has repeatedly restructured Lift access); `02` does not enumerate a Lift field, consistent with this being experiment-derived INFERENCE, not a FETCH field. |
 | **7. Comparison window** | The pre-registered test window only. Never compare a lift number to a non-experimental period. |
 | **8. Min sample** | Powered for the expected lift: enough conversions in **both** cells to detect the minimum effect at the chosen significance (see K5). A common failure is a holdout too small to ever reach significance — flag before launch, not after. UNKNOWN exact n until effect size + variance are set → compute at design time. |
 | **9. Limitations** | Only valid for the tested unit, budget and period; contamination between cells; short tests miss delayed conversions; geo tests need comparable markets. |
@@ -60,7 +65,7 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Campaign / account. **Class:** `INFER`. **Label:** INFERENCE (experiment-derived). |
+| **Level** | Campaign / account. **Class:** `INFER` (matches `02`). **Label:** INFERENCE (experiment-derived). |
 | **1. Measures** | Revenue caused by the ads beyond baseline, over the test. |
 | **2. Why it matters** | Converts causal conversions into money — the numerator of the only ROAS worth trusting. |
 | **3. Decision it drives** | Budget allocation across campaigns/channels by *true* revenue contribution, not attributed revenue. |
@@ -76,25 +81,25 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Campaign / account. **Class:** `CALC` on `INFER` inputs. **Label:** INTERNAL CALCULATION (DERIVED) built on INFERENCE. **This is not Meta's "ROAS" field.** |
+| **Level** | Campaign / account. **Class:** `CALC` on `INFER` inputs — the incremental numerator is `INFER` per `02`; spend denominator is `FETCH`. **Label:** INTERNAL CALCULATION (DERIVED) built on INFERENCE. **This is not Meta's "ROAS" field** (Meta's roas is itself CALC DERIVED per `02`; iROAS is a further, causal layer). |
 | **1. Measures** | Return on ad spend counting **only** incremental revenue. |
 | **2. Why it matters** | Platform ROAS can read 4x while iROAS reads 1.1x on a retargeting-heavy campaign. iROAS is the profit-truth. |
 | **3. Decision it drives** | Scale / hold / cut at the campaign and channel level; sets the real efficiency frontier for reallocation. |
-| **4. Inputs** | Incremental revenue (K2), spend for the tested unit/window (OFFICIAL PLATFORM FACT `FETCH`). |
+| **4. Inputs** | Incremental revenue (K2), spend for the tested unit/window (OFFICIAL PLATFORM FACT, `FETCH` per `02` delivery/spend row). |
 | **5. Formula** | `iROAS = Incremental revenue ÷ Spend`. DERIVED. |
 | **6. Source** | K2 (INFERENCE) ÷ Meta spend (FETCH) → **INTERNAL CALCULATION (DERIVED)**. `CALC`. |
 | **7. Comparison window** | Test window; only compare iROAS across units tested under comparable designs. |
 | **8. Min sample** | Inherits K1/K2. Report with a CI, never a point estimate alone (see K5). |
-| **9. Limitations** | Only as good as the experiment; not continuously available (tests are periodic); does not account for lifetime value beyond window. |
+| **9. Limitations** | Only as good as the experiment; not continuously available (tests are periodic); does not account for lifetime value beyond window (LTV is `EXTERNAL` per `02`). |
 | **10. Don't trust when** | Presented as a live/daily number (it isn't — it's a periodic test result), or when derived without a holdout (that is a modelled iROAS, relabel MODEL ESTIMATE). |
 
 ## K4. Reported-to-Incremental Ratio (Attribution Haircut)
 
 | Field | Detail |
 |---|---|
-| **Level** | Campaign / channel. **Class:** `CALC`. **Label:** INTERNAL CALCULATION (DERIVED). |
+| **Level** | Campaign / channel. **Class:** `CALC` (FETCH reported ÷ INFER incremental). **Label:** INTERNAL CALCULATION (DERIVED). |
 | **1. Measures** | How much Meta's attributed conversions/revenue overstate the incremental truth. |
-| **2. Why it matters** | Lets AdBrain apply a *learned haircut* to daily platform-reported numbers between tests, so day-to-day decisions aren't made on inflated ROAS. |
+| **2. Why it matters** | Lets AdBrain apply a *learned haircut* to daily platform-reported numbers between tests, so day-to-day decisions aren't made on inflated ROAS. Directly addresses `02`'s hard limit: "conversions are modeled/underreported; flag attribution limits on every economics view." |
 | **3. Decision it drives** | The discount factor applied to platform ROAS in all interim (non-test) reporting and pacing. |
 | **4. Inputs** | Platform-reported conversions/revenue (FETCH), incremental conversions/revenue (K1/K2). |
 | **5. Formula** | `Haircut = Incremental ÷ Reported` (e.g. 0.35 = only 35% of reported was incremental). DERIVED. |
@@ -113,7 +118,7 @@
 | **2. Why it matters** | An "iROAS of 2.4x" with a CI spanning 0.5x–4.3x is a non-result. Significance separates a decision from a coin flip. |
 | **3. Decision it drives** | Whether the lift result is allowed to drive any budget decision at all (the gate before K1–K4 are actioned). |
 | **4. Inputs** | Cell conversion counts, cell sizes, chosen α (e.g. 0.05), variance. |
-| **5. Formula** | Two-proportion z / bootstrap CI on lift; report effect ± CI and p. RESEARCH-BACKED. |
+| **5. Formula** | Two-proportion z / bootstrap CI on lift; report effect ± CI and p. RESEARCH-BACKED method (cite the specific test at build). |
 | **6. Source** | Computed from experiment cells → **INTERNAL CALCULATION (DERIVED)**. `CALC`. |
 | **7. Comparison window** | Test window. |
 | **8. Min sample** | This *is* the sample-size gate; pre-register minimum detectable effect and required n before launch. |
@@ -140,9 +145,9 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Campaign / channel. **Class:** `INFER` (experiment) → `MODEL ESTIMATE` between tests. **Label:** INFERENCE when tested; MODEL ESTIMATE when interpolated. |
+| **Level** | Campaign / channel. **Class:** `INFER` (experiment) → `CALC`/MODEL ESTIMATE between tests. `02` lists "marginal CAC/ROAS, spend elasticity" explicitly under the `INFER` row. **Label:** INFERENCE when tested; MODEL ESTIMATE when interpolated. |
 | **1. Measures** | The incremental return on the **next** dollar at the current spend level (not the average iROAS). |
-| **2. Why it matters** | Average iROAS says "this channel is good"; marginal iROAS says "the next \$10k here returns less than backend." The scaling decision lives here. |
+| **2. Why it matters** | Average iROAS says "this channel is good"; marginal iROAS says "the next \$10k here returns less than backend." The scaling decision — `brief.md`'s mandatory marginal economics ("what happens to efficiency if we spend another \$10K?") — lives here. |
 | **3. Decision it drives** | Exactly how much more (or less) to spend on a unit before it stops paying — the reallocation frontier. |
 | **4. Inputs** | Multiple spend-level test points (or observed spend/return curve), current spend. |
 | **5. Formula** | Slope of the incremental-revenue-vs-spend curve at current spend (`d(incremental revenue)/d(spend)`). DERIVED / modelled. |
@@ -168,25 +173,25 @@
 | **9. Limitations** | Requires methodology support; PSA exposure is not truly "no ad" so measures a slightly different estimand. |
 | **10. Don't trust when** | Implemented without genuine randomisation; treated as identical to a pure-holdout lift. |
 
-**Cut from K (named for discipline):** "Incrementality score" as a single always-on number with no experiment behind it → that is a MODEL ESTIMATE dressed as a fact; only surface it labelled as such with its inputs (K4 haircut + model), never as "incrementality."
+**Cut from K (named for discipline, per the decision gate):** an always-on "Incrementality score" with no experiment behind it → that is a MODEL ESTIMATE dressed as a fact; only surface it labelled as such with its inputs (K4 haircut + model), never as "incrementality." **MMM-only iROAS** without a validating experiment is a MODEL ESTIMATE (`02`: "experiments *or* MMM"), never OFFICIAL — mark it *advanced — not primary* until validated against a lift test.
 
 ---
 
-# L. COMPETITIVE (Meta Ad Library)
+# L. COMPETITIVE (Meta Ad Library / ScrapeCreators)
 
-> **Reality check:** The Ad Library shows what ads a page **is running**, the creative, and (for most commercial ads) a "started running on" date. It does **not** show impressions, spend, CTR, CPA or ROAS for commercial ads — those are **CANNOT-KNOW**. A narrow carve-out exists for political/social-issue ads (spend & impression **ranges**) and expanded EU/DSA transparency (reach data in the EU); treat both as exceptions, not the base case. **Active ≠ winning.** A long-running ad is *probably* working, but that is INFERENCE, not proof.
+> **Reality check (grounded in `02` + `brief.md`):** `02-meta-data-mapping.md` classes the competitor row as **`EXTERNAL`** — "Ad Library / ScrapeCreators; **active != winning**" — and competitor spend/results as **`CANNOT-KNOW`** ("UNKNOWN — never present as fact"). `brief.md` reinforces: competitor data "generates HYPOTHESES not conclusions." So the entire L category is class `EXTERNAL` (a system other than the Insights API), even where the value itself is an OFFICIAL PLATFORM FACT authored by Meta's Ad Library. A narrow carve-out exists for political/social-issue ads (spend & impression **ranges**) and EU/DSA transparency (reach data); treat both as exceptions, not the base case. **Active ≠ winning.** A long-running ad is *probably* working, but that is INFERENCE, not proof.
 
 ## L1. Competitor Active Ad Count
 
 | Field | Detail |
 |---|---|
-| **Level** | Competitor (page). **Class:** `FETCH`. **Label:** OFFICIAL PLATFORM FACT (Ad Library). |
+| **Level** | Competitor (page). **Class:** `EXTERNAL` (Ad Library — "another system" per `02`), value counted by AdBrain. **Label:** OFFICIAL PLATFORM FACT (Ad Library) for each ad's existence; the *count* is INTERNAL CALCULATION (DERIVED). |
 | **1. Measures** | Number of ads a competitor page currently has active. |
 | **2. Why it matters** | A crude activity/aggression signal; large swings flag a push or a pullback. |
 | **3. Decision it drives** | Whether to investigate a competitor's ramp (defend/steal share) or treat them as dormant — a *triage* signal, not a spend signal. |
 | **4. Inputs** | Ad Library query by page, active status. |
-| **5. Formula** | Count of active ads. FETCH (count). |
-| **6. Source** | Meta Ad Library API → **OFFICIAL PLATFORM FACT**. `FETCH`. |
+| **5. Formula** | Count of active ads. DERIVED count over EXTERNAL records. |
+| **6. Source** | Meta Ad Library API (EXTERNAL to Insights) → **OFFICIAL PLATFORM FACT** (existence) + **INTERNAL CALCULATION** (count). `EXTERNAL`. |
 | **7. Comparison window** | Snapshot + trend over time (we must store snapshots; Library gives "now"). |
 | **8. Min sample** | n/a (a census of their visible ads), but small counts are noisy. |
 | **9. Limitations** | Count ≠ spend or reach; many near-duplicate variants inflate it; a single big-budget ad can beat 50 small ones. |
@@ -196,13 +201,13 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Competitor ad / creative. **Class:** `CALC` on `FETCH` date → `INFER` on "winning." **Label:** INTERNAL CALCULATION (DERIVED) from an OFFICIAL date; INFERENCE about performance. |
+| **Level** | Competitor ad / creative. **Class:** `EXTERNAL`→`CALC` on the Ad Library date, `INFER` on "winning." **Label:** OFFICIAL PLATFORM FACT for the start date; INTERNAL CALCULATION for days-active; INFERENCE about performance. |
 | **1. Measures** | How long a specific competitor ad has been running. |
 | **2. Why it matters** | The best available proxy for "this creative works for them" — advertisers rarely keep losers live for months. |
 | **3. Decision it drives** | Which competitor angles/creatives to study and adapt (creative strategy), ranked by presumed staying power. |
-| **4. Inputs** | Ad "started running on" date (FETCH), today. |
+| **4. Inputs** | Ad "started running on" date (Ad Library, EXTERNAL), today. |
 | **5. Formula** | `Days active = today − start date`. DERIVED. |
-| **6. Source** | Ad Library start date → **OFFICIAL PLATFORM FACT** for the date; longevity→performance link is **INFERENCE**. `CALC`+`INFER`. |
+| **6. Source** | Ad Library start date → **OFFICIAL PLATFORM FACT** for the date; longevity→performance link is **INFERENCE**. `EXTERNAL`+`CALC`+`INFER`. |
 | **7. Comparison window** | Rolling; compare within a competitor set. |
 | **8. Min sample** | Judge patterns across many ads, not one; one long-runner can be inertia. |
 | **9. Limitations** | Long-running ≠ profitable (could be brand/always-on, or neglect); date granularity varies; relaunches reset the clock. |
@@ -212,13 +217,13 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Competitor. **Class:** `CALC` on `FETCH`. **Label:** INTERNAL CALCULATION (DERIVED). |
+| **Level** | Competitor. **Class:** `EXTERNAL`→`CALC`. **Label:** INTERNAL CALCULATION (DERIVED) over OFFICIAL Ad Library dates. |
 | **1. Measures** | Rate at which a competitor introduces new creatives. |
 | **2. Why it matters** | Testing velocity is a leading indicator of a competitor's creative maturity and likely fatigue-management. |
 | **3. Decision it drives** | Whether AdBrain's own creative-output cadence is competitive; when to raise testing volume. |
 | **4. Inputs** | Start dates of new ads over time (requires our stored snapshots). |
 | **5. Formula** | `New distinct ads in period ÷ weeks`. DERIVED. |
-| **6. Source** | Ad Library start dates over stored snapshots → **INTERNAL CALCULATION (DERIVED)**. `CALC`. |
+| **6. Source** | Ad Library start dates over stored snapshots → **INTERNAL CALCULATION (DERIVED)**. `EXTERNAL`+`CALC`. |
 | **7. Comparison window** | Weekly / monthly trend. |
 | **8. Min sample** | Several weeks of snapshots before the rate is meaningful. |
 | **9. Limitations** | Minor variants counted as "new"; cadence ≠ quality or budget. |
@@ -228,13 +233,13 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Competitor. **Class:** `CALC` on `FETCH`. **Label:** INTERNAL CALCULATION (DERIVED). |
+| **Level** | Competitor. **Class:** `EXTERNAL`→`CALC`. **Label:** INTERNAL CALCULATION (DERIVED). |
 | **1. Measures** | Share of a competitor's active ads by format (video/image/carousel) and, where shown, publisher platform. |
 | **2. Why it matters** | Reveals where a competitor is betting (e.g. heavy Reels/video) and format gaps AdBrain could exploit. |
 | **3. Decision it drives** | Format prioritisation in AdBrain's creative brief. |
-| **4. Inputs** | Creative type per ad (FETCH), platform tags where available. |
+| **4. Inputs** | Creative type per ad (Ad Library metadata, EXTERNAL), platform tags where available. |
 | **5. Formula** | `% of active ads by format`. DERIVED. |
-| **6. Source** | Ad Library creative metadata → **INTERNAL CALCULATION (DERIVED)**. `CALC`. |
+| **6. Source** | Ad Library creative metadata → **INTERNAL CALCULATION (DERIVED)**. `EXTERNAL`+`CALC`. |
 | **7. Comparison window** | Snapshot + trend. |
 | **8. Min sample** | Enough ads to make shares non-trivial. |
 | **9. Limitations** | Mix ≠ budget behind each format; placement info incomplete for commercial ads. |
@@ -244,13 +249,13 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Competitor / creative. **Class:** `INFER`. **Label:** INFERENCE (NLP on creative text). |
+| **Level** | Competitor / creative. **Class:** `EXTERNAL`→`INFER` (NLP/vision on Ad Library creative). **Label:** INFERENCE (model output over OFFICIAL creative text). |
 | **1. Measures** | The dominant hooks, value props, and offers (discount/BOGO/free-trial) in competitor creative. |
-| **2. Why it matters** | Shows the market's current messaging consensus and white space; flags a competitor's promo intensity. |
+| **2. Why it matters** | Shows the market's current messaging consensus and white space; flags a competitor's promo intensity. Feeds white-space [13] and generates HYPOTHESES (`brief.md`), never conclusions. |
 | **3. Decision it drives** | Creative angle selection and counter-positioning; whether to match a promo war or avoid it. |
-| **4. Inputs** | Ad body/headline text & imagery (FETCH), NLP/vision extraction (our model). |
+| **4. Inputs** | Ad body/headline text & imagery (Ad Library, EXTERNAL), NLP/vision extraction (our model). |
 | **5. Formula** | Theme/offer classification and frequency. INFERENCE (model output). |
-| **6. Source** | Ad Library creative text + AdBrain classifier → **INFERENCE**. `INFER`. |
+| **6. Source** | Ad Library creative text + AdBrain classifier → **INFERENCE**. `EXTERNAL`+`INFER`. |
 | **7. Comparison window** | Snapshot + trend. |
 | **8. Min sample** | Enough creatives per competitor for themes to be stable, not anecdotal. |
 | **9. Limitations** | Classifier error; sarcasm/brand voice mis-read; theme prevalence ≠ theme *performance* (no spend behind it). |
@@ -260,13 +265,13 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Competitor. **Class:** `INFER` on `FETCH`. **Label:** INFERENCE. |
+| **Level** | Competitor. **Class:** `EXTERNAL`→`INFER`. **Label:** INFERENCE. |
 | **1. Measures** | A competitor beginning to run ads targeting a country/market they weren't in before. |
 | **2. Why it matters** | Early warning of competitive expansion into AdBrain's markets (or a market worth following them into). |
 | **3. Decision it drives** | Defensive spend / market-entry timing. |
-| **4. Inputs** | Ad Library targeting country field over time (FETCH), our snapshots. |
+| **4. Inputs** | Ad Library targeting country field over time (EXTERNAL), our snapshots. |
 | **5. Formula** | New country appearing in a competitor's active-ad targeting vs. prior snapshot. INFERENCE. |
-| **6. Source** | Ad Library country data → **INFERENCE** (about intent). `INFER`. |
+| **6. Source** | Ad Library country data → **INFERENCE** (about intent). `EXTERNAL`+`INFER`. |
 | **7. Comparison window** | Snapshot-over-snapshot. |
 | **8. Min sample** | Confirm across multiple ads before calling an "entry." |
 | **9. Limitations** | Country shown is *where ads appear*, not necessarily a strategic launch; test buys look like entries. |
@@ -276,13 +281,13 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Competitor. **Class:** `CANNOT-KNOW` (commercial) with a narrow `FETCH`-range exception. **Label:** UNKNOWN for commercial ads. |
+| **Level** | Competitor. **Class:** `CANNOT-KNOW` (commercial) — matches `02` "competitor spend/results → CANNOT-KNOW" — with a narrow `EXTERNAL`-range exception. **Label:** UNKNOWN for commercial ads. |
 | **1. Measures** | What a competitor actually spends, how many impressions they buy, and their returns. |
-| **2. Why it matters** | It's what everyone wants — and mostly can't have. Naming it explicitly stops AdBrain from fabricating it. |
+| **2. Why it matters** | It's what everyone wants — and mostly can't have. Naming it explicitly stops AdBrain from fabricating it (`02`: "never present as fact"). |
 | **3. Decision it drives** | *None reliably* for commercial competitors → **advanced/vanity — not primary.** Do not drive budget off guessed competitor spend. |
 | **4. Inputs** | For political/social-issue ads only: Ad Library spend & impression **ranges**. EU/DSA: reach data. Commercial: nothing. |
 | **5. Formula** | n/a (ranges are read directly where they exist). |
-| **6. Source** | Political/social-issue Ad Library ranges → **OFFICIAL PLATFORM FACT (range)** `FETCH`; all commercial spend/ROAS → **UNKNOWN / CANNOT-KNOW**. **Verify at build:** exact EU/DSA fields available via API in Aug 2026. |
+| **6. Source** | Political/social-issue Ad Library ranges → **OFFICIAL PLATFORM FACT (range)**, class `EXTERNAL` (Ad Library); all commercial spend/ROAS → **UNKNOWN / CANNOT-KNOW**. **Verify at build:** exact EU/DSA fields available via API in Aug 2026. |
 | **7. Comparison window** | n/a for commercial. |
 | **8. Min sample** | n/a. |
 | **9. Limitations** | Third-party "spend estimate" tools are modelled guesses — if used, label **MODEL ESTIMATE (third-party)**, never fact. |
@@ -294,19 +299,19 @@
 
 # M. PREDICTIVE
 
-> **Reality check:** Every metric here is a **MODEL ESTIMATE** — an AdBrain model's forecast or probability, not an observed fact. Each ships with a confidence interval and an explicit "model is unreliable when…" clause. Forecasts drive *proactive* decisions (act before the number turns bad), which is the whole point of AdBrain — but a forecast presented without error bars is a lie. Data-mapping class across M: `CALC` (models built on FETCH history), never `FETCH`.
+> **Reality check:** Every metric here is a **MODEL ESTIMATE** — an AdBrain model's forecast or probability, not an observed fact (`brief.md`: "never present a prediction as a fact"). Each ships with a confidence interval and an explicit "model is unreliable when…" clause. Forecasts drive *proactive* decisions (act before the number turns bad), which is the whole point of AdBrain — but a forecast presented without error bars is a lie. Data-mapping class across M: `CALC` (models built on FETCH history), never `FETCH`.
 
 ## M1. Creative Fatigue Probability
 
 | Field | Detail |
 |---|---|
-| **Level** | Ad / creative. **Class:** `CALC` (model). **Label:** MODEL ESTIMATE. |
+| **Level** | Ad / creative. **Class:** `CALC` (model on FETCH history). **Label:** MODEL ESTIMATE. |
 | **1. Measures** | Probability a creative is entering fatigue (declining efficiency from overexposure) now / within N days. |
 | **2. Why it matters** | Catches decay *before* CPA blows out, enabling refresh ahead of the drop rather than after. |
 | **3. Decision it drives** | When to refresh/retire a creative and queue its replacement. |
-| **4. Inputs** | Frequency, CTR/CTR-decay slope, CPM trend, CVR trend, spend, days live (all FETCH history). |
+| **4. Inputs** | Frequency, CTR/CTR-decay slope, CPM trend, CVR trend, spend, days live — all FETCH OFFICIAL from the Insights API per `02` delivery/attention/conversion rows. |
 | **5. Formula** | Classifier/survival model over the decay signals → probability + predicted days-to-fatigue. MODEL ESTIMATE. |
-| **6. Source** | AdBrain model on Meta Insights history → **MODEL ESTIMATE**. `CALC`. Any "frequency > X = fatigued" rule is **INDUSTRY BENCHMARK / UNKNOWN threshold — verify/learn per account**, not a truth. |
+| **6. Source** | AdBrain model on Meta Insights history → **MODEL ESTIMATE**. `CALC`. Any "frequency > X = fatigued" rule is **INDUSTRY BENCHMARK / UNKNOWN threshold — verify/learn per account** (rule 5), not a truth. |
 | **7. Comparison window** | Trailing trend (e.g. 7–14d slope) vs. the creative's own baseline. |
 | **8. Min sample** | Enough impressions/conversions for CTR & CVR trends to be non-noise; low-volume creatives → suppress the probability, don't guess. |
 | **9. Limitations** | Fatigue confounded with auction shifts, seasonality, audience saturation; correlation not causation. |
@@ -318,7 +323,7 @@
 |---|---|
 | **Level** | Ad / creative. **Class:** `CALC`. **Label:** MODEL ESTIMATE. |
 | **1. Measures** | Estimated days until the creative crosses a fatigue threshold. |
-| **2. Why it matters** | Turns M1's probability into a schedule — when the replacement must be ready. |
+| **2. Why it matters** | Turns M1's probability into a schedule — when the replacement must be ready (feeds creative supply/velocity in `brief.md`). |
 | **3. Decision it drives** | Creative production timing / refresh calendar. |
 | **4. Inputs** | Current decay slope, frequency accumulation rate, remaining fresh audience estimate. |
 | **5. Formula** | Extrapolate decay curve to threshold; report median + CI. MODEL ESTIMATE. |
@@ -332,13 +337,13 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Campaign / account. **Class:** `CALC`. **Label:** MODEL ESTIMATE. |
+| **Level** | Campaign / account. **Class:** `CALC`. **Label:** MODEL ESTIMATE (spend-to-date itself is OFFICIAL PLATFORM FACT, `FETCH`). |
 | **1. Measures** | Projected end-of-period spend vs. budget at current pace. |
 | **2. Why it matters** | Prevents under-delivery (money left on table) and overspend before month-end. |
 | **3. Decision it drives** | Mid-flight budget adjustments / pacing corrections. |
-| **4. Inputs** | Spend-to-date (FETCH), days elapsed/remaining, delivery trend, budget. |
+| **4. Inputs** | Spend-to-date (FETCH), days elapsed/remaining, delivery trend, budget (FETCH, `02` delivery/spend row). |
 | **5. Formula** | `Projected spend = spend-to-date + (avg daily × days remaining)`, trend-adjusted. MODEL ESTIMATE. |
-| **6. Source** | Meta spend history + model → **MODEL ESTIMATE** (the projection). `CALC`. Spend-to-date itself is OFFICIAL PLATFORM FACT. |
+| **6. Source** | Meta spend history + model → **MODEL ESTIMATE** (the projection). `CALC`. |
 | **7. Comparison window** | Current flight/period. |
 | **8. Min sample** | A few days of delivery for a stable daily rate. |
 | **9. Limitations** | Auction volatility, weekends, learning phase distort the daily rate; new campaigns pace erratically. |
@@ -352,12 +357,12 @@
 | **1. Measures** | Expected conversions/revenue over the next horizon at current settings. |
 | **2. Why it matters** | Enables planning and early detection of a coming shortfall. |
 | **3. Decision it drives** | Whether to intervene now to hit a target; expectation-setting with stakeholders. |
-| **4. Inputs** | Conversion/revenue history (FETCH), spend plan, seasonality, pending attribution maturation (see N7). |
+| **4. Inputs** | Conversion/revenue history (FETCH, attribution-window dependent per `02`), spend plan, seasonality, pending attribution maturation (see N7). |
 | **5. Formula** | Time-series/regression forecast with CI. MODEL ESTIMATE. |
 | **6. Source** | AdBrain model on Insights → **MODEL ESTIMATE**. `CALC`. |
 | **7. Comparison window** | Forward horizon vs. trailing baseline + YoY seasonality. |
 | **8. Min sample** | Enough history to fit seasonality; short-history accounts → wide CI, say so. |
-| **9. Limitations** | Breaks on regime changes (new offer, big creative shift, tracking break); revenue forecasts high-variance. |
+| **9. Limitations** | Breaks on regime changes (new offer, big creative shift, tracking break); revenue forecasts high-variance; on-platform revenue is attributed, not incremental (K) or backend-true (N8). |
 | **10. Don't trust when** | A structural change just happened; attribution still maturing (recent days will be revised up); CI dwarfs the point estimate. |
 
 ## M5. Audience Saturation Forecast
@@ -368,9 +373,9 @@
 | **1. Measures** | When an audience's fresh reach runs out and frequency starts forcing efficiency down. |
 | **2. Why it matters** | Distinguishes *creative* fatigue (M1) from *audience* exhaustion — different fixes (new creative vs. new audience/expansion). |
 | **3. Decision it drives** | When to expand/rotate audiences or lift budget caps. |
-| **4. Inputs** | Reach, frequency trend, audience size estimate, incremental-reach rate (FETCH). |
+| **4. Inputs** | Reach, frequency trend (FETCH OFFICIAL, `02`), audience size estimate, incremental-reach rate. |
 | **5. Formula** | Reach-curve saturation model; project frequency ceiling. MODEL ESTIMATE. |
-| **6. Source** | AdBrain model on Insights → **MODEL ESTIMATE**. `CALC`. Audience size figures from Meta are themselves ESTIMATES — inherit that error. |
+| **6. Source** | AdBrain model on Insights → **MODEL ESTIMATE**. `CALC`. Meta audience-size figures are themselves ESTIMATES — inherit that error. |
 | **7. Comparison window** | Trailing reach/frequency trend. |
 | **8. Min sample** | Sufficient reach history. |
 | **9. Limitations** | Meta audience-size estimates are broad; Advantage+/broad targeting makes "audience size" fuzzy. |
@@ -380,9 +385,9 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Campaign / adset. **Class:** `CALC`. **Label:** MODEL ESTIMATE. |
+| **Level** | Campaign / adset. **Class:** `CALC` (correlational). **Label:** MODEL ESTIMATE. Distinct from the causal K7 (`INFER`, experiment). |
 | **1. Measures** | Expected CPA if spend is increased by X% (the efficiency cost of scaling). |
-| **2. Why it matters** | Scaling almost always raises CPA; this quantifies how much *before* committing budget. |
+| **2. Why it matters** | Scaling almost always raises CPA; this quantifies how much *before* committing budget. Serves `brief.md`'s marginal-economics mandate. |
 | **3. Decision it drives** | How aggressively to scale a winner before it breaks the CPA target. |
 | **4. Inputs** | Historical spend↔CPA relationship (FETCH), current spend, auction/competition trend. |
 | **5. Formula** | Elasticity curve fit; project CPA at target spend + CI. MODEL ESTIMATE. Pairs with the causal K7 (marginal iROAS). |
@@ -400,7 +405,7 @@
 | **1. Measures** | Probability a newly launched creative will become a top performer, from early signals. |
 | **2. Why it matters** | Cuts losers faster and doubles down on likely winners before full significance — speeds the testing loop. |
 | **3. Decision it drives** | Early kill/scale of a fresh creative during testing. |
-| **4. Inputs** | Early CTR, hook rate/thumbstop, early CVR, spend so far (FETCH), historical patterns of eventual winners. |
+| **4. Inputs** | Early CTR, hook rate/thumbstop (CALC DERIVED per `02` attention row), early CVR, spend so far (FETCH), historical patterns of eventual winners. |
 | **5. Formula** | Classifier trained on labelled historical creatives; probability + calibration. MODEL ESTIMATE. |
 | **6. Source** | AdBrain model → **MODEL ESTIMATE**. `CALC`. |
 | **7. Comparison window** | First hours/days vs. learned early-winner profile. |
@@ -412,11 +417,11 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Campaign / adset (cross-unit). **Class:** `CALC`. **Label:** MODEL ESTIMATE. |
+| **Level** | Campaign / adset (cross-unit). **Class:** `CALC` (composite). **Label:** MODEL ESTIMATE. |
 | **1. Measures** | The expected incremental return of moving the next budget unit from one campaign to another. |
 | **2. Why it matters** | This is AdBrain's headline "what to do next" output — ranking moves by predicted payoff. |
 | **3. Decision it drives** | The actual reallocation actions AdBrain proposes. |
-| **4. Inputs** | Marginal iROAS/CPA curves (K7/M6), fatigue (M1), saturation (M5), pacing (M3), confidence from N. |
+| **4. Inputs** | Marginal iROAS/CPA curves (K7/M6), fatigue (M1), saturation (M5), pacing (M3), confidence from N, haircut (K4). |
 | **5. Formula** | Rank units by predicted marginal return, discounted by uncertainty (N) and haircut (K4). MODEL ESTIMATE. |
 | **6. Source** | Composite AdBrain model → **MODEL ESTIMATE**. `CALC`. |
 | **7. Comparison window** | Current period, forward-looking. |
@@ -428,19 +433,19 @@
 
 # N. DATA QUALITY
 
-> **Reality check:** N is the **gate**, not a report tab. It runs before any K/L/M/01a–c metric is surfaced, and stamps every recommendation with a confidence level. If tracking is broken, data is thin, or conversions are heavily modelled, AdBrain must *say so* and *hold or downgrade* the recommendation rather than act confidently on garbage. Several N metrics are genuine OFFICIAL PLATFORM FACTS (Meta exposes tracking diagnostics); others are INTERNAL CALCULATIONS comparing sources.
+> **Reality check:** N is the **gate**, not a report tab (00-master-plan rule 6). It runs before any K/L/M/01a–c metric is surfaced, and stamps every recommendation with a confidence level. It operationalises `02`'s hard limit — "iOS/privacy attribution gaps → conversions are modeled/underreported; flag attribution limits on every economics view." If tracking is broken, data is thin, or conversions are heavily modelled, AdBrain must *say so* and *hold or downgrade* the recommendation rather than act on garbage. Several N metrics are OFFICIAL PLATFORM FACTs from Meta diagnostics surfaces (Events Manager) that sit *outside* the Insights API `02` maps — so their class is noted per-metric and flagged *verify at build* against the Aug-2026 API surface.
 
 ## N1. Event Match Quality (EMQ)
 
 | Field | Detail |
 |---|---|
-| **Level** | Pixel / dataset (event). **Class:** `FETCH`. **Label:** OFFICIAL PLATFORM FACT. |
+| **Level** | Pixel / dataset (event). **Class:** `FETCH` (Events Manager diagnostics — a Meta surface beyond the Insights rows in `02`; verify API exposure at build). **Label:** OFFICIAL PLATFORM FACT. |
 | **1. Measures** | Meta's score (roughly 0–10 / rated) for how well conversion events are matched to users via the parameters sent. |
 | **2. Why it matters** | Low EMQ → under-reported conversions and worse optimisation; it silently degrades every downstream metric. |
 | **3. Decision it drives** | Whether to fix tracking (CAPI params) *before* trusting performance or making budget calls. |
 | **4. Inputs** | Meta Events Manager diagnostics per event. |
 | **5. Formula** | Reported directly by Meta. FETCH. |
-| **6. Source** | Meta Events Manager / diagnostics API → **OFFICIAL PLATFORM FACT**. `FETCH`. **Verify at build:** exact scale/labels and API exposure in Aug 2026. |
+| **6. Source** | Meta Events Manager / diagnostics → **OFFICIAL PLATFORM FACT**. `FETCH`. **Verify at build:** exact scale/labels and API exposure in Aug 2026. |
 | **7. Comparison window** | Current; watch for drops. |
 | **8. Min sample** | Per event type with enough volume. |
 | **9. Limitations** | A score, not a guarantee of accuracy; high EMQ still allows other gaps (e.g. missing events entirely). |
@@ -450,7 +455,7 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Account / campaign. **Class:** `FETCH`/`CALC`. **Label:** OFFICIAL PLATFORM FACT (Meta labels modelled conversions) where exposed; else INTERNAL CALCULATION. |
+| **Level** | Account / campaign. **Class:** `FETCH`/`CALC`. **Label:** OFFICIAL PLATFORM FACT (Meta labels modelled conversions) where exposed; else INTERNAL CALCULATION. Directly operationalises `02`'s "conversions are modeled/underreported" hard limit. |
 | **1. Measures** | Share of reported conversions that Meta **modelled/estimated** rather than directly observed (post-ATT statistical modelling). |
 | **2. Why it matters** | High modelled share means the conversion numbers are partly Meta's estimate — precision at ad/creative level drops. |
 | **3. Decision it drives** | How granular a decision the data can bear (modelled data is fine at campaign level, shaky at single-creative level). |
@@ -474,7 +479,7 @@
 | **5. Formula** | Compare observed n to the power/precision requirement for the specific comparison. DERIVED. |
 | **6. Source** | Computed from Insights → **INTERNAL CALCULATION (DERIVED)**. `CALC`. |
 | **7. Comparison window** | Matches the decision's window. |
-| **8. Min sample** | This metric *defines* the floors; thresholds are decision-specific and **learned/UNKNOWN until set** — never a hard-coded "50 conversions" presented as truth. |
+| **8. Min sample** | This metric *defines* the floors; thresholds are decision-specific and **learned/UNKNOWN until set** (rule 5) — never a hard-coded "50 conversions" presented as truth. |
 | **9. Limitations** | Floors depend on effect size and variance; one universal threshold is wrong. |
 | **10. Don't trust when** | A single blanket threshold is applied across very different metrics/decisions. |
 
@@ -482,7 +487,7 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Campaign / account. **Class:** `FETCH`+`CALC`. **Label:** OFFICIAL PLATFORM FACT (the setting) + INTERNAL CALCULATION (the gap). |
+| **Level** | Campaign / account. **Class:** `FETCH`+`CALC`. **Label:** OFFICIAL PLATFORM FACT (the setting) + INTERNAL CALCULATION (the gap). `02` flags conversions as attribution-window dependent. |
 | **1. Measures** | Which attribution setting is in force (e.g. 7-day click / 1-day view) and the conversions likely falling outside it. |
 | **2. Why it matters** | Post-ATT, view-through and longer windows are truncated; comparing units on different settings is apples-to-oranges. |
 | **3. Decision it drives** | Whether cross-unit comparisons are valid; whether to widen/normalise the window before deciding. |
@@ -500,7 +505,7 @@
 |---|---|
 | **Level** | Pixel / dataset / account. **Class:** `CALC`. **Label:** INTERNAL CALCULATION (DERIVED) / anomaly model. |
 | **1. Measures** | Sudden, unexplained drops or spikes in event volume signalling a pixel/CAPI break, deploy, or config change. |
-| **2. Why it matters** | A silent tracking break makes performance "collapse" that is actually a measurement artefact — the worst false alarm to act on. |
+| **2. Why it matters** | A silent tracking break makes performance "collapse" that is actually a measurement artefact — the worst false alarm to act on (the AUTOPSY gate in `brief.md` names "tracking changes" explicitly). |
 | **3. Decision it drives** | Halt automated actions and alert to fix tracking, rather than "optimising" against broken data. |
 | **4. Inputs** | Event-volume time series per event/source, deploy signals if available. |
 | **5. Formula** | Anomaly detection vs. expected range (see N9). MODEL ESTIMATE / DERIVED. |
@@ -514,7 +519,7 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Pixel / dataset. **Class:** `FETCH`/`CALC`. **Label:** OFFICIAL PLATFORM FACT (dedup diagnostics) / INTERNAL CALCULATION. |
+| **Level** | Pixel / dataset. **Class:** `FETCH`/`CALC` (Events Manager diagnostics — verify API exposure at build). **Label:** OFFICIAL PLATFORM FACT (dedup diagnostics) / INTERNAL CALCULATION. |
 | **1. Measures** | How well browser-pixel and server (CAPI) events are deduplicated, and the discrepancy between sources. |
 | **2. Why it matters** | Poor dedup → double-counted or missing conversions; a core CAPI health check post-ATT. |
 | **3. Decision it drives** | Whether to fix event dedup keys before trusting conversion counts. |
@@ -530,7 +535,7 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Any. **Class:** `CALC`. **Label:** INTERNAL CALCULATION (DERIVED). |
+| **Level** | Any. **Class:** `CALC`. **Label:** INTERNAL CALCULATION (DERIVED). Ties to `02`'s day-wise snapshot mandate ([22][24]). |
 | **1. Measures** | How much recent data is still maturing (conversions attributed with delay; modelled data restated). |
 | **2. Why it matters** | Yesterday's ROAS almost always revises **up**; acting on same-day numbers over-kills good units. |
 | **3. Decision it drives** | Whether recent-window data is stable enough to act on, or must "settle" first. |
@@ -546,7 +551,7 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Account / campaign. **Class:** `EXTERNAL`+`CALC`. **Label:** INTERNAL CALCULATION (DERIVED) across sources. |
+| **Level** | Account / campaign. **Class:** `EXTERNAL`+`CALC` — backend/Shopify/CRM/GA is `EXTERNAL` per `02` (MER/NCAC/LTV rows). **Label:** INTERNAL CALCULATION (DERIVED) across sources. |
 | **1. Measures** | The gap between Meta-reported conversions/revenue and the advertiser's own backend (orders/CRM/GA4). |
 | **2. Why it matters** | Meta over-attributes (last-touch, view-through, cross-device); backend is ground truth for money. This gap sizes the trust problem. |
 | **3. Decision it drives** | Which number funds decisions (backend for P&L; Meta for optimisation), and how big a haircut to apply (feeds K4). |
@@ -555,7 +560,7 @@
 | **6. Source** | Meta (FETCH) vs. external system (EXTERNAL) → **INTERNAL CALCULATION (DERIVED)**. `EXTERNAL`+`CALC`. |
 | **7. Comparison window** | Same period, aligned time zones and definitions. |
 | **8. Min sample** | Enough orders to be stable; align on the same conversion definition. |
-| **9. Limitations** | Requires a backend feed (often absent); definition/timezone mismatches masquerade as discrepancy; not a substitute for incrementality (backend still can't tell you what was incremental — that's K). |
+| **9. Limitations** | Requires a backend feed (often absent — `02`: "needs Shopify/CRM"); definition/timezone mismatches masquerade as discrepancy; not a substitute for incrementality (backend still can't tell you what was incremental — that's K). |
 | **10. Don't trust when** | No backend integration; definitions/time windows unaligned; treated as an incrementality measure (it isn't). |
 
 ## N9. Statistical-Significance / Confidence Flag (for any comparison)
@@ -564,10 +569,10 @@
 |---|---|
 | **Level** | Any comparison. **Class:** `CALC`. **Label:** INTERNAL CALCULATION (DERIVED) / RESEARCH-BACKED. |
 | **1. Measures** | Whether an observed difference between units/periods is distinguishable from noise. |
-| **2. Why it matters** | Stops "Ad A beat Ad B" calls that are within noise — the daily bread of bad optimisation. |
+| **2. Why it matters** | Stops "Ad A beat Ad B" calls that are within noise — the daily bread of bad optimisation (KILLCRITIC's "fake precision" in `brief.md`). |
 | **3. Decision it drives** | Whether a comparison is allowed to trigger an action (winner-picking, pausing). |
 | **4. Inputs** | The two (or more) rates/values, their sample sizes, variance, chosen α. |
-| **5. Formula** | Appropriate test (proportions/means) or Bayesian probability-to-beat + CI. RESEARCH-BACKED method. |
+| **5. Formula** | Appropriate test (proportions/means) or Bayesian probability-to-beat + CI. RESEARCH-BACKED method (cite at build). |
 | **6. Source** | Computed by AdBrain → **INTERNAL CALCULATION (DERIVED)**. `CALC`. |
 | **7. Comparison window** | The compared windows (must be equal length & aligned). |
 | **8. Min sample** | This is a sample-size gate; ties to N3. |
@@ -578,7 +583,7 @@
 
 | Field | Detail |
 |---|---|
-| **Level** | Adset. **Class:** `FETCH`. **Label:** OFFICIAL PLATFORM FACT. |
+| **Level** | Adset. **Class:** `FETCH` (Meta delivery status — a Marketing API field beyond the `02` Insights rows; verify at build). **Label:** OFFICIAL PLATFORM FACT. |
 | **1. Measures** | Whether an adset is in Learning, exited Learning, or is "Learning Limited" (never getting enough events to stabilise). |
 | **2. Why it matters** | Performance during learning is unrepresentative; "Learning Limited" means the adset structurally can't stabilise — a structure decision, not a creative one. |
 | **3. Decision it drives** | Whether to wait, consolidate adsets/budgets to escape Learning Limited, or discount current metrics. |
@@ -586,7 +591,7 @@
 | **5. Formula** | Reported directly by Meta. FETCH. |
 | **6. Source** | Meta Ads Manager delivery status → **OFFICIAL PLATFORM FACT**. `FETCH`. |
 | **7. Comparison window** | Current. |
-| **8. Min sample** | Meta's own ~threshold of conversions per adset per week to exit learning (Meta-defined; verify exact figure at build). |
+| **8. Min sample** | Meta's own ~threshold of conversions per adset per week to exit learning (Meta-defined; **verify exact figure at build**, do not hardcode as truth). |
 | **9. Limitations** | Metrics during/after learning differ; frequent edits reset learning. |
 | **10. Don't trust when** | Judging an adset's performance while in Learning; editing repeatedly (constant resets); acting on a Learning-Limited adset's numbers as if stable. |
 
@@ -594,15 +599,15 @@
 
 ## Cross-category discipline summary
 
-| Category | Highest honest label achievable | Never claim | Primary decision |
-|---|---|---|---|
-| **K Incrementality** | INFERENCE (with experiment) / MODEL ESTIMATE (without) | OFFICIAL PLATFORM FACT; live/daily iROAS | Causal keep/scale/kill; the haircut on reported numbers |
-| **L Competitive** | OFFICIAL PLATFORM FACT (existence, creative, dates); rest INFERENCE / CANNOT-KNOW | Competitor spend/ROAS/SoV for commercial ads | Which competitor moves & angles to study/counter |
-| **M Predictive** | MODEL ESTIMATE (always with CI) | A forecast as a fact; a point estimate without error bars | Proactive refresh, pacing, reallocation before the number turns |
-| **N Data Quality** | OFFICIAL PLATFORM FACT (diagnostics) + INTERNAL CALCULATION (gaps) | That clean-looking data is trustworthy without checking N | Whether any other metric may drive an action at all |
+| Category | Data-mapping class (per `02`) | Highest honest label achievable | Never claim | Primary decision |
+|---|---|---|---|---|
+| **K Incrementality** | `INFER` (experiment/MMM) | INFERENCE (with experiment) / MODEL ESTIMATE (without) | OFFICIAL PLATFORM FACT; live/daily iROAS | Causal keep/scale/kill; the haircut on reported numbers |
+| **L Competitive** | `EXTERNAL` (Ad Library/ScrapeCreators); spend/ROAS `CANNOT-KNOW` | OFFICIAL PLATFORM FACT (existence, creative, dates); rest INFERENCE / CANNOT-KNOW | Competitor spend/ROAS/SoV for commercial ads | Which competitor moves & angles to study/counter (HYPOTHESES) |
+| **M Predictive** | `CALC` (models on FETCH history) | MODEL ESTIMATE (always with CI) | A forecast as a fact; a point estimate without error bars | Proactive refresh, pacing, reallocation before the number turns |
+| **N Data Quality** | `FETCH` diagnostics + `CALC`/`EXTERNAL` gaps | OFFICIAL PLATFORM FACT (diagnostics) + INTERNAL CALCULATION (gaps) | That clean-looking data is trustworthy without checking N | Whether any other metric may drive an action at all |
 
-**Build-time reconciliation checklist:**
-1. Reconcile every data-mapping class against `02-meta-data-mapping.md` once it exists (esp. Lift APIs K1/K8, EU/DSA Ad Library L7, observed/modelled split N2).
-2. Replace every "verify at build" with a dated, sourced confirmation of the Aug-2026 Meta API surface. No benchmark or platform fact ships unverified (rule 5).
-3. Wire N as a pre-gate: no K/L/M output surfaces without an attached N confidence stamp.
-4. Confirm no arbitrary thresholds (fatigue frequency, min conversions, learning-exit count) are hard-coded as truths — all are learned or Meta-defined-and-cited.
+**Build-time reconciliation status & checklist:**
+1. **DONE (2026-08-25):** every data-mapping class above reconciled to `02-meta-data-mapping.md` — K family = `INFER`; L family = `EXTERNAL` (Ad Library) with commercial spend/ROAS = `CANNOT-KNOW`; N8 backend = `EXTERNAL`; M = `CALC` on FETCH.
+2. **OPEN — verify at build:** exact Aug-2026 Meta API surface for the fields marked *verify at build* — Lift/experiment APIs (K1/K8), EU/DSA Ad Library ranges (L7), observed/modelled conversion split (N2), Events Manager diagnostics EMQ/dedup (N1/N6), delivery/learning status (N10). `02` does not enumerate these Insights fields, so they must be confirmed against the live API before ship (rule 5).
+3. **Wire N as a pre-gate:** no K/L/M output surfaces without an attached N confidence stamp (00-master-plan rule 6).
+4. **No arbitrary thresholds as truth:** every fatigue frequency, min-conversion floor, and learning-exit count is learned per account or Meta-defined-and-cited — never a hardcoded constant (rule 5; `brief.md` "no arbitrary unvalidated thresholds").

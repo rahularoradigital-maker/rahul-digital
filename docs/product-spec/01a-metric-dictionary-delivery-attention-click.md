@@ -1,706 +1,648 @@
-# 01a — Master Metric Dictionary: Delivery, Attention, Engagement, Click Quality
+# [01a] Master Metric Dictionary — A Delivery · B Attention · C Engagement · D Click Quality
 
-**Artifact:** 01a of 28 (AdBrain master product spec)
-**Scope:** Category A DELIVERY · Category B ATTENTION · Category C ENGAGEMENT · Category D CLICK QUALITY
-**Persona lens:** senior Meta media buyer + creative strategist + data scientist at $100M/mo scale
-**Question it answers:** "what should we do next?" — not "how did ads perform?"
-**Last edited:** 2026-08-25 · **Status:** DRAFT — pending foundation-doc reconciliation (see Provenance)
+Part of output [01] Master Metric Dictionary. Scope: the four "top-of-funnel / on-platform"
+categories. Conversion (E), Economics (F), and the creative/diversity/fatigue families live in
+sibling files. Every metric here traces to a row in [02] Meta Data Mapping and carries its fact
+label. Current date: 2026-08-25. Where a platform specific or benchmark is not verified in-hand it
+is marked **UNKNOWN / verify at build** — never fabricated.
 
----
+## How to read every entry
+Each metric answers all 10 questions from the brief:
+1 measures · 2 why · 3 **decision it changes** · 4 inputs · 5 formula · 6 source · 7 comparison
+window · 8 minimum sample · 9 limitations · 10 when NOT to trust it.
 
-## 0. How to read this dictionary
+And carries a header line: **LEVEL · [02]-class · FACT LABEL · DECISION-GATE verdict**.
 
-Every metric below is documented against **all 10 discipline questions** (measures / matters / decision / inputs / formula / source / window / min sample / limitations / when-NOT-to-trust), and carries three headers:
+### Fact-label vocabulary (from the brief)
+OFFICIAL PLATFORM FACT · INTERNAL CALCULATION (DERIVED) · RESEARCH-BACKED · INDUSTRY BENCHMARK ·
+MODEL ESTIMATE · INFERENCE · UNKNOWN.
 
-- **LEVEL** — the object the metric is native to: `account` / `campaign` / `adset` / `ad` / `creative`. A metric can be *rolled up*, but it has one native level; aggregating a rate metric upward requires re-computing from summed numerators/denominators, never averaging the rates.
-- **FACT-LABEL** — provenance of the *value*: `OFFICIAL PLATFORM FACT` / `INTERNAL CALCULATION (DERIVED)` / `RESEARCH-BACKED` / `INDUSTRY BENCHMARK` / `MODEL ESTIMATE` / `INFERENCE` / `UNKNOWN`.
-- **MAPPING CLASS** — from `02-meta-data-mapping.md`: `FETCH` (Meta returns it directly) / `CALC` (we compute from FETCH fields) / `INFER` (modelled/probabilistic) / `EXTERNAL` (needs non-Meta data) / `CANNOT-KNOW` (structurally unavailable).
-
-> **The core distinction this document enforces:** a metric Meta *returns as a field* (e.g. `cpm`, `ctr`, `frequency`) is an OFFICIAL PLATFORM FACT even though it is arithmetically a ratio — Meta computes it server-side and stamps it. A metric **we** assemble from two Meta fields (e.g. hook rate = 3-sec plays ÷ impressions) is an INTERNAL CALCULATION (DERIVED) and must **never** be shown to a buyer as a Meta field. Mislabelling here is the single most common integrity failure in ads tooling. See §B (Attention) for the worst offenders.
-
-**Benchmark honesty:** where a "good" threshold is not verifiable from a primary source as of Aug 2026, the cell reads `UNKNOWN — verify at build` or `establish account baseline`. AdBrain never ships an arbitrary threshold dressed as truth. The correct default comparator is almost always the **account's own trailing baseline**, not an internet benchmark.
-
-**Field-name convention:** Meta Marketing API `insights` field names are shown in `monospace`. API field names drift between Graph API versions; every `FETCH` field is flagged `verify field name at build` because the exact string (and whether it is a top-level field or an entry inside the `actions`/`video_*_watched_actions` arrays) depends on the pinned API version.
-
----
-
-## Provenance & open dependencies (read before trusting cross-refs)
-
-At authoring time the three named foundation files — `docs/product-spec/brief.md`, `00-master-plan.md`, `02-meta-data-mapping.md` — **were not present in the workspace**. This artifact was written from the discipline rules carried in the authoring brief plus primary Meta-platform knowledge. Consequences:
-
-| Dependency | Status | Action at build |
+### [02] source-class mapping (the rule this file must obey)
+| [02] class | Meaning | Fact label it forces |
 |---|---|---|
-| Mapping-class taxonomy (FETCH/CALC/INFER/EXTERNAL/CANNOT-KNOW) | Used as defined in brief | Reconcile exact class per field against `02-meta-data-mapping.md` |
-| Exact Meta API field strings & API version | Stated from knowledge, flagged `verify field name at build` | Pin to the API version in `02` and re-verify each field |
-| Numeric benchmarks | Deliberately **not** asserted | Fill from account baseline or a cited primary source |
-| Metric-ID scheme (A1, B2 …) | Local to this file | Align with the master metric registry if one exists |
+| FETCH | direct Meta API field | OFFICIAL PLATFORM FACT |
+| CALC | computed from fetched fields | INTERNAL CALCULATION (DERIVED) |
+| INFER | modeled/estimated | MODEL ESTIMATE or INFERENCE |
+| EXTERNAL | another system (Shopify/CRM/LP crawler) | EXTERNAL |
+| CANNOT-KNOW | not reliably knowable | UNKNOWN |
 
-All `verify at build` flags are load-bearing, not hedging.
+A metric fetched raw is an OFFICIAL PLATFORM FACT. The moment we divide two fetched fields, the
+result is INTERNAL CALCULATION (DERIVED) even though its inputs are official. This distinction is
+the whole point of the "attention trap" (see B).
 
----
----
-
-# CATEGORY A — DELIVERY
-
-*What the auction did with our money: how many people, how often, at what unit cost. Delivery metrics answer "is the machine even shipping our ads to fresh humans efficiently?" — the precondition for every downstream metric being meaningful.*
-
-## A1 — Impressions
-
-**LEVEL:** ad (native) · rolls up to adset/campaign/account · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`impressions`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Number of times an ad entered a person's screen (rendered), including repeat views to the same person. |
-| 2 | Why it matters | The universal denominator. Nearly every rate metric (CTR, hook rate, CPM) divides by it, so its integrity gates everything downstream. |
-| 3 | Decision it drives | Whether a creative has had *enough exposure to be judged at all* (sample-size gate). Below the impression floor, "kill/scale" decisions are noise. |
-| 4 | Inputs | Ad serve events (render-counted, not load-counted). |
-| 5 | Formula | Direct count — no formula. |
-| 6 | Source | `impressions` — Meta returns directly. OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Whatever the analysis window is; impressions are additive across days, so any window sums cleanly. |
-| 8 | Min sample size | N/A (it *is* the sample). It sets the floor for others — see each rate metric. |
-| 9 | Limitations | Counts renders, not attention or even a full viewable render. One human = many impressions. Not deduplicated (that's Reach). |
-| 10 | When NOT to trust | During active delivery an in-flight day undercounts; very fresh data (last 24–72h) is subject to Meta restatement. Cross-account comparison of raw impressions is meaningless without normalising by spend. |
+### The one benchmark rule
+This file states **no numeric benchmark as truth.** Every "compare against" points to the Benchmark
+engine ([27]), which must attach source/date/sample/confidence or return "benchmark unavailable".
+Minimum-sample numbers below are INTERNAL CALCULATION heuristics (stated reasoning, meant to be
+validated), not platform facts.
 
 ---
 
-## A2 — Reach
+# A · DELIVERY
+What Meta actually served, to how many, at what price. All raw fields here are FETCH OFFICIAL ([02]
+"Delivery / spend"). Delivery metrics are mostly **diagnostic context** — they rarely change an
+action alone, but they gate the trust of every downstream metric (a metric on 40 impressions is
+noise). Trends and concentration built on top of them are DERIVED.
 
-**LEVEL:** adset (native — dedup is bounded by the delivery object) · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`reach`)
+## A1 · Spend
+**LEVEL: any (ad→account) · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS (context/gate)**
+| Q | Answer |
+|---|---|
+| Measures | Currency actually spent in the window. |
+| Why | The denominator of nearly every efficiency metric; sizes the stakes of any decision. |
+| Decision | Gates whether an entity has enough weight to act on; feeds waste [10] and scale [11]. |
+| Inputs | `spend` |
+| Formula | Direct field (sum over window). |
+| Source | Meta Insights API `spend`. [02] Delivery/spend. |
+| Window | value / prev / 3/7/14/30-day, per `time_increment=1`. |
+| Min sample | n/a (it is itself the sample weight). |
+| Limitations | Currency/timezone of the ad account; excludes fees; not margin. |
+| Don't trust when | Account currency differs from reporting currency; partial-day pull mid-flight. |
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Number of **unique** people who saw the ad at least once in the window. |
-| 2 | Why it matters | Distinguishes "reached many people once" from "hammered a few repeatedly." The unique-audience denominator for frequency and for incrementality thinking. |
-| 3 | Decision it drives | Audience-expansion vs saturation: if reach plateaus while spend rises, the adset has exhausted its addressable pool → broaden targeting, raise budget cap, or accept rising frequency. |
-| 4 | Inputs | Deduplicated user-level impression events within the window. |
-| 5 | Formula | Direct count (Meta-side dedup). |
-| 6 | Source | `reach` — OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Window-bound and **non-additive**: reach for Jan + reach for Feb ≠ reach for Jan–Feb (same person can appear in both). Always pull reach for the exact window you report. |
-| 8 | Min sample size | N/A. |
-| 9 | Limitations | Non-additive across time and across adsets (a person in two adsets is double-counted at campaign roll-up unless Meta dedups at that level). Estimated at very small numbers. |
-| 10 | When NOT to trust | Never sum it across windows or objects. Do not compare reach across audiences of different sizes without normalising to reach/target-pool. |
+## A2 · Impressions
+**LEVEL: any · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS (gate/denominator)**
+| Q | Answer |
+|---|---|
+| Measures | Times the ad entered screen (Meta's rendered count). |
+| Why | Denominator for CPM, CTR, hook rate, frequency; primary sample-size gate. |
+| Decision | Sets minimum-sample confidence for every rate metric below. |
+| Inputs | `impressions` |
+| Formula | Direct field. |
+| Source | Meta Insights `impressions`. [02] Delivery/spend. |
+| Window | value/prev/trend; day-wise. |
+| Min sample | n/a. |
+| Limitations | Impression ≠ view (only video plays approximate attention — see B). |
+| Don't trust when | Comparing across placements with different viewability. |
 
----
+## A3 · Reach
+**LEVEL: adset/campaign/account (not additive across time) · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS (context)**
+| Q | Answer |
+|---|---|
+| Measures | Unique people who saw the ad. |
+| Why | The unique-audience base; the denominator of frequency. |
+| Decision | Audience saturation checks; feeds fatigue [07] (reach growth stalling). |
+| Inputs | `reach` |
+| Formula | Direct field. |
+| Source | Meta Insights `reach`. [02] Delivery/spend. |
+| Window | value/prev/trend; **not summable across days** (dedup only within Meta's window). |
+| Min sample | n/a. |
+| Limitations | Cannot be added across date ranges; Meta-modeled uniqueness. |
+| Don't trust when | Summing daily reach to a total (double-counts); very small audiences. |
 
-## A3 — Frequency
+## A4 · Frequency
+**LEVEL: adset/campaign/account · [02]: FETCH (Meta-provided = impressions/reach) · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS**
+| Q | Answer |
+|---|---|
+| Measures | Avg times each reached person saw the ad. |
+| Why | Classic (but insufficient) fatigue signal; over-exposure driver of CPM rise / CTR decay. |
+| Decision | Feeds fatigue [07] as ONE signal (never alone — brief rule); audience-refresh / cap decisions. |
+| Inputs | `frequency` (or `impressions`, `reach`). |
+| Formula | Meta provides it; identity = impressions / reach. |
+| Source | Meta Insights `frequency`. [02] flags it Meta-provided. |
+| Window | value/prev/trend; day-wise and cumulative differ. |
+| Min sample | Reach large enough to be stable (heuristic: reach ≳ a few thousand). |
+| Limitations | Averages hide the heavy-exposure tail; high freq ≠ fatigue by itself. |
+| Don't trust when | Used as the sole fatigue verdict (brief forbids); tiny reach; cumulative-vs-daily confusion. |
 
-**LEVEL:** adset (native) · **FACT-LABEL:** OFFICIAL PLATFORM FACT (Meta returns the field, though it equals impressions ÷ reach) · **MAPPING CLASS:** FETCH (`frequency`) — also reproducible as CALC
+## A5 · CPM (cost per 1,000 impressions)
+**LEVEL: any · [02]: FETCH OFFICIAL (also reconstructable as CALC) · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS**
+| Q | Answer |
+|---|---|
+| Measures | Price to buy 1,000 impressions. |
+| Why | Auction-cost signal; rising CPM at flat relevance = fatigue/competition/audience narrowing. |
+| Decision | Fatigue [07] input; efficiency triage; creative-refresh timing. |
+| Inputs | `cpm` (or `spend`, `impressions`). |
+| Formula | Meta field; identity = spend / impressions × 1000. |
+| Source | Meta Insights `cpm`. [02] Delivery/spend. |
+| Window | value/prev/trend; day-wise for anomaly detection. |
+| Min sample | Impressions ≳ 1,000 for a stable read (heuristic). |
+| Limitations | Driven by auction/seasonality/audience as much as by creative; confounded. |
+| Don't trust when | Isolating creative quality from it (AUTOPSY: seasonality, auction shifts). |
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Average number of times each reached person saw the ad in the window. |
-| 2 | Why it matters | The primary **creative-fatigue and audience-saturation** signal. Rising frequency with falling CTR/rising CPM is the classic fatigue fingerprint. |
-| 3 | Decision it drives | Refresh creative / expand audience / cap frequency. This is one of AdBrain's highest-value "what next" triggers. |
-| 4 | Inputs | Impressions, Reach. |
-| 5 | Formula | `frequency = impressions ÷ reach` (Meta returns it pre-computed). |
-| 6 | Source | `frequency` — OFFICIAL PLATFORM FACT / FETCH. *If reconstructed by us it becomes DERIVED — prefer the returned field.* |
-| 7 | Comparison window | Must match the reach window exactly; because reach is non-additive, **frequency is non-additive too** — recompute per window from that window's impressions and reach. |
-| 8 | Min sample size | Interpret only once reach is large enough to be stable (rule of thumb `reach ≥ ~1,000`; INTERNAL CALCULATION — statistical convention, not a Meta fact). |
-| 9 | Limitations | An *average* — hides distribution. Frequency 3 can mean "everyone saw it 3×" or "most saw it once, a tail saw it 15×." The tail is what actually fatigues. Distribution ("frequency distribution") is a separate, richer cut — mark `verify availability at build`. |
-| 10 | When NOT to trust | As a single number for a fatigue decision without the distribution and without pairing it with a *trend* in CTR/CPM. A high frequency on a tiny retargeting pool is expected, not a problem. The "fatigue at frequency X" threshold is `UNKNOWN — establish account baseline`; there is no universal magic number. |
+## A6 · Spend velocity
+**LEVEL: any · [02]: CALC (from daily spend) · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: PASS**
+| Q | Answer |
+|---|---|
+| Measures | Rate/acceleration of spend over recent days. |
+| Why | Detects fast scaling (fatigue risk) or throttling; pairs with marginal economics. |
+| Decision | Scale [11] / protect / slow-down; flags entities scaling faster than performance holds. |
+| Inputs | daily `spend` series. |
+| Formula | e.g. slope of spend over N days, or (spendₜ − spendₜ₋₇)/spendₜ₋₇. Document chosen form. |
+| Source | Derived from Meta daily spend. [02] "spend velocity … CALC DERIVED". |
+| Window | 3/7/14-day. |
+| Min sample | ≥ 7 daily points for a slope (heuristic). |
+| Limitations | Sensitive to budget edits and day-of-week; not performance itself. |
+| Don't trust when | < 1 week of data; recent manual budget change (confounds slope). |
 
----
+## A7 · Spend trend (3/7/14/30-day)
+**LEVEL: any · [02]: CALC · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: PASS**
+| Q | Answer |
+|---|---|
+| Measures | Directional change in spend across windows. |
+| Why | Context for every efficiency change (did CPA rise because spend jumped?). |
+| Decision | Distinguishes "we spent more" from "it got worse"; AUTOPSY confounder check. |
+| Inputs | daily `spend`. |
+| Formula | windowed sums + % change; trend vs noise per [22]. |
+| Source | Derived. [02] "7/14/30d spend trend … CALC DERIVED". |
+| Window | 3/7/14/30-day. |
+| Min sample | window length in days. |
+| Limitations | % change unstable on small bases. |
+| Don't trust when | Base spend near zero; window shorter than one weekly cycle. |
 
-## A4 — Spend (Amount Spent)
+## A8 · Budget utilization / pacing
+**LEVEL: campaign/adset · [02]: FETCH (budget) + CALC · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: PASS**
+| Q | Answer |
+|---|---|
+| Measures | Spend vs set budget (under/over/on-pace). |
+| Why | Under-delivery = missed scale; capped delivery = artificial ceiling. |
+| Decision | Raise/lower budget; unblock delivery; scale [11] readiness. |
+| Inputs | `budget`, `spend`, delivery/`effective_status`. |
+| Formula | spend / budget over pacing window. |
+| Source | Meta `budget` + `spend` (FETCH); ratio DERIVED. [02] Delivery/spend. |
+| Window | daily / flight-to-date. |
+| Min sample | ≥ 1 full delivery day. |
+| Limitations | CBO/Advantage+ shifts budget across adsets — adset pacing misleads under CBO. |
+| Don't trust when | Learning phase; CBO active; budget edited mid-window. |
 
-**LEVEL:** ad (native) · rolls up cleanly (additive) · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`spend`)
+## A9 · Delivery / effective status
+**LEVEL: campaign/adset/ad · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS (gate)**
+| Q | Answer |
+|---|---|
+| Measures | Whether the entity is actually delivering (active/limited/rejected/learning/etc.). |
+| Why | A "bad" metric on a rejected or learning entity is not a performance fact. |
+| Decision | Gates all diagnosis; fix delivery before judging creative. |
+| Inputs | `effective_status`, delivery info. |
+| Formula | Direct field(s). |
+| Source | Meta. [02] "delivery/effective_status FETCH OFFICIAL". |
+| Window | current state (point-in-time). |
+| Min sample | n/a. |
+| Limitations | Status is momentary; history needs day-wise capture [22]. |
+| Don't trust when | Judging performance while status ≠ active (learning/limited/rejected). |
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Currency actually charged for delivery in the window. |
-| 2 | Why it matters | The cost side of every efficiency ratio (CPM, CPC, CPA, ROAS) and the budget-pacing input. |
-| 3 | Decision it drives | Budget reallocation — shift spend toward objects with better downstream efficiency; the sample-size gate for cost-based confidence (see A5, D9). |
-| 4 | Inputs | Billed auction events. |
-| 5 | Formula | Direct sum. |
-| 6 | Source | `spend` — OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Additive across any window/object; safe to sum. |
-| 8 | Min sample size | N/A as a count. As a *denominator*, cost-per metrics need enough spend to have produced a stable count of the numerator event. |
-| 9 | Limitations | Ad-account currency and timezone bound — comparing spend across accounts requires currency + timezone normalisation (EXTERNAL: FX rates). Excludes off-platform fees, agency margin, production cost. |
-| 10 | When NOT to trust | Same-day figures (still billing). For true blended efficiency you must add non-Meta costs — Meta spend alone understates real CAC. |
-
----
-
-## A5 — CPM (Cost per 1,000 Impressions)
-
-**LEVEL:** ad (native) · **FACT-LABEL:** OFFICIAL PLATFORM FACT (returned field) · **MAPPING CLASS:** FETCH (`cpm`) — reproducible as CALC
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Average auction cost to show the ad 1,000 times. |
-| 2 | Why it matters | The purest **auction-price / audience-cost** signal, isolated from click and conversion behaviour. Rising CPM on a stable audience = more competition or worse ad quality ranking. |
-| 3 | Decision it drives | Diagnose *where* efficiency is leaking: if CPA rose but CPM is flat, the problem is downstream (creative/landing/offer), not the auction. Splits "traffic got expensive" from "traffic got worse." |
-| 4 | Inputs | Spend, Impressions. |
-| 5 | Formula | `cpm = (spend ÷ impressions) × 1000` (Meta returns pre-computed). |
-| 6 | Source | `cpm` — OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Recompute from summed spend and impressions for the window; **do not average daily CPMs** (that biases toward low-volume days). |
-| 8 | Min sample size | Stable at modest impressions (`≥ ~1,000`); noisy below. INTERNAL CALCULATION — statistical convention. |
-| 9 | Limitations | Driven by audience competitiveness, placement mix, seasonality (Q4 auction inflation is real but its magnitude is `UNKNOWN — verify per account/year`), and Meta's ad-quality ranking. A "good" CPM is entirely audience-dependent — no universal benchmark. |
-| 10 | When NOT to trust | For cross-audience comparison (broad prospecting vs narrow retargeting have structurally different CPMs). As a quality metric in isolation — cheap impressions to the wrong people are not a win. |
-
----
-
-## A6 — Budget Delivery / Pacing Rate
-
-**LEVEL:** adset/campaign (native — budget lives on the delivery object; CBO vs ABO changes which) · **FACT-LABEL:** INTERNAL CALCULATION (DERIVED) · **MAPPING CLASS:** CALC (from `spend` + budget setting) — budget setting itself is FETCH
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | How much of the intended budget the object is actually spending (spend ÷ budget, normalised to the pacing period). |
-| 2 | Why it matters | Under-delivery silently caps a winning campaign; the "why aren't we spending?" question precedes any performance question. |
-| 3 | Decision it drives | Fix delivery blockers (bid too low, audience too small, learning-limited, disapproval) vs raise budget on a healthy scaler. |
-| 4 | Inputs | Spend, configured daily/lifetime budget, elapsed time in period. |
-| 5 | Formula | `pacing = spend_in_period ÷ (budget × fraction_of_period_elapsed)`. Values <1 = under-pacing. |
-| 6 | Source | Spend `FETCH`; budget from campaign/adset config `FETCH`; the ratio is ours → INTERNAL CALCULATION (DERIVED) / CALC. |
-| 7 | Comparison window | Align to the budget period (daily budgets → intraday pacing; lifetime → whole flight). |
-| 8 | Min sample size | N/A; but intraday pacing early in a day is unreliable (delivery is non-linear across dayparts). |
-| 9 | Limitations | Meta intentionally under/over-delivers day-to-day within lifetime budgets; daily-budget over/under by up to a documented tolerance is normal, not a fault (`verify current tolerance % at build`). |
-| 10 | When NOT to trust | As an alarm early in a day or flight. Chronic under-delivery is the real signal; single-period wobble is expected. |
-
----
-
-## A7 — Delivery-Insights signals (First-Impression Ratio, Audience Saturation, Auction Overlap)
-
-**LEVEL:** adset · **FACT-LABEL:** UNKNOWN — availability not verified · **MAPPING CLASS:** likely INFER or CANNOT-KNOW (subset historically CALC in the deprecated Delivery Insights UI)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | First-Impression Ratio = share of impressions that were someone's first exposure; Audience Saturation = how tapped-out the pool is; Auction Overlap = self-competition between your own adsets. |
-| 2 | Why it matters | Direct saturation / self-cannibalisation signals — high-value "what next" triggers *if available*. |
-| 3 | Decision it drives | Consolidate overlapping adsets; broaden or refresh a saturated audience. |
-| 4 | Inputs | Meta internal delivery diagnostics. |
-| 5 | Formula | Meta-internal; not publicly specified. |
-| 6 | Source | Historically surfaced in the **Delivery Insights** tab, much of which Meta has removed/curtailed. Current API exposure `UNKNOWN — verify at build`. |
-| 7 | Comparison window | N/A until availability confirmed. |
-| 8 | Min sample size | N/A. |
-| 9 | Limitations | May be UI-only, deprecated, or unavailable via API. Do not build a decision on it until confirmed. |
-| 10 | When NOT to trust | Until build-time verification confirms it exists in the pinned API version. Treat as aspirational, not shippable. Overlap can otherwise be **approximated** (INFER) from audience-definition analysis — flag as estimate, not fact. |
-
----
----
-
-# CATEGORY B — ATTENTION
-
-*Did anyone actually watch? Attention metrics are where derived-vs-official mislabelling does the most damage, because the two most-quoted numbers in creative strategy — hook rate and hold rate — are BOTH derived and hold rate has no agreed definition. This section fixes that.*
-
-## B1 — Video Plays
-
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`video_play_actions`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Times the video *started* to play (includes autoplay starts). |
-| 2 | Why it matters | The denominator for completion/retention curves and one candidate denominator for hold rate. |
-| 3 | Decision it drives | Rarely a decision on its own; feeds retention analysis (B4) and hold-rate construction (B7). |
-| 4 | Inputs | Play-start events. |
-| 5 | Formula | Direct count. |
-| 6 | Source | `video_play_actions` — OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Additive across the window. |
-| 8 | Min sample size | Interpret retention off it only once plays `≥ ~500–1,000` (statistical convention, DERIVED). |
-| 9 | Limitations | Autoplay inflates it massively in feed placements — a "play" is not a decision to watch. Placement-dependent (autoplay vs click-to-play). |
-| 10 | When NOT to trust | As an attention signal by itself (autoplay). As a cross-placement comparator without segmenting by placement. |
-
----
-
-## B2 — 3-Second Video Plays
-
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`video_3_sec_watched_actions` — `verify field name/array at build`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Times the video was watched for at least 3 continuous seconds (or to completion if shorter). |
-| 2 | Why it matters | Meta's own coarse "the thumb stopped" proxy and the standard **numerator for hook rate**. |
-| 3 | Decision it drives | Via hook rate (B6): keep/kill the **first frames** of a creative. |
-| 4 | Inputs | 3-second watch events. |
-| 5 | Formula | Direct count. |
-| 6 | Source | Action-array metric — OFFICIAL PLATFORM FACT / FETCH. Note Meta shifted emphasis to ThruPlay; 3-sec remains available but confirm exposure in the pinned version. |
-| 7 | Comparison window | Additive. |
-| 8 | Min sample size | Tie to impressions floor of its rate (see B6). |
-| 9 | Limitations | 3 seconds is a low, autoplay-contaminated bar; a "3-sec view" in an autoplay feed is weak evidence of intent. |
-| 10 | When NOT to trust | As proof of genuine attention; it is a *relative* creative-vs-creative signal, not an absolute one. |
-
----
-
-## B3 — ThruPlay
-
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`video_thruplay_watched_actions`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Times the video played to completion, **or** for at least 15 seconds (whichever comes first). |
-| 2 | Why it matters | Meta's preferred "meaningful watch" metric and an optimisation objective; a common (and defensible) **numerator for hold rate**. |
-| 3 | Decision it drives | Whether the *body* of the creative holds attention; ThruPlay-optimised buying decisions. |
-| 4 | Inputs | ThruPlay events. |
-| 5 | Formula | Direct count. |
-| 6 | Source | `video_thruplay_watched_actions` — OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Additive. |
-| 8 | Min sample size | Tie to the hold-rate denominator floor (see B7). |
-| 9 | Limitations | The "15s OR complete" definition means ThruPlay is **not comparable across videos of different lengths** — a 12s video's ThruPlay = completion; a 90s video's ThruPlay = 15s partial. This asymmetry is the root of the hold-rate confusion (B7). |
-| 10 | When NOT to trust | When comparing creatives of very different durations without normalising for length. |
+## A10 · Impression / reach growth
+**LEVEL: any · [02]: CALC · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: PASS**
+| Q | Answer |
+|---|---|
+| Measures | Rate of new impressions/reach accrual. |
+| Why | Stalling reach growth at rising frequency = audience exhaustion (fatigue [07] signal). |
+| Decision | Audience expansion / refresh; fatigue confirmation. |
+| Inputs | daily `impressions`, `reach`. |
+| Formula | Δ over window; reach growth needs Meta-deduped reach, not summed. |
+| Source | Derived from FETCH fields. [02] Delivery/spend. |
+| Window | 3/7/14-day. |
+| Min sample | ≥ 7 daily points. |
+| Limitations | Reach not summable across days; growth confounded by budget changes. |
+| Don't trust when | Budget changed; reach approximated by summing daily. |
 
 ---
 
-## B4 — Video Percent-Watched (25/50/75/95/100%) & Retention Curve
+# B · ATTENTION
+**The brief's key trap ([02]: "the brief's key trap").** Meta gives raw video plays as OFFICIAL
+FACTS. The attention *rates* everyone quotes (hook rate, hold rate) are **our divisions of those
+facts — INTERNAL CALCULATION (DERIVED)** — and must never be shown as official Meta metrics.
+Attention metrics apply to video creative only; for static, they are N/A.
 
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`video_p25/p50/p75/p95/p100_watched_actions`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Count of views reaching each quartile/threshold of the video's length. |
-| 2 | Why it matters | The **retention curve** — the single richest creative-diagnostic in the platform. Where the curve cliffs tells the editor exactly which second to cut. |
-| 3 | Decision it drives | Creative re-edit: a sharp drop between p25→p50 says "the middle drags"; a drop at p95→p100 is normal (people leave before the end card). Pinpoints the edit, not just "video is weak." |
-| 4 | Inputs | Threshold-watch counts + video duration (EXTERNAL if not in the same pull). |
-| 5 | Formula | Retention at threshold `= p{n}_watched ÷ video_plays` (or ÷ impressions for an exposure-based curve — state which). The *count* is FETCH; the *curve* is CALC/DERIVED. |
-| 6 | Source | Quartile action arrays — OFFICIAL PLATFORM FACT / FETCH. The normalised curve is INTERNAL CALCULATION (DERIVED). |
-| 7 | Comparison window | Counts additive; recompute the curve from summed counts, never average percentages. |
-| 8 | Min sample size | Curve is jumpy below `~500` plays. |
-| 9 | Limitations | Percentages are of *length*, so two videos are only comparable at the same duration or after time-normalising. Quartiles are coarse — the true cliff can hide inside a quartile. |
-| 10 | When NOT to trust | Cross-duration comparison without normalisation; low-play creatives. |
-
----
-
-## B5 — Average Watch Time
-
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`video_avg_time_watched_actions`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Average seconds watched per play (Meta-defined). |
-| 2 | Why it matters | A single scalar summary of retention, useful for ranking many creatives fast before drilling into curves. |
-| 3 | Decision it drives | Shortlist which creatives deserve a full retention-curve review; a length-normalised attention rank. |
-| 4 | Inputs | Total watch time, plays. |
-| 5 | Formula | Meta-returned; conceptually total-seconds ÷ plays. |
-| 6 | Source | `video_avg_time_watched_actions` — OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Recompute from totals; do not average the averages. |
-| 8 | Min sample size | `~500` plays for stability. |
-| 9 | Limitations | An average → hidden distribution; length-biased (longer videos can post higher absolute avg watch time while retaining a *smaller fraction*). Prefer avg-watch ÷ length for fair comparison. |
-| 10 | When NOT to trust | Cross-length ranking in raw seconds; small samples. |
-
----
-
-## B6 — Hook Rate  ⚠️ THE DERIVED-VS-OFFICIAL TRAP
-
-**LEVEL:** ad/creative · **FACT-LABEL:** INTERNAL CALCULATION (DERIVED) — **NOT a Meta field** · **MAPPING CLASS:** CALC
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Share of impressions that turned into a 3-second view — i.e. how well the **first ~1–3 seconds stop the scroll**. |
-| 2 | Why it matters | The highest-leverage creative lever: fixing a weak hook lifts every downstream metric. It is the canonical "swap the opening frames" trigger. |
-| 3 | Decision it drives | Re-shoot / re-order the opening of the creative; or kill the creative at the hook stage before spending on the body. |
-| 4 | Inputs | 3-second video plays (B2), Impressions (A1). |
-| 5 | Formula | `hook_rate = video_3_sec_watched_actions ÷ impressions`. |
-| 6 | Source | **DERIVED — we compute it. Meta does NOT return a "hook rate" field.** Both inputs are FETCH; the ratio is CALC. Displaying this as a platform metric is a labelling violation. |
-| 7 | Comparison window | Recompute from summed 3-sec plays and impressions for the window; never average daily hook rates. |
-| 8 | Min sample size | Impressions `≥ ~1,000–2,000` before the rate is trustworthy (statistical convention, DERIVED). |
-| 9 | Limitations | Inherits autoplay contamination of the 3-sec bar; **placement-dependent** (Stories/Reels autoplay differently from feed) so must be computed within placement; denominator uses impressions not plays, so non-video-eligible impressions can distort it. |
-| 10 | When NOT to trust | Across mixed placements; on low impressions; as an absolute "good/bad" number — the only honest comparator is *this account's other creatives* or its own trailing baseline. Benchmark thresholds circulating online are `UNKNOWN — do not hard-code`. |
-
----
-
-## B7 — Hold Rate  ⚠️ THREE COMPETING DEFINITIONS — ONE CHOSEN
-
-**LEVEL:** ad/creative · **FACT-LABEL:** INTERNAL CALCULATION (DERIVED) — **NOT a Meta field** · **MAPPING CLASS:** CALC
-
-"Hold rate" is quoted constantly and defined inconsistently. The three definitions in circulation are genuinely different metrics that answer different questions. AdBrain must pick one, compute it identically everywhere, and label the choice.
-
-### The three definitions
-
-| Def | Formula | What it actually answers | Weakness |
+### The derived-vs-official split, made explicit
+| Looks like a Meta metric | Actually | [02] class | Fact label |
 |---|---|---|---|
-| **H1** (chosen) | `ThruPlay ÷ impressions` = `video_thruplay_watched_actions ÷ impressions` | "Of everyone we paid to reach, what share reached a meaningful watch (15s/complete)?" — exposure-anchored, same denominator as hook rate | ThruPlay's "15s OR complete" makes it length-sensitive |
-| **H2** | `ThruPlay ÷ 3-sec plays` | "Of those we hooked, what share we held to a meaningful watch?" — retention *given* a hook | Denominator is itself a derived/soft number; two ratios stacked |
-| **H3** | `video_p100_watched ÷ video_plays` (true completion rate) | "What share of starts watched to the very end?" | Punishes long videos; end-card drop-off makes it pessimistic |
+| video_3_sec plays | raw field | FETCH | OFFICIAL PLATFORM FACT |
+| ThruPlay | raw field | FETCH | OFFICIAL PLATFORM FACT |
+| p25/50/75/100 watched | raw actions | FETCH | OFFICIAL PLATFORM FACT |
+| video_avg_time_watched | raw field | FETCH | OFFICIAL PLATFORM FACT |
+| **Hook rate** | 3-sec ÷ impressions | CALC | **INTERNAL CALCULATION (DERIVED)** |
+| **Hold rate** | (one of 3 defs, ÷ 3-sec) | CALC | **INTERNAL CALCULATION (DERIVED)** |
+| Retention curve / decay | shape of p25–p100 | CALC | **INTERNAL CALCULATION (DERIVED)** |
 
-### AdBrain's decision: **use H1 (`ThruPlay ÷ impressions`), documented.**
+## B1 · 3-second video plays
+**LEVEL: ad/creative · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS (input to hook rate)**
+| Q | Answer |
+|---|---|
+| Measures | Count of ≥3-second video plays (Meta's 3-sec play definition). |
+| Why | Raw numerator for hook rate; the coarsest "did the thumb stop" signal. |
+| Decision | Feeds hook rate → hook/opening-frame decisions. |
+| Inputs | `video_3_sec_watched_actions` (or `video_play_actions` per API version — verify at build). |
+| Formula | Direct field. |
+| Source | Meta Insights. [02] Attention/video. |
+| Window | value/prev/trend; day-wise. |
+| Min sample | tied to impressions (see hook rate). |
+| Limitations | Autoplay inflates it; a 3-sec "play" is a low bar, not proof of attention. |
+| Don't trust when | Autoplay/sound-off placements; comparing across placements. |
 
-Rationale: (a) it shares the **impressions** denominator with hook rate (B6), so hook and hold sit on one comparable scale and form a clean two-step funnel (stop-scroll → hold-attention); (b) it uses ThruPlay, Meta's own "meaningful watch" concept, keeping the numerator defensible; (c) it needs only two FETCH fields both reliably available. Where creative lengths differ materially, **also** surface the length-normalised retention curve (B4) — hold rate ranks, the curve diagnoses. H2 and H3 may be shown as *secondary* cuts but the word "hold rate" in the product means H1, always.
+## B2 · ThruPlay
+**LEVEL: ad/creative · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS (input to hold rate)**
+| Q | Answer |
+|---|---|
+| Measures | Meta's ThruPlay: video played to completion OR ≥15s, whichever first (**verify exact def at build — Meta wording**). |
+| Why | Meta's own "meaningful watch" optimization metric; numerator for the chosen hold-rate definition. |
+| Decision | Hold-rate / mid-video retention decisions; ThruPlay-optimized delivery quality. |
+| Inputs | `video_thruplay_watched_actions`. |
+| Formula | Direct field. |
+| Source | Meta Insights. [02] Attention/video ("thruplay"). |
+| Window | value/prev/trend. |
+| Min sample | tied to 3-sec plays (see hold rate). |
+| Limitations | For creatives < 15s, ThruPlay = completion, changing its meaning by length. |
+| Don't trust when | Comparing hold across creatives of very different lengths. |
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | (H1) Share of impressions that became a ThruPlay (15s-or-complete watch). |
-| 2 | Why it matters | The "does the body hold attention after the hook" lever; pairs with hook rate to localise whether a creative fails at the *stop* or the *hold* stage. |
-| 3 | Decision it drives | Re-edit the middle/body of the creative (vs re-edit the opening, which hook rate drives); kill creatives that hook but don't hold. |
-| 4 | Inputs | ThruPlay (B3), Impressions (A1). |
-| 5 | Formula | `hold_rate = video_thruplay_watched_actions ÷ impressions` (definition H1). |
-| 6 | Source | **DERIVED — Meta returns no "hold rate" field.** Inputs FETCH; ratio CALC. |
-| 7 | Comparison window | Recompute from summed ThruPlay and impressions; never average rates. Always compare within the same definition — mixing H1/H2/H3 across reports is the trap. |
-| 8 | Min sample size | Impressions `≥ ~1,000–2,000` (DERIVED convention). |
-| 9 | Limitations | Length-sensitive via ThruPlay's dual definition; placement-dependent; must be paired with the retention curve when durations differ. |
-| 10 | When NOT to trust | Cross-length or cross-placement comparison unnormalised; low impressions; **any report that doesn't state which of H1/H2/H3 it used** — treat an unlabelled hold rate as untrustworthy. |
+## B3 · Video percentages watched (p25 / p50 / p75 / p100)
+**LEVEL: ad/creative · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS (retention-curve inputs)**
+| Q | Answer |
+|---|---|
+| Measures | Viewers reaching 25/50/75/100% of the video. |
+| Why | The shape of drop-off = where the creative loses people (edit decisions). |
+| Decision | Which second/scene to cut or re-order; retention-curve [B8] and decay [B9]. |
+| Inputs | `video_p25/p50/p75/p100_watched_actions`. |
+| Formula | Direct fields. |
+| Source | Meta Insights. [02] Attention/video. |
+| Window | value/prev; day-wise. |
+| Min sample | 3-sec plays large enough for stable ratios. |
+| Limitations | Quartiles only (coarse); %-of-length, not comparable second-for-second across lengths. |
+| Don't trust when | Very short videos; low play counts. |
 
----
+## B4 · Video average time watched
+**LEVEL: ad/creative · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: WATCH (secondary)**
+| Q | Answer |
+|---|---|
+| Measures | Mean seconds watched per impression/play (verify denominator basis at build). |
+| Why | Single-number attention summary; complements the curve. |
+| Decision | Secondary; supports edit/length decisions. |
+| Inputs | `video_avg_time_watched`. |
+| Formula | Direct field. |
+| Source | Meta Insights. [02] Attention/video. |
+| Window | value/prev/trend. |
+| Min sample | as B3. |
+| Limitations | Mean hides bimodal drop-off; denominator basis varies. |
+| Don't trust when | Used instead of the curve; short creatives. |
 
-## B8 — Thumbstop Rate (alias — do not double-count)
+## B5 · Hook rate  ⚠ DERIVED (not an official Meta field)
+**LEVEL: ad/creative · [02]: CALC · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: PASS (primary creative signal)**
+| Q | Answer |
+|---|---|
+| Measures | Share of impressions that became a 3-sec play — "did the opening stop the scroll?". |
+| Why | Fastest read on the first-frame/hook; top creative-iteration lever. |
+| Decision | Keep/kill/iterate the **hook**; prioritize new opening frames; fatigue [07] signal. |
+| Inputs | `video_3_sec_watched_actions`, `impressions`. |
+| Formula | **hook rate = 3-sec plays / impressions.** ([02] states this exact derivation.) |
+| Source | **INTERNAL CALCULATION** over two OFFICIAL fields. Never label as a Meta metric. [02] "NOT an official field; a custom calc". |
+| Window | value/prev/trend; day-wise for early fatigue. |
+| Min sample | Impressions ≳ 1,000 (heuristic: ~±3pp CI on a proportion; validate via [14]). |
+| Limitations | Autoplay/placement inflate the numerator; not comparable across placements (Reels vs Feed). |
+| Don't trust when | Mixed placements pooled (Simpson's paradox — AUTOPSY); < ~1k impressions; sound-off contexts. |
 
-**LEVEL:** ad/creative · **FACT-LABEL:** INTERNAL CALCULATION (DERIVED) · **MAPPING CLASS:** CALC
+## B6 · Hold rate  ⚠ DERIVED · 3 competing definitions — one chosen below
+**LEVEL: ad/creative · [02]: CALC · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: PASS (primary creative signal)**
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Scroll-stopping power. In most shops "thumbstop rate" is a **synonym for hook rate** (`3-sec ÷ impressions`); a minority define it as `any video play ÷ impressions`. |
-| 2 | Why it matters | Same lever as hook rate — flagged separately only to prevent teams treating it as a *second, independent* metric. |
-| 3 | Decision it drives | Same as hook rate (opening-frames decision). |
-| 4 | Inputs | 3-sec plays (or plays), Impressions. |
-| 5 | Formula | `= hook_rate` under the majority definition. |
-| 6 | Source | DERIVED / CALC. |
-| 7 | Comparison window | As B6. |
-| 8 | Min sample size | As B6. |
-| 9 | Limitations | Naming collision causes duplicate/contradictory reporting. |
-| 10 | When NOT to trust | Whenever it appears alongside "hook rate" as if the two were different signals. **AdBrain decision:** standardise on "hook rate," treat "thumbstop" as an alias, define it once. |
+[02] explicitly flags that hold rate has **three competing definitions** and instructs: *pick one,
+document it.* The three:
 
----
----
+| # | Definition | Numerator | Denominator | Note |
+|---|---|---|---|---|
+| Def-1 (Meta-depth) | retention to 75% | `video_p75_watched` | `video_3_sec` | depth-of-watch flavor |
+| Def-2 (industry 15s) | 15-second views | 15-sec views (proxy) | `video_3_sec` | classic "15-sec/3-sec"; no clean native 15s field → needs a proxy |
+| Def-3 (ThruPlay) | ThruPlay watches | `video_thruplay` | `video_3_sec` | uses Meta's own meaningful-watch field |
 
-# CATEGORY C — ENGAGEMENT
+**CHOSEN CANONICAL (AdBrain): Def-3 — hold rate = ThruPlay / 3-sec plays.**
+Reason: both inputs are OFFICIAL Meta fields (no proxy needed, unlike Def-2), and ThruPlay is
+Meta's own "meaningful watch" concept, making it the most defensible single definition. Def-1 is
+retained as a secondary "deep-hold / 75% retention" metric; Def-2 is rejected (no native 15s field →
+would require an unlabeled proxy). **All three definitions and this choice are surfaced in the
+metric's hover/explainability so no one mistakes it for the only definition.**
 
-*Signals of active response short of a click-out. Useful for creative resonance and (via reactions/comments) sentiment, but engagement is a means, not the end — most of these are secondary to click/conversion for a performance account. Labelled accordingly.*
+| Q | Answer |
+|---|---|
+| Measures | Of those the hook caught (3-sec plays), the share held to a meaningful watch (ThruPlay). |
+| Why | Separates "good hook, weak body" from "good all the way"; drives edit vs re-hook decisions. |
+| Decision | Fix the **body/middle** of the video vs the hook; fatigue [07]; keep/kill. |
+| Inputs | `video_thruplay_watched_actions`, `video_3_sec_watched_actions`. |
+| Formula | **hold rate = ThruPlay / 3-sec plays** (canonical Def-3). |
+| Source | INTERNAL CALCULATION over two OFFICIAL fields. [02] "hold rate … CALC DERIVED … pick one, document it". |
+| Window | value/prev/trend; day-wise. |
+| Min sample | 3-sec plays ≳ 1,000 (heuristic; validate via [14]). |
+| Limitations | ThruPlay meaning changes with video length (<15s = completion); definition-dependent — cross-tool comparisons invalid unless same def. |
+| Don't trust when | Comparing to another platform/tool using a different hold-rate definition; very short/long creatives pooled; small play counts. |
 
-## C1 — Post Engagement (total)
+## B7 · Cost per ThruPlay / cost per 3-sec play
+**LEVEL: ad/creative · [02]: CALC (spend ÷ FETCH count) · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: WATCH (secondary)**
+| Q | Answer |
+|---|---|
+| Measures | Spend per meaningful video watch (ThruPlay) or per 3-sec play. |
+| Why | Attention-buying efficiency; ties attention to money for upper-funnel objectives. |
+| Decision | Upper-funnel/awareness efficiency triage; secondary to conversion economics. |
+| Inputs | `spend`, `video_thruplay_watched_actions` (or 3-sec). |
+| Formula | spend / ThruPlay (or / 3-sec plays). |
+| Source | INTERNAL CALCULATION. [02] Attention/video + Delivery/spend. |
+| Window | value/prev/trend. |
+| Min sample | ThruPlays ≳ a few hundred (heuristic). |
+| Limitations | Not a conversion metric; cheap attention ≠ business value. |
+| Don't trust when | Used as a success metric for a conversion objective. |
 
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`post_engagement` / `actions:post_engagement`)
+## B8 · Retention curve
+**LEVEL: creative · [02]: CALC (from p25–p100) · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: PASS (edit decisions)**
+| Q | Answer |
+|---|---|
+| Measures | The drop-off shape across 0→25→50→75→100%. |
+| Why | Pinpoints where viewers leave — the single most actionable editing insight. |
+| Decision | Which scene/second to cut, shorten, or move; hook vs body diagnosis. |
+| Inputs | 3-sec plays, p25/p50/p75/p100. |
+| Formula | Normalized retention at each quartile (relative to 3-sec plays or impressions — document basis). |
+| Source | INTERNAL CALCULATION over OFFICIAL fields. [02] "retention curve … CALC DERIVED". |
+| Window | value/prev; compare across creative versions. |
+| Min sample | 3-sec plays ≳ 1,000. |
+| Limitations | Only 4 points (quartiles), %-based so length-sensitive; no per-second granularity from Meta. |
+| Don't trust when | Comparing curves across very different lengths; low plays. |
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | All engagement actions on the ad post (reactions, comments, shares, saves, clicks of any kind, etc.) summed. |
-| 2 | Why it matters | A coarse "did this resonate at all" roll-up; a fast triage scalar. |
-| 3 | Decision it drives | Shortlist creatives for deeper engagement-quality review. **Primary? No — advanced/roll-up.** It bundles clicks with reactions, so it can't cleanly drive a single decision. |
-| 4 | Inputs | Sum of component engagement actions. |
-| 5 | Formula | Meta-summed. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Additive. |
-| 8 | Min sample size | N/A as a count. |
-| 9 | Limitations | Bundles high-intent (clicks) with low-intent (reactions), obscuring what actually happened. |
-| 10 | When NOT to trust | As a performance KPI — it is a vanity roll-up unless decomposed into the components below. |
+## B9 · Attention decay
+**LEVEL: creative · [02]: CALC · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: WATCH (fatigue input)**
+| Q | Answer |
+|---|---|
+| Measures | Worsening of hook/hold/retention over time for the same creative. |
+| Why | Attention-side early-warning of creative fatigue before CPA moves. |
+| Decision | Fatigue [07] early-warning; pre-emptive refresh. |
+| Inputs | daily hook rate / hold rate / retention series. |
+| Formula | trend/slope of attention metrics over 7/14-day. |
+| Source | INTERNAL CALCULATION. [02] "attention decay … CALC DERIVED". |
+| Window | 7/14/21-day. |
+| Min sample | ≥ 7 daily points, each with adequate volume. |
+| Limitations | Confounded by audience/placement shifts; a signal not a verdict (fatigue is multi-signal). |
+| Don't trust when | Placement/audience changed; sparse daily volume; used as sole fatigue call. |
 
----
-
-## C2 — Reactions
-
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`actions:post_reaction`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Count of Like/Love/Haha/Wow/Sad/Angry reactions on the ad post. |
-| 2 | Why it matters | Cheap resonance signal; the *mix* (Love vs Angry) is a rough sentiment read. |
-| 3 | Decision it drives | Weak creative-resonance tiebreaker; sentiment early-warning if Angry spikes. **Primary? No — secondary/vanity for a performance account.** |
-| 4 | Inputs | Reaction events (by type where available). |
-| 5 | Formula | Direct count. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH (per-type breakdown `verify at build`). |
-| 7 | Comparison window | Additive. |
-| 8 | Min sample size | Sentiment mix needs a meaningful base (`≥ ~100` reactions) to read. |
-| 9 | Limitations | Reactions accrue on the *organic* post identity too; using one Page-post ID across ads pools reactions (social proof) but blurs per-ad attribution. Weak correlation to conversion. |
-| 10 | When NOT to trust | As a performance proxy; low counts for sentiment. |
-
----
-
-## C3 — Comments
-
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (count `actions:comment`) + EXTERNAL (comment *text/sentiment* needs the Comments edge + NLP)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Number of comments on the ad post (count). Text is a separate pull. |
-| 2 | Why it matters | Comment *count* is minor; comment **content** is gold — objections, FAQs, and angle ideas straight from the market. |
-| 3 | Decision it drives | Count: low value. Content: creative-angle and objection-handling decisions, and moderation of harmful comments. Content analysis is a genuinely high-value "what next" input. |
-| 4 | Inputs | Comment count (FETCH); comment text via Comments edge (EXTERNAL to insights); sentiment via NLP (INFER). |
-| 5 | Formula | Count direct; sentiment modelled. |
-| 6 | Source | Count OFFICIAL PLATFORM FACT / FETCH. Sentiment = MODEL ESTIMATE / INFER. |
-| 7 | Comparison window | Count additive; sentiment is a windowed model output. |
-| 8 | Min sample size | Sentiment/theme mining needs enough comments to be representative (`≥ ~30–50`; DERIVED convention). |
-| 9 | Limitations | Comments pool across ads sharing a post ID; bot/spam comments; sentiment models err on sarcasm/mixed-language (relevant for Indian-English/Hinglish markets). |
-| 10 | When NOT to trust | Comment *count* as a KPI; sentiment on tiny samples or without a language-appropriate model. Never present model sentiment as fact — label MODEL ESTIMATE. |
-
----
-
-## C4 — Shares
-
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`actions:post` = shares of the post)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Times people shared the ad post. |
-| 2 | Why it matters | Strongest *organic-amplification / earned-reach* signal — shares extend reach at zero marginal CPM and correlate with genuinely resonant creative. |
-| 3 | Decision it drives | Double down on share-driving creative angles; identify formats worth organic cross-posting. Secondary-but-meaningful for creative strategy. |
-| 4 | Inputs | Share events. |
-| 5 | Formula | Direct count. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH (confirm the `post` action key at build — naming is a known trap). |
-| 7 | Comparison window | Additive. |
-| 8 | Min sample size | Rare event; needs large impressions to read a rate. |
-| 9 | Limitations | Low base rates → noisy; earned reach from shares is not separately credited in paid reach, so its value is under-measured (CANNOT-KNOW the exact incremental reach). |
-| 10 | When NOT to trust | As a primary KPI; rate comparisons on small samples. |
-
----
-
-## C5 — Saves
-
-**LEVEL:** ad/creative · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`actions:onsite_conversion.post_save` — `verify key at build`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Times people saved/bookmarked the ad post. |
-| 2 | Why it matters | High-intent consideration signal — a save = "I want to come back to this," common in considered/high-ticket purchases. |
-| 3 | Decision it drives | Flag creatives/offers worth a retargeting follow-up; identify consideration-stage angles. Secondary but a useful intent proxy. |
-| 4 | Inputs | Save events. |
-| 5 | Formula | Direct count. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Additive. |
-| 8 | Min sample size | Rare → needs volume for a stable rate. |
-| 9 | Limitations | Low base rate; not all placements support saves; intent inference is directional not proven. |
-| 10 | When NOT to trust | As a conversion substitute; small samples. |
-
----
-
-## C6 — Engagement Rate
-
-**LEVEL:** ad/creative · **FACT-LABEL:** INTERNAL CALCULATION (DERIVED) — no single Meta field · **MAPPING CLASS:** CALC
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Engagement per unit of audience — but the denominator is contested (impressions vs reach) exactly like hold rate. |
-| 2 | Why it matters | Normalises engagement for exposure so creatives are comparable. |
-| 3 | Decision it drives | Creative-resonance ranking. **Primary? No — secondary/advanced.** |
-| 4 | Inputs | Post engagement (C1) or a chosen component; impressions or reach. |
-| 5 | Formula | **AdBrain decision:** `engagement_rate = post_engagement ÷ reach` (per-person resonance). Report the impressions-based variant only when explicitly labelled. Pick one, state it. |
-| 6 | Source | DERIVED / CALC. Not an official field. |
-| 7 | Comparison window | Recompute from components for the window; reach-based version is non-additive (reach is). |
-| 8 | Min sample size | `reach ≥ ~1,000`. |
-| 9 | Limitations | Denominator ambiguity (mirror of the hold-rate trap); "engagement" numerator definition varies (all actions vs reactions-only). Weak link to revenue. |
-| 10 | When NOT to trust | When the numerator/denominator definition isn't stated; as a performance KPI. Standardise the formula or the metric is meaningless across reports. |
-
----
----
-
-# CATEGORY D — CLICK QUALITY
-
-*Clicks are the last on-platform signal before the site takes over. The core discipline here: "click" is three different things (all clicks / link clicks / outbound clicks), and the gap between a link click and a landing-page view is where budget quietly dies. Getting the click definition right is a prerequisite for honest CTR and CPC.*
-
-## D0 — Click-type primer (read first)
-
-Meta reports **three** click concepts. Confusing them corrupts every CTR/CPC below.
-
-| Concept | Field | Counts | Use |
-|---|---|---|---|
-| All clicks | `clicks` | Every click: link, reactions, comments, shares, page-name, expand, media | Almost never the right performance metric — inflated by engagement clicks |
-| Link clicks | `inline_link_clicks` | Clicks on links in the ad (may include on-Meta destinations like IG profile / lead form) | Standard for on-platform link performance |
-| Outbound clicks | `outbound_clicks` | Clicks that **leave Meta** to your site | The truest "traffic to my site" click |
-
-**AdBrain default:** use **outbound clicks** for site-traffic decisions and **link clicks** for on-platform destinations; reserve all-clicks for engagement analysis only, always labelled "(all clicks)".
+## B10 · Landing page views (LPV) — *appears in both B and D*
+**LEVEL: ad/adset · [02]: FETCH (LPV is an action type) · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS**
+> LPV bridges attention→click→destination. Fully specified in **D6** to avoid duplication; noted
+> here because it is the truest "did they actually arrive" attention-to-site signal.
+> [02]: "landing_page_views … FETCH OFFICIAL / CALC."
 
 ---
 
-## D1 — Clicks (All)
+# C · ENGAGEMENT
+Reactions, comments, shares, saves, total post engagement. **Decision-gate caution:** most
+engagement metrics are the brief's canonical *vanity* risk — high engagement rarely changes a buying
+decision on its own. They stay here as **secondary/advanced** unless tied to a concrete decision
+(social proof, comment-sentiment triage, share-driven distribution). Raw engagement action counts
+are FETCH OFFICIAL (Meta action types); rates are DERIVED. *(Engagement rows are not itemized
+individually in [02]; they are standard Insights `actions` of `post_engagement` type — verify exact
+action-type names at build.)*
 
-**LEVEL:** ad · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`clicks`)
+## C1 · Post engagement (total)
+**LEVEL: ad/creative · [02]: FETCH (actions, post_engagement) · OFFICIAL PLATFORM FACT · DECISION-GATE: ADVANCED/VANITY — not primary**
+| Q | Answer |
+|---|---|
+| Measures | Sum of engagement actions on the ad post. |
+| Why | Coarse "did people interact" signal; weak proxy for resonance. |
+| Decision | Rarely changes an action alone → secondary. Use only as context/social-proof. |
+| Inputs | `actions` (post_engagement). |
+| Formula | Direct field (sum of engagement action types). |
+| Source | Meta Insights `actions`. Verify action-type names at build. |
+| Window | value/prev/trend. |
+| Min sample | impressions ≳ 1,000 for a rate. |
+| Limitations | Mixes cheap (like) and costly (share) actions; not tied to revenue. |
+| Don't trust when | Presented as a primary KPI (KILLCRITIC: vanity metric). |
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Every click on the ad, of any kind. |
-| 2 | Why it matters | Component of "all-clicks CTR"; useful only for engagement-click analysis. |
-| 3 | Decision it drives | Diagnose "high CTR but no site traffic" = clicks are going to reactions/expands, not the link. Otherwise low value. **Primary? No.** |
-| 4 | Inputs | All click events. |
-| 5 | Formula | Direct count. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Additive. |
-| 8 | Min sample size | N/A count. |
-| 9 | Limitations | Bundles intent levels; systematically overstates "traffic." |
-| 10 | When NOT to trust | As a proxy for site visits — use outbound clicks (D3) instead. Any CTR built on it must be labelled "(all)". |
+## C2 · Reactions / likes
+**LEVEL: ad/creative · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: ADVANCED/VANITY — not primary**
+| Q | Answer |
+|---|---|
+| Measures | Count of reactions/likes. |
+| Why | Lowest-cost engagement; minimal decision value. |
+| Decision | Social-proof context only; not a buying decision. |
+| Inputs | `actions` (like/reaction). |
+| Formula | Direct field. |
+| Source | Meta Insights. Verify names at build. |
+| Window | value/prev. |
+| Min sample | as C1. |
+| Limitations | Easiest to game; near-zero economic signal. |
+| Don't trust when | Used to rank creatives (vanity). |
 
----
+## C3 · Comments
+**LEVEL: ad/creative · [02]: FETCH (count) + EXTERNAL/INFERENCE (text/sentiment) · OFFICIAL PLATFORM FACT (count) · DECISION-GATE: PASS (only with sentiment) / else secondary**
+| Q | Answer |
+|---|---|
+| Measures | Comment count on the ad. |
+| Why | Volume is weak; **sentiment/objection content is decision-grade** (feeds creative angle + CRO). |
+| Decision | If sentiment-analyzed: address objections, harvest angles, flag negative pile-ons. Count alone: secondary. |
+| Inputs | `actions` (comment); comment text = EXTERNAL (a fetch beyond Insights aggregates). |
+| Formula | Direct count; sentiment = separate NLP (INFERENCE, with confidence). |
+| Source | Count: Meta OFFICIAL. Text/sentiment: EXTERNAL + INFERENCE. |
+| Window | value/prev. |
+| Min sample | enough comments to read sentiment (heuristic ≳ 20). |
+| Limitations | Count says nothing about polarity; negative comments can inflate the count. |
+| Don't trust when | Judging creative on comment *count*; sentiment on tiny volume. |
 
-## D2 — Link Clicks
+## C4 · Shares
+**LEVEL: ad/creative · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS (organic-distribution signal)**
+| Q | Answer |
+|---|---|
+| Measures | Times the ad was shared. |
+| Why | The engagement action with real signal — earned distribution + strong resonance. |
+| Decision | Double-down on shareable concepts; concept/angle library [06] input. |
+| Inputs | `actions` (share). |
+| Formula | Direct field; share rate = shares / impressions (DERIVED). |
+| Source | Meta OFFICIAL (count). |
+| Window | value/prev/trend. |
+| Min sample | impressions ≳ 1,000 for a rate. |
+| Limitations | Rare event → noisy at low volume. |
+| Don't trust when | Low impressions; share rate on a tiny base. |
 
-**LEVEL:** ad · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`inline_link_clicks`)
+## C5 · Saves
+**LEVEL: ad/creative · [02]: FETCH (verify availability) · OFFICIAL PLATFORM FACT (if returned) / else UNKNOWN · DECISION-GATE: WATCH**
+| Q | Answer |
+|---|---|
+| Measures | Times users saved the ad/post. |
+| Why | High-intent bookmark signal (consideration). |
+| Decision | Consideration-content signal; secondary. |
+| Inputs | `actions` (save) — **verify this action type is exposed via Insights at build**. |
+| Formula | Direct field if present. |
+| Source | Meta OFFICIAL **if returned**; otherwise UNKNOWN — do not fabricate. |
+| Window | value/prev. |
+| Min sample | as C4. |
+| Limitations | May not be available for all objectives/placements. |
+| Don't trust when | Field absent (mark UNKNOWN, don't infer). |
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Clicks on the ad's link(s) — the CTA/destination link. |
-| 2 | Why it matters | Standard measure of link interest; denominator for cost-per-link-click and link CTR. |
-| 3 | Decision it drives | Creative/CTA optimisation for click intent; the volume feeding the click→LP-view funnel (D7/D8). |
-| 4 | Inputs | Link-click events. |
-| 5 | Formula | Direct count. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Additive. |
-| 8 | Min sample size | For link CTR, impressions `≥ ~1,000–2,000`. |
-| 9 | Limitations | Can include clicks to on-Meta destinations (IG profile, instant forms), so it is **not** identical to "left for my website" — that's outbound (D3). |
-| 10 | When NOT to trust | As site-traffic when destinations are on-Meta; use outbound clicks for true off-platform traffic. |
+## C6 · Engagement rate  ⚠ DERIVED
+**LEVEL: ad/creative · [02]: CALC · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: ADVANCED/VANITY — not primary**
+| Q | Answer |
+|---|---|
+| Measures | Engagement actions per impression (or per reach). |
+| Why | Normalizes engagement by delivery; still low decision value. |
+| Decision | Secondary context; not a buying decision. |
+| Inputs | `post_engagement`, `impressions` (or `reach`). |
+| Formula | engagement / impressions. **Document impressions-vs-reach basis** (they differ). |
+| Source | INTERNAL CALCULATION over OFFICIAL fields. |
+| Window | value/prev/trend. |
+| Min sample | impressions ≳ 1,000. |
+| Limitations | Definition-sensitive (which actions count; which denominator); vanity risk. |
+| Don't trust when | Compared across tools with different definitions; used as a primary KPI. |
 
----
-
-## D3 — Outbound Clicks
-
-**LEVEL:** ad · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`outbound_clicks`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Clicks that took the person off Meta to an external destination. |
-| 2 | Why it matters | The truest "I sent a human to my site" count — the honest top of the site-side funnel. |
-| 3 | Decision it drives | Traffic-quality and budget decisions; the correct numerator when reconciling against site analytics (D8). |
-| 4 | Inputs | Outbound-click events. |
-| 5 | Formula | Direct count. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Additive. |
-| 8 | Min sample size | As link clicks. |
-| 9 | Limitations | Still a click, not a session — the click→LP-view gap (D8) can be large; multiple outbound clicks per person possible (see unique variants, D10). |
-| 10 | When NOT to trust | As a visit count when the click→LP gap is wide (slow LP, misclicks). Reconcile with site analytics. |
-
----
-
-## D4 — CTR (All)
-
-**LEVEL:** ad · **FACT-LABEL:** OFFICIAL PLATFORM FACT (returned field) · **MAPPING CLASS:** FETCH (`ctr`) — reproducible CALC
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | All clicks ÷ impressions. |
-| 2 | Why it matters | Broad interest signal; feeds Meta's relevance/quality ranking indirectly. |
-| 3 | Decision it drives | Weak — inflated by engagement clicks. Prefer link/outbound CTR for real decisions. **Primary? No — use D5/D6.** |
-| 4 | Inputs | Clicks (all), impressions. |
-| 5 | Formula | `ctr = clicks ÷ impressions`. Meta returns it. |
-| 6 | Source | `ctr` — OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Recompute from summed clicks and impressions; never average daily CTRs. |
-| 8 | Min sample size | impressions `≥ ~1,000–2,000`. |
-| 9 | Limitations | Overstates link intent; not comparable across placements without segmenting. |
-| 10 | When NOT to trust | For traffic/conversion decisions — it rewards engagement-bait creatives that never send anyone to site. |
-
----
-
-## D5 — Link CTR
-
-**LEVEL:** ad · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`inline_link_click_ctr`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Link clicks ÷ impressions. |
-| 2 | Why it matters | The workhorse click-efficiency metric for creative and CTA testing. |
-| 3 | Decision it drives | Keep/kill/iterate creative and CTA; a leading indicator that pairs with hook rate to separate "attention" from "intent." |
-| 4 | Inputs | Link clicks (D2), impressions. |
-| 5 | Formula | `inline_link_click_ctr = inline_link_clicks ÷ impressions`. Meta-returned. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Recompute from components; no averaging of rates. |
-| 8 | Min sample size | impressions `≥ ~1,000–2,000` (DERIVED convention). |
-| 9 | Limitations | Placement-sensitive; can be gamed by clickbait that tanks downstream conversion — must be read alongside LP-view rate (D8) and CVR (artifact 01b). |
-| 10 | When NOT to trust | In isolation — a high link CTR with a low click→LP-view ratio (D8) means the click quality is bad or the LP is broken. "Good CTR" thresholds are `UNKNOWN — use account baseline`. |
-
----
-
-## D6 — Outbound CTR
-
-**LEVEL:** ad · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`outbound_clicks_ctr`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Outbound clicks ÷ impressions. |
-| 2 | Why it matters | Cleanest measure of "impressions → off-platform traffic" efficiency. |
-| 3 | Decision it drives | Traffic-efficiency decisions where the destination is your own site; the most honest CTR for a conversion account. |
-| 4 | Inputs | Outbound clicks (D3), impressions. |
-| 5 | Formula | `outbound_clicks_ctr = outbound_clicks ÷ impressions`. Meta-returned. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Recompute from components. |
-| 8 | Min sample size | impressions `≥ ~1,000–2,000`. |
-| 9 | Limitations | As D3 — click ≠ session; placement-sensitive. |
-| 10 | When NOT to trust | Without reconciling against actual site sessions (D8, and site analytics in the EXTERNAL layer). |
-
----
-
-## D7 — Landing Page Views
-
-**LEVEL:** ad · **FACT-LABEL:** OFFICIAL PLATFORM FACT (pixel-reported) · **MAPPING CLASS:** FETCH (`actions:landing_page_view`) — **depends on pixel** (EXTERNAL prerequisite)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Times a person clicked *and* the destination page actually loaded (pixel `PageView` fired after the outbound click). |
-| 2 | Why it matters | The first *confirmed arrival* — bridges Meta clicks to the site. The click-to-LPV gap is pure waste. |
-| 3 | Decision it drives | Fix landing-page speed/reliability; re-judge "expensive traffic" that is really a broken/slow LP. High-value diagnostic. |
-| 4 | Inputs | Pixel PageView events attributed to the ad click. |
-| 5 | Formula | Direct count (attributed). |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH **but conditional on a working pixel** — if the pixel is missing/misfiring this is UNKNOWN, not zero. |
-| 7 | Comparison window | Additive; but attribution-window-bound (see 01b for attribution). |
-| 8 | Min sample size | As clicks. |
-| 9 | Limitations | Pixel-dependent → undercounts with ad blockers, consent opt-outs (iOS/GDPR), slow loads, SPA misconfig. Post-ATT signal loss is real (magnitude `UNKNOWN — verify per account`). |
-| 10 | When NOT to trust | When pixel health is unverified; treating a low LPV as a traffic problem when it may be a measurement problem. Always check pixel firing before acting. |
+## C7 · Cost per engagement (CPE)
+**LEVEL: ad/creative · [02]: CALC · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: WATCH (engagement-objective only)**
+| Q | Answer |
+|---|---|
+| Measures | Spend per engagement action. |
+| Why | Efficiency only when engagement IS the objective. |
+| Decision | Engagement-objective campaign triage; else ignore. |
+| Inputs | `spend`, `post_engagement`. |
+| Formula | spend / engagement actions. |
+| Source | INTERNAL CALCULATION. |
+| Window | value/prev/trend. |
+| Min sample | engagements ≳ a few hundred. |
+| Limitations | Meaningless for conversion objectives. |
+| Don't trust when | Applied to a conversion/sales campaign. |
 
 ---
 
-## D8 — Click-to-Landing-Page-View Rate (Click Quality / Connection Rate)
+# D · CLICK QUALITY
+Not "clicks" — **click quality**: whether clicks are real link clicks, whether they survive to the
+landing page, and where the drop-off is. This is where cheap-CTR creatives get exposed. Raw click
+and LPV counts are FETCH OFFICIAL; every rate and every "connection/drop-off" metric is DERIVED.
 
-**LEVEL:** ad · **FACT-LABEL:** INTERNAL CALCULATION (DERIVED) · **MAPPING CLASS:** CALC (from two FETCH fields, pixel-conditional)
+## D1 · Clicks (all)
+**LEVEL: any · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: WATCH (too broad alone)**
+| Q | Answer |
+|---|---|
+| Measures | All clicks (includes non-link: expands, likes, page clicks, etc.). |
+| Why | Broadest, noisiest click count; mainly a denominator/context. |
+| Decision | Little alone — use link clicks (D3) for creative decisions. |
+| Inputs | `clicks`. |
+| Formula | Direct field. |
+| Source | Meta Insights `clicks`. [02] Delivery/spend. |
+| Window | value/prev/trend. |
+| Min sample | impressions ≳ 1,000 for a rate. |
+| Limitations | Includes clicks that never intended to leave the ad → overstates intent. |
+| Don't trust when | Used as "traffic"; use link clicks / LPV instead. |
 
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Share of clicks that became a confirmed landing-page view — the **click→arrival survival rate**. |
-| 2 | Why it matters | Isolates a silent budget leak: you pay for the click, but slow/broken LPs, misclicks, and bots mean many never arrive. One of the highest-ROI diagnostics in this whole dictionary. |
-| 3 | Decision it drives | Fix LP performance (speed, mobile, redirects), pause placements with junk clicks, or flag click fraud — *before* blaming the creative or offer. |
-| 4 | Inputs | Landing page views (D7), outbound or link clicks (D3/D2 — **state which**). |
-| 5 | Formula | **AdBrain decision:** `connection_rate = landing_page_views ÷ outbound_clicks` (outbound is the true off-platform intent). Report the link-click variant only when explicitly labelled. |
-| 6 | Source | DERIVED / CALC; pixel-conditional. Not a Meta field. |
-| 7 | Comparison window | Recompute from summed components; align attribution windows of numerator and denominator. |
-| 8 | Min sample size | clicks `≥ ~500` for a stable rate (DERIVED convention). |
-| 9 | Limitations | Can exceed 100% or misbehave when numerator and denominator use different attribution/click definitions — a common bug; enforce consistent definitions. Pixel loss depresses it artificially. |
-| 10 | When NOT to trust | When pixel health is unverified (looks like bad clicks, is actually lost measurement); when numerator/denominator click-types or windows are mismatched. A low value is a *diagnosis prompt*, not a verdict. |
+## D2 · CTR (all)
+**LEVEL: any · [02]: FETCH OFFICIAL (also CALC identity) · OFFICIAL PLATFORM FACT · DECISION-GATE: WATCH**
+| Q | Answer |
+|---|---|
+| Measures | All clicks / impressions. |
+| Why | Broad interest signal; inflated by non-link clicks. |
+| Decision | Weak; prefer link CTR (D4) for creative keep/kill. |
+| Inputs | `ctr` (or `clicks`, `impressions`). |
+| Formula | Meta field; identity = clicks / impressions. |
+| Source | Meta Insights `ctr`. [02] Delivery/spend. |
+| Window | value/prev/trend; day-wise for fatigue. |
+| Min sample | impressions ≳ 1,000 (heuristic; ~±2–3pp CI). |
+| Limitations | "All" clicks overstate destination intent. |
+| Don't trust when | Treated as link-click intent; small impressions; mixed placements. |
+
+## D3 · Link clicks (inline_link_clicks)
+**LEVEL: any · [02]: FETCH · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS**
+| Q | Answer |
+|---|---|
+| Measures | Clicks on the ad's link specifically. |
+| Why | The real "intent to leave to our destination" count. |
+| Decision | Creative keep/kill on click intent; numerator for link CTR + cost-per-link-click. |
+| Inputs | `inline_link_clicks`. |
+| Formula | Direct field. |
+| Source | Meta Insights `inline_link_clicks`. [02]: "link CTR uses inline_link_clicks". |
+| Window | value/prev/trend. |
+| Min sample | impressions ≳ 1,000. |
+| Limitations | Still upstream of the site (a click ≠ a landing — see D6/D8). |
+| Don't trust when | Assumed equal to site arrivals (that's LPV, D6). |
+
+## D4 · Link CTR
+**LEVEL: any · [02]: FETCH OFFICIAL / CALC identity · OFFICIAL PLATFORM FACT (Meta reports it) · DECISION-GATE: PASS (primary click signal)**
+| Q | Answer |
+|---|---|
+| Measures | Link clicks / impressions. |
+| Why | Cleanest on-platform intent-per-impression; core creative signal. |
+| Decision | Keep/kill/iterate creative on click intent; fatigue [07] input. |
+| Inputs | `inline_link_clicks`, `impressions` (Meta also exposes the rate directly). |
+| Formula | inline_link_clicks / impressions. |
+| Source | Meta Insights (rate) / INTERNAL CALCULATION (identity). [02] Delivery/spend. |
+| Window | value/prev/trend; day-wise. |
+| Min sample | impressions ≳ 1,000 (heuristic). |
+| Limitations | Placement-sensitive; high CTR + low LPV = curiosity/misleading creative (see D8). |
+| Don't trust when | Placements pooled (Simpson's — AUTOPSY); judged without LPV follow-through. |
+
+## D5 · Outbound clicks / outbound CTR
+**LEVEL: any · [02]: FETCH (if returned) · OFFICIAL PLATFORM FACT / else UNKNOWN · DECISION-GATE: WATCH**
+| Q | Answer |
+|---|---|
+| Measures | Clicks that left Meta entirely (outbound), and their rate. |
+| Why | Stricter than link clicks (excludes clicks to on-Meta destinations). |
+| Decision | Off-platform intent quality; secondary to link CTR + LPV. |
+| Inputs | `outbound_clicks`, `outbound_clicks_ctr` — **verify exposure at build**. |
+| Formula | outbound_clicks / impressions. |
+| Source | Meta OFFICIAL if returned; else UNKNOWN. |
+| Window | value/prev/trend. |
+| Min sample | impressions ≳ 1,000. |
+| Limitations | Overlaps link clicks; availability varies by objective. |
+| Don't trust when | Field absent (mark UNKNOWN); conflated with link clicks. |
+
+## D6 · Landing page views (LPV)
+**LEVEL: ad/adset · [02]: FETCH (LPV is an action type) · OFFICIAL PLATFORM FACT · DECISION-GATE: PASS**
+| Q | Answer |
+|---|---|
+| Measures | Times a person clicked AND the landing page actually loaded (Meta pixel-confirmed). |
+| Why | The truest "did they arrive" count — filters bounced/abandoned clicks. |
+| Decision | Real-traffic quality; denominator for on-site CVR; good-creative/bad-LP triage. |
+| Inputs | `landing_page_views` (actions). |
+| Formula | Direct action count. |
+| Source | Meta Insights (action type). [02]: "landing_page_views … FETCH OFFICIAL / CALC". |
+| Window | value/prev/trend. |
+| Min sample | link clicks ≳ a few hundred to read the connection ratio. |
+| Limitations | Requires pixel firing; blocked/slow pixels undercount (attribution/privacy — [02] hard limits). |
+| Don't trust when | Pixel/consent issues; iOS/privacy gaps flagged per [02]. |
+
+## D7 · LPV rate / cost per LPV (CPLPV)
+**LEVEL: ad/adset · [02]: FETCH+CALC · OFFICIAL (count) + INTERNAL CALCULATION (rate/cost, DERIVED) · DECISION-GATE: PASS**
+| Q | Answer |
+|---|---|
+| Measures | LPV per impression (rate) and spend per LPV (cost). |
+| Why | Efficiency of buying actual site arrivals. |
+| Decision | Traffic-efficiency triage; upstream of conversion economics. |
+| Inputs | `landing_page_views`, `impressions`, `spend`. |
+| Formula | LPV rate = LPV / impressions; CPLPV = spend / LPV. |
+| Source | INTERNAL CALCULATION over OFFICIAL fields. [02] Attention/video (lpv_rate, cost_per_lpv). |
+| Window | value/prev/trend. |
+| Min sample | LPV ≳ a few hundred. |
+| Limitations | Pixel-dependent; not a conversion. |
+| Don't trust when | Pixel undercount; small LPV base. |
+
+## D8 · Click-to-LPV connection rate  ⚠ DERIVED (the click-quality core)
+**LEVEL: ad/adset · [02]: CALC · INTERNAL CALCULATION (DERIVED) · DECISION-GATE: PASS (primary diagnostic)**
+| Q | Answer |
+|---|---|
+| Measures | Of link clicks, the share that became landing-page views. |
+| Why | **The click-quality metric.** Low ratio = clicks not surviving to site = misleading creative, slow LP, dead link, or pixel gap. |
+| Decision | Fix LP speed / link / creative honesty; separates "bad creative" from "bad landing". |
+| Inputs | `landing_page_views`, `inline_link_clicks`. |
+| Formula | LPV / link clicks (report as %). |
+| Source | INTERNAL CALCULATION over two OFFICIAL fields. Derived from [02] LPV + link-click rows. |
+| Window | value/prev/trend. |
+| Min sample | link clicks ≳ a few hundred. |
+| Limitations | Low ratio has multiple causes (LP speed, pixel, mobile, link error) — diagnostic not verdict; pixel/consent confounds. |
+| Don't trust when | Pixel/consent issues (undercount LPV → false-low ratio); small clicks; iOS/privacy gaps ([02]). |
+
+## D9 · CPC (all) and cost per link click
+**LEVEL: any · [02]: FETCH OFFICIAL / CALC identity · OFFICIAL PLATFORM FACT · DECISION-GATE: WATCH → PASS (link variant)**
+| Q | Answer |
+|---|---|
+| Measures | Spend per click (all) and spend per link click. |
+| Why | Cost of buying clicks/intent; the link variant is the meaningful one. |
+| Decision | Traffic-cost triage; scaling [11] cost-side; prefer cost-per-link-click over CPC(all). |
+| Inputs | `cpc` (all), `spend`, `inline_link_clicks`. |
+| Formula | CPC(all)=spend/clicks; cost-per-link-click = spend / inline_link_clicks. |
+| Source | Meta `cpc` OFFICIAL; link variant = INTERNAL CALCULATION. [02] Delivery/spend. |
+| Window | value/prev/trend. |
+| Min sample | clicks ≳ a few hundred. |
+| Limitations | Cheap clicks can be low-quality (pair with D8); CPC(all) noisier than link variant. |
+| Don't trust when | Optimizing CPC(all) while LPV/conversion collapse; small click counts. |
 
 ---
 
-## D9 — CPC (Cost per Click) — All, Link, and Outbound variants
-
-**LEVEL:** ad · **FACT-LABEL:** OFFICIAL PLATFORM FACT (each variant is a returned field) · **MAPPING CLASS:** FETCH (`cpc`, `cost_per_inline_link_click`, `cost_per_outbound_click`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Average spend per click — for each click definition (all / link / outbound). |
-| 2 | Why it matters | Cost efficiency of buying attention-to-click; the bridge from CPM (audience cost) toward CPA. |
-| 3 | Decision it drives | Which creatives/audiences buy clicks efficiently; where cost is leaking between CPM and CPA. **Use the link or outbound variant, not all-clicks CPC.** |
-| 4 | Inputs | Spend; the matching click count. |
-| 5 | Formula | `cost_per_inline_link_click = spend ÷ inline_link_clicks` (and analogues). Meta returns each. |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH — but **which variant** you quote changes the number 2–5×; label it. |
-| 7 | Comparison window | Recompute from summed spend and clicks; never average daily CPCs. |
-| 8 | Min sample size | Enough clicks that the count is stable (`≥ ~50–100` clicks; DERIVED convention). |
-| 9 | Limitations | All-clicks CPC flatters cost by counting engagement clicks; not comparable across click definitions or placements. |
-| 10 | When NOT to trust | When the click variant is unstated (the classic "our CPC is ₹X" ambiguity); low click counts; cross-placement comparison. |
-
----
-
-## D10 — Unique CTR & Unique Link Clicks
-
-**LEVEL:** ad · **FACT-LABEL:** OFFICIAL PLATFORM FACT · **MAPPING CLASS:** FETCH (`unique_ctr`, `unique_inline_link_clicks`, `unique_outbound_clicks_ctr`)
-
-| # | Question | Answer |
-|---|---|---|
-| 1 | What it measures | Clicks/CTR counting each person once (deduplicated), vs the repeat-counting standard metrics. |
-| 2 | Why it matters | Separates "many people clicked once" from "few people clicked repeatedly" — a click-quality and fatigue nuance. |
-| 3 | Decision it drives | Detect repeat-clicker inflation (retargeting, small pools); sanity-check standard CTR. Secondary/advanced. |
-| 4 | Inputs | Deduplicated click events; reach. |
-| 5 | Formula | `unique_ctr = unique clicks ÷ reach` (Meta-returned). |
-| 6 | Source | OFFICIAL PLATFORM FACT / FETCH. |
-| 7 | Comparison window | Non-additive (built on reach) — pull for the exact window. |
-| 8 | Min sample size | reach `≥ ~1,000`. |
-| 9 | Limitations | Non-additive; denominator is reach not impressions, so not directly comparable to standard CTR. |
-| 10 | When NOT to trust | Summed across windows; compared head-to-head with impression-based CTR without noting the different denominator. |
-
----
----
-
-# Cross-cutting rules for A–D (enforce in code)
-
-1. **Never average a rate across time or objects.** Re-derive every rate (CTR, CPM, CPC, hook/hold, engagement, connection) from summed numerators and denominators for the exact window. Averaging daily rates biases toward low-volume days. `INTERNAL CALCULATION`.
-2. **Reach, frequency, and everything built on them are non-additive.** Pull them for the precise reporting window; never sum across days or adsets.
-3. **Fact-label discipline:** `cpm`, `ctr`, `frequency`, `cpc` and their variants are OFFICIAL because Meta *returns the field*. **Hook rate, hold rate, thumbstop rate, engagement rate, connection rate are DERIVED** and must be visibly labelled as computed, never shown as Meta fields.
-4. **Hold rate = H1 (`ThruPlay ÷ impressions`) everywhere.** Any hold-rate value without a stated definition is untrustworthy. Same rule for engagement rate (÷reach) and connection rate (÷outbound clicks).
-5. **Click-type must always be named:** all / link / outbound. Default to outbound for site traffic, link for on-Meta destinations, all only for engagement analysis.
-6. **Sample-size gate before any keep/kill:** no rate metric drives a decision below its impression/click floor (rules of thumb here are statistical conventions labelled DERIVED, not Meta facts). Meta's own learning-phase exit (~50 optimisation events / adset / week) is an OFFICIAL PLATFORM FACT and a hard gate for optimisation-event decisions — `verify current threshold at build`.
-7. **Benchmarks:** default comparator is the account's trailing baseline. Any external "good number" ships only with a cited primary source; otherwise `UNKNOWN — verify at build`. No arbitrary thresholds as truth.
-8. **Pixel-conditional metrics (LPV, connection rate) require a pixel-health check first** — a low value can be lost measurement, not bad performance.
-9. **Freshness:** last 24–72h data is subject to Meta restatement (attribution + billing settle); flag in-flight windows.
-10. **Placement segmentation:** attention and click rates are placement-sensitive (autoplay differences). Compare within placement or explicitly note the mix.
-
----
-
-## Decision-gate summary (what each category actually changes)
-
-| Category | Primary decisions it drives | Metrics that are NOT primary (advanced/vanity) |
-|---|---|---|
-| A Delivery | Fatigue refresh (frequency), audience expansion (reach plateau), auction-vs-downstream diagnosis (CPM), budget pacing fix | Raw impressions as a KPI; deprecated Delivery-Insights signals until verified |
-| B Attention | Re-cut the hook (hook rate), re-cut the body (hold rate + retention curve), shortlist creatives (avg watch time) | Raw video plays; thumbstop rate as a separate metric |
-| C Engagement | Comment-content → creative angles & objection handling; share-driving angles; save → retargeting intent | Post engagement roll-up, reactions, engagement rate as performance KPIs |
-| D Click Quality | Creative/CTA iteration (link/outbound CTR), LP-fix vs click-fraud (connection rate), cost-leak diagnosis (CPC) | All-clicks CTR/CPC as performance KPIs; unique metrics beyond sanity-checks |
-
----
-
-*End of artifact 01a. Sibling: 01b (Conversion, Cost-Efficiency, Value/ROAS, Attribution). All `verify at build` flags must be closed against the pinned Meta API version and `02-meta-data-mapping.md` before this dictionary is treated as authoritative.*
+## Cross-cutting notes for these four categories
+- **Attention trap (restated):** B5/B6/B8/B9 are DERIVED. In every dashboard hover they must read
+  "INTERNAL CALCULATION (DERIVED) from official Meta fields", never "Meta metric". Hold rate carries
+  its chosen definition (ThruPlay / 3-sec) plus the two alternates.
+- **Placement pooling = Simpson's paradox risk** (AUTOPSY) on every rate (hook rate, CTR, link CTR,
+  connection rate). Prefer per-placement reads or flag when pooled.
+- **Minimum samples here are INTERNAL CALCULATION heuristics** (proportion-CI reasoning), not
+  platform facts — the Confidence engine [14] sets the live thresholds; validate against real data.
+- **No benchmark numbers are asserted.** All "compare against" defer to the Benchmark engine [27],
+  which must return source/date/sample/confidence or "benchmark unavailable".
+- **Attribution/privacy caveat** ([02] hard limits) applies to D6–D8: LPV and connection rate depend
+  on pixel firing; iOS/consent gaps undercount — surface the attribution-limit flag on these views.
+- **Field-name verification:** action-type and video-field names (ThruPlay, 3-sec, p25–100, outbound,
+  save) are API-version dependent — verify each at build; where availability is unconfirmed the
+  metric is marked UNKNOWN rather than fabricated.

@@ -1,480 +1,445 @@
-# 01c — Master Metric Dictionary: H FATIGUE, I DIVERSITY, J SCALING
+# [01c] Master Metric Dictionary — H Fatigue · I Diversity · J Scaling
 
-> Part of the AdBrain Master Metric Dictionary (Artifact 01c of 28).
-> AdBrain answers **"what should we do next?"** — every metric below must change a decision or it is cut.
+Slice of the Master Metric Dictionary [01] covering three categories. Every metric traces to a
+row in [02] Meta Data Mapping and carries its source class. This file is consistent with
+`brief.md`, `00-master-plan.md`, and `02-meta-data-mapping.md`.
 
----
+## How to read every entry
 
-## ⚠️ Build note on dependencies
+Each metric answers the **10 questions** (measures / why / decision / inputs / formula / source /
+comparison window / min sample / limitations / when NOT to trust), names its **LEVEL** (from the
+brief's hierarchy), cites its **[02] class** (FETCH / CALC / INFER / EXTERNAL / CANNOT-KNOW), and
+**fact-labels** every value.
 
-The three canonical foundation files this artifact was told to read — `docs/product-spec/brief.md`, `docs/product-spec/00-master-plan.md`, `docs/product-spec/02-meta-data-mapping.md` — **do not yet exist in the workspace as of 2026-08-25**. This artifact was written from the discipline embedded in the authoring brief (10-question metric contract, fact-label taxonomy, data-mapping classes FETCH/CALC/INFER/EXTERNAL/CANNOT-KNOW). **At build, re-reconcile every "source" and "data-mapping class" cell against `02-meta-data-mapping.md` once it lands.** Any cell citing a Meta Marketing API field name is marked so it can be verified against the real field list.
+**Source-class legend (from [02]):** FETCH = direct Meta API field · CALC = computed from fetched
+fields · INFER = AI-modeled/estimated · EXTERNAL = another system (Shopify/CRM/LP crawler) ·
+CANNOT-KNOW = not reliably knowable.
 
----
+**Fact labels:** OFFICIAL PLATFORM FACT · INTERNAL CALCULATION (DERIVED) · RESEARCH-BACKED ·
+INDUSTRY BENCHMARK · MODEL ESTIMATE · INFERENCE · UNKNOWN.
 
-## Legend (used in every table)
+**Decision gate:** a metric on the primary surface must name the decision it changes; otherwise it
+is tagged `advanced/vanity — not primary`.
 
-**Fact labels** (attach to every value):
-
-| Label | Meaning |
-|---|---|
-| **OFFICIAL PLATFORM FACT** | A field Meta returns directly (Marketing/Insights API). Named so it can be verified. |
-| **INTERNAL CALCULATION (DERIVED)** | AdBrain computes it from Meta facts. Not a Meta field. |
-| **RESEARCH-BACKED** | Grounded in published research/method, cited. |
-| **INDUSTRY BENCHMARK** | A cross-account comparison value. Must be verifiable or marked UNKNOWN. |
-| **MODEL ESTIMATE** | Output of an AdBrain model (forecast, score, classifier). Probabilistic. |
-| **INFERENCE** | Reasoned guess from indirect signals. Lower confidence. |
-| **UNKNOWN / verify at build** | Not established as of Aug 2026. Never presented as truth. |
-
-**Data-mapping class** (from `02-meta-data-mapping.md`):
-
-| Class | Meaning |
-|---|---|
-| **FETCH** | Pulled directly from Meta API. |
-| **CALC** | Derived by AdBrain from FETCHed values. |
-| **INFER** | Estimated from indirect/partial signals (probabilistic). |
-| **EXTERNAL** | Requires a non-Meta source (CRM, MMM, site analytics, human tag). |
-| **CANNOT-KNOW** | Not obtainable from Meta at this level; do not fake it. |
-
-**Levels:** account / campaign / adset / ad / creative.
-
-> **Sample-size & threshold honesty:** Every numeric threshold, benchmark, and half-life below that is not a Meta-documented value is marked **UNKNOWN / verify at build** or **tunable default**. AdBrain must learn account-specific thresholds from that account's own history rather than shipping arbitrary constants as truth.
+**Benchmark honesty (brief + [02]):** no hardcoded generic benchmarks. Every threshold below is an
+INTERNAL CALCULATION heuristic to be **calibrated per-account against that account's own baseline**,
+or is explicitly marked UNKNOWN / "verify at build". None is presented as an official Meta fact or a
+validated industry number.
 
 ---
 
-# Category H — FATIGUE
+# H · FATIGUE
 
-**Design principle:** Fatigue is **multi-signal**, not frequency alone. Frequency is one input and frequently a lagging or misleading one (a high frequency on a still-converting ad is not fatigue; a rising frequency with collapsing hook rate and rising CPA is). AdBrain classifies each ad/creative into **one of 8 fatigue states** using a vector of signals, and only the *state* drives the action.
+Multi-signal, **not frequency alone** (brief). Fatigue is a *diagnosis* built from many derived
+signals compared across windows; the raw inputs are OFFICIAL, the fatigue verdict is an INTERNAL
+CALCULATION. The category resolves to one of **8 states** (H8) plus a **forecast** (H9).
 
-## H0 — The 8 Fatigue States (the classifier output)
+Governing note: every fatigue signal below is a *delta over time* on an existing metric. The
+absolute value is defined in category A/B/C/E/F of [01]; here we define its **trend/decay form** and
+its role as a fatigue driver. Comparison windows per brief: **1 / 3 / 7 / 14 / 21 / 30-day** where
+sample permits.
 
-**Fact label:** MODEL ESTIMATE (state classifier) — the *state taxonomy* is an INTERNAL CALCULATION framework, not a Meta field.
-**Level:** ad and creative (a creative can be fatigued account-wide even where one ad still delivers). **Data-mapping class:** CALC + INFER.
-
-| # | State | Plain meaning | Dominant signal pattern | Decision it drives |
-|---|---|---|---|---|
-| 1 | **FRESH / LEARNING** | Too new to judge | Below min sample; delivery unstable | Wait / protect budget; do not kill |
-| 2 | **RAMPING** | Getting more efficient | CPA↓ or ROAS↑ over trailing windows, freq low | Hold or feed budget |
-| 3 | **PEAK** | Best efficiency window | Efficiency at trailing max, signals stable | Scale candidate (see J) |
-| 4 | **STABLE / PLATEAU** | Flat, still profitable | Efficiency flat within noise band, freq moderate | Maintain; queue a refresh |
-| 5 | **CREATIVE FATIGUE** | The *creative* is wearing out | Hook rate & CTR decaying while freq rises; CPM stable-ish | Refresh creative (new hook/angle), not audience |
-| 6 | **AUDIENCE SATURATION** | The *audience* is exhausted | New-reach ratio falling, freq climbing, CPM rising, CTR flatter | Expand/rotate audience or raise budget cap; refreshing creative alone won't fix |
-| 7 | **TERMINAL DECLINE** | Broken; bleeding money | CPA past account tolerance, negative feedback up, all trends down | Pause / kill |
-| 8 | **ZOMBIE / FALSE-POSITIVE** | Looks fine, isn't incremental | ROAS "good" but mostly retargeting/brand-harvest; low incrementality | Cut or reallocate; do NOT scale (would just harvest existing demand) |
-
-**Why 8 and not "fatigued/not":** each state maps to a *different* fix. States 5 vs 6 are the classic error — teams refresh creative when the audience is saturated (no lift) or expand audience when the creative is stale (no lift). Separating them is the whole point.
-
-**When NOT to trust the state:** during learning phase (state 1), after any budget/audience/creative edit (resets the trend windows), during seasonal demand spikes, or when conversion volume is below min sample. **Incrementality (state 8) cannot be confirmed from Meta alone** — it needs a lift test or MMM (EXTERNAL). Without that, state 8 is an INFERENCE, flagged as such.
-
----
-
-## H1 — Frequency
+## H1 · Frequency (and frequency trend)
 
 | Field | Value |
 |---|---|
-| **What it measures** | Average times a person saw the ad in the window. |
-| **Why it matters** | One saturation input; useful only in combination. |
-| **Decision it drives** | Contributes to states 5/6; a frequency ceiling can trigger review — but never a kill on its own. |
-| **Inputs** | impressions, reach. |
-| **Formula** | `impressions / reach`. **INTERNAL CALCULATION** if computed by AdBrain; Meta also returns `frequency` directly (**OFFICIAL PLATFORM FACT**). |
-| **Source / class** | Meta `frequency`, `impressions`, `reach` — FETCH. |
-| **Comparison window** | Rolling 7d and 28d; compare to the *same ad's* own history, not a global number. |
-| **Minimum sample** | Reach large enough that frequency is stable — UNKNOWN / verify at build (learn per account). |
-| **Limitations** | Average hides distribution (a few super-heavy viewers skew it); resets when audience changes; cross-device dedupe is imperfect. |
-| **When NOT to trust** | As a standalone fatigue trigger; right after audience expansion; small reach. A "frequency = 3.x is bad" rule is **UNKNOWN / verify** — no universal threshold exists. |
+| **Measures** | Avg impressions per unique user over a window, and its rate of climb. |
+| **Why** | Rising frequency with no reach growth = audience saturation, the classic (but insufficient alone) fatigue precursor. |
+| **Decision** | Whether to refresh creative, expand audience, or cap frequency. `primary`. |
+| **Inputs** | `impressions`, `reach` (both FETCH OFFICIAL). |
+| **Formula** | `frequency = impressions / reach` (Meta-provided); `freq_trend = freq_t / freq_(t-window) − 1`. |
+| **Source / [02] class** | [02] Delivery — **FETCH OFFICIAL** for frequency; **CALC DERIVED** for the trend. |
+| **Level** | Ad set (native), rolls up to Ad / Campaign / Account. |
+| **Comparison window** | 7d vs prior 7d; 3d for fast movers. |
+| **Min sample** | Reach >= a per-account floor (UNKNOWN — verify at build; do not trust on tiny reach). |
+| **Limitations** | High frequency != fatigue for retargeting/small audiences by design; frequency is dedup-imperfect across placements. |
+| **When NOT to trust** | New ad set still exiting learning; audience deliberately small; post-audience-expansion reset. |
 
-## H2 — New-Reach Ratio (audience-exhaustion signal)
+- Fact label: frequency value = **OFFICIAL PLATFORM FACT**; frequency-trend = **INTERNAL CALCULATION (DERIVED)**.
 
-| Field | Value |
-|---|---|
-| **What it measures** | Share of this period's reach that is *newly* reached vs already-seen people. |
-| **Why it matters** | The cleanest **audience saturation** signal (separates state 6 from state 5). |
-| **Decision it drives** | Falling ratio + rising freq → expand/rotate audience (not refresh creative). |
-| **Inputs** | period-over-period reach, cumulative reach. |
-| **Formula** | `(reach_cumulative_t − reach_cumulative_t−1) / reach_t` — **INTERNAL CALCULATION (DERIVED)**. |
-| **Source / class** | Built from repeated `reach` pulls — CALC. Meta does not expose a clean "new vs repeat reach" field at ad level → the incremental-reach construction is **INFER** and imperfect (reach is de-duplicated per query window, so differencing windows is approximate). |
-| **Comparison window** | Weekly deltas over 4–6 weeks. |
-| **Minimum sample** | Several weeks of stable delivery — UNKNOWN / verify at build. |
-| **Limitations** | Reach de-dup across windows is approximate; audience edits reset it; overlapping ad sets double-count. |
-| **When NOT to trust** | Overlapping audiences, recent targeting change, or short history. Treat as directional, not exact. |
-
-## H3 — Hook Rate (3-second / thumbstop) and its trend
+## H2 · CPM trend (delivery cost drift)
 
 | Field | Value |
 |---|---|
-| **What it measures** | Share of impressions that produce an initial video view (thumbstop). |
-| **Why it matters** | Earliest, fastest-moving **creative fatigue** signal (state 5) — decays before CPA does. |
-| **Decision it drives** | Declining hook-rate trend on a creative → refresh the opening/hook. |
-| **Inputs** | 3-second video plays (or thruplay proxy), impressions. |
-| **Formula** | `video_3s_views / impressions` — **INTERNAL CALCULATION (DERIVED)**; the components are OFFICIAL PLATFORM FACTs. |
-| **Source / class** | Meta `video_play_actions` / 3-sec view field + `impressions` — FETCH → CALC. Verify exact field name at build. |
-| **Comparison window** | 7d vs 7d prior; slope over trailing 3–4 weeks. |
-| **Minimum sample** | Enough impressions for a stable ratio — UNKNOWN / verify at build. |
-| **Limitations** | Video only (no equivalent for static — use CTR trend there); autoplay inflates the numerator; placement mix shifts it. |
-| **When NOT to trust** | Static/carousel creative; placement mix changed; low impressions. A "good hook rate = X%" benchmark is **UNKNOWN / verify at build**. |
+| **Measures** | Change in cost per 1,000 impressions over the window. |
+| **Why** | Rising CPM on the same audience is an auction/relevance signal often co-moving with fatigue. |
+| **Decision** | Diagnose whether cost rise is fatigue vs. seasonality/auction. `primary` (as a driver, not alone). |
+| **Inputs** | `cpm` (FETCH OFFICIAL) daily series. |
+| **Formula** | `cpm_trend = cpm_t / cpm_(t-window) − 1`. |
+| **Source / [02] class** | [02] Delivery — CPM **FETCH OFFICIAL**; trend **CALC DERIVED**. |
+| **Level** | Ad / Ad set. |
+| **Comparison window** | 7d vs prior 7d, 14d, 30d. |
+| **Min sample** | Impressions >= per-account floor (UNKNOWN — verify at build). |
+| **Limitations** | CPM moves with seasonality, competition, promo periods, and audience changes — confounded (AUTOPSY: seasonality/auction). |
+| **When NOT to trust** | Q4/holiday auction inflation; audience or placement change; account-wide CPM shift (isolate ad-level via difference-from-account). |
 
-## H4 — CTR Trend (link + all) as fatigue slope
+- Fact label: CPM = **OFFICIAL PLATFORM FACT**; trend = **INTERNAL CALCULATION (DERIVED)**.
 
-| Field | Value |
-|---|---|
-| **What it measures** | Direction/slope of click-through rate over time (not the level). |
-| **Why it matters** | Creative-fatigue signal for **all formats** incl. static; complements hook rate. |
-| **Decision it drives** | Sustained negative slope with rising freq → refresh creative (state 5). |
-| **Inputs** | clicks (link + all), impressions, over successive windows. |
-| **Formula** | slope of `ctr = clicks / impressions` across trailing windows — **INTERNAL CALCULATION (DERIVED)**. `ctr` itself is an OFFICIAL PLATFORM FACT. |
-| **Source / class** | Meta `ctr`, `inline_link_click_ctr`, `impressions` — FETCH → CALC. |
-| **Comparison window** | Trailing 4–6 weekly points; own-history baseline. |
-| **Minimum sample** | Clicks per window high enough that CTR is stable — UNKNOWN / verify at build. |
-| **Limitations** | CTR level varies hugely by objective/placement/audience — only the *self-referential slope* is a fatigue signal, never the absolute number cross-account. |
-| **When NOT to trust** | After creative/audience edit; placement mix change; low click volume. |
-
-## H5 — CPM Trend (auction-pressure vs saturation)
+## H3 · CTR decay (all-CTR and link-CTR)
 
 | Field | Value |
 |---|---|
-| **What it measures** | Cost per 1,000 impressions and its direction. |
-| **Why it matters** | Rising CPM alongside falling new-reach ratio points to **audience saturation** (state 6); rising CPM alone can just be auction/seasonality. |
-| **Decision it drives** | Disambiguates state 5 vs 6; feeds scaling-cost forecasts (J). |
-| **Inputs** | spend, impressions. |
-| **Formula** | `spend / impressions × 1000` — Meta returns `cpm` directly (**OFFICIAL PLATFORM FACT**); trend is **INTERNAL CALCULATION**. |
-| **Source / class** | Meta `cpm`, `spend`, `impressions` — FETCH. |
-| **Comparison window** | 7d/28d trend; compare to account-level CPM trend to strip out market-wide moves. |
-| **Minimum sample** | Stable daily spend — UNKNOWN / verify at build. |
-| **Limitations** | Confounded by seasonality, competition, iOS/attribution, placement mix — **not clean** for isolating fatigue. |
-| **When NOT to trust** | Q4/holiday, promo periods, or when the whole account's CPM moved (market, not fatigue). |
+| **Measures** | Decline in click-through rate over the window. |
+| **Why** | Falling CTR = the creative is losing attention/relevance; a leading fatigue signal. |
+| **Decision** | Refresh vs. keep. `primary` driver. |
+| **Inputs** | `ctr`, `inline_link_clicks`, `impressions` (FETCH OFFICIAL). |
+| **Formula** | `link_ctr = inline_link_clicks / impressions`; `ctr_decay = 1 − ctr_t / ctr_baseline`. |
+| **Source / [02] class** | [02] Delivery — **FETCH OFFICIAL** (link-CTR uses inline_link_clicks per [02]); decay **CALC DERIVED**. |
+| **Level** | Ad / Creative. |
+| **Comparison window** | 7d vs the ad's own peak/first-week baseline. |
+| **Min sample** | Impressions per day >= floor to stabilise CTR (UNKNOWN — verify at build). |
+| **Limitations** | CTR is placement-mix dependent; all-CTR includes non-link clicks; small denominators are noisy. |
+| **When NOT to trust** | Placement mix shifted; day-of-week effects unsmoothed; sample too small (wide confidence interval). |
 
-## H6 — Efficiency Trend: CPA / ROAS slope (the money signal)
+- Fact label: CTR = **OFFICIAL PLATFORM FACT**; decay = **INTERNAL CALCULATION (DERIVED)**.
 
-| Field | Value |
-|---|---|
-| **What it measures** | Direction of cost-per-result / return on ad spend over time. |
-| **Why it matters** | The **decision-critical** fatigue signal — states 3/4/7 hinge on it. Leading signals (hook, CTR) warn early; this confirms. |
-| **Decision it drives** | Sustained CPA rise past account tolerance → TERMINAL DECLINE → pause (state 7). Stable → maintain (state 4). |
-| **Inputs** | spend, conversions/purchases, conversion value. |
-| **Formula** | `cpa = spend / conversions`; `roas = conversion_value / spend` — Meta returns cost-per-action and purchase ROAS (**OFFICIAL PLATFORM FACT**, attribution-window-dependent); the slope is **INTERNAL CALCULATION**. |
-| **Source / class** | Meta `actions`, `cost_per_action_type`, `purchase_roas`, `spend` — FETCH → CALC. Attribution window is a config, not a truth. |
-| **Comparison window** | Trailing 7/14/28d; own baseline + account tolerance band. |
-| **Minimum sample** | **≥ statistically meaningful conversions per window** — tie to learning-phase volume; absolute number UNKNOWN / verify at build. |
-| **Limitations** | Attribution-window sensitive; iOS/SKAN undercount; delayed conversions distort recent windows; low-volume noise. |
-| **When NOT to trust** | Low conversion volume; recent attribution/tracking change; long consideration cycles where conversions lag impressions. |
-
-## H7 — Negative Feedback / Quality drift
+## H4 · Hook-rate & hold-rate decay (video attention)
 
 | Field | Value |
 |---|---|
-| **What it measures** | Hide/report/"see fewer" signals and Meta's ad relevance rankings drifting down. |
-| **Why it matters** | Corroborates terminal decline and audience irritation; protects account health. |
-| **Decision it drives** | Rising negatives + downgraded rankings → prioritize kill/refresh (states 5/7). |
-| **Inputs** | negative feedback actions; quality/engagement/conversion rate rankings. |
-| **Formula** | trend of negative-feedback rate; ranking transitions — **INTERNAL CALCULATION** over OFFICIAL PLATFORM FACTs. |
-| **Source / class** | Meta `quality_ranking`, `engagement_rate_ranking`, `conversion_rate_ranking` (FETCH, but categorical: above/avg/below avg) + negative-feedback fields (verify availability at build — may be **CANNOT-KNOW** at ad level for small volumes). |
-| **Comparison window** | 7d/28d; ranking is relative to competing advertisers, so it moves even when your ad doesn't. |
-| **Minimum sample** | Meta suppresses rankings below a volume floor — UNKNOWN / verify at build. |
-| **Limitations** | Rankings are **relative and coarse** (3 buckets); suppressed at low volume; laggy. |
-| **When NOT to trust** | Low delivery (rankings blank); as a sole trigger; interpreting a ranking drop as your fault when competitors simply improved. |
+| **Measures** | Decline in early-video retention: hook rate (3-sec plays / impressions) and hold rate. |
+| **Why** | Attention collapse at the top of the video is the earliest creative-fatigue signal for video. |
+| **Decision** | Whether the *creative itself* (not delivery) is fatiguing -> produce replacement. `primary`. |
+| **Inputs** | `video_3_sec_watched`, `thruplay`, `p25/50/75/100 watched`, `video_avg_time_watched`, `impressions` (FETCH OFFICIAL). |
+| **Formula** | `hook_rate = 3_sec_plays / impressions`; `hold_rate` = **pick ONE definition and document it** ([02] flags 3 competing defs: p75/3-sec [Meta], 15-sec/3-sec [industry], thruplay/3-sec). Decay = trend of each. |
+| **Source / [02] class** | [02] Attention — raw plays **FETCH OFFICIAL**; **hook rate & hold rate are CALC DERIVED, NOT official fields** (explicit in [02]). |
+| **Level** | Creative / Ad (video only). |
+| **Comparison window** | 7d vs creative baseline; 3d for high-spend. |
+| **Min sample** | Video plays >= floor (UNKNOWN — verify at build). |
+| **Limitations** | Auto-play/sound-off inflates 3-sec plays; hold-rate definition ambiguity means cross-tool comparison is invalid unless the same def is used. |
+| **When NOT to trust** | Non-video creative (N/A); placement change (Reels vs Feed retention differ); definition mismatch with any external benchmark. |
 
-## H8 — Fatigue Composite Score (roll-up that assigns the state)
+- Fact label: raw video actions = **OFFICIAL PLATFORM FACT**; hook/hold rate + decay = **INTERNAL CALCULATION (DERIVED)**. Any "good hook rate = X%" claim = **UNKNOWN / verify at build** (no validated benchmark hardcoded).
+
+## H5 · CVR / CPA / ROAS decay (outcome fatigue)
 
 | Field | Value |
 |---|---|
-| **What it measures** | Single 0–100 fatigue index that maps signals H1–H7 to one of the 8 states. |
-| **Why it matters** | Turns a signal vector into one actionable state + confidence. |
-| **Decision it drives** | Refresh vs expand vs kill vs scale — the core H output. |
-| **Inputs** | H1–H7 signal trends (each z-scored against the ad's own history). |
-| **Formula** | Weighted, sign-aware combination of trend slopes → state via rules. **MODEL ESTIMATE.** Illustrative default weights (creative-fatigue-leaning), **tunable — verify/learn at build, not truth:** |
+| **Measures** | Deterioration in conversion rate, cost per acquisition, and on-platform ROAS over the window. |
+| **Why** | The bottom-line symptom of fatigue; confirms upstream attention decay reached outcomes. |
+| **Decision** | Pause/replace vs. hold. `primary`. |
+| **Inputs** | `actions` (purchases), `action_values`, `spend`, `clicks`/`lpv` (FETCH OFFICIAL). |
+| **Formula** | `cvr = purchases / clicks(or lpv)`; `cpa = spend / purchases`; `roas = value / spend`; decay = trend vs baseline. |
+| **Source / [02] class** | [02] Conversion/economics — purchases & value **FETCH OFFICIAL** (attribution-window dependent); ROAS/CPA/CVR **CALC DERIVED**. |
+| **Level** | Ad / Creative / Ad set. |
+| **Comparison window** | 7d vs prior 7d and vs baseline; 14/30d for low-volume. |
+| **Min sample** | Conversions >= a stability floor (UNKNOWN — verify at build; ROAS on very few purchases is high-variance). |
+| **Limitations** | Attribution-window dependent; iOS/privacy under-reporting (modeled conversions) — flag attribution limits (per [02] hard limits); Simpson's paradox across audiences (AUTOPSY). |
+| **When NOT to trust** | Promo/pricing/LP/tracking changes; small conversion counts; attribution window changed; account-level economic shift not isolated. |
 
-| Signal | Default weight | Why this weight (rationale, not fact) |
+- Fact label: purchases/value = **OFFICIAL PLATFORM FACT** (attribution-caveated); ROAS/CPA/CVR + decay = **INTERNAL CALCULATION (DERIVED)**.
+
+## H6 · Creative age & spend velocity
+
+| Field | Value |
+|---|---|
+| **Measures** | Days since the creative first delivered, and how fast spend is accumulating on it. |
+| **Why** | Fatigue risk rises with cumulative exposure; velocity tells you how *fast* an ad will burn its audience. |
+| **Decision** | Prioritise which ads to watch/replace first; feed the creative-supply forecast. `primary`. |
+| **Inputs** | Creative first-seen date (CALC from daily series), daily `spend` (FETCH OFFICIAL). |
+| **Formula** | `creative_age = today − first_delivery_date`; `spend_velocity = spend over last N days / N` and its trend. |
+| **Source / [02] class** | [02] Delivery — spend **FETCH OFFICIAL**; spend velocity & concentration **CALC DERIVED**; creative age **CALC DERIVED** (first-seen from snapshots). |
+| **Level** | Creative / Ad. |
+| **Comparison window** | Rolling 7/14/30d. |
+| **Min sample** | Needs a continuous daily snapshot history (see [22][24]); unreliable if snapshots have gaps. |
+| **Limitations** | "First seen" only as far back as our snapshot history; age != fatigue by itself (a durable evergreen can be old and healthy). |
+| **When NOT to trust** | Snapshot history incomplete; creative re-used across ads (id reuse) confuses age. |
+
+- Fact label: age & velocity = **INTERNAL CALCULATION (DERIVED)**.
+
+## H7 · Reach / impression-growth saturation
+
+| Field | Value |
+|---|---|
+| **Measures** | Whether new-reach growth has stalled while impressions keep climbing (audience exhaustion). |
+| **Why** | Distinguishes "same people seeing it more" (saturation) from healthy incremental reach. |
+| **Decision** | Expand audience vs. refresh creative. `primary` driver. |
+| **Inputs** | `reach`, `impressions` daily (FETCH OFFICIAL). |
+| **Formula** | `reach_growth = delta_reach/delta_time`; saturation when impression-growth > 0 while reach-growth -> 0 (rising frequency). |
+| **Source / [02] class** | [02] Delivery — **FETCH OFFICIAL** inputs; saturation flag **CALC DERIVED**. |
+| **Level** | Ad set / Campaign. |
+| **Comparison window** | 7d slope vs prior. |
+| **Min sample** | Meaningful reach base (UNKNOWN — verify at build). |
+| **Limitations** | Reach dedup is imperfect; audience-overlap and cap changes confound. |
+| **When NOT to trust** | Audience just expanded/changed; budget just scaled (mechanical impression jump). |
+
+- Fact label: reach/impressions = **OFFICIAL PLATFORM FACT**; saturation flag = **INTERNAL CALCULATION (DERIVED)**.
+
+## H8 · Fatigue State (composite verdict — 8 states)
+
+| Field | Value |
+|---|---|
+| **Measures** | A single classified state combining H1–H7 signals with confidence. |
+| **Why** | Turns many trends into one decision-ready label with an explanation ("why are we saying this?" — brief). |
+| **Decision** | The core fatigue action: keep / watch / refresh / pause. `primary`. |
+| **Inputs** | All H1–H7 signals + their confidences + sample sizes. |
+| **Formula** | Rule-engine classifier (per [15]): weighted multi-signal score -> state. Weights + thresholds are **INTERNAL CALCULATION, calibrated per account**, versioned, with exceptions — not arbitrary constants. |
+| **Source / [02] class** | Composite of FETCH OFFICIAL inputs + CALC DERIVED trends -> **CALC DERIVED** verdict. |
+| **Level** | Creative / Ad (primary); can roll to Ad set. |
+| **Comparison window** | Multi-window (3/7/14d) consensus required to avoid noise -> trend. |
+| **Min sample** | If any driver is below its floor -> state = **INSUFFICIENT DATA**, never a false verdict. |
+| **Limitations** | A classifier is only as good as its calibration; confounds (promo/season/attribution) must be checked by AUTOPSY before a verdict stands. |
+| **When NOT to trust** | Confidence low; signals disagree (flag "mixed signals"); a known external event explains the move. |
+
+**The 8 states (from brief):**
+
+| State | Plain meaning | Typical driver pattern |
 |---|---|---|
-| Efficiency slope (H6, CPA/ROAS) | 0.30 | The decision that actually costs money; must dominate. |
-| Hook-rate trend (H3) | 0.20 | Earliest creative-wear signal; leads H6. |
-| CTR slope (H4) | 0.15 | Covers static; corroborates H3. |
-| New-reach ratio (H2) | 0.15 | The one clean audience-vs-creative discriminator. |
-| Frequency (H1) | 0.08 | Real but lagging/misleading alone → deliberately small. |
-| CPM trend (H5) | 0.07 | Confounded by market → small. |
-| Negative feedback / ranking (H7) | 0.05 | Coarse, laggy → small but protective. |
+| HEALTHY | Stable/improving | flat/rising CTR & hook rate, stable CPA |
+| EARLY WARNING | First soft signal | one leading signal (hook/CTR) dipping, outcomes still fine |
+| EMERGING | Fatigue forming | multiple leading signals declining, frequency rising |
+| FATIGUING | Actively degrading | leading + lagging signals down together |
+| FATIGUED | Degraded, confirmed | CPA/ROAS materially worse, sustained |
+| SEVERE | Deep degradation | large sustained ROAS/CPA loss, high frequency |
+| RECOVERING | Improving after a dip/refresh | signals reversing upward post-change |
+| INSUFFICIENT DATA | Can't judge | any key driver below its sample floor |
+
+- Fact label: state = **INTERNAL CALCULATION (DERIVED)** with confidence; all thresholds **calibrated per account**, none an INDUSTRY BENCHMARK unless a cited, dated source is attached at build (else **UNKNOWN**).
+
+## H9 · Fatigue Forecast (7-day AND 14-day)
 
 | Field | Value |
 |---|---|
-| **Source / class** | CALC over FETCHed facts; the classifier is INFER/MODEL. |
-| **Comparison window** | Each signal vs its own trailing baseline; composite refreshed daily. |
-| **Minimum sample** | Inherits the strictest sub-signal floor (usually H6 conversions). Below it → force state 1 FRESH, do not emit a fatigue verdict. |
-| **Limitations** | Weights are priors, not truth; a single composite can mask a split signal (refresh vs expand) — **always surface the top contributing signals, not just the number**. |
-| **When NOT to trust** | Below sample; post-edit; seasonality; when incrementality (state 8) is unconfirmed by an EXTERNAL lift test. |
+| **Measures** | Probability the creative crosses into a worse fatigue state within 7 and 14 days. |
+| **Why** | Lets the buyer replace *before* the loss, not after — the "prediction" step of the transform. |
+| **Decision** | Pre-emptive refresh / creative-supply planning. `primary`. |
+| **Inputs** | H1–H7 trend slopes, creative age, spend velocity, decay rates. |
+| **Formula** | Trend-extrapolation / survival-style model -> probability + confidence + named drivers + expected consequence + recommended action (per [08] Forecasting Framework). |
+| **Source / [02] class** | Modeled from CALC DERIVED trends -> **INFERENCE**. |
+| **Level** | Creative / Ad. |
+| **Comparison window** | Forecast horizon 7d & 14d; trained on the ad's own history. |
+| **Min sample** | Needs enough daily history for a stable slope (UNKNOWN — verify at build); short-lived ads -> low confidence. |
+| **Limitations** | A forecast is not a fact (brief); cannot foresee external shocks (promo, competitor, seasonality); weak-forecast risk flagged by KILLCRITIC. |
+| **When NOT to trust** | Short history; volatile signals; recent structural change (budget/audience/LP). Present as probability + confidence, never a certainty. |
+
+- Fact label: forecast = **MODEL ESTIMATE / INFERENCE**, always with confidence; never OFFICIAL, never a fact.
 
 ---
 
-# Category I — DIVERSITY
+# I · DIVERSITY
 
-**Design principle:** Diversity is measured across **strategic dimensions**, never "number of ads." Ten near-identical UGC testimonials for one persona is 10 ads and *zero* diversity. AdBrain scores the portfolio over a defined dimension set and asks: are we concentrated, redundant, or blind to whole segments?
+**Not "number of ads"** (brief). Diversity is measured across the creative-fingerprint dimensions:
+persona / problem / desire / awareness / hook / angle / concept / format / visual / speaker /
+product / offer / background / environment / message / landing / CTA / narrative / structure
+(brief + [05] fingerprint). The dimension **labels themselves are AI-inferred** (per [02]: persona/
+hook/angle/concept = **INFER, INFERENCE with confidence**), so **every diversity score inherits that
+inference uncertainty** — a diversity number is only as trustworthy as the tagging under it.
 
-## I0 — The dimension taxonomy (what we diversify across)
+Five scores (brief): **Diversity, Concentration, Redundancy, White-Space, Coverage** — each with
+formula, weights + reason, min sample, confidence, limits. Scores are computed on a chosen scope
+(account / campaign / active-ads set) and a chosen basis (by count vs by spend — always state which;
+spend-weighted is the decision-relevant one).
 
-**Fact label:** INTERNAL CALCULATION framework (tagging). **Level:** creative → adset/campaign/account roll-up. **Data-mapping class:** partly **INFER** (auto-tagged by AdBrain vision/LLM), partly **EXTERNAL** (human-labeled), partly **CANNOT-KNOW** from Meta (Meta does not label your creative's angle/persona).
+Cross-cutting for all of I:
+- **[02] class:** the underlying dimension tags are **INFER (INFERENCE)**; the scores that aggregate
+  them are **CALC DERIVED** on top of inferred inputs.
+- **Fact label:** every diversity/concentration/etc. value = **INTERNAL CALCULATION (DERIVED) over
+  INFERRED tags**. Weights below are **INTERNAL CALCULATION heuristics, calibrated**, not benchmarks.
+- **Decision gate:** all five are `primary` — they drive the "what to produce next / where are we
+  over-concentrated / where is the white space" decisions in the brief's final test.
 
-| Dimension | Example values | How tagged |
-|---|---|---|
-| **Persona / audience** | new mom, SMB owner, gym-goer | INFER (model) or EXTERNAL (human) |
-| **Awareness stage** | unaware → most aware | INFER/EXTERNAL |
-| **Hook** | question, stat shock, pattern-interrupt | INFER (LLM on first frame/copy) |
-| **Angle / message** | price, status, fear, convenience, social proof | INFER/EXTERNAL |
-| **Format** | UGC video, static, carousel, collection | FETCH-adjacent (Meta gives some format signal) + INFER |
-| **Visual style** | talking-head, screen-recording, meme, product-hero | INFER (vision model) |
-| **Offer / CTA** | free trial, % off, bundle | INFER/EXTERNAL |
-
-> Meta does **not** provide angle/persona/hook tags → these are AdBrain's own layer; their accuracy is a MODEL/INFER quality question and must be shown with confidence, not as fact.
-
-## I1 — Diversity Score (spread across dimensions)
-
-| Field | Value |
-|---|---|
-| **What it measures** | How evenly spend/impressions are spread across values within each dimension (entropy). |
-| **Why it matters** | Even spread = resilience (if one angle fatigues, others carry). Concentrated = fragile. |
-| **Decision it drives** | Low diversity → brief net-new angles/personas; high → fine, focus on scaling winners. |
-| **Inputs** | spend (or impressions) per dimension-value; dimension tags (I0). |
-| **Formula** | Per dimension: normalized **Shannon entropy** `H = −Σ pᵢ·ln(pᵢ) / ln(n)` (0–1), then average across dimensions (optionally weighted). **INTERNAL CALCULATION (DERIVED)**, entropy is RESEARCH-BACKED (information theory). |
-| **Source / class** | Meta spend/impressions (FETCH) × AdBrain tags (INFER/EXTERNAL) → CALC. |
-| **Comparison window** | Current live set; trend month-over-month. |
-| **Minimum sample** | Enough live creatives per dimension that entropy is meaningful (n ≥ 3–4 values) — UNKNOWN / verify at build. |
-| **Limitations** | Garbage-in from mis-tagging; "even spread" is not automatically good if some values are known losers; weighting choice is subjective. |
-| **When NOT to trust** | Few creatives; poor tag confidence; early account with deliberate focus. |
-
-## I2 — Concentration Score (spend-risk / single-point-of-failure)
+## I1 · Diversity Score
 
 | Field | Value |
 |---|---|
-| **What it measures** | How concentrated **spend and results** are in a few creatives/angles (the inverse-risk view of I1). |
-| **Why it matters** | The real risk metric: "if our top creative dies tomorrow, what % of results vanish?" |
-| **Decision it drives** | High concentration → urgently build backups for the winner's slot before it fatigues (feeds H + J). |
-| **Inputs** | spend and conversions per creative/angle. |
-| **Formula** | **HHI** `= Σ(share_i)²` (share of spend or of conversions), 0→1; and top-1 / top-3 result share. **INTERNAL CALCULATION (DERIVED)**; HHI is RESEARCH-BACKED (economics). |
-| **Source / class** | Meta spend/conversions (FETCH) → CALC. |
-| **Comparison window** | Current; watch alongside the winner's fatigue state. |
-| **Minimum sample** | Enough conversions to trust per-creative shares — UNKNOWN / verify at build. |
-| **Limitations** | Concentration on a genuine winner is fine *until* it fatigues — must be read **with** H, not alone. |
-| **When NOT to trust** | Deliberate single-winner scaling phases; low conversion counts. |
+| **Measures** | How spread the active creative portfolio is across fingerprint dimensions (variety of personas/hooks/angles/formats/...). |
+| **Why** | Low diversity = fragile account: one fatigue event or audience shift can sink most of spend at once. |
+| **Decision** | Whether to broaden creative exploration (new angles/personas/formats). `primary`. |
+| **Inputs** | Fingerprint tags per active creative (INFER), spend per creative (FETCH OFFICIAL). |
+| **Formula** | Per dimension, an entropy / effective-number measure (e.g. Shannon or inverse-Simpson) of the spend-weighted distribution across categories; **Diversity Score = weighted mean across dimensions**. |
+| **Weights + reason** | Dimensions weighted by decision-impact: hook/angle/persona/format highest (they drive fatigue independence and audience reach); background/environment lowest (cosmetic). Weights are **calibrated INTERNAL CALCULATION**, versioned; **exact values UNKNOWN — set/validate at build**, not hardcoded here. |
+| **Source / [02] class** | INFER tags + FETCH spend -> **CALC DERIVED**. |
+| **Level** | Account / Campaign (portfolio-level). |
+| **Comparison window** | Snapshot of active set; trend across weeks. |
+| **Min sample** | Enough active creatives to make a distribution meaningful (UNKNOWN — verify at build); tiny portfolios -> low confidence, report as such. |
+| **Limitations** | Entirely dependent on tag accuracy (INFERENCE); "diverse tags" can still be functionally similar (redundancy, see I3); spend-weighted vs count-weighted give different pictures. |
+| **When NOT to trust** | Tagging confidence low; very few ads; a dimension has too many sparse categories (entropy unstable). |
 
-## I3 — Redundancy Score (wasted near-duplicates)
+- Fact label: **INTERNAL CALCULATION (DERIVED) over INFERRED tags**, with confidence.
 
-| Field | Value |
-|---|---|
-| **What it measures** | Share of the portfolio that is functionally duplicate (same persona×angle×hook, high creative similarity) yet split across many ad IDs. |
-| **Why it matters** | Redundant creatives split the learning signal, inflate the ad count, and masquerade as diversity. |
-| **Decision it drives** | High redundancy → consolidate; stop counting duplicates as coverage; free the test slots. |
-| **Inputs** | creative tags (I0) + creative-asset similarity (embeddings of copy/thumbnail/video). |
-| **Formula** | `1 − (distinct creative clusters / total live creatives)`, clusters from semantic similarity threshold. **MODEL ESTIMATE / INFERENCE** (depends on the similarity model + threshold). |
-| **Source / class** | AdBrain vision/text embeddings (INFER) over creative assets; Meta gives the asset refs (FETCH). |
-| **Comparison window** | Current live set. |
-| **Minimum sample** | N/A statistically, but similarity threshold must be validated — UNKNOWN / verify at build. |
-| **Limitations** | Threshold-sensitive; a "duplicate" may test a real small variable (thumbnail A/B) — don't auto-flag legitimate tests. |
-| **When NOT to trust** | During deliberate A/B/n creative tests; weak embedding quality. |
-
-## I4 — White-Space Score (untested opportunity)
+## I2 · Concentration Score
 
 | Field | Value |
 |---|---|
-| **What it measures** | Share of the *strategic test matrix* (persona × angle × format × awareness) that has **never** been tested with a powered creative. |
-| **Why it matters** | Names the next experiments — where growth that we've never touched might live. |
-| **Decision it drives** | High white space → brief specific untested cells (the creative-generation queue). |
-| **Inputs** | the defined matrix (strategy input, EXTERNAL) + which cells have live/historical powered creatives. |
-| **Formula** | `untested_cells / total_defined_cells` (optionally weight cells by prior/expected value). **INTERNAL CALCULATION (DERIVED)** against an **EXTERNAL** matrix definition. |
-| **Source / class** | Matrix = EXTERNAL (human/strategy); coverage of it = CALC over Meta history (FETCH) + tags (INFER). |
-| **Comparison window** | Current; shrinks as tests run. |
-| **Minimum sample** | A cell only counts "tested" once a creative in it reached statistical power (else it's "attempted, inconclusive"). Power threshold UNKNOWN / verify at build. |
-| **Limitations** | Entirely dependent on how the matrix is defined — a lazy matrix hides real white space; a huge matrix manufactures fake gaps. The matrix is a judgment call, not a fact. |
-| **When NOT to trust** | If the strategic matrix is undefined/stale, this score is meaningless. |
+| **Measures** | How much spend/outcomes pile into a few fingerprint values (the inverse face of diversity). |
+| **Why** | High concentration = single point of failure and hidden fatigue risk; the brief's "over-concentrated" question. |
+| **Decision** | Whether to de-risk by diversifying, or accept concentration on a proven winner. `primary`. |
+| **Inputs** | Spend (and optionally purchases/value) per fingerprint value (FETCH OFFICIAL + INFER tags). |
+| **Formula** | Herfindahl-Hirschman Index (HHI) or top-N share per dimension, spend-weighted: `HHI = sum(share_i^2)`. Report per dimension + a rolled concentration index. |
+| **Weights + reason** | Same dimension weighting as I1 (decision-impact); concentration on hook/angle/persona/format/product matters most. Weights = **calibrated INTERNAL CALCULATION**; values **verify at build**. |
+| **Source / [02] class** | FETCH spend + INFER tags -> **CALC DERIVED**. |
+| **Level** | Account / Campaign / by product. |
+| **Comparison window** | Snapshot + weekly trend. |
+| **Min sample** | Meaningful spend base; HHI unstable on very few units. |
+| **Limitations** | Concentration is not inherently bad (a $500/day @4x winner is fine — brief); must be read with performance + fatigue, never alone. Tag-accuracy dependent. |
+| **When NOT to trust** | When concentration reflects a deliberate, healthy winner; low tag confidence; too few units. |
 
-## I5 — Coverage Score (are the important cells actually alive right now)
+- Fact label: **INTERNAL CALCULATION (DERIVED) over INFERRED tags**.
 
-| Field | Value |
-|---|---|
-| **What it measures** | Share of **priority** matrix cells that have at least one *currently live, non-fatigued, powered* creative. |
-| **Why it matters** | White space asks "ever tested?"; coverage asks "protected *today*?" A cell can be tested-and-then-abandoned → covered=no. |
-| **Decision it drives** | Low coverage on a high-value cell → prioritize a fresh creative there now (bridges I4 white space and H fatigue). |
-| **Inputs** | priority cells (EXTERNAL) + live creatives with their fatigue state (H) and power status. |
-| **Formula** | `Σ priority_weight(covered cells) / Σ priority_weight(all priority cells)`. **INTERNAL CALCULATION (DERIVED)**. |
-| **Source / class** | Priorities EXTERNAL; live-and-healthy status = CALC over Meta (FETCH) + H states + tags (INFER). |
-| **Comparison window** | Live now; re-scored daily as fatigue states change. |
-| **Minimum sample** | Inherits H's sample floors for "non-fatigued." |
-| **Limitations** | Depends on priority weighting (subjective) and on H's accuracy; "covered" ≠ "winning." |
-| **When NOT to trust** | Undefined priorities; unreliable fatigue states. |
-
-## I6 — Portfolio Diversity Index (composite)
+## I3 · Redundancy Score
 
 | Field | Value |
 |---|---|
-| **What it measures** | One 0–100 portfolio-health-by-diversity number combining I1–I5. |
-| **Why it matters** | A single tracked KPI for "is our creative portfolio resilient and exploring enough?" |
-| **Decision it drives** | Trend down → the creative brief queue is under-fed; feeds account-level planning. |
-| **Inputs** | I1–I5. |
-| **Formula** | Weighted blend — **MODEL ESTIMATE / tunable, not truth.** Illustrative default weights + reasons: |
+| **Measures** | How many active creatives are functionally *near-duplicates* (same fingerprint region) despite counting as separate ads. |
+| **Why** | Redundant ads fake diversity, split learning, and fatigue together — wasted creative slots. |
+| **Decision** | Consolidate/retire near-duplicates; reallocate production to genuinely new territory. `primary`. |
+| **Inputs** | Creative fingerprint embeddings (EXTERNAL/CALC computer-vision from [05]) + fingerprint tags (INFER). |
+| **Formula** | Pairwise similarity (embedding cosine >= a threshold) -> cluster; `Redundancy = share of creatives (or spend) inside dense same-region clusters`. |
+| **Weights + reason** | Similarity threshold + which fingerprint facets count toward "same" are **calibrated INTERNAL CALCULATION**; threshold value **UNKNOWN — verify at build** (a hardcoded cosine cutoff would be an arbitrary threshold — disallowed). |
+| **Source / [02] class** | Embeddings **EXTERNAL/CALC** + INFER tags -> **CALC DERIVED**. |
+| **Level** | Account / Campaign. |
+| **Comparison window** | Snapshot; trend as new creatives ship. |
+| **Min sample** | Needs embeddings computed for the active set ([05]); no embeddings -> cannot compute, say so. |
+| **Limitations** | Similarity != redundancy of *performance*; two similar-looking ads can perform differently; threshold sensitivity. |
+| **When NOT to trust** | Embeddings missing/low quality; deliberate iterative testing of one concept (that's a test, not waste). |
 
-| Component | Default weight | Why (rationale, not fact) |
-|---|---|---|
-| Coverage (I5) | 0.30 | "Are priority bets protected *right now*" is the most action-linked. |
-| Concentration/risk (I2) | 0.25 | Single-point-of-failure is the biggest downside risk. |
-| White space (I4) | 0.20 | Where future growth is discovered. |
-| Diversity spread (I1) | 0.15 | Resilience, but partly captured by I2/I5. |
-| Redundancy (I3) | 0.10 | Waste/hygiene — real but lowest stakes. |
+- Fact label: **INTERNAL CALCULATION (DERIVED)** over EXTERNAL/CALC embeddings + INFERRED tags.
+
+## I4 · White-Space Score
 
 | Field | Value |
 |---|---|
-| **Source / class** | CALC/MODEL over the above. |
-| **Comparison window** | Monthly trend; compare to the account's own history, not other accounts. |
-| **Minimum sample** | Inherits sub-metric floors + tag-confidence floor. |
-| **Limitations** | Composite hides which lever is broken — **always show the component breakdown**. Weights are priors. Cross-account benchmark of this index is **UNKNOWN / verify at build** and probably not comparable across verticals. |
-| **When NOT to trust** | Low tag confidence; undefined matrix/priorities; brand-new account. |
+| **Measures** | Unoccupied, potentially valuable fingerprint combinations we are NOT running (persona x hook x angle x format ...). |
+| **Why** | White space is where the next winner may live; the brief's "where is the white space" question. |
+| **Decision** | What to produce next (net-new territory). `primary`. |
+| **Inputs** | Our occupied fingerprint combinations (INFER) vs. a defined opportunity space (our own + competitor-derived, [12][13]). |
+| **Formula** | `White-Space = (valuable candidate combinations − occupied combinations) / valuable candidate combinations`, over a defined combination lattice; prioritised by plausibility. |
+| **Weights + reason** | Candidate value weighting favors combinations adjacent to proven winners and to competitor-active (hypothesis) regions. Weights = **calibrated INTERNAL CALCULATION**; competitor-derived candidates are **HYPOTHESES not conclusions** (brief: active != winning). |
+| **Source / [02] class** | INFER tags + EXTERNAL competitor data ([12]) -> **CALC DERIVED / INFERENCE** for the "valuable" judgment. |
+| **Level** | Account / Campaign / by product. |
+| **Comparison window** | Snapshot; re-scored as portfolio + competitor set change. |
+| **Min sample** | Needs a defined combination lattice and enough tagged history to know what's occupied. |
+| **Limitations** | The combination space is combinatorially huge — must be pruned to *plausible* space or the score is meaningless; "empty" may mean "already tried and failed," not "opportunity." |
+| **When NOT to trust** | Combination lattice arbitrary/unpruned; competitor data treated as proof of a winner; no memory of past failed tests (check learning store). |
+
+- Fact label: score = **INTERNAL CALCULATION (DERIVED)**; competitor-derived candidates = **INFERENCE / HYPOTHESIS**, never a fact; competitor economics remain **UNKNOWN** (per [02]).
+
+## I5 · Coverage Score
+
+| Field | Value |
+|---|---|
+| **Measures** | Of the strategically *intended* fingerprint targets (key personas, products, awareness stages, formats), what fraction actually have live creative. |
+| **Why** | Exposes gaps against the plan — products/personas/funnel stages with no creative coverage (brief: "which products have creative coverage/gaps"). |
+| **Decision** | Fill coverage gaps (produce for the uncovered target). `primary`. |
+| **Inputs** | Intended target list (EXTERNAL — product feed / strategy input) vs. occupied tags (INFER). |
+| **Formula** | `Coverage = covered_targets / total_intended_targets`, per dimension (persona coverage, product coverage, awareness-stage coverage, format coverage). |
+| **Weights + reason** | Targets weighted by strategic priority (e.g. hero products, key personas) — priority is an **EXTERNAL business input**, not a Meta fact; weighting **verify at build with the operator**. |
+| **Source / [02] class** | EXTERNAL intended-target list + INFER coverage -> **CALC DERIVED**. |
+| **Level** | Account / by product / by persona. |
+| **Comparison window** | Snapshot; trend as catalogue/strategy changes. |
+| **Min sample** | Needs a defined intended-target list; without it, coverage is undefined (say so, don't invent targets). |
+| **Limitations** | Coverage != performance (covered but losing is still a problem); depends on an accurate, current target list and accurate tags. |
+| **When NOT to trust** | No agreed target list; product feed stale; tags low-confidence. |
+
+- Fact label: **INTERNAL CALCULATION (DERIVED)** over EXTERNAL target list + INFERRED coverage.
 
 ---
 
-# Category J — SCALING
+# J · SCALING
 
-**Design principle:** "Can we spend more without breaking efficiency, and if so how and how fast?" Scaling metrics are about the **marginal** dollar and **headroom**, not total spend. Meta gives no auction-impression-share metric (unlike Google), so several scaling questions are answered by AdBrain's own spend-response modeling, clearly labeled MODEL ESTIMATE, and some are **CANNOT-KNOW** from Meta.
+Marginal, not average (brief): "what happens to efficiency if we spend another $10K?" The honest core
+here is that **true marginal/incremental economics are INFERENCE, never fact** ([02]: incremental
+revenue/iROAS, marginal CAC/ROAS, spend elasticity = **INFERENCE, MODEL ESTIMATE, never a fact**;
+require experiments or MMM). Everything in J is presented with that ceiling stated.
 
-## J1 — Learning-Phase Status
+Cross-cutting for all of J:
+- **[02] class:** marginal / incremental / elasticity / saturation = **INFERENCE**; the observed
+  spend and outcomes feeding them are **FETCH OFFICIAL**; average ROAS/CPA are **CALC DERIVED**.
+- **Fact label:** all marginal outputs = **MODEL ESTIMATE / INFERENCE** with confidence. Never
+  OFFICIAL. Blended / MER / true-margin truth = **EXTERNAL** (needs Shopify/finance — not derivable
+  from Meta, per [02]).
+- **Decision gate:** all `primary` — they answer "where does the next dollar go / what to scale /
+  protect / replace" (brief's scale engine + final test).
 
-| Field | Value |
-|---|---|
-| **What it measures** | Whether an ad set is in Learning, Learning Limited, or Active. |
-| **Why it matters** | You cannot trust efficiency or scale decisions mid-learning; edits reset it. |
-| **Decision it drives** | Hold edits / consolidate ad sets to exit learning before judging or scaling. |
-| **Inputs** | Meta delivery status; conversions in the trailing window. |
-| **Formula** | Reported by Meta (**OFFICIAL PLATFORM FACT**: `learning` / `learning_limited` / `active` delivery status). Meta's documented guidance: an ad set generally exits learning around **~50 optimization events in ~7 days** — **RESEARCH-BACKED (Meta-documented); confirm the exact current number at build.** |
-| **Source / class** | Meta delivery/status field — FETCH. |
-| **Comparison window** | Rolling 7d optimization events. |
-| **Minimum sample** | The ~50/7d guidance is itself the floor. |
-| **Limitations** | "Learning limited" can persist for structural reasons (too many ad sets, tiny budget); the 50 figure is guidance, not physics. |
-| **When NOT to trust** | As a quality signal (it's a delivery state, not performance); after any material edit. |
-
-## J2 — Scaling Headroom (efficient spend remaining)
+## J1 · Marginal ROAS / Marginal CAC (next-dollar efficiency)
 
 | Field | Value |
 |---|---|
-| **What it measures** | Estimated additional daily spend available before CPA exceeds the account's tolerance / ROAS floor. |
-| **Why it matters** | The core scaling answer: "how much more can this absorb *profitably*?" |
-| **Decision it drives** | Size and pace of budget increases; where to move money from losers to winners. |
-| **Inputs** | historical spend↔CPA/ROAS points, current spend, tolerance band, fatigue state (H). |
-| **Formula** | From a fitted **spend-response (saturation) curve** per ad set/campaign: headroom = spend at which marginal CPA hits the tolerance − current spend. **MODEL ESTIMATE.** |
-| **Source / class** | Meta spend + results history (FETCH) → AdBrain curve fit (CALC/MODEL). |
-| **Comparison window** | Trailing 30–90d of spend↔result observations; re-fit regularly. |
-| **Minimum sample** | Needs enough *variation* in daily spend to fit a curve — flat-budget accounts give a near-unidentifiable curve → mark low-confidence / UNKNOWN. |
-| **Limitations** | Confounded by seasonality, auction shifts, creative fatigue (a fatiguing creative fakes "no headroom"); extrapolation beyond observed spend is speculative. |
-| **When NOT to trust** | Little spend variation; mid-fatigue; recent structural edits; extrapolating far past historical max spend. |
+| **Measures** | Expected return (or cost per acquisition) on the *next* increment of spend, not the average so far. |
+| **Why** | Average ROAS hides diminishing returns; the scaling decision depends on the margin, not the mean. |
+| **Decision** | Scale / hold / pull back budget on this entity. `primary`. |
+| **Inputs** | Daily spend vs. daily conversions/value at varying spend levels (FETCH OFFICIAL); ideally a spend-change history. |
+| **Formula** | Estimated slope of the outcome-vs-spend response curve at current spend: `mROAS ~= delta_value / delta_spend` fit over observed spend changes (regression / response-curve fit), with confidence. |
+| **Source / [02] class** | [02] — **INFERENCE** (needs experiments/MMM for truth); observed inputs FETCH OFFICIAL. |
+| **Level** | Ad set / Campaign (budget-controlled levels); Account for portfolio. |
+| **Comparison window** | Fit over recent spend-change history (e.g. trailing weeks with budget moves). |
+| **Min sample** | Needs genuine spend *variation* to fit a slope; flat spend history -> cannot estimate a margin (report UNKNOWN, not a guess). |
+| **Limitations** | Correlation-not-causation without a holdout; confounded by fatigue, seasonality, audience, attribution; iOS under-reporting. A modeled margin != incrementality. |
+| **When NOT to trust** | No spend variation; recent structural changes; low conversion volume; no experimental validation — treat as directional only. |
 
-## J3 — Marginal CPA / Marginal ROAS
+- Fact label: **MODEL ESTIMATE / INFERENCE** with confidence; explicitly "directional, validate with a test."
 
-| Field | Value |
-|---|---|
-| **What it measures** | The cost/return of the *next* increment of spend (not the blended average). |
-| **Why it matters** | Blended ROAS hides that the last dollars are much worse than the first — the decision lives at the margin. |
-| **Decision it drives** | Increase budget only while marginal ROAS ≥ floor; stop before blended still "looks fine." |
-| **Inputs** | spend-response curve slope at current spend. |
-| **Formula** | derivative of results w.r.t. spend at current point → `Δspend / Δconversions`. **MODEL ESTIMATE / INTERNAL CALCULATION.** |
-| **Source / class** | CALC/MODEL over Meta history (FETCH). |
-| **Comparison window** | Trailing window used to fit the curve; recompute on new data. |
-| **Minimum sample** | Same as J2 (needs spend variation). |
-| **Limitations** | Only as good as the curve; noisy at low volume; assumes recent structure holds. |
-| **When NOT to trust** | Flat spend history; post-edit; volatile auction. |
-
-## J4 — Saturation / Spend-Response Curve fit quality
+## J2 · Spend Elasticity
 
 | Field | Value |
 |---|---|
-| **What it measures** | The fitted curve of results vs spend, plus its confidence (R²/fit diagnostics). |
-| **Why it matters** | Every J2/J3 number is only trustworthy if the underlying curve fits; ship the confidence, not just the point. |
-| **Decision it drives** | Whether to act on headroom/marginal numbers or say "insufficient data to advise scaling." |
-| **Inputs** | daily/weekly spend↔result observations. |
-| **Formula** | fit a diminishing-returns form (e.g. log/Hill saturation) → parameters + goodness-of-fit. **MODEL ESTIMATE**, RESEARCH-BACKED method (marketing saturation modeling). |
-| **Source / class** | CALC/MODEL over Meta history (FETCH). |
-| **Comparison window** | 30–90d; re-fit on schedule. |
-| **Minimum sample** | Enough distinct spend levels/points — UNKNOWN / verify at build. |
-| **Limitations** | Correlational, not causal (no experiment); creative fatigue and seasonality contaminate; overfit risk with few points. |
-| **When NOT to trust** | Poor fit diagnostics; few points; known confounds active. Report as advisory, never as guaranteed. |
+| **Measures** | % change in outcomes for a % change in spend (curve shape: linear / diminishing / saturated). |
+| **Why** | Quantifies how much headroom exists before efficiency erodes — the "another $10K" question. |
+| **Decision** | Size the scale step (how much to add) and where. `primary`. |
+| **Inputs** | Spend vs. outcome pairs over time at different spend levels (FETCH OFFICIAL). |
+| **Formula** | Elasticity = `pct_delta_outcome / pct_delta_spend` from a fitted response curve; local elasticity at current spend. |
+| **Source / [02] class** | [02] — **INFERENCE** (spend elasticity named explicitly as MODEL ESTIMATE). |
+| **Level** | Ad set / Campaign / Account. |
+| **Comparison window** | Trailing window with spend variation. |
+| **Min sample** | Requires multiple distinct spend levels; single spend level -> not estimable. |
+| **Limitations** | Same confounds as J1; curve shape can shift with fatigue/season; extrapolation beyond observed range is unreliable. |
+| **When NOT to trust** | Extrapolating far past observed spend; no variation; noisy conversions. |
 
-## J5 — Recommended Budget Step & Pace
+- Fact label: **MODEL ESTIMATE / INFERENCE**.
 
-| Field | Value |
-|---|---|
-| **What it measures** | The suggested size and cadence of the next budget change. |
-| **Why it matters** | Too-big/too-fast steps re-trigger learning and waste; too-slow leaves money on the table. |
-| **Decision it drives** | The exact budget edit AdBrain proposes (as a draft, human-approved). |
-| **Inputs** | headroom (J2), marginal ROAS (J3), learning status (J1), fatigue (H). |
-| **Formula** | step sized to stay within headroom and (ideally) avoid learning reset. The commonly cited **"raise ≤ ~20% every few days"** rule is **INDUSTRY BENCHMARK / folklore — verify at build; not a Meta guarantee.** AdBrain should prefer account-learned safe-step sizes over a hardcoded 20%. |
-| **Source / class** | CALC/MODEL; the 20% heuristic INDUSTRY BENCHMARK (unverified as universal). |
-| **Comparison window** | Re-evaluate after each step stabilizes. |
-| **Minimum sample** | Wait for post-edit stabilization before the next step. |
-| **Limitations** | The 20% number is not a documented Meta law; CBO/Advantage+ changes the mechanics; every edit risks learning reset. |
-| **When NOT to trust** | Mid-learning; mid-fatigue; when the step exceeds modeled headroom. |
-
-## J6 — Scale Readiness Score
+## J3 · Saturation Point
 
 | Field | Value |
 |---|---|
-| **What it measures** | 0–100 composite: is this ad set/campaign a good scale candidate *now*? |
-| **Why it matters** | Ranks where the next dollar should go across the account. |
-| **Decision it drives** | Which winners to fund, which to leave, which to fix first. |
-| **Inputs** | fatigue state (H, must be 3/4), marginal ROAS ≥ floor (J3), headroom > 0 (J2), curve confidence (J4), concentration risk (I2), learning=active (J1). |
-| **Formula** | gated weighted score — **MODEL ESTIMATE / tunable, not truth.** Illustrative gates+weights: |
+| **Measures** | The spend level beyond which incremental outcomes flatten (marginal ROAS falls below target / breakeven). |
+| **Why** | Tells you the ceiling for profitable scaling on this entity before diversification is needed. |
+| **Decision** | Cap spend here and diversify vs. keep pushing. `primary`. |
+| **Inputs** | Fitted response curve (from J1/J2) + a breakeven/target ROAS threshold. |
+| **Formula** | Spend where marginal ROAS = target/breakeven ROAS (curve inflection / plateau onset). |
+| **Weights / threshold** | The target/breakeven ROAS is an **EXTERNAL business input** (needs contribution margin — Shopify/finance per [02]); using an arbitrary ROAS target as truth is disallowed — obtain it from the operator/finance. |
+| **Source / [02] class** | **INFERENCE** curve + **EXTERNAL** breakeven -> INFERENCE verdict. |
+| **Level** | Ad set / Campaign / Account. |
+| **Comparison window** | Re-estimated as curve updates. |
+| **Min sample** | Needs spend variation spanning near the plateau; if we've never spent near saturation, the point is extrapolated (low confidence). |
+| **Limitations** | Extrapolated saturation is speculative; curve moves with creative refresh/fatigue; breakeven needs true margins (EXTERNAL), not Meta ROAS. |
+| **When NOT to trust** | No high-spend observations; missing true margin; post-refresh curve reset. |
 
-| Input | Role | Default weight / gate |
-|---|---|---|
-| Fatigue state (H) | **Hard gate** | Must be PEAK/STABLE; FATIGUE/DECLINE/ZOMBIE → not scalable regardless of score |
-| Marginal ROAS vs floor (J3) | Core | 0.35 |
-| Headroom (J2) | Core | 0.30 |
-| Curve confidence (J4) | Trust multiplier | 0.15 |
-| Learning = active (J1) | Gate/penalty | 0.10 |
-| Backup coverage (I5/I2) | Risk penalty | 0.10 |
+- Fact label: **MODEL ESTIMATE / INFERENCE**; breakeven input **EXTERNAL** (UNKNOWN until supplied).
 
-| Field | Value |
-|---|---|
-| **Source / class** | CALC/MODEL over the above. |
-| **Comparison window** | Re-scored daily. |
-| **Limitations** | Inherits every sub-model's weakness; gates matter more than the score — a high score with a failed gate is **not** scalable. Weights are priors. |
-| **When NOT to trust** | Any gate failing; low curve confidence; unconfirmed incrementality (would scale a ZOMBIE). |
-
-## J7 — Days-to-Saturation Forecast
+## J4 · Scaling Headroom & Action (scale / protect / replace)
 
 | Field | Value |
 |---|---|
-| **What it measures** | Estimated days until the current audience/creative hits saturation at the current/proposed spend. |
-| **Why it matters** | Tells you how long a scale-up can run before you must expand audience or refresh creative. |
-| **Decision it drives** | Pre-brief the next creative/audience *before* the winner saturates (feeds I white space + H). |
-| **Inputs** | new-reach-ratio trend (H2), frequency trend (H1), fatigue slope (H6), addressable-audience-size estimate. |
-| **Formula** | project saturation-signal trends forward to threshold. **MODEL ESTIMATE / FORECAST.** |
-| **Source / class** | CALC/MODEL over Meta (FETCH) + audience-size estimate (INFER; Meta's audience size ranges are coarse). |
-| **Comparison window** | forward projection off trailing 4–6 weeks. |
-| **Limitations** | Forecast; audience-size inputs are coarse/estimated; assumes spend and structure hold; wide error bars. |
-| **When NOT to trust** | Volatile trends; recent edits; small/lookalike audiences where size is poorly known. |
+| **Measures** | Remaining profitable spend capacity per entity, and the resulting scale-engine verdict. |
+| **Why** | Operationalises the brief's scale engine: what to scale, what to protect, what to replace, with marginal analysis. |
+| **Decision** | The budget-reallocation action itself. `primary`. |
+| **Inputs** | J1 marginal ROAS, J3 saturation, current spend, H8 fatigue state, quality/stability scores (Winners category, elsewhere in [01]). |
+| **Formula** | `headroom = saturation_spend − current_spend`; verdict = rule-engine combine(mROAS vs target, headroom, fatigue state, stability) -> SCALE / PROTECT / REPLACE / HOLD, mapped to action priority (DO NOW / DO NEXT / WATCH / DO NOT ACT / NEEDS MORE DATA — brief). |
+| **Source / [02] class** | Combines **INFERENCE** (marginal), **CALC DERIVED** (fatigue/stability), **FETCH OFFICIAL** (spend) -> **INFERENCE** verdict with confidence. |
+| **Level** | Ad set / Campaign / Account. |
+| **Comparison window** | Re-run each snapshot; watch stability of the verdict over days (trend, not one-day). |
+| **Min sample** | Inherits the weakest input's floor; if marginal ROAS is unestimable -> verdict = NEEDS MORE DATA, never a fabricated scale call. |
+| **Limitations** | Only as good as J1–J3 (all INFERENCE + confounds); a scale call ignoring fatigue (H) or a good-creative/bad-LP break (LP category) is wrong — must be cross-checked (AUTOPSY). |
+| **When NOT to trust** | Marginal estimate low-confidence; fatiguing creative (don't scale into fatigue); attribution/margin gaps; recent structural change. |
 
-## J8 — Impression Share / Auction Coverage — **CANNOT-KNOW**
-
-| Field | Value |
-|---|---|
-| **What it measures** | Share of available auctions won / lost to budget or rank (Google-style). |
-| **Status** | **UNKNOWN / CANNOT-KNOW — Meta does not expose an impression-share metric.** Do not fabricate one. |
-| **Decision it would drive** | "Are we budget-capped vs the whole addressable auction?" |
-| **AdBrain substitute** | Infer budget-capping indirectly (delivery flat-lining at cap, marginal ROAS still ≥ floor at cap) as an **INFERENCE**, explicitly labeled — never presented as impression share. |
-| **When NOT to trust** | Always treat any "impression share"-like figure as unavailable on Meta; the inferred substitute is directional only. |
+- Fact label: verdict = **MODEL ESTIMATE / INFERENCE** with confidence + explicit drivers; scaling into fatigue or without true margin is flagged, not silently scaled.
 
 ---
 
-## Cross-category decision map (how H, I, J compose)
+## Consistency check vs [02]
 
-| Situation | Signals | Next action |
+| This file's metric group | [02] row it traces to | Class enforced |
 |---|---|---|
-| Winner still efficient, headroom + | H=PEAK/STABLE, J6 high, gates pass | Scale (J5 step), pre-brief backup (J7→I) |
-| Efficiency slipping, creative-led | H=CREATIVE FATIGUE (H3/H4 down, H2 ok) | Refresh creative in that cell (I5) |
-| Efficiency slipping, audience-led | H=AUDIENCE SATURATION (H2 down, freq up) | Expand/rotate audience; don't just refresh |
-| "Good" ROAS, no lift | H=ZOMBIE (needs EXTERNAL lift test) | Do not scale; run incrementality test / reallocate |
-| Portfolio fragile | I2 high concentration, I5 low coverage | Brief white-space cells (I4) before the winner fatigues |
-| Bleeding | H=TERMINAL DECLINE | Pause/kill |
+| H1 frequency, H7 reach | Delivery/spend (FETCH OFFICIAL); trends CALC | OK |
+| H2 CPM, H3 CTR | Delivery (FETCH OFFICIAL); trend/decay CALC | OK |
+| H4 hook/hold decay | Attention — raw FETCH OFFICIAL, hook/hold **CALC DERIVED, not official** | OK (matches [02] trap note) |
+| H5 CVR/CPA/ROAS decay | Conversion (purchases FETCH OFFICIAL, attribution-caveated; ratios CALC) | OK |
+| H6 velocity/age | spend FETCH; velocity/concentration/age CALC | OK |
+| H8 state, H9 forecast | composite CALC; forecast **INFERENCE** | OK |
+| I1–I5 diversity family | fingerprint tags **INFER**; scores CALC over inferred inputs; embeddings EXTERNAL/CALC | OK |
+| I4 white-space competitor part | competitor data EXTERNAL, **HYPOTHESIS**; economics UNKNOWN | OK |
+| J1–J4 scaling family | marginal/elasticity/saturation **INFERENCE**; breakeven/MER **EXTERNAL**; spend FETCH | OK |
 
----
-
-## Open items to reconcile at build (do not ship as truth)
-
-1. **Every threshold/half-life/benchmark** here marked UNKNOWN/tunable → learn per account; never hardcode as truth.
-2. **All Meta field names** (`frequency`, `cpm`, `purchase_roas`, `quality_ranking`, video 3-sec view field, negative-feedback fields, learning-phase status) → verify against `02-meta-data-mapping.md` and the live Marketing API version at build.
-3. **The ~50-conversions/7-day learning figure** → confirm current Meta-documented value.
-4. **The ~20% budget-step rule** → INDUSTRY BENCHMARK/folklore; prefer account-learned safe steps.
-5. **Incrementality (state 8 / ZOMBIE)** → requires an EXTERNAL lift test or MMM; without it, it is an INFERENCE, flagged.
-6. **All composite weights** (H8, I6, J6) → priors to be tuned; always expose component breakdowns, never the single number alone.
-7. **Creative tagging (I0)** accuracy is a MODEL/INFER quality gate; low tag confidence invalidates all of Category I.
+**No hardcoded benchmarks introduced.** Every threshold/weight is marked calibrated-INTERNAL or
+UNKNOWN/verify-at-build, per the brief's benchmark-honesty rule and [02]'s "no hardcoded generic
+benchmarks."
