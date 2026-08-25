@@ -40,3 +40,18 @@ jobs:
 
       - name: Check cache seam
         run: npm run check:cache
+
+      - name: Check rule library + decision engine
+        run: npm run check:decision
+
+      - name: Check fatigue v2 + forecasts
+        run: npm run check:fatigue2
+
+      - name: Check fingerprint + diversity
+        run: npm run check:diversity
+
+      - name: Check account + production intelligence
+        run: npm run check:account
+
+      - name: Check confidence + data quality
+        run: npm run check:quality

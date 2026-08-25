@@ -12,7 +12,12 @@
     "check:rules": "node --experimental-strip-types scripts/check-rules.ts",
     "check:validator": "node --experimental-strip-types scripts/check-validator.ts",
     "check:backtest": "node --experimental-strip-types scripts/check-backtest.ts",
-    "check:cache": "node --experimental-strip-types scripts/check-cache.ts"
+    "check:cache": "node --experimental-strip-types scripts/check-cache.ts",
+    "check:decision": "node --experimental-strip-types scripts/check-decision.ts",
+    "check:fatigue2": "node --experimental-strip-types scripts/check-fatigue2.ts",
+    "check:diversity": "node --experimental-strip-types scripts/check-diversity.ts",
+    "check:account": "node --experimental-strip-types scripts/check-account.ts",
+    "check:quality": "node --experimental-strip-types scripts/check-quality.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
