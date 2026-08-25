@@ -9,6 +9,7 @@ brand). Non-technical owner; Claude writes and runs the code.
 - Phase 0 plan: `docs/superpowers/plans/2026-08-25-phase-0-foundation.md`
 - Setup steps for the owner: `SETUP.md`
 - Settled decisions (do not re-litigate): `docs/DECISIONS.md`
+- Decision rights / when to just-do-it vs ask: `docs/GOVERNANCE.md`
 - Design system + principles: `DESIGN.md`; ADRs: `docs/adr/`
 
 Stack: Next.js 16 (App Router, Turbopack) + Tailwind v4 + Supabase (auth/DB) +
