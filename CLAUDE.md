@@ -8,6 +8,8 @@ brand). Non-technical owner; Claude writes and runs the code.
 - Design spec: `docs/superpowers/specs/2026-08-25-adbrain-mvp-design.md`
 - Phase 0 plan: `docs/superpowers/plans/2026-08-25-phase-0-foundation.md`
 - Setup steps for the owner: `SETUP.md`
+- Settled decisions (do not re-litigate): `docs/DECISIONS.md`
+- Design system + principles: `DESIGN.md`; ADRs: `docs/adr/`
 
 Stack: Next.js 16 (App Router, Turbopack) + Tailwind v4 + Supabase (auth/DB) +
 Anthropic SDK. Note Next 16 renamed `middleware` to `proxy.ts` and `cookies()` is async.
