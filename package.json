@@ -20,7 +20,9 @@
     "check:quality": "node --experimental-strip-types scripts/check-quality.ts",
     "check:gates": "node --experimental-strip-types scripts/check-gates.ts",
     "check:causality": "node --experimental-strip-types scripts/check-causality.ts",
-    "check:changelog": "node --experimental-strip-types scripts/check-change-log.ts"
+    "check:changelog": "node --experimental-strip-types scripts/check-change-log.ts",
+    "check:comparator": "node --experimental-strip-types scripts/check-comparator.ts",
+    "check:verdict": "node --experimental-strip-types scripts/check-verdict.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

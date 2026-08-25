@@ -2,8 +2,9 @@
 //   node --experimental-strip-types scripts/check-decision.ts
 import { strict as assert } from "node:assert";
 import { RULES, getRule, ruleIds } from "../lib/rules/registry.ts";
-import { buildDecision, explain } from "../lib/decision.ts";
+import { buildDecision, explain, buildDecisionGatedByMeasurement } from "../lib/decision.ts";
 import type { DecisionInput } from "../lib/decision.ts";
+import type { DiagnosticSignals } from "../lib/causality.ts";
 
 // registry: at least 8 rules, unique ids
 assert.ok(RULES.length >= 8, "registry must hold at least 8 rules");
@@ -74,5 +75,18 @@ const allowed = JSON.stringify(valid) + JSON.stringify(getRule(valid.ruleId));
 for (const run of trace.match(/\d+(\.\d+)?/g) ?? []) {
   assert.ok(allowed.includes(run), `explain invented the number ${run}`);
 }
+
+// J4 measurement gate: a broken pixel rejects the decision before any action.
+const brokenMeasurement: DiagnosticSignals = { measurementBroken: true, moveSizePct: 40 };
+const gated = buildDecisionGatedByMeasurement(valid, brokenMeasurement);
+assert.equal(gated.status, "rejected", "broken measurement must reject at the gate");
+assert.ok(
+  gated.status === "rejected" && gated.reasons.some((r) => r.includes("measurement gate")),
+  "gate rejection must name the measurement gate",
+);
+
+// Healthy measurement: the gate passes through to the normal (valid) decision.
+const passed = buildDecisionGatedByMeasurement(valid, { measurementBroken: false, moveSizePct: 10 });
+assert.equal(passed.status, "ok", "healthy measurement passes through to buildDecision");
 
 console.log("PASS: rule library + decision engine checks");

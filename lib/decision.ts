@@ -5,6 +5,8 @@
 
 import { getRule } from "./rules/registry.ts";
 import type { Rule } from "./rules/registry.ts";
+import { diagnose } from "./causality.ts";
+import type { DiagnosticSignals } from "./causality.ts";
 
 export type FactLabel =
   | "OFFICIAL"
@@ -97,6 +99,24 @@ export function buildDecision(input: DecisionInput): BuildResult {
   const decision: Decision = { ...input, rule, explain: [] };
   decision.explain = explain(decision);
   return { status: "ok", decision };
+}
+
+/**
+ * J4 — measurement is a gate, not a score. Before building a decision that
+ * depends on trusting the account's numbers, run the causality ladder first; if
+ * measurement is broken, REJECT (never recommend an action on numbers you cannot
+ * trust). Additive and opt-in: buildDecision above is unchanged, so existing
+ * callers are unaffected; callers who have diagnostic signals route through here.
+ */
+export function buildDecisionGatedByMeasurement(
+  input: DecisionInput,
+  signals: DiagnosticSignals,
+): BuildResult {
+  const d = diagnose(signals);
+  if (d.status === "suppressed") {
+    return { status: "rejected", reasons: [`measurement gate (J4): ${d.reason}`] };
+  }
+  return buildDecision(input);
 }
 
 /**

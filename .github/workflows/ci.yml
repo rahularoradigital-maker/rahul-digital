@@ -64,3 +64,9 @@ jobs:
 
       - name: Check change-log attribution
         run: npm run check:changelog
+
+      - name: Check same-objective comparator
+        run: npm run check:comparator
+
+      - name: Check verdict engine
+        run: npm run check:verdict
