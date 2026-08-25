@@ -36,6 +36,18 @@ Claude explains and hands off; it does not perform these.
 - **Review skills** (plan/design/eng review, audits) — on-demand quality forums, invoked when
   the stakes justify the tokens, not on a schedule.
 
+## Decision classification (how fast, who's consulted)
+Pair with the tiers above.
+- **Type 2 (reversible) → move fast, delegate.** Most calls. Decide at the lowest capable level
+  (usually Claude, Tier 0), disagree-and-commit, don't agonize. Speed beats perfection.
+- **Type 1 (irreversible / one-way / hard-to-undo) → slow down, one named Approver, consult
+  deliberately.** Money moves, brand commitment, data-model migrations, external publishing.
+- **DACI, lightweight:** Driver = whoever proposes (often Claude). Approver = ONE person (Rahul
+  for Tier 1/2; no committees). Contributors = review skills / ADRs where stakes warrant.
+  Informed = the decision log.
+- **Record + don't reopen:** log the call + rationale in DECISIONS.md; reopening needs NEW
+  information, not a change of mood.
+
 ## Cadence
 Event-driven, never calendar-driven.
 - Build gate: every change. Decision log: at decision time. ADR: per architecture fork.
