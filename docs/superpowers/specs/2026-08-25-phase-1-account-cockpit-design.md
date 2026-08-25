@@ -3,7 +3,7 @@
 **Date:** 2026-08-25
 **Status:** Approved direction, ready for implementation planning
 **Supersedes:** `2026-08-25-phase-1-competitor-intel-design.md` (competitor-first). See §Repoint.
-**Design system:** `DESIGN.md` (derived from the "Yamin media cockpit" reference).
+**Design system:** `DESIGN.md` (derived from the owner-supplied action-cockpit reference).
 
 ---
 

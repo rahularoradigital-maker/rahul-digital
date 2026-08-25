@@ -61,7 +61,7 @@ decisions co-owned with Claude (implementer). Governing docs linked per entry.
 
 ### D8 — PIVOT: own-account-first cockpit
 - **Decision:** Phase 1 = connect your Meta/Google ad account, pull YOUR data, show an action cockpit. Competitor intel becomes one section (Share of Voice). OAuth pulled forward from Phase 2.
-- **Context:** Owner supplied the "Yamin cockpit" reference and said "step 1 = connect accounts, then pull data."
+- **Context:** Owner supplied a warm-paper action-cockpit reference and said "step 1 = connect accounts, then pull data."
 - **Options:** own-account-first; competitor-first (keep, adopt look only); both at once.
 - **Rationale:** the reference is an own-account dashboard and the owner prioritized connect-then-pull.
 - **Status:** Active. Supersedes the competitor-first Phase 1 spec. Governs: `docs/superpowers/specs/2026-08-25-phase-1-account-cockpit-design.md`.
@@ -76,7 +76,7 @@ decisions co-owned with Claude (implementer). Governing docs linked per entry.
   all 9. Do not re-litigate. **Revisit-by:** if the build stalls / time-to-usable becomes a problem.
   (Trade-off accepted: weeks, not days, to usable; some sections unvalidated.)
 
-### D10 — Adopt the "Yamin cockpit" design language
+### D10 — Adopt the warm-paper action-cockpit design language
 - **Decision:** Warm paper palette, Schibsted Grotesk + JetBrains Mono, action-dashboard ethos, "show the working" drawer. Retire Phase 0's indigo/dark look.
 - **Context:** Owner provided the reference and said "want UI/UX like this."
 - **Options:** keep Phase 0 indigo/dark; adopt the reference.
@@ -90,7 +90,7 @@ decisions co-owned with Claude (implementer). Governing docs linked per entry.
   web app defined in the handoff.
 - **Context:** Owner supplied `Metris slide deck design.zip` (4 .dc.html artboards + HANDOFF.md)
   saying "here is design." Its product principles match the master brief.
-- **Options:** keep the Yamin warm-paper direction (D10); adopt the telli handoff.
+- **Options:** keep the warm-paper reference direction (D10); adopt the telli handoff.
 - **Rationale:** owner explicitly provided it; it's a complete, aligned system with real artboards.
 - **Status:** Active. Supersedes D10. Governs `DESIGN.md`; source `docs/design/HANDOFF.md` + `*.dc.html`.
 

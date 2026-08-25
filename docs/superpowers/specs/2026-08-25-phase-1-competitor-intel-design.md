@@ -3,7 +3,7 @@
 **Date:** 2026-08-25
 **Status:** SUPERSEDED (2026-08-25) by `2026-08-25-phase-1-account-cockpit-design.md`
 
-> Repointed to own-account-first after the owner supplied the "Yamin cockpit" reference
+> Repointed to own-account-first after the owner supplied an action-cockpit reference
 > and directed "connect account first, then pull data." Competitor intel (ScrapeCreators)
 > is retained but demoted to the Share-of-Voice section of the cockpit. ScrapeCreators +
 > Gemini + the triples Brand Brain decisions from this doc still hold; the flow and primary

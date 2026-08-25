@@ -4,7 +4,7 @@ The design system for AdBrain AI, from the owner's design handoff (telli.com sty
 Source of truth: `docs/design/HANDOFF.md` + the artboards in `docs/design/*.dc.html`
 (Deepsolv=landing, Product, BookDemo, Dashboard=11-screen app). Every UI decision calibrates here.
 
-> This SUPERSEDES the earlier "Yamin warm-paper / Schibsted-Grotesk" direction (decision D10) and
+> This SUPERSEDES the earlier warm-paper / Schibsted-Grotesk reference direction (decision D10) and
 > the `cockpit-v1.html` mockup. Both are kept only as history. Implementation status: this is the
 > TARGET; the shipped app still uses Phase 0 indigo/dark until the re-base.
 
