@@ -34,3 +34,6 @@ jobs:
 
       - name: Check validator
         run: npm run check:validator
+
+      - name: Check backtest harness
+        run: npm run check:backtest
