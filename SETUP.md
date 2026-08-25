@@ -38,6 +38,10 @@ load too, but they cannot sign anyone in until you finish step 1.
    turn OFF "Confirm email" so you can log in immediately without a confirmation
    email. Turn it back on before real launch.
 
+> Note: Phase 0 (what ships today) uses Anthropic/Claude for the AI health check. Per
+> decision D6, Phase 1 swaps this for Google Gemini (a `GOOGLE_API_KEY` + `check:gemini`
+> will replace the Anthropic key below). Use Anthropic for now.
+
 ## 2. Anthropic (the AI) — paid, usage-based
 
 1. Go to https://console.anthropic.com and sign in.

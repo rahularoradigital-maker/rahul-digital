@@ -47,7 +47,10 @@ decisions co-owned with Claude (implementer). Governing docs linked per entry.
 - **Context:** Owner wants Google + free tools.
 - **Options:** Claude; Google Cloud Vision (OCR only); Gemini multimodal.
 - **Rationale:** Gemini reasons over image and video natively on a free tier, which also deleted ffmpeg + transcription + the queue (see D7).
-- **Status:** Active. **Revisit-by:** if Gemini free-tier limits or quality block the product. (Phase 0 code still uses Claude until the Phase 1 swap.)
+- **Status:** Active. **Revisit-by:** if Gemini free-tier limits or quality block the product.
+- **Implementation status (2026-08-25):** NOT yet applied. Phase 0 code still uses Claude
+  (`lib/anthropic.ts`, `app/api/health/claude`). The Gemini swap is a Phase 1 build step. Until
+  then, docs (Gemini) and code (Claude) intentionally differ. See audit F1.
 
 ### D7 — No heavy video pipeline (Gemini native video)
 - **Decision:** No ffmpeg frame extraction, no separate transcription, no external queue. Gemini ingests video directly.

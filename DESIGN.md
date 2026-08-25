@@ -5,6 +5,10 @@ The design system for AdBrain, derived from the approved reference
 Every UI decision calibrates against this file. This REPLACES the Phase 0
 indigo-on-dark look, which was generic and off-brand.
 
+> Implementation status (2026-08-25): this system is the TARGET, not yet applied in code.
+> The shipped app still uses the Phase 0 indigo/dark tokens; the re-base is a Phase 1 build
+> step. See audit F2.
+
 ## 0. Design principles (decision rules)
 
 Use these to settle a design argument without escalating. Each takes a side and
