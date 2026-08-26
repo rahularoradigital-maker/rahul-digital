@@ -7,7 +7,7 @@ import type { AdSource, TokenSet, SourceAd, MetricsRow } from "./ad-source.ts";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
-type MetaAdAccount = { account_id: string; name?: string };
+type MetaAdAccount = { account_id: string; name?: string; business?: { id: string; name?: string } };
 type MetaAd = { id: string; name?: string; effective_status?: string; creative?: { id?: string } };
 type MetaInsightAction = { action_type: string; value: string };
 type MetaInsightRow = {
@@ -87,13 +87,42 @@ export const metaSource: AdSource = {
   },
 };
 
+export type MetaAccountRef = { externalId: string; name: string; businessId?: string; businessName?: string };
+
 /** List the ad accounts the connected user can access (for the account picker). */
-export async function listMetaAdAccounts(token: TokenSet): Promise<{ externalId: string; name: string }[]> {
+export async function listMetaAdAccounts(token: TokenSet): Promise<MetaAccountRef[]> {
   const data = await graphGet<{ data: MetaAdAccount[] }>("me/adaccounts", token.accessToken, {
-    fields: "account_id,name",
+    fields: "account_id,name,business{id,name}",
     limit: "200",
   });
-  return (data.data ?? []).map((a) => ({ externalId: a.account_id, name: a.name ?? a.account_id }));
+  return (data.data ?? []).map((a) => ({
+    externalId: a.account_id,
+    name: a.name ?? a.account_id,
+    businessId: a.business?.id,
+    businessName: a.business?.name,
+  }));
+}
+
+/** Businesses (BMs) the user can access, for grouping the account picker. */
+export async function listMetaBusinesses(token: TokenSet): Promise<{ id: string; name: string }[]> {
+  const data = await graphGet<{ data: { id: string; name?: string }[] }>("me/businesses", token.accessToken, {
+    fields: "id,name",
+    limit: "100",
+  });
+  return (data.data ?? []).map((b) => ({ id: b.id, name: b.name ?? b.id }));
+}
+
+/** Active campaigns in an ad account (numeric id, no act_ prefix), for the campaign filter. */
+export async function listMetaCampaigns(
+  accountExternalId: string,
+  token: TokenSet,
+): Promise<{ id: string; name: string; objective?: string }[]> {
+  const data = await graphGet<{ data: { id: string; name?: string; objective?: string }[] }>(
+    `act_${accountExternalId}/campaigns`,
+    token.accessToken,
+    { fields: "id,name,objective", effective_status: '["ACTIVE"]', limit: "100" },
+  );
+  return (data.data ?? []).map((c) => ({ id: c.id, name: c.name ?? c.id, objective: c.objective }));
 }
 
 function today(): string {

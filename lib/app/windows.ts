@@ -8,5 +8,5 @@ export const WINDOWS = [7, 14, 30, 60, 90] as const;
 export function parseDays(value?: string | string[]): number {
   const raw = Array.isArray(value) ? value[0] : value;
   const n = Number(raw);
-  return (WINDOWS as readonly number[]).includes(n) ? n : 30;
+  return (WINDOWS as readonly number[]).includes(n) ? n : 14;
 }

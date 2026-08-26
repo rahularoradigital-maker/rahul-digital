@@ -7,6 +7,34 @@ import { readToken } from "./oauth-store.ts";
 import { metaSource } from "./meta-source.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
+import type { TokenSet } from "./ad-source.ts";
+
+// The user's currently-active Meta account (most-recently connected) and its token.
+// One user OAuth token works across all their ad accounts, so the account picker and
+// the account-switch route both read the session here. Returns null (never throws) if
+// nothing is connected or the service role / DB is unavailable.
+export async function getUserMetaSession(
+  userId: string,
+): Promise<{ token: TokenSet; activeExternalId: string; activeAccountName: string } | null> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("ad_accounts")
+      .select("id, external_id, name")
+      .eq("user_id", userId)
+      .eq("platform", "meta")
+      .eq("status", "connected")
+      .order("connected_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data) return null;
+    const token = await readToken(data.id);
+    if (!token) return null;
+    return { token, activeExternalId: data.external_id, activeAccountName: data.name ?? `act_${data.external_id}` };
+  } catch {
+    return null;
+  }
+}
 
 // v1 cost guard: how many ads to pull metrics for on a page load, and the lookback window.
 // ponytail: a background sync job replaces this per-request fetch once volume grows (ADR-0004).

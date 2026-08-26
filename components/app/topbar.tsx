@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { titleFor } from "@/lib/app/nav";
 import { WINDOWS } from "@/lib/app/windows";
+import { AccountSwitcher } from "@/components/app/account-switcher";
 
 // The working topbar. Every control does its job:
 //  - date window  -> sets ?days= and re-scopes the whole page (rulebook setup gate)
@@ -18,7 +19,7 @@ export function Topbar() {
   const [asked, setAsked] = useState(false);
 
   const current = Number(params.get("days"));
-  const days = (WINDOWS as readonly number[]).includes(current) ? current : 30;
+  const days = (WINDOWS as readonly number[]).includes(current) ? current : 14;
 
   function setDays(next: number) {
     const q = new URLSearchParams(Array.from(params.entries()));
@@ -62,6 +63,9 @@ export function Topbar() {
             </span>
           ) : null}
         </form>
+
+        {/* Account switcher (BM -> Account) */}
+        <AccountSwitcher />
 
         {/* Date window (setup gate) */}
         <label className="hidden items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium md:flex">

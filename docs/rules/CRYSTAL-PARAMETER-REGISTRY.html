@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AdBrain - crystals, parameters and KPIs registry</title>
+<style>
+:root{
+ --indigo:#1A1F3A; --gold:#C9A227; --gold-lt:#F5E4BC; --cream:#FDFBF5; --paper:#FFFFFF;
+ --ink:#1A1F3A; --grey:#55534E; --faint:#8A8578; --line:#E3DCC9;
+ --purple:#6B4FCf; --purple-d:#4A3B8C; --purple-bg:#EDE9F7;
+ --green:#1E8C63; --green-d:#146046; --green-bg:#E4F3EC;
+ --red:#C0503F; --red-bg:#FBEAE7; --amber:#A0630F; --amber-bg:#FFF3E0; --blue:#2C3E6B; --blue-bg:#EFF2F8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Calibri,sans-serif;font-size:14.5px;line-height:1.55}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 100px}
+header.hero{background:var(--indigo);color:var(--gold-lt);padding:44px 24px 36px;border-bottom:5px solid var(--gold)}
+header.hero .inner{max-width:1180px;margin:0 auto}
+.kicker{font-family:"Courier New",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+header.hero h1{font-family:Georgia,serif;font-size:31px;line-height:1.15;margin:0 0 12px;color:#fff;font-weight:600}
+header.hero p{margin:0;max-width:880px;font-size:15px;color:#D8D3C4}
+h2{font-family:Georgia,serif;font-size:23px;margin:48px 0 6px;padding-top:22px;border-top:3px solid var(--indigo);font-weight:600}
+h2 .num{font-family:"Courier New",monospace;font-size:12px;color:var(--gold);display:block;letter-spacing:.16em;margin-bottom:6px;font-weight:700}
+h3{font-family:Georgia,serif;font-size:18px;margin:26px 0 6px;font-weight:600}
+h3 .ly{font-family:"Courier New",monospace;font-size:10px;color:#fff;background:var(--indigo);padding:2px 8px;border-radius:6px;margin-right:8px;vertical-align:middle}
+p{margin:0 0 12px;max-width:920px} .lead{font-size:15.5px;color:var(--grey)}
+.defs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.def{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:11px 14px;font-size:13px}
+.def b{color:var(--indigo)}
+table{width:100%;border-collapse:collapse;margin:10px 0 20px;font-size:12.5px;background:var(--paper)}
+th{background:var(--indigo);color:var(--gold-lt);text-align:left;padding:8px 10px;font-weight:600;font-size:10.5px;vertical-align:bottom}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even){background:#FAF8F2}
+.cn{font-weight:700;color:var(--indigo);white-space:nowrap}
+.chip{display:inline-block;font-family:"Courier New",monospace;font-size:8px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:8px;margin-top:4px}
+.chip.p1{background:var(--green-bg);color:var(--green-d)} .chip.p2{background:var(--amber-bg);color:var(--amber)} .chip.p3{background:var(--red-bg);color:var(--red)}
+.chip.ms{background:#E7EDFF;color:#3730A3} .chip.hl{background:var(--purple-bg);color:var(--purple-d)}
+.formula{background:var(--indigo);color:#F0EDE2;padding:12px 15px;border-radius:8px;font-family:"Courier New",monospace;font-size:12.5px;line-height:1.7;border-left:5px solid var(--gold);overflow-x:auto;white-space:pre-wrap;margin:8px 0 12px}
+.formula b{color:var(--gold)}
+.eng{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:16px 18px;margin:14px 0}
+.eng h4{margin:0 0 4px;font-size:15px}
+.rl{display:grid;grid-template-columns:80px 1fr;gap:8px;font-size:13px;padding:5px 0;border-top:1px solid var(--line)}
+.rl .k{font-family:"Courier New",monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;padding-top:2px}
+.note{background:var(--blue-bg);border:1px solid #CBD8EA;border-left:4px solid var(--blue);border-radius:9px;padding:12px 15px;margin:14px 0;font-size:13.5px}
+.src{font-family:"Courier New",monospace;font-size:12px;color:var(--faint);margin-top:36px}
+.toc{columns:2;gap:26px;font-size:13px;margin:14px 0}
+.toc a{color:var(--purple-d);text-decoration:none} .toc a:hover{text-decoration:underline}
+@media(max-width:820px){.defs,.toc{grid-template-columns:1fr;columns:1}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="inner">
+<div class="kicker">Reference registry &middot; grounded in canon &middot; Aug 2026</div>
+<h1>Everything AdBrain captures: crystals, parameters and the KPIs that matter most</h1>
+<p>The full list of what the system reads from every ad and every account, with the rule behind each, the logic (why it matters), the context, and the use case (the action it drives). Numbers are canon, from 03_BUSINESS_RULES.md and 06_CRYSTALS_MASTER.xlsx. Money as Rs or USD. No em dashes.</p>
+</div></header>
+
+<div class="wrap">
+
+<h2><span class="num">HOW TO READ THIS</span>Four words, defined once</h2>
+<div class="defs">
+<div class="def"><b>Crystal.</b> One family of things the AI tags on a creative. There are 30 crystals, in 12 layers (A to L). Together they are the decode taxonomy, the DNA of an ad.</div>
+<div class="def"><b>Sub-signal.</b> One exact thing tagged inside a crystal. There are 167 sub-signals across the 30 crystals. Example: inside "Sound design fingerprint", one sub-signal is "sound-off comprehension score".</div>
+<div class="def"><b>Parameter.</b> A number the scoring engines compute from the crystals and the account data. Example: DiversityScore, FatigueScore, duplicate similarity.</div>
+<div class="def"><b>KPI.</b> A business number the Expert and the CMO act on. Example: blended MER, CAC, add-to-cart rate. The most important ones are in Part C.</div>
+</div>
+<div class="note"><b>One naming point, so nobody is confused.</b> The dashboard first fold shows a "crystals score" like 57 of 70, which is a simple health rollup for the CMO. That 70 is a count of health checks. The canonical crystals here are the <b>30 decode crystals</b> that describe a creative. The five analytics reads on the dashboard (account, creative, competitor, diversity, fatigue) are the <b>engines</b> in Part B that turn these crystals and the account data into scores.</div>
+
+<h2><span class="num">PART A</span>The 30 crystals, in 12 layers</h2>
+<p class="lead">This is what the AI tags on every image and video ad. Layers A to L, from surface facts to deep meaning. Phase and priority are canon. Table stakes and Must-ship are the Phase-1 build; High leverage and Nice to have are Phase 2 and 3.</p>
+
+<h3><span class="ly">Layer A</span>Surface: the facts, extracted deterministically (crystals 1 to 14, Phase 1)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags (sub-signals)</th><th style="width:19%">Rule, how captured</th><th style="width:20%">Logic, why it matters</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">1. Basic metadata<span class="chip p1">TABLE STAKES</span></td><td>Duration, resolution, frame rate, scene count, shot length (avg and variance)</td><td>Read from the file plus shot detection</td><td>Shot length and scene count set the pace, the base every other read sits on</td><td>Pace and format checks, flag ultra-long or single-shot ads</td></tr>
+<tr><td class="cn">2. Timestamps</td><td>Scene changes, dialogue start and end, key moments (hook, CTA, product reveal), silence and pause segments</td><td>Timestamp arrays from scene and speech detection</td><td>Where the hook, reveal and CTA sit decides retention</td><td>Locate the hook and reveal for the zone-out curve</td></tr>
+<tr><td class="cn">3. Speaker analysis</td><td>Gender (probabilistic), number of speakers, switching timestamps, voice identity consistency</td><td>Speaker diarization plus a voice embedding</td><td>One steady voice versus many switches changes trust and clarity</td><td>Tag single-voice UGC versus multi-cast ads</td></tr>
+<tr><td class="cn">4. Speech and text</td><td>Full transcript, keywords, filler words, on-screen text (OCR), subtitles present</td><td>Whisper transcription plus OCR</td><td>The words are half the ad, and on-screen text carries the muted message</td><td>Feed message and angle tagging, and the sound-off score</td></tr>
+<tr><td class="cn">5. Tone and emotion</td><td>Voice tone (calm, aggressive, energetic, sad, persuasive), facial emotion (happy, serious, confused, excited)</td><td>Audio and face emotion models, multi-label</td><td>Emotion in the first seconds drives the scroll-stop</td><td>Match emotion to angle, catch flat openings</td></tr>
+<tr><td class="cn">6. Environment detection</td><td>Location type (office, home, street, station, gym, studio), indoor or outdoor, background elements</td><td>Scene classifier</td><td>The setting signals how relatable the ad feels (home versus studio)</td><td>Tag realism, diversify settings across the library</td></tr>
+<tr><td class="cn">7. Visual objects</td><td>Products shown, logos and brands, props, clothing style</td><td>Object and logo detection</td><td>Product on screen and a clear brand cue drive recall</td><td>Measure product screen time and brand presence</td></tr>
+<tr><td class="cn">8. Action detection</td><td>Walking, talking, demonstrating product, unboxing, pointing and gestures</td><td>Action recognition, boolean plus duration</td><td>Demonstration and unboxing lift consideration</td><td>Tag demo ads, feed the middle-funnel supply</td></tr>
+<tr><td class="cn">9. Camera and editing</td><td>Camera angles, zoom, pan, cuts, transitions, motion intensity (0 to 100)</td><td>Shot and motion analysis</td><td>Cut rate and motion set the energy and the platform fit</td><td>Flag edits that are too fast or too slow</td></tr>
+<tr><td class="cn">10. Audio analysis</td><td>Background music type, sound effects, noise level, voice clarity</td><td>Audio classifier</td><td>Clarity and music choice affect how long viewers hold</td><td>Flag poor audio, tag trending sound</td></tr>
+<tr><td class="cn">11. Engagement signals (inferred)</td><td>Hook strength (first 3 to 5 sec), pace, pattern interrupts, repetition</td><td>0 to 100 scores from pattern models</td><td>Hook strength in the first 3 to 5 seconds is the single biggest driver of the scroll-stop</td><td>Predict thumb-stop, prioritise hook fixes</td></tr>
+<tr><td class="cn">12. Content classification</td><td>Topic and niche, intent (educational, sales, entertainment), funnel stage (awareness, consideration, conversion)</td><td>Classifier</td><td>The funnel stage decides which metric is allowed to judge the ad</td><td>Route to TOF, MOF or BOF, enforce same-stage comparison</td></tr>
+<tr><td class="cn">13. Ad-specific insights</td><td>Hook type (problem, curiosity, shock), CTA type, product positioning, UGC versus polished, script structure</td><td>Class labels</td><td>The strategic DNA of the ad, what makes it this concept and not another</td><td>Cluster concepts, build the recipe</td></tr>
+<tr><td class="cn">14. Advanced layer (baseline)</td><td>Scene sentiment shift over time, attention drop prediction, scroll-stop probability, creative fatigue indicators</td><td>Curves and flags</td><td>An early read of where attention falls and whether the ad is tiring</td><td>The zone-out curve and the early fatigue flag</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer B</span>Human signal, deep (crystals 15 to 16, Phase 2)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">15. Face and identity signals<span class="chip hl">HIGH LEVERAGE</span></td><td>Face count, direct eye contact (yes/no plus seconds), close-up versus wide ratio, face-on-screen percent, recurring talent across the library, age and gender balance, India region representation (North, South, East, West), micro-expressions, talent tier (UGC, micro-influencer, celebrity)</td><td>Face detection plus embeddings, with India-specific representation</td><td>A face looking straight at camera is a strong trust signal, and talent tier and representation drive relatability for Indian D2C</td><td>Tag trust-building ads, keep the cast diverse, recognise a recurring winner</td></tr>
+<tr><td class="cn">16. Body language and gesture</td><td>Gesture density, open versus closed posture, orientation to camera, movement direction, hand-to-product touches, point-and-look count</td><td>Pose estimation</td><td>Open, expressive body language reads as trustworthy and energetic</td><td>Correlate gesture with hold rate, guide talent direction</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer C</span>Visual craft (crystals 17 to 18, Phase 2)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">17. Color and aesthetic fingerprint<span class="chip hl">HIGH LEVERAGE</span></td><td>Dominant palette (top 5 hex), brand color adherence percent, contrast ratio, visual style class (documentary, cinematic, phone-shot, animated), grain versus digital clean, color grade signature, aesthetic era</td><td>Color and style models</td><td>On-brand color and a distinct look drive recall and keep the brand safe</td><td>Brand adherence check, keep visual style diverse</td></tr>
+<tr><td class="cn">18. Motion and rhythm</td><td>Cuts per second, motion pacing over the runtime, rhythm signature</td><td>Motion timing analysis</td><td>Rhythm that matches the platform norm holds attention</td><td>Platform-fit tuning, flag jarring pacing</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer D</span>Sound craft (crystal 19, Phase 1, Must-ship)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">19. Sound design fingerprint<span class="chip ms">MUST-SHIP</span></td><td>Music genre and sub-genre, BPM, music-to-voice mix, trending audio detection, voiceover versus on-camera, silence and dramatic-pause use, accent and dialect, language mix, sound-off comprehension score, sound-on unlock value</td><td>Audio fingerprinting</td><td>Most feed views start muted, so sound-off comprehension and trending audio decide real reach</td><td>Score sound-off clarity, flag a trending-audio opportunity</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer E</span>Copy craft (crystal 20, Phase 2)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">20. On-screen text craft<span class="chip hl">HIGH LEVERAGE</span></td><td>Text density (words per frame), safe-zone compliance per placement, font count and pairing, text animation, emoji use, caption accuracy versus spoken audio</td><td>OCR plus layout check</td><td>Text outside the safe zone gets cut off by placements, and density affects readability</td><td>Flag safe-zone breaks and caption mismatches before publish</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer F</span>Narrative (crystals 21 to 22, Phase 2 and 3)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">21. Story arc and pacing<span class="chip hl">HIGH LEVERAGE</span></td><td>Story arc class, time-to-first-product-reveal, hook-to-payoff gap, second-hook placement (7 to 15 sec), curiosity gap count, loop-ability, act break timing</td><td>Narrative segmentation</td><td>A second hook at 7 to 15 seconds and a short hook-to-payoff gap hold viewers deeper into the video</td><td>Recommend a second hook, fix a late product reveal</td></tr>
+<tr><td class="cn">22. Language and persuasion</td><td>Reading grade of the script, personal pronoun ratio, command verb count, rhetorical question density, statistic count, persuasion techniques present, regional language mixing</td><td>NLP on transcript plus OCR</td><td>Simple reading grade and personal pronouns convert, and naming the persuasion technique explains why the copy works</td><td>Sharpen the brief, match copy to the awareness stage</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer G</span>Offer surfacing (crystal 23, Phase 2)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">23. Product and offer visibility<span class="chip hl">HIGH LEVERAGE</span></td><td>Time-to-product-shown, product screen time percent, price visibility, offer stack visibility, SKU count shown, trust badge or review-star visibility, guarantee callout timing</td><td>Object detection plus OCR timing</td><td>When and how long the offer is on screen drives bottom-funnel conversion</td><td>Fix a late or missing offer, protect margin framing</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer H</span>Platform fit (crystal 24, Phase 1, Must-ship)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">24. Platform-native fit<span class="chip ms">MUST-SHIP</span></td><td>Aspect ratio coverage, placement-specific edit detection, trend format alignment, native talent style, watermark presence</td><td>Per-placement checks</td><td>An ad that looks like an ad loses to native-looking content, and the wrong aspect ratio wastes placements</td><td>Flag non-native ads, require placement variants</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer I</span>Attention ML, frontier (crystal 25, Phase 1, Must-ship)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">25. Attention and memorability<span class="chip ms">MUST-SHIP</span></td><td>Thumb-stop probability index, saliency map (where the eye lands), gaze prediction heatmap, cognitive load curve, first-frame ROI score, peak-end memorability, cognitive residue at 5, 15 and 30 sec</td><td>Attention ML models</td><td>Predicts stopping and memory before any spend, the frontier of pre-flight prediction</td><td>The pre-flight score, and first-frame fixes</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer J</span>Safety (crystals 26 to 27, Phase 1, Must-ship)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">26. Compliance and brand safety<span class="chip ms">MUST-SHIP</span></td><td>Prohibited claim detection, Meta and Google policy-violation prediction, India ASCI code flags, trademark collision, music and IP licensing risk, face-rights risk, stereotyping and cultural sensitivity, body-image and weight-loss risk, alcohol, gambling and controlled-substance adjacency, kids and teen protection</td><td>Policy classifiers plus India ASCI rules</td><td>A rejected or non-compliant ad wastes spend and can risk the whole account, and India ASCI rules are specific</td><td>Pre-screen before publish, block a violation before it goes live</td></tr>
+<tr><td class="cn">27. AI-generated content detection<span class="chip ms">MUST-SHIP</span></td><td>AI voice detection, AI image and video model fingerprint, deepfake risk, synthetic versus real UGC, C2PA and SynthID provenance watermark, human-in-the-loop percentage</td><td>Provenance plus synthetic detection</td><td>Platforms increasingly require AI disclosure, and synthetic UGC carries different trust</td><td>Label AI content, meet disclosure rules</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer K</span>Library intelligence (crystal 28, Phase 1, Must-ship)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">28. Creative lineage, Ad DNA<span class="chip ms">MUST-SHIP</span></td><td>Ad DNA fingerprint, concept ancestor, iteration generation number, winning-pattern inheritance score, cross-brand style borrow flag, diversity contribution to the library</td><td>Fingerprint plus a lineage graph</td><td>Tracks which winning concept each ad descends from and how much distinct signal it adds</td><td>Know what to iterate versus retire, measure diversity contribution</td></tr>
+</tbody>
+</table>
+
+<h3><span class="ly">Layer L</span>Journey continuity (crystals 29 to 30, Phase 2 and 3)</h3>
+<table>
+<thead><tr><th style="width:15%">Crystal</th><th style="width:26%">What the AI tags</th><th style="width:19%">Rule</th><th style="width:20%">Logic</th><th style="width:20%">Use case</th></tr></thead>
+<tbody>
+<tr><td class="cn">29. Post-click and MMM signals<span class="chip hl">HIGH LEVERAGE</span></td><td>Landing page continuity score, post-click intent match, multi-touch funnel role, MMM contribution per creative attribute, CAC contribution by creative fingerprint, LTV correlation by hook type, retention cohort tie-in</td><td>Join the creative to post-click and MMM data</td><td>Ties a creative element to real money and LTV, not just the click</td><td>Attribute revenue and CAC to elements, the genome payoff</td></tr>
+<tr><td class="cn">30. Experiment isolation</td><td>Winning-variable diff between V1 and V2, multivariate change detection, learn-loop tag, statistical power reached flag, test versus control status</td><td>Experiment tracking</td><td>Isolates the one variable that changed, so the learning is causal, not a coincidence</td><td>Clean A/B reads, feed the incrementality test</td></tr>
+</tbody>
+</table>
+
+<h2><span class="num">PART B</span>The scoring engines and parameters, with canon formulas</h2>
+<p class="lead">The engines turn the crystals and the account data into scores. Every weight and threshold here is canon from 03_BUSINESS_RULES.md. All weights are editable in the Measurement Canon; these are the defaults.</p>
+
+<div class="eng">
+<h4>1. Diversity score (8 dimensions, weights sum to 1.00)</h4>
+<div class="formula">DiversityScore = SUM(weight_i x score_i)
+<b>Hook 0.20</b> | <b>Angle 0.20</b> | <b>Persona 0.15</b> | <b>Funnel 0.15</b> | <b>Format 0.10</b> | <b>Offer 0.08</b> | <b>Innovation 0.06</b> | <b>AntiRedundancy 0.06</b>
+
+HookScore   = 50 x Distinct + 30 x Balance + 20 x Novelty  (12 unique hooks in 30d = full)
+AngleScore  = 40 x ClusterCount + 40 x Balance + 20 x Coverage  (12 canonical angles)
+PersonaScore= 50 x CoverageFraction + 50 x (1 - PersonaHHI)
+FunnelScore = 100 x (1 - JSD(actual, [0.50, 0.25, 0.25]))  (ideal TOF/MOF/BOF)</div>
+<div class="rl"><span class="k">Rule</span><span>12 canonical angles: product_demo, founder_story, ugc_review, celebrity_drop, bass_test, comparison, problem_solution, festive_sale, new_launch, nostalgia, unboxing, lifestyle_montage. Benchmarks: 68 average, top quartile 78 to 82.</span></div>
+<div class="rl"><span class="k">Logic</span><span>Meta treats near-copies as one option, so variety across hook, angle, persona and funnel is what gives the algorithm real choices. Ideal funnel mix is 50/25/25.</span></div>
+<div class="rl"><span class="k">Context</span><span>Computed on the ad library you supplied, not the spend Meta allocates, because Meta concentrates budget on purpose.</span></div>
+<div class="rl"><span class="k">Use case</span><span>The diversity read on the dashboard, and the whitespace that briefs the next concept. Loop stops when DiversityScore is at or above 80.</span></div>
+</div>
+
+<div class="eng">
+<h4>2. Fatigue score and half-life</h4>
+<div class="formula">FatigueScore = 100 x (0.5 x CTR_decay + 0.3 x Frequency_ratio(freq/5) + 0.2 x Engagement_decay)
+Tiers: Fresh 0-30 | Healthy 31-50 | Tiring 51-70 | <b>Burnt 71-100</b></div>
+<div class="rl"><span class="k">Rule</span><span>Auto-pause when score is above 70 AND confidence is above 85 percent. Max 20 pauses a day. 3 replacement creatives required before a pause runs.</span></div>
+<div class="rl"><span class="k">Logic</span><span>Fatigue is really audience saturation. Built on decay in CTR and engagement plus frequency, not a single frequency threshold.</span></div>
+<div class="rl"><span class="k">Context</span><span>Predictive signals: CTR down 20 percent versus the 7-day average, CPM up 25 percent versus 30 days, frequency above 4, a 7 to 14 day burnout forecast, a 60-day competitor-copying window.</span></div>
+<div class="rl"><span class="k">Use case</span><span>The fatigue read, the "what will break and when" warning, and the stop list on the action board.</span></div>
+</div>
+
+<div class="eng">
+<h4>3. Duplication and opportunity</h4>
+<div class="formula">sim(A,B) = 0.6 x cosine(vision_embed) + 0.4 x cosine(transcript_embed)
+cluster if sim >= <b>0.92</b>  |  waste flag at >= 4 near-duplicates
+OpportunityScore = 0.45 x RevenueImpact + 0.25 x ScalePotential + 0.15 x EaseOfExecution + 0.15 x Confidence</div>
+<div class="rl"><span class="k">Rule</span><span>Two ads are the same concept when similarity is 0.92 or higher. Four or more near-duplicates raise a waste flag.</span></div>
+<div class="rl"><span class="k">Logic</span><span>Nineteen thumbnails can be twelve real options in Meta's eye. Distinctness is measured to the machine, not the human eye.</span></div>
+<div class="rl"><span class="k">Use case</span><span>The cluster view, the "stop 10 of 11 copies" call, and ranking which new concept to shoot next.</span></div>
+</div>
+
+<div class="eng">
+<h4>4. Brand search hygiene (the 99/0/0 rule)</h4>
+<div class="formula">Healthy brand campaign: >= 99% spend on true brand terms, Rs 0 on competitor terms, Rs 0 on generic
+impact_score = spend x confidence x log(1 + clicks)</div>
+<div class="rl"><span class="k">Rule</span><span>The old 90/10/10 health rule is dead. A campaign is confirmed as a brand campaign at 90 percent brand spend, but a healthy one is 99/0/0. Fuzzy matching for brand and competitor only (edit distance 2), never generic.</span></div>
+<div class="rl"><span class="k">Logic</span><span>Money on generic or competitor terms inside a brand campaign is leakage dressed as brand performance.</span></div>
+<div class="rl"><span class="k">Use case</span><span>Leakage and cannibalisation findings, ranked by impact. An ambassador name alone is not brand ("KL Rahul" alone is a cricketer search).</span></div>
+</div>
+
+<div class="eng">
+<h4>5. Confidence gates</h4>
+<div class="formula">Auto-accept classification: >= <b>97%</b>  (under 97: retry stronger model, then Expert UNKNOWN queue)
+Operational auto-action gate: > 85%
+Onboarding: >= 90 confirm-all | 70-90 review cards | < 70 manual</div>
+<div class="rl"><span class="k">Rule</span><span>Nothing is auto-accepted below 97 percent confidence on any AI classification. Auto-actions need above 85 percent.</span></div>
+<div class="rl"><span class="k">Logic</span><span>A wrong label poisons every score built on it, so the floor is high and the uncertain cases go to the Expert.</span></div>
+<div class="rl"><span class="k">Use case</span><span>The routing between the AI layer and the Expert, and the confidence shown on every tile.</span></div>
+</div>
+
+<div class="eng">
+<h4>6. Operational thresholds (the account triggers)</h4>
+<div class="formula">Anomaly: z-score > 2 sigma vs 14-day baseline     Pacing healthy: 85-115% of expected spend
+Quality Score alarm: -2 points in 7 days           Brand impression share alarm: -10%
+Placement audit: > 500 impressions AND ROAS < half account average
+Winner boost: +20% budget   Bid changes: +/- 15% per day   Channel rebalance: <= 20%
+CAPI dedup: > 95% required   Out-of-stock auto-pause: within ~4 minutes   LTV:CAC target: 3.5x</div>
+<div class="rl"><span class="k">Rule</span><span>These are the exact numbers that fire an alert or an action across the account engines.</span></div>
+<div class="rl"><span class="k">Logic</span><span>Each ties to a cause, not a vibe. Scaling is capped so a winner boost does not trigger a learning reset.</span></div>
+<div class="rl"><span class="k">Use case</span><span>The early warnings, the money-on-the-table panel, and the change-history checks.</span></div>
+</div>
+
+<h2><span class="num">PART C</span>The KPIs that matter most</h2>
+<p class="lead">Not every metric is a KPI. These are the ones the Expert and the CMO act on, grouped by job, with the formula, where it comes from, and why it is a priority. P0 is decide-first, P1 is next, P2 is supporting.</p>
+
+<h3>Money and efficiency (the CMO layer)</h3>
+<table>
+<thead><tr><th style="width:20%">KPI</th><th style="width:26%">Formula</th><th style="width:16%">Source</th><th style="width:28%">Why it is a KPI</th><th style="width:10%">Priority</th></tr></thead>
+<tbody>
+<tr><td class="cn">Blended MER</td><td>all revenue / all ad spend</td><td>Shopify + platforms</td><td>The honest efficiency number across every channel, unlike platform ROAS which double counts</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">True incremental ROAS</td><td>revenue measured against a holdout / spend</td><td>Geo holdout, ghost ads</td><td>The only efficiency number a test proves. Plan the budget on this, not the platform figure</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">CAC</td><td>ad spend / new customers</td><td>Platforms + Shopify</td><td>What it costs to buy a customer, the base of every growth decision</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">Contribution margin after ad spend</td><td>gross profit - ad spend</td><td>Finance sheet + Shopify</td><td>The number that actually pays the business, after COD returns and fees</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">LTV to CAC</td><td>LTV / CAC, target 3.5x</td><td>Shopify cohort, GA4, 3x AOV fallback</td><td>Tells you if growth is safe to push. Above target means scale, below means fix economics first</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">Payback period</td><td>months to recover CAC from margin</td><td>Shopify cohort</td><td>How fast the money comes back, which sets how hard you can scale</td><td><span class="chip p2">P1</span></td></tr>
+</tbody>
+</table>
+
+<h3>Funnel drivers (where ROAS actually comes from)</h3>
+<div class="formula">ROAS = (CTR x LP x ATC x Checkout x Purchase x AOV x 1000) / CPM      rank levers by gap vs own best</div>
+<table>
+<thead><tr><th style="width:22%">KPI</th><th style="width:22%">What it measures</th><th style="width:18%">Stage</th><th style="width:28%">Why it is a KPI</th><th style="width:10%">Priority</th></tr></thead>
+<tbody>
+<tr><td class="cn">Hook rate / thumb-stop (3s)</td><td>3-sec views / impressions</td><td>TOF</td><td>The first gate. If the hook fails, nothing downstream matters</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">Hold rate</td><td>how far viewers watch</td><td>TOF to MOF</td><td>Whether the ad keeps attention past the hook</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">CTR (link)</td><td>link clicks / impressions</td><td>TOF to MOF</td><td>Whether the ad earns the click</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">Add-to-cart rate</td><td>ATC / landing page views</td><td>MOF</td><td>The step most brands starve, and often the biggest locked-up gain versus own best</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">Checkout and purchase rate</td><td>checkout / ATC, purchase / checkout</td><td>BOF</td><td>Where the sale is won or lost below the click</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">AOV</td><td>revenue / orders</td><td>BOF</td><td>Bundles and thresholds lift this without a discount</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">CPM</td><td>cost per 1,000 impressions</td><td>All</td><td>The price of attention. A rising CPM with steady CTR means saturation, not a bad ad</td><td><span class="chip p2">P1</span></td></tr>
+</tbody>
+</table>
+
+<h3>Creative health (the moat metrics)</h3>
+<table>
+<thead><tr><th style="width:22%">KPI</th><th style="width:26%">Threshold</th><th style="width:38%">Why it is a KPI</th><th style="width:10%">Priority</th></tr></thead>
+<tbody>
+<tr><td class="cn">Diversity score</td><td>68 average, stop-loop at 80, danger below 55</td><td>Low diversity chokes Meta's optimisation and is often the real cause of a rising CPM</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">Fatigue score</td><td>Burnt above 70, auto-pause above 70 at 85 percent confidence</td><td>Burnt ads still take spend. This redirects money to winners</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">Duplicate clusters</td><td>similarity 0.92, waste flag at 4 or more</td><td>Shows how many real options the algorithm actually has</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">Win rate of new creative</td><td>panel norm around 7 percent</td><td>Whether the creative engine is feeding growth</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">Creative half-life</td><td>predicted days to burnout, per angle</td><td>Lets you replace an ad before it dies, not after</td><td><span class="chip p2">P1</span></td></tr>
+</tbody>
+</table>
+
+<h3>Account and delivery health</h3>
+<table>
+<thead><tr><th style="width:22%">KPI</th><th style="width:26%">Threshold</th><th style="width:38%">Why it is a KPI</th><th style="width:10%">Priority</th></tr></thead>
+<tbody>
+<tr><td class="cn">Frequency</td><td>flag above 4</td><td>High frequency is early saturation</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">Spend pacing</td><td>healthy band 85 to 115 percent</td><td>Under or over pacing both signal a delivery problem</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">Signal quality (CAPI dedup)</td><td>above 95 percent</td><td>A broken ruler makes every other number a lie. Health gates the whole board</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">Quality Score (Google)</td><td>alarm at -2 points in 7 days</td><td>Falling QS raises CPC and wastes brand spend</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">Brand impression share</td><td>alarm at -10 percent</td><td>Losing your own brand terms to rivals is expensive and quiet</td><td><span class="chip p2">P1</span></td></tr>
+</tbody>
+</table>
+
+<h3>Governance and learning (the AI-native layer)</h3>
+<table>
+<thead><tr><th style="width:24%">KPI</th><th style="width:46%">Why it is a KPI</th><th style="width:10%">Priority</th></tr></thead>
+<tbody>
+<tr><td class="cn">Judgment quality</td><td>The share of Expert calls, and AI judgments, that aged well at 14, 30 and 90 days. This is how we know the system is good, not just busy</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">Confidence calibration</td><td>Whether "97 percent sure" was actually right 97 percent of the time. Keeps the confidence honest</td><td><span class="chip p2">P1</span></td></tr>
+<tr><td class="cn">Wasted spend caught</td><td>Money flagged before it was lost, by rule, in Rs and USD. The clearest proof of value</td><td><span class="chip p1">P0</span></td></tr>
+<tr><td class="cn">Labeled decisions captured</td><td>Every Expert approve, deny or modify, joined to its outcome. The dataset that becomes the moat</td><td><span class="chip p2">P1</span></td></tr>
+</tbody>
+</table>
+
+<h2><span class="num">RECONCILE</span>How the crystals, the engines and the KPIs fit</h2>
+<p>The <b>30 crystals</b> in Part A are what the AI reads off each ad. The <b>engines</b> in Part B turn those crystals plus the account data into scores like diversity and fatigue. The <b>KPIs</b> in Part C are the business numbers the Expert and the CMO act on. The dashboard's five reads (account, creative, competitor, diversity, fatigue) are the engines, and the first-fold "crystals score" is a simple health rollup of how many checks are green. Nothing here is a separate product, it is one chain: crystal to score to KPI to decision, and every step shows its working.</p>
+
+<p class="src">Sources, all internal canon: 06_CRYSTALS_MASTER.xlsx (30 crystals, 167 sub-signals, 12 layers, 3 phases), 03_BUSINESS_RULES.md (every weight and threshold), reference/CREATIVE_INTELLIGENCE_REFERENCE.md (diversity and fatigue derivations), and the action dashboard and CMO view. Money in Rs or USD. No em dashes. All weights editable in the Measurement Canon.</p>
+
+</div>
+</body>
+</html>
