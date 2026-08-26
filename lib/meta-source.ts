@@ -44,9 +44,14 @@ export const metaSource: AdSource = {
 
   async listAds(accountExternalId: string, token: TokenSet): Promise<SourceAd[]> {
     // accountExternalId is the numeric Meta ad account id (without the act_ prefix).
+    // Large accounts return thousands of ads; requesting 200 with nested creative
+    // expansion makes Meta reject the call with "reduce the amount of data" (code 1).
+    // Ask only for the fields we use, cap the page small, and bias to ACTIVE ads
+    // (the ones a weekly decision cares about, and the ones most likely to have spend).
     const data = await graphGet<{ data: MetaAd[] }>(`act_${accountExternalId}/ads`, token.accessToken, {
-      fields: "id,name,effective_status,creative{id,thumbnail_url}",
-      limit: "200",
+      fields: "id,name,effective_status",
+      effective_status: '["ACTIVE"]',
+      limit: "25",
     });
     return (data.data ?? []).map((ad) => ({
       externalId: ad.id,
