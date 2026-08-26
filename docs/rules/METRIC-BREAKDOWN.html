@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AdBrain - the 25 metrics, in two tiers</title>
+<style>
+:root{
+ --indigo:#1A1F3A; --gold:#C9A227; --gold-lt:#F5E4BC; --cream:#FDFBF5; --paper:#FFFFFF;
+ --ink:#1A1F3A; --grey:#55534E; --faint:#8A8578; --line:#E3DCC9;
+ --purple:#6B4FCf; --purple-d:#4A3B8C; --purple-bg:#EDE9F7;
+ --green:#1E8C63; --green-d:#146046; --green-bg:#E4F3EC;
+ --red:#C0503F; --red-bg:#FBEAE7; --amber:#A0630F; --amber-bg:#FFF3E0;
+ --blue:#2C3E6B; --blue-bg:#EFF2F8; --slate:#3A3F4A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Calibri,sans-serif;font-size:15px;line-height:1.55}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px 90px}
+
+header.hero{background:var(--indigo);color:var(--gold-lt);padding:48px 24px 40px;border-bottom:5px solid var(--gold)}
+header.hero .inner{max-width:1120px;margin:0 auto}
+.kicker{font-family:"Courier New",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+header.hero h1{font-family:Georgia,serif;font-size:35px;line-height:1.14;margin:0 0 14px;color:#fff;font-weight:600;max-width:880px}
+header.hero h1 u{text-decoration:none;border-bottom:4px solid var(--green);padding-bottom:2px}
+header.hero p{margin:0;max-width:830px;font-size:15.5px;color:#D8D3C4}
+
+.controls{position:sticky;top:0;z-index:40;background:rgba(253,251,245,.94);backdrop-filter:blur(8px);
+ border-bottom:1px solid var(--line);padding:11px 24px;margin-bottom:6px}
+.controls .in{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.controls .lab{font-family:"Courier New",monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-right:2px}
+.fbtn{background:var(--paper);border:1.5px solid var(--line);color:var(--grey);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.fbtn:hover{border-color:var(--gold)} .fbtn.on{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+.fbtn.gr.on{background:var(--green-d);border-color:var(--green-d)} .fbtn.rd.on{background:var(--red);border-color:var(--red)}
+.spacer{flex:1}
+.dbtn{background:var(--gold);border:none;color:var(--indigo);padding:6px 13px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+
+h2{font-family:Georgia,serif;font-size:24px;margin:50px 0 6px;padding-top:22px;border-top:3px solid var(--indigo);font-weight:600}
+h2 .num{font-family:"Courier New",monospace;font-size:12px;color:var(--gold);display:block;letter-spacing:.16em;margin-bottom:6px;font-weight:700}
+.lead{font-size:16px;color:var(--grey);margin:0 0 18px;max-width:900px}
+
+.tiers2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:20px 0}
+.tcard{border-radius:10px;padding:18px 20px;border:1px solid var(--line)}
+.tcard.t2{background:var(--green-bg);border-left:6px solid var(--green)}
+.tcard.t1{background:var(--red-bg);border-left:6px solid var(--red)}
+.tcard .tt{font-family:"Courier New",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px}
+.tcard.t2 .tt{color:var(--green-d)} .tcard.t1 .tt{color:var(--red)}
+.tcard h4{margin:0 0 8px;font-family:Georgia,serif;font-size:18px}
+.tcard p{font-size:13.3px;color:var(--grey);margin:0 0 8px} .tcard p:last-child{margin:0}
+
+table{width:100%;border-collapse:collapse;margin:14px 0 24px;font-size:13px;background:var(--paper)}
+th{background:var(--indigo);color:var(--gold-lt);text-align:left;padding:9px 11px;font-weight:600;font-size:11px;vertical-align:bottom}
+td{padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:nth-child(even){background:#FAF8F2}
+td.mono{font-family:"Courier New",monospace;font-size:11.5px;color:var(--purple-d)}
+.hardtag{font-family:"Courier New",monospace;font-size:9px;background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:4px;padding:1px 6px;white-space:nowrap}
+
+.groupband{margin:30px 0 4px;padding:12px 18px;border-radius:9px;color:#fff;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.groupband.t2{background:linear-gradient(90deg,var(--green-d),#22765a)}
+.groupband.t1{background:linear-gradient(90deg,#8f2c1f,var(--red))}
+.groupband .gt{font-family:"Courier New",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;background:#fff;color:#12151f;padding:4px 11px;border-radius:11px;font-weight:700}
+.groupband .gn{font-family:Georgia,serif;font-size:18px;font-weight:600}
+.groupband .gd{font-size:12.5px;color:rgba(255,255,255,.85);font-family:-apple-system,Segoe UI,sans-serif}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:11px;margin:14px 0;overflow:hidden}
+.card.t1card{border-color:#E4C9C2} .card.t2card{border-color:#C9E4D6}
+.chead{color:#fff;padding:14px 20px;display:flex;align-items:flex-start;gap:13px;flex-wrap:wrap}
+.card.t2card .chead{background:var(--slate)} .card.t1card .chead{background:#33262a}
+.chead .no{font-family:"Courier New",monospace;font-size:20px;font-weight:700;color:var(--gold);line-height:1;min-width:32px}
+.chead .tt{flex:1;min-width:190px}
+.chead .nm{font-family:Georgia,serif;font-size:19px;font-weight:600}
+.chead .tr{font-size:12.3px;color:#C7C2B4;margin-top:3px}
+.chead .diff{font-family:"Courier New",monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:10px;font-weight:700;white-space:nowrap;align-self:center}
+.diff.easy{background:var(--green-bg);color:var(--green-d)} .diff.med{background:var(--amber-bg);color:var(--amber)} .diff.hard{background:var(--red-bg);color:var(--red)}
+
+.cbody{padding:16px 20px}
+.formula{background:var(--indigo);color:#F0EDE2;padding:13px 16px;border-radius:7px;font-family:"Courier New",monospace;
+ font-size:13px;line-height:1.7;border-left:5px solid var(--gold);overflow-x:auto;white-space:pre-wrap;margin:0 0 6px}
+.formula b{color:var(--gold)}
+.fnote{font-size:12px;color:var(--faint);margin:0 0 14px}
+.builtfrom{background:#FBF3F1;border:1px solid #EAD3CD;border-left:4px solid var(--red);border-radius:7px;padding:10px 13px;margin:0 0 14px;font-size:12.6px}
+.builtfrom .bl{font-family:"Courier New",monospace;font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--red);font-weight:700;margin-bottom:5px;display:block}
+.builtfrom .mchip{display:inline-block;font-family:"Courier New",monospace;font-size:10.5px;background:var(--green-bg);color:var(--green-d);border:1px solid #BFE0CF;border-radius:5px;padding:1px 6px;margin:2px 4px 2px 0}
+.builtfrom .xchip{display:inline-block;font-family:"Courier New",monospace;font-size:10.5px;background:#fff;color:var(--red);border:1px solid #E4C9C2;border-radius:5px;padding:1px 6px;margin:2px 4px 2px 0}
+
+h5{font-family:"Courier New",monospace;font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--grey);font-weight:700;margin:16px 0 8px}
+.lever{display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:8px;margin-bottom:6px;font-size:13px;border:1px solid var(--line);background:#fff}
+.lever .arrow{font-family:"Courier New",monospace;font-weight:700;font-size:11px;min-width:32px;text-align:center;border-radius:5px;padding:2px 4px}
+.lever.dir{border-left:4px solid var(--green)} .lever.dir .arrow{background:var(--green-bg);color:var(--green-d)}
+.lever.inv{border-left:4px solid var(--red)} .lever.inv .arrow{background:var(--red-bg);color:var(--red)}
+.lever .lv{flex:1;min-width:0} .lever .lv b{font-weight:700} .lever .lv small{color:var(--faint);font-size:11px}
+.lever .who{font-family:"Courier New",monospace;font-size:9px;color:var(--grey);background:#F2EFE6;padding:2px 7px;border-radius:9px;white-space:nowrap}
+body.f-dir .lever.inv,body.f-inv .lever.dir{opacity:.2}
+
+.detail{border-top:1px dashed var(--line);margin-top:14px;padding-top:2px;display:none}
+.card.open .detail{display:block}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
+.pane{background:#FAF8F2;border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.pane h6{margin:0 0 7px;font-size:12px;font-family:Georgia,serif;color:var(--indigo)}
+.srcrow{font-size:12.3px;margin-bottom:6px;line-height:1.45}
+.srcrow b{font-family:"Courier New",monospace;font-size:11.5px;color:var(--purple-d)}
+.srcrow .frm{display:inline-block;font-family:"Courier New",monospace;font-size:9px;background:#fff;border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--grey);margin-right:5px}
+.logic{font-size:13px;color:var(--ink);margin:0 0 10px}
+.ex{background:var(--blue-bg);border-left:4px solid var(--blue);border-radius:6px;padding:11px 13px;font-size:12.6px;line-height:1.55}
+.ex .xl{font-family:"Courier New",monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);font-weight:700;display:block;margin-bottom:5px}
+.expand{text-align:center;border-top:1px solid var(--line);padding:7px;cursor:pointer;font-size:10.5px;font-family:"Courier New",monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);background:#FCFBF7}
+.expand:hover{color:var(--indigo);background:#F5F2EA}
+
+.box{border-radius:8px;padding:15px 19px;margin:18px 0;border-left:5px solid}
+.box .lbl{font-family:"Courier New",monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;display:block;margin-bottom:6px}
+.plain{background:var(--purple-bg);border-color:var(--purple-d)} .plain .lbl{color:var(--purple-d)}
+.moat{background:var(--green-bg);border-color:var(--green-d)} .moat .lbl{color:var(--green-d)}
+.box p:last-child{margin-bottom:0}
+footer{margin-top:60px;padding-top:22px;border-top:3px solid var(--indigo);font-size:12px;color:var(--faint)}
+@media(max-width:820px){.grid2,.tiers2{grid-template-columns:1fr}header.hero h1{font-size:25px}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+ <div class="inner">
+  <div class="kicker">AdBrain &middot; the 25 metrics &middot; two tiers &middot; 2026</div>
+  <h1>The 25 numbers, in two tiers, and <u>how they connect</u></h1>
+  <p>Tier 2 is easy to get: raw dials you read straight from a platform any day. Tier 1 is hard to get and
+  calculate: the truth metrics, each built from Tier 2 numbers plus one hard ingredient like the finance sheet,
+  a customer join, an ad decode, or a holdout. This shows all 25, the exact formula and data for each, where
+  every number comes from, and how Tier 2 feeds Tier 1.</p>
+ </div>
+</header>
+
+<div class="controls">
+ <div class="in">
+  <span class="lab">Levers</span>
+  <button class="fbtn on" data-f="all">All</button>
+  <button class="fbtn gr" data-f="dir">Direct only</button>
+  <button class="fbtn rd" data-f="inv">Inverse only</button>
+  <span class="spacer"></span>
+  <button class="dbtn" id="expandAll">Show source, logic and example</button>
+ </div>
+</div>
+
+<div class="wrap">
+
+<!-- HOW THE MATRIX WORKS -->
+<h2 id="how"><span class="num">Section 1</span>How the two tiers work together</h2>
+<p class="lead">This is the whole idea in one picture. Tier 2 describes. Tier 1 decides. And Tier 1 is literally
+built out of Tier 2, plus one hard thing a platform will never hand you.</p>
+
+<div class="tiers2">
+ <div class="tcard t2">
+  <div class="tt">Tier 2 &middot; easy to get</div>
+  <h4>The raw dials</h4>
+  <p>Straight from Meta, Google or Shopify. One API call, or one division of two numbers you already have.
+  A junior can pull them daily.</p>
+  <p><b>They tell you what is happening.</b> CPM went up. Hook rate fell. Add-to-cart rate is 2 percent. All
+  true, all fast, and none of them tell you if you are actually making money.</p>
+ </div>
+ <div class="tcard t1">
+  <div class="tt">Tier 1 &middot; hard to get and calculate</div>
+  <h4>The truth metrics</h4>
+  <p>Each one is built from several Tier 2 numbers, plus one hard ingredient: the finance sheet (COGS), a
+  customer join (new vs returning), an ad decode, or a holdout test.</p>
+  <p><b>They tell you what to do.</b> Contribution ROAS says if growth adds profit. nCAC says the true cost to
+  grow. Half-life says when a creative dies. These decide, and they are exactly the ones most brands cannot
+  produce cleanly.</p>
+ </div>
+</div>
+
+<div class="box moat">
+ <span class="lbl">The rule that connects them</span>
+ <p><b>You cannot compute a Tier 1 metric without its Tier 2 inputs plus its one hard ingredient.</b> So the
+ build order is fixed: capture every Tier 2 dial first, then add the four hard ingredients (finance sheet,
+ customer join, decoder, holdout), and only then do the Tier 1 truth metrics light up. Miss one hard
+ ingredient and a whole row of Tier 1 stays dark. The table below is the wiring diagram.</p>
+</div>
+
+<h3 style="font-family:Georgia,serif;font-size:18px;margin:24px 0 8px">The wiring: every Tier 1 metric, and exactly what feeds it</h3>
+<table>
+<thead><tr><th style="width:180px">Tier 1 metric (the truth)</th><th>Built from these Tier 2 dials</th><th style="width:230px">Plus this one hard ingredient</th></tr></thead>
+<tbody id="wiring"></tbody>
+</table>
+
+<h2 id="metrics"><span class="num">Section 2</span>All 25 metrics</h2>
+<p class="lead">Tier 2 first, the easy dials you capture from day one. Tier 1 last, the hard truth metrics they
+build into. Open any card for the source of each input, the logic, and a worked example at scale.</p>
+
+<div id="tree"></div>
+
+<h2 id="day1"><span class="num">Section 3</span>What you must capture from day one</h2>
+<p class="lead">Every raw field behind all 25 metrics, grouped by where it comes from. The four groups at the
+bottom, decoder, fingerprint, finance and holdout, are the hard ingredients that unlock Tier 1.</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:16px 0" id="d1"></div>
+
+<div class="box plain">
+ <span class="lbl">Say it to a 10 year old</span>
+ <p>Tier 2 is like the speed shown on a bike's speedometer. Easy to read, tells you how fast you are going.
+ Tier 1 is like knowing if you will win the race. To know that you need the speed, plus how far is left, plus
+ how tired you are, plus what the other riders are doing. Tier 1 is the speed plus the hard extra things put
+ together. That is why it is worth more and harder to get.</p>
+</div>
+
+<footer>
+ <p><b>AdBrain, the 25 metrics v3.0</b> &middot; August 2026. Tier 2 easy to get, Tier 1 hard to get and
+ calculate. Companion to the KPI Master (all 162 metrics) and the Measurement Canon (weighted scorecards).
+ Example figures model a US brand near USD 100M a month testing about 6,000 ads a month, illustrative not
+ audited. Direct = raise it to improve the metric. Inverse = reduce it.</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+/* lvl: "T2" easy | "T1" hard. builtfrom only for T1: [ [tier2 metric names...], "hard ingredient", "source of hard ingredient" ] */
+var M=[
+
+/* ================= TIER 2 : EASY TO GET ================= */
+{lvl:"T2",group:"Delivery",name:"CPM",tier:"Price of attention",diff:"easy",
+ formula:"CPM = spend / impressions x 1000",
+ fnote:"What it costs to show the ad one thousand times. Rises on its own in festival auctions.",
+ levers:[["Audience breadth","dir","Targeting","wider is usually cheaper"],["Creative diversity","dir","Creative","Meta rewards varied ads with lower CPM"],["Auction competition","inv","Market","more bidders raise the price"],["Frequency","inv","Budget","over-showing a small pool costs more"]],
+ sources:[["spend","Direct","ad platform","amount spent in the window"],["impressions","Direct","ad platform","times shown"]],
+ logic:"The cheapest possible metric to compute, and mostly outside your control. Treat it as context, not a verdict. Its real use is as an early warning: a CPM jump with no auction event usually means your audience is saturating or your ads are too similar.",
+ example:"Spend 25M, impressions 4.6B, CPM = 25M / 4.6B x 1000 = USD 5.43. During a sale week it climbs to USD 8.10 with no change from you, because every brand crowds the auction. The ads did not get worse, the rent went up.",
+ data:["spend","impressions"]},
+
+{lvl:"T2",group:"Delivery",name:"CTR (link)",tier:"Did people click through",diff:"easy",
+ formula:"CTR link = link_clicks / impressions x 100",
+ fnote:"Share of viewers who clicked to your site. The honest interest signal.",
+ levers:[["Hook strength","dir","Creative","a stronger opening earns the click"],["Offer clarity","dir","Creative","a clear reason to click"],["Audience match","dir","Targeting","right people, more clicks"],["Ad fatigue","inv","Creative","seen too often, fewer click"]],
+ sources:[["link_clicks","Direct","Meta / Google","clicks to the website"],["impressions","Direct","ad platform","times shown"]],
+ logic:"Use link CTR, not all-clicks CTR, which is inflated by likes and expands. It is the fastest read of whether a creative is landing, and it feeds the half-life and win-rate calculations upstream.",
+ example:"Link clicks 65M, impressions 4.6B, CTR = 1.41 percent, a healthy Meta DTC number. Watch the trend per creative: a CTR sliding from 1.4 to 1.15 over a week is the first sign of fatigue, before cost per result moves.",
+ data:["link clicks","impressions"]},
+
+{lvl:"T2",group:"Delivery",name:"CPC (link)",tier:"Price of one visit",diff:"easy",
+ formula:"CPC link = spend / link_clicks",
+ fnote:"What you pay for one click to your website.",
+ levers:[["CTR","dir","Creative","more clicks per view lowers CPC"],["CPM","inv","Auction","dearer views raise CPC"],["Relevance / quality","dir","Creative, targeting","platforms reward relevance with cheaper clicks"]],
+ sources:[["spend","Direct","ad platform","amount spent"],["link_clicks","Direct","Meta / Google","website clicks"]],
+ logic:"CPC is just CPM and CTR combined, so it moves when either does. Useful as a single traffic-cost number, but always diagnose it through its two parents: a rising CPC is either a pricier auction or a weaker creative, and the fix differs.",
+ example:"Spend 25M, link clicks 65M, CPC = USD 0.38. If CPC rises to USD 0.52, check CPM and CTR first: if CPM held and CTR fell, it is a creative problem, not an auction problem.",
+ data:["spend","link clicks"]},
+
+{lvl:"T2",group:"Delivery",name:"Frequency",tier:"How often one person saw it",diff:"easy",
+ formula:"Frequency = impressions / reach",
+ fnote:"Average times one person saw the ad. We show it, but never fire an action on it alone.",
+ levers:[["Audience pool size","dir","Targeting","a bigger pool lowers frequency"],["Budget on a small audience","inv","Media buyer","more money, same people, higher frequency"],["Creative count","dir","Creative","more ads spread the exposure"]],
+ sources:[["impressions","Direct","ad platform","times shown"],["reach","Direct","Meta / TikTok","unique people"]],
+ logic:"Easy to compute and easy to over-trust. Meta's own research says frequency is the wrong unit for fatigue, because fatigue happens to a creative while frequency is measured on an ad set. Keep it as context, let the half-life metric make the fatigue call.",
+ example:"Impressions 4.6B, reach 1.1B, frequency = 4.2. On its own that number means nothing. Paired with a falling CTR on a small audience, it confirms saturation. Paired with steady performance, ignore it.",
+ data:["impressions","reach"]},
+
+{lvl:"T2",group:"Creative",name:"Hook rate",tier:"Did the first 3 seconds work",diff:"easy",
+ formula:"Hook rate = three_second_views / impressions x 100",
+ fnote:"Share who stopped scrolling for 3 seconds. Lock the definition once and never change it.",
+ levers:[["First frame strength","dir","Creative","the opening image stops the scroll"],["Verbal or text hook","dir","Creative","the first line earns the next second"],["Motion in first second","dir","Creative","movement beats a still open"],["Text density in first frame","inv","Creative","too much text kills the stop"]],
+ sources:[["three_second_views","Direct","Marketing API","3s video views"],["impressions","Direct","Marketing API","times shown"]],
+ logic:"Easy to fetch, dangerous to benchmark. The formula has no standard, so two accounts report 22 and 41 percent on the same video by changing the divisor. Score each ad against the other ads in its own campaign, never against a public number.",
+ example:"3s views 1.4M, impressions 5M, hook rate 28 percent, on the Meta median. But inside its campaign this ad is bottom third, so the opening is the problem, not the whole idea. Recut the first frame before killing the concept.",
+ data:["3-second views","impressions"]},
+
+{lvl:"T2",group:"Creative",name:"Hold rate",tier:"Did they stay past the hook",diff:"easy",
+ formula:"Hold rate = fifteen_second_plays / three_second_views x 100",
+ fnote:"Of those who stopped, how many stayed to 15 seconds. The story test.",
+ levers:[["Hook-to-payoff match","dir","Creative","the video delivers its promise"],["Second hook at 7 to 15s","dir","Creative","a reason to keep watching"],["Pace and cutting","dir","Creative","the middle does not sag"],["Length beyond need","inv","Creative","padding loses people"]],
+ sources:[["fifteen_second_plays","Direct","Marketing API","15s or ThruPlay"],["three_second_views","Direct","Marketing API","3s views"]],
+ logic:"Hook and hold read together tell you exactly what to fix. High hook and low hold means the opening over-promised, keep the hook and rewrite the middle. Low hook and high hold means a good video with a weak start, recut the first frame.",
+ example:"15s plays 620,000, 3s views 1.4M, hold rate 44 percent, near average. If hook is strong but hold is 30 percent, the promise broke at second four. That is a script fix, not a new concept.",
+ data:["15s plays","3-second views"]},
+
+{lvl:"T2",group:"Funnel",name:"Add-to-cart rate",tier:"First real intent",diff:"easy",
+ formula:"ATC rate = add_to_cart / sessions x 100     cost_per_ATC = spend / add_to_cart",
+ fnote:"Share of visits that added to cart. The earliest strong buying signal and often the cheapest ROAS win.",
+ levers:[["Ad to landing relevance","dir","Ads, landing","the page matches the ad promise"],["Price and offer clarity","dir","Merchandising","the deal is obvious"],["Product page proof","dir","Creative, reviews","confidence to add"],["Page load time","inv","Engineering","slow pages lose the add"]],
+ sources:[["add_to_cart","Direct","Meta pixel / GA4","cart events"],["sessions","Direct","GA4","visits"],["spend","Direct","ad platform","for cost per ATC"]],
+ logic:"ROAS is a chain of rates multiplied together, and add-to-cart is often the weakest, cheapest link to fix. Teams argue about the hook while the leak is between landing and cart. A 10 percent lift here flows straight to ROAS.",
+ example:"Sessions 5M, add-to-cart 105,000, ATC rate 2.1 percent versus a Shopify median near 4.6. That gap is the biggest locked-up ROAS in the account. Cost per ATC = 25M / 105,000 = USD 238, flagging the leak long before purchase data arrives.",
+ data:["add to cart","sessions","spend"]},
+
+{lvl:"T2",group:"Funnel",name:"Checkout completion rate",tier:"Did they finish paying",diff:"easy",
+ formula:"Checkout completion = purchases / begin_checkouts x 100",
+ fnote:"Of people who started checkout, how many finished. Payment failures and slow pages show up here.",
+ levers:[["Payment options","dir","Checkout","UPI, cards, COD reduce drop"],["Trust signals at checkout","dir","Design","badges, returns policy"],["Surprise costs","inv","Merchandising","shipping shock at the last step"],["Page errors","inv","Engineering","a broken step loses the sale"]],
+ sources:[["purchases","Direct","Shopify / GA4","completed orders"],["begin_checkouts","Direct","Meta pixel / GA4","checkouts started"]],
+ logic:"The last funnel step, and the one most often broken by something technical rather than creative. A sudden drop here is rarely the ads, it is a payment outage, a theme update, or a new hidden fee. Watch it like a smoke alarm.",
+ example:"Purchases 90,000, begin checkouts 200,000, completion 45 percent, the Shopify median. If it drops to 33 percent overnight while ATC holds, check the checkout, not the creative. A UPI outage or a pixel break is the usual cause.",
+ data:["purchases","begin checkouts"]},
+
+{lvl:"T2",group:"Funnel",name:"Site conversion rate",tier:"The funnel headline",diff:"easy",
+ formula:"CVR = purchases / sessions x 100",
+ fnote:"Share of visits that became an order. Only useful when split by traffic source.",
+ levers:[["Session to product view","dir","Landing, ads","arrivals who look at a product"],["Product view to cart","dir","Product page","viewers who add"],["Cart to checkout","dir","Cart, shipping","carts that start checkout"],["Checkout to payment","dir","Payment, trust","checkouts that complete"]],
+ sources:[["purchases","Direct","Shopify / GA4","completed orders"],["sessions","Direct","GA4","visits"]],
+ logic:"Easy to fetch, but a blended CVR hides the story because email converts far higher than cold paid social. The value is in the four sub-steps: fixing the weakest one moves the whole number, and it is usually not the one everyone stares at.",
+ example:"Sessions 5M, purchases 90,000, CVR 1.8 percent, a healthy paid-social median. Split it: cold paid social 1.1, email 4.2, branded search 5.1. The blended 1.8 is fine, but the work to do is on paid social.",
+ data:["sessions","purchases"]},
+
+{lvl:"T2",group:"Basket",name:"Average order value",tier:"Basket economics",diff:"easy",
+ formula:"AOV = revenue / orders",
+ fnote:"Average money per order. When it rises, your break-even ROAS falls, so every ad gets easier.",
+ levers:[["Price per item","dir","Pricing","the sticker price"],["Items per order","dir","Cross-sell, bundles","more in the basket"],["Units per item","dir","Multi-buy offers","two of the same"],["Percent orders with discount","inv","Merchandising","discount habit shrinks baskets"]],
+ sources:[["revenue","Direct","Shopify","order value"],["orders","Direct","Shopify","order count"]],
+ logic:"The quietest lever on ROAS. A 15 percent AOV lift lowers the ROAS you need to break even by 15 percent, so creatives that were losing become winners with no change to the ad. Bundles and free-shipping thresholds move it, blanket discounts drag it down.",
+ example:"Revenue 100M, orders 1.6M, AOV USD 62.5. A bundle and a free-shipping threshold at USD 75 lift AOV to USD 71, dropping break-even ROAS about 14 percent. A whole tier of marginal ads is now profitable, with zero creative change.",
+ data:["shopify revenue","orders"]},
+
+{lvl:"T2",group:"Efficiency",name:"Platform ROAS",tier:"What the platform claims",diff:"easy",
+ formula:"Platform ROAS = conversion_value / spend",
+ fnote:"Sale value the platform credits to its own ads. Directional only, always check against MER.",
+ levers:[["Conversion rate","dir","Creative, funnel","more sales per click"],["AOV","dir","Merchandising","bigger orders"],["Spend efficiency","inv","Auction","cheaper reach lifts ROAS"],["Over-claiming","inv","Attribution","view-through inflates it"]],
+ sources:[["conversion_value","Direct","ad platform","sale value the platform reports"],["spend","Direct","ad platform","amount spent"]],
+ logic:"The number every buyer stares at, and the one that lies most. Meta and Google both claim the same sale, so their ROAS added up beats real revenue. Use it to compare ads within one platform, never to judge whether the business makes money. That is MER and contribution ROAS.",
+ example:"Meta conversion value 60M on 10M spend, platform ROAS 6.0. Looks great, but MER for the whole business is 4.0 and contribution ROAS is 1.28. The 6.0 is a within-platform sorting tool, not a profit statement.",
+ data:["conversion value","spend"]},
+
+{lvl:"T2",group:"Efficiency",name:"Cost per purchase (CPA)",tier:"Price of one order",diff:"easy",
+ formula:"CPA = spend / purchases",
+ fnote:"What you pay the platform for one order or conversion. The core efficiency dial.",
+ levers:[["Conversion rate","dir","Creative, funnel","more orders per click"],["CPC","inv","Auction, creative","dearer clicks raise CPA"],["Funnel drop-off","inv","Landing, checkout","leaks between click and buy"]],
+ sources:[["spend","Direct","ad platform","amount spent"],["purchases","Direct","platform / Shopify","orders"]],
+ logic:"Easy to compute, and the honest target is set by margin, not by a benchmark. A good CPA is one below your contribution margin per order, which is why CPA only means something once you know contribution margin, a Tier 1 metric.",
+ example:"Spend 25M, purchases 90,000, CPA = USD 278. Whether that is good depends entirely on margin: at a USD 350 contribution per order it is healthy, at USD 200 it loses money on every sale. CPA without margin is half a number.",
+ data:["spend","purchases"]},
+
+/* ================= TIER 1 : HARD TO GET AND CALCULATE ================= */
+{lvl:"T1",group:"Profit",name:"MER",tier:"Whole-business efficiency",diff:"med",
+ formula:"MER = total_revenue / total_ad_spend",
+ fnote:"Every rupee of sales against every rupee of ad spend, across all channels. The dial a CFO trusts.",
+ builtfrom:[["Platform ROAS","Cost per purchase (CPA)"],"all spend blended into one number, and Shopify revenue reconciled","platform APIs joined + Shopify"],
+ levers:[["New-customer revenue","dir","Prospecting","real growth"],["Repeat and subscription revenue","dir","Retention","cheap owned sales"],["Organic and direct revenue","dir","Brand","free traffic lifts MER"],["Blended ad spend","inv","Budget discipline","the denominator"]],
+ sources:[["total_revenue","Direct","Shopify","all orders, all channels"],["total_ad_spend","Calc","all ad platforms joined","summed to one number, deduplicated"]],
+ logic:"Platform ROAS double-counts because every channel claims the same sale. MER cannot, because it uses one revenue number and one spend number. The hard part is the join: pulling spend from every platform into one figure and reconciling it against real Shopify revenue. That plumbing is why MER is Tier 1 even though the maths is simple.",
+ example:"Revenue 100M, blended spend 25M, MER 4.0. If Meta reports 6x and Google 5x, those imply more revenue than 100M exists, so one is over-claiming. MER settles it. A slide from 4.0 to 3.4 while platform ROAS holds is the classic sign of a tracking leak.",
+ data:["shopify revenue","blended spend"]},
+
+{lvl:"T1",group:"Profit",name:"New customer percent",tier:"Growth vs harvesting",diff:"med",
+ formula:"New customer % = new_customer_orders / total_orders x 100",
+ fnote:"Share of sales to first-time buyers. Falling means the account is coasting on repeat buyers.",
+ builtfrom:[["Site conversion rate","Platform ROAS"],"the new vs returning flag on every order","Shopify customer join"],
+ levers:[["Prospecting reach","dir","Top-funnel spend","new people seeing you"],["Prospecting conversion","dir","Creative, offer","new people buying"],["Retargeting share of spend","inv","Media buyer","too much spend on people already yours"]],
+ sources:[["new_customer_orders","Direct","Shopify","orders flagged first-time"],["total_orders","Direct","Shopify","all orders"]],
+ logic:"A high ROAS with a falling new-customer percent is a warning, not a win. It usually means budget quietly shifted to retargeting, which looks efficient because it re-sells to people who were coming anyway. The hard part is trusting the new-vs-returning flag, which needs clean customer records.",
+ example:"Orders 200,000, new-customer orders 96,000, new percent 48. It drifts to 39 percent while ROAS rises 3.8 to 4.4. That looks like improvement and is the account eating its own retargeting pool. Left alone, growth stalls in about two months.",
+ data:["new-customer orders","total orders"]},
+
+{lvl:"T1",group:"Creative",name:"Creative win rate",tier:"The output that pays",diff:"med",
+ formula:"Win rate = winners / creatives_tested x 100     winner = an ad spending >= 10x the account median single-ad spend",
+ fnote:"How many real winners the engine made. The winner bar scales with the account, so it is fair at any size.",
+ builtfrom:[["Cost per purchase (CPA)","Platform ROAS"],"the account median single-ad spend, computed across every ad","Marketing API rollup"],
+ levers:[["Concept variety","dir","Strategy","new angles beat variants"],["Hook strength","dir","Creative","stronger openings win more"],["Testing discipline","dir","Media buyer","enough spend and days to judge"],["Similarity to past tests","inv","Strategy","near-copies rarely win"]],
+ sources:[["winners","Calc","Marketing API","ads whose spend crossed 10x the account median"],["creatives_tested","Direct","Marketing API","ads launched in the window"]],
+ logic:"At 6,000 ads a month, win rate is the factory yield. But it inverts: a very high win rate can mean you are barely testing. Never use it alone, always beside the count of winners. Across large panels only 5 to 8 percent of ads win, and half never get real spend. That is normal.",
+ example:"Tested 6,000, winners 420, win rate 7 percent, on the panel norm. A rival reports 22 percent from testing 300, so 66 winners. You made 420 winners, they made 66. Win rate rewards timidity, so the scoreboard is winners per month.",
+ data:["creatives launched","winners (10x median spend)"]},
+
+{lvl:"T1",group:"Creative",name:"Cost per winner",tier:"True price of one good ad",diff:"med",
+ formula:"Cost per winner = ( total_test_spend + total_production_cost ) / winners",
+ fnote:"All the money spent finding winners, testing plus production, divided by how many you found.",
+ builtfrom:[["Creative win rate"],"production cost per ad, typed by ops","finance / ops sheet"],
+ levers:[["Win rate","dir","Strategy","more winners per test lowers the price"],["Test spend per creative","inv","Media buyer","spend only enough to judge"],["Production cost per creative","inv","Ops","cheaper attempts, more shots"]],
+ sources:[["total_test_spend","Direct","Marketing API","spend on testing ad sets"],["total_production_cost","Direct","finance / ops","typed cost of making the ads"],["winners","Calc","Marketing API","as defined above"]],
+ logic:"The number finance understands instantly. It exposes the trap of chasing win rate by testing less: fewer tests can raise win rate while cost per winner also rises, because production spreads over fewer wins. The hard part is production cost, which only exists if ops logs it.",
+ example:"Test spend 3M, production 600K for 6,000 ads, winners 420. Cost per winner = (3M + 600K) / 420 = USD 8,570. Cut testing to look efficient and this usually rises, because fixed production spreads over fewer winners.",
+ data:["test spend per creative","production cost per creative","winners (10x median spend)"]},
+
+{lvl:"T1",group:"Profit",name:"Contribution ROAS",tier:"The real north star",diff:"hard",
+ formula:"Contribution ROAS = ( revenue x contribution_margin_percent ) / ad_spend",
+ fnote:"ROAS on profit left after costs, not on top-line sales. Above 1 means growth adds profit.",
+ builtfrom:[["Platform ROAS","Average order value","MER"],"contribution margin, which needs COGS from the finance sheet","finance sheet (COGS)"],
+ levers:[["Contribution margin","dir","Pricing, ops","more profit kept per sale"],["Conversion and AOV","dir","Creative, offer","more revenue per rupee"],["Blended CPM","inv","Auction, diversity","the price of attention"],["Return rate","inv","Fit, quality","refunds erase counted revenue"]],
+ sources:[["revenue","Direct","Shopify","paid order value"],["contribution_margin_percent","Calc","Shopify + finance","(revenue - COGS - shipping - fees - returns) / revenue"],["ad_spend","Direct","all platforms","blended spend"]],
+ logic:"Plain ROAS counts revenue you never keep. A 4x ROAS on a 20 percent margin is really 0.8x on profit, a loss. Contribution ROAS cannot fool you, which is why almost nobody computes it: it needs COGS, and no platform gives you that.",
+ example:"Revenue 100M, spend 25M, margin 32 percent. Contribution ROAS = (100M x 0.32) / 25M = 1.28. Profitable, but a plain ROAS of 4.0 made it look twice as good. If margin slips to 26 percent, this falls to 1.04, near break-even, while plain ROAS does not move.",
+ data:["shopify revenue","cost of goods (finance)","shipping cost","fees","returns","blended spend"]},
+
+{lvl:"T1",group:"Profit",name:"nCAC",tier:"Cost to actually grow",diff:"hard",
+ formula:"nCAC = platform_spend / new_customers_from_that_platform",
+ fnote:"What one channel pays to bring a brand-new customer, not a repeat it would have got anyway.",
+ builtfrom:[["Cost per purchase (CPA)","New customer percent"],"new-customer conversions joined to the channel","Shopify join + platform match"],
+ levers:[["New-customer conversion rate","dir","Creative, prospecting","more first-time buyers per click"],["CPC / CPM","inv","Auction, creative","cost to reach"],["Repeat buyers counted as new","inv","Attribution hygiene","inflates the win falsely"]],
+ sources:[["platform_spend","Direct","the ad platform","spend for that channel"],["new_customers_from_that_platform","Calc","Shopify new-vs-returning + platform match","orders tagged first-time, matched to the channel"]],
+ logic:"Blended CAC hides a trap: a channel looks cheap because it is re-selling to existing customers. nCAC strips that out. It is hard because it needs the new-vs-returning flag joined to the channel, which no platform gives you. This join separates an operator from a dashboard.",
+ example:"Meta spend 10M drove 40,000 orders but only 22,000 new customers. Blended CAC looks like USD 250. Real nCAC = 10M / 22,000 = USD 455, 80 percent more expensive for growth. Decisions on the USD 250 number over-fund a harvesting channel.",
+ data:["platform spend","new-vs-returning flag","new-customer purchases by channel"]},
+
+{lvl:"T1",group:"Profit",name:"Blended new-customer ROAS",tier:"Growth efficiency, honestly",diff:"hard",
+ formula:"nc-ROAS = new_customer_revenue / total_ad_spend",
+ fnote:"New-customer sales against all ad spend. Judges whether ad money actually buys growth.",
+ builtfrom:[["MER","New customer percent"],"revenue split by new vs returning customer","Shopify customer join"],
+ levers:[["New-customer revenue","dir","Prospecting","real growth sales"],["Prospecting share of budget","dir","Media buyer","spend aimed at new people"],["Blended spend","inv","Budget","the denominator"],["AOV of new customers","dir","Merchandising","bigger first orders"]],
+ sources:[["new_customer_revenue","Calc","Shopify","revenue from first-time buyers only"],["total_ad_spend","Direct","all platforms","blended spend"]],
+ logic:"MER counts all revenue, including repeat buyers you would have kept anyway. nc-ROAS counts only new-customer revenue against the same spend, so it answers the real question: is the ad budget buying growth, or just harvesting the base? The hard part is splitting revenue by customer type.",
+ example:"New-customer revenue 52M, blended spend 25M, nc-ROAS = 2.08. Blended MER is 4.0, so half the efficiency comes from repeat buyers. If nc-ROAS drifts below 1.5 while MER holds, the ads have quietly stopped finding new people.",
+ data:["new-customer revenue","blended spend"]},
+
+{lvl:"T1",group:"Profit",name:"LTV to CAC (with payback)",tier:"The model health check",diff:"hard",
+ formula:"LTV:CAC = LTV / CAC        payback_months = CAC / monthly_margin_per_customer",
+ fnote:"How many rupees a customer returns per rupee to get them, and months until that money is back.",
+ builtfrom:[["nCAC","Contribution margin","Average order value"],"customer lifetime order history over time","Shopify cohort history"],
+ levers:[["LTV","dir","Retention, AOV","more value per customer"],["Repeat frequency","dir","Email, subscription","faster, more repeat"],["CAC","inv","Acquisition","cost to get them"],["Payback months","inv","Margin","how long cash is tied up"]],
+ sources:[["LTV","Calc","Shopify order history","revenue per customer over life, times margin"],["CAC","Calc","blended spend + new customers","spend / new customers"],["monthly_margin_per_customer","Calc","Shopify + finance","average monthly profit per customer"]],
+ logic:"One number that answers 'is this fundable'. Above 3:1 with payback under 6 months, pour fuel on. Below 2:1 or payback over a year, scaling burns cash. Hard because LTV needs real history and margin needs the finance sheet. This is the number investors ask for and most brands cannot produce cleanly.",
+ example:"12-month LTV USD 320 on 32 percent margin gives contribution LTV about USD 102. CAC USD 60. Contribution LTV:CAC = 1.7:1, thinner than the headline 5.3:1 on revenue. Monthly margin USD 17, so payback = 60 / 17 = 3.5 months. Always run this on margin, never revenue.",
+ data:["customer order history","cost of goods (finance)","blended spend","new customers"]},
+
+{lvl:"T1",group:"Profit",name:"Contribution margin",tier:"Real profit per order",diff:"hard",
+ formula:"Contribution margin % = ( revenue - COGS - shipping - fees - returns ) / revenue x 100",
+ fnote:"What is left from a sale after product, box, courier, gateway and refunds.",
+ builtfrom:[["Average order value"],"COGS, shipping and fees, typed by finance","finance sheet"],
+ levers:[["Markup","dir","Pricing, sourcing","price over cost"],["Percent full-price sales","dir","Merchandising","selling without discount"],["Percent returns","inv","Fit, quality","refunds and reverse logistics"],["Fulfilment cost per order","inv","Ops, packaging","cost to pick, pack, ship"]],
+ sources:[["revenue","Direct","Shopify","order value"],["COGS","Direct","finance sheet","unit cost times units, typed"],["shipping, fees, returns","Direct","finance + Shopify","real costs, not estimates"]],
+ logic:"This is the money that pays for ads and profit. Every ROAS and payback number is built on it, so if it is wrong everything above is fiction. Hard only because no API gives COGS. That single finance sheet is the most common reason a measurement system quietly dies in month four.",
+ example:"Order USD 60. COGS 24, shipping 6, fee 1.5, and a 12 percent return rate costs 7.2 on average. Contribution = (60 - 24 - 6 - 1.5 - 7.2) / 60 = 35 percent. If returns rise to 22 percent, contribution drops to 27 percent, and every ad decision on the old number is now wrong.",
+ data:["shopify revenue","cost of goods (finance)","shipping cost","fees","return rate"]},
+
+{lvl:"T1",group:"Creative",name:"Creative half-life",tier:"Days until it dies",diff:"hard",
+ formula:"expected_CTR(N) = CTR_first x (N+1)^-0.4      N_half ~ 4.66 exposures      days_to_half = (N_half - N_now) / daily_exposure_gain",
+ fnote:"The day a creative's click rate will have halved. A death date, per ad, two weeks early.",
+ builtfrom:[["CTR (link)","Frequency"],"exposure count rolled up across every ad set a creative runs in","Marketing API creative-level rollup"],
+ levers:[["Audience pool size","dir","Targeting","a bigger pool wears out slower"],["Exposure gain per day","inv","Budget, frequency","faster stacking kills faster"],["Creative distinctness","dir","Creative","distinct ads last longer"],["Starting CTR strength","dir","Creative","a stronger start has further to fall"]],
+ sources:[["CTR_first, daily CTR","Direct","Marketing API","click rate by day for this creative"],["N_now (exposure count)","Calc","Marketing API","impressions / reach for this creative across all its ad sets"],["daily_exposure_gain","Calc","Marketing API","impressions per day / reach per day"]],
+ logic:"A fatigue score of 0.36 says 'watch'. A death date says act on a calendar: three creatives die next Tuesday, three briefs due Friday. Hard because exposure must be rolled up across every ad set a creative runs in, plus a decay curve fit per creative. Uses Meta's own published exponent, corrected by real data.",
+ example:"CTR started 1.4 percent, now 1.15. Exposure N_now 2.1, account stacks about 0.35 exposures a day. days_to_half = (4.66 - 2.1) / 0.35 = 7.3 days. Output: this ad drops below usable next Tuesday, queue a replacement now.",
+ data:["daily CTR history","impressions per day","reach per day","exposure count N"]},
+
+{lvl:"T1",group:"Creative",name:"Diversity score",tier:"Are the ads really different",diff:"hard",
+ formula:"Diversity = weighted sum of variety across hook, angle, persona, funnel, format, language, distinctness, minus duplicate concentration",
+ fnote:"Whether Meta sees your ads as many or as few. Twenty near-copies compete like one.",
+ builtfrom:[["Hook rate","Platform ROAS"],"an element decode of every ad, plus a similarity fingerprint","decoder + fingerprinter"],
+ levers:[["Hook and angle variety","dir","Creative, strategy","different openings and reasons"],["Persona and funnel coverage","dir","Strategy","every buyer type and stage fed"],["Language and region mix","dir","Creative","not one metro, one language"],["Retrieval distinctness","dir","Creative","Meta itself sees them as different"],["Duplicate spend concentration","inv","Media buyer","money trapped in near-copies"]],
+ sources:[["decoded elements","Calc","Decoder (reads each ad)","hook, angle, persona, format, language per ad"],["spend per element","Direct","Marketing API","spend behind each element"],["fingerprints","Calc","Fingerprinter","vision and text similarity between ads"]],
+ logic:"Meta concentrates budget on purpose, so measuring diversity on spend punishes you for Meta's choice. Measure the spread of the portfolio you supplied. The retrieval distinctness part is the one nobody else has: two ads with different text over the same image count as one to Meta, so 45 thumbnails can be 12 real creatives.",
+ example:"45 live ads collapse into 12 similarity clusters above 0.92, so distinctness is low. Hook variety covers 4 of 12 openings. Diversity computes to 54 out of 100. The read: you feed Meta 12 real options, not 45, which caps optimisation. Fix is 8 genuinely new concepts, not more variants.",
+ data:["decoded hook per ad","decoded angle per ad","decoded persona per ad","decoded format per ad","decoded language per ad","spend per element","vision fingerprint","text fingerprint"]},
+
+{lvl:"T1",group:"Truth",name:"Marginal ROAS",tier:"What the next rupee earns",diff:"hard",
+ formula:"Marginal ROAS = change_in_revenue / change_in_spend, at the current spend level",
+ fnote:"What the next rupee of spend returns, not the average of all rupees already spent.",
+ builtfrom:[["MER","Platform ROAS"],"a spend-versus-revenue response curve fit from history","historical spend/revenue modelling"],
+ levers:[["Headroom in the audience","dir","Targeting","room to grow cheaply"],["Fresh creative supply","dir","Creative","new winners lift the curve"],["Spending past the frontier","inv","Media buyer","the next rupee buys worse buyers"]],
+ sources:[["change_in_revenue, change_in_spend","Calc","historical model","fit a curve to spend and revenue over time, read the slope now"]],
+ logic:"Average ROAS hides the truth about scaling. The average can look healthy while the next rupee already loses money, because early spend was cheap and late spend is dear. Marginal ROAS reads the slope at today's spend. Hard because it needs a model fit to your own spend-response history.",
+ example:"Average MER 4.0 looks safe, but the fitted curve shows that at today's 25M a month the marginal ROAS is 1.1, barely above break-even. The next 3M of spend returns almost nothing. The average said scale, the margin said stop. This is the number that prevents over-scaling.",
+ data:["blended spend","shopify revenue"]},
+
+{lvl:"T1",group:"Truth",name:"Incrementality (holdout lift)",tier:"Did the ads truly cause the sales",diff:"hard",
+ formula:"lift % = ( treated_sales - control_sales ) / control_sales x 100",
+ fnote:"The only honest proof ads caused sales, by holding some regions out and comparing.",
+ builtfrom:[["MER","Platform ROAS"],"a geo holdout: matched regions with ads paused","geo holdout or platform lift test"],
+ levers:[["Real prospecting reach","dir","Media strategy","reaching truly new demand"],["Creative that creates demand","dir","Creative","not just harvesting intent"],["Retargeting and brand-search overlap","inv","Media buyer","claiming sales that would have happened"]],
+ sources:[["treated_sales, control_sales","Calc","geo holdout or platform lift test","sales in ad regions vs held-out regions"]],
+ logic:"Every platform marks its own homework and over-claims. A holdout is the audit. Hold ads out of a few matched regions for a few weeks, and the difference is the real causal lift. The hardest to run and the most trusted number there is. Across 640 published experiments the average real lift was about 19 percent.",
+ example:"Pause ads in 3 of 20 matched cities for 3 weeks. Treated cities average USD 4.10 per person, held-out USD 3.45. Lift = (4.10 - 3.45) / 3.45 = 19 percent. So only 19 percent of platform-claimed sales were truly caused by ads there, and reported ROAS should be discounted for budget decisions. Run once a quarter per major channel.",
+ data:["treated sales (geo test)","control sales (geo test)"]}
+];
+
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+// ---- wiring table: every T1 metric, its T2 inputs, its hard ingredient ----
+var wire=document.getElementById("wiring");
+M.filter(function(m){return m.lvl==="T1"&&m.builtfrom;}).forEach(function(m){
+ var mchips=m.builtfrom[0].map(function(x){return '<span style="font-family:Courier New,monospace;font-size:11px;background:var(--green-bg);color:var(--green-d);border:1px solid #BFE0CF;border-radius:5px;padding:1px 6px;margin:2px 4px 2px 0;display:inline-block">'+esc(x)+'</span>';}).join("");
+ var tr=document.createElement("tr");
+ tr.innerHTML='<td><b>'+esc(m.name)+'</b></td><td>'+mchips+'</td>'
+  +'<td><span class="hardtag">'+esc(m.builtfrom[1])+'</span><div style="font-size:10.5px;color:var(--faint);margin-top:4px">from: '+esc(m.builtfrom[2])+'</div></td>';
+ wire.appendChild(tr);
+});
+
+// ---- cards, Tier 2 first then Tier 1 ----
+var LV={T2:0,T1:1};
+M.sort(function(a,b){return LV[a.lvl]-LV[b.lvl];});
+var tree=document.getElementById("tree"),lastL=null,n=0;
+var LBAND={T2:["Tier 2 &middot; easy to get","the raw dials, straight from a platform. Capture these from day one."],
+ T1:["Tier 1 &middot; hard to get and calculate","the truth metrics, each built from Tier 2 plus one hard ingredient. These decide."]};
+M.forEach(function(m){
+ if(m.lvl!==lastL){lastL=m.lvl;
+  var band=document.createElement("div");band.className="groupband "+(m.lvl==="T2"?"t2":"t1");
+  band.innerHTML='<span class="gt">'+(m.lvl==="T2"?"Tier 2":"Tier 1")+'</span>'
+   +'<span class="gn">'+LBAND[m.lvl][0].split("&middot;")[1].trim()+'</span>'
+   +'<span class="gd">'+LBAND[m.lvl][1]+'</span>';
+  tree.appendChild(band);
+ }
+ n++;
+ var levers=m.levers.map(function(l){var c=l[1]==="dir"?"dir":"inv",a=l[1]==="dir"?"UP +":"DN -";
+  return '<div class="lever '+c+'"><span class="arrow">'+a+'</span><span class="lv"><b>'+esc(l[0])+'</b> <small>'+esc(l[3])+'</small></span><span class="who">'+esc(l[2])+'</span></div>';}).join("");
+ var srows=m.sources.map(function(s){return '<div class="srcrow"><span class="frm">'+esc(s[1])+'</span><b>'+esc(s[0])+'</b> &middot; '+esc(s[2])+'<br><span style="color:var(--faint)">how: '+esc(s[3])+'</span></div>';}).join("");
+ var bf="";
+ if(m.builtfrom){
+  var mc=m.builtfrom[0].map(function(x){return '<span class="mchip">'+esc(x)+'</span>';}).join("");
+  bf='<div class="builtfrom"><span class="bl">Built from Tier 2, plus one hard ingredient</span>'
+    +'Tier 2 inputs: '+mc+'<br><span style="display:inline-block;margin-top:5px">Hard ingredient: <span class="xchip">'+esc(m.builtfrom[1])+'</span> from '+esc(m.builtfrom[2])+'</span></div>';
+ }
+ var card=document.createElement("div");card.className="card "+(m.lvl==="T2"?"t2card":"t1card");
+ card.innerHTML=
+  '<div class="chead"><span class="no">'+n+'</span><span class="tt"><div class="nm">'+esc(m.name)
+    +' <span style="font-family:Courier New,monospace;font-size:9px;letter-spacing:.06em;vertical-align:middle;background:'+(m.lvl==="T2"?"var(--green)":"var(--red)")+';color:#fff;padding:2px 7px;border-radius:9px">'+(m.lvl==="T2"?"TIER 2":"TIER 1")+'</span></div>'
+    +'<div class="tr">'+esc(m.tier)+'</div></span>'
+   +'<span class="diff '+m.diff+'">'+(m.diff==="easy"?"easy to fetch":m.diff==="med"?"some work":"hard to fetch")+'</span></div>'
+  +'<div class="cbody">'
+   +'<div class="formula">'+esc(m.formula)+'</div><div class="fnote">'+esc(m.fnote)+'</div>'
+   +bf
+   +'<h5>The parts you can move</h5>'+levers
+   +'<div class="detail"><div class="grid2">'
+     +'<div class="pane"><h6>Where to get each input, and how</h6>'+srows
+       +'<div style="margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)"><div style="font-family:Courier New,monospace;font-size:8.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);margin-bottom:5px">then combine them</div>'
+       +'<div style="font-family:Courier New,monospace;font-size:11.5px;line-height:1.55;background:var(--indigo);color:#F0EDE2;border-left:4px solid var(--gold);border-radius:5px;padding:8px 11px;white-space:pre-wrap;overflow-x:auto">'+esc(m.formula)+'</div></div></div>'
+     +'<div class="pane"><h6>The logic</h6><p class="logic">'+esc(m.logic)+'</p>'
+       +'<div class="ex"><span class="xl">Worked example, at scale</span>'+esc(m.example)+'</div></div>'
+   +'</div></div>'
+  +'</div>'
+  +'<div class="expand" data-x>show source, logic and example</div>';
+ tree.appendChild(card);
+});
+
+document.querySelectorAll(".fbtn").forEach(function(b){b.addEventListener("click",function(){
+ document.querySelectorAll(".fbtn").forEach(function(x){x.classList.remove("on");});b.classList.add("on");
+ document.body.classList.remove("f-dir","f-inv");var f=b.getAttribute("data-f");
+ if(f==="dir")document.body.classList.add("f-dir");if(f==="inv")document.body.classList.add("f-inv");});});
+tree.addEventListener("click",function(e){var x=e.target.closest("[data-x]");if(!x)return;
+ var c=x.parentElement;c.classList.toggle("open");
+ x.textContent=c.classList.contains("open")?"hide source, logic and example":"show source, logic and example";});
+var allOpen=false;
+document.getElementById("expandAll").addEventListener("click",function(){allOpen=!allOpen;
+ document.querySelectorAll(".card").forEach(function(c){c.classList.toggle("open",allOpen);});
+ document.querySelectorAll("[data-x]").forEach(function(x){x.textContent=allOpen?"hide source, logic and example":"show source, logic and example";});
+ this.textContent=allOpen?"Hide source, logic and example":"Show source, logic and example";});
+
+// day-1 data auto-grouped
+var SRCMAP=[
+ ["Meta / ad platform (easy)",["impression","link click","clicks","spend","conversion value","add to cart","begin checkout","purchases","3-second","15s","reach","exposure","daily ctr","creatives launched","winners","test spend"]],
+ ["Shopify (easy)",["shopify revenue","orders","revenue","new-customer","new custom","total orders","customer order history"]],
+ ["GA4 (easy)",["sessions","landing page"]],
+ ["Finance sheet (hard ingredient)",["cost of goods","shipping","fees","return","production cost"]],
+ ["Customer join (hard ingredient)",["new-vs-returning","new-customer purchases","new customers","new-customer revenue"]],
+ ["Decoder (hard ingredient)",["decoded"]],
+ ["Fingerprint (hard ingredient)",["fingerprint"]],
+ ["Holdout test (hard ingredient)",["treated sales","control sales"]]
+];
+function srcOf(f){f=f.toLowerCase();for(var i=0;i<SRCMAP.length;i++){for(var j=0;j<SRCMAP[i][1].length;j++){if(f.indexOf(SRCMAP[i][1][j])>=0)return SRCMAP[i][0];}}return "Other";}
+var seen={},bucket={};SRCMAP.forEach(function(s){bucket[s[0]]=[];});bucket["Other"]=[];
+M.forEach(function(m){m.data.forEach(function(f){if(seen[f])return;seen[f]=1;var s=srcOf(f);(bucket[s]=bucket[s]||[]).push(f);});});
+var d1=document.getElementById("d1");
+Object.keys(bucket).forEach(function(s){if(!bucket[s].length)return;
+ var hard=s.indexOf("hard ingredient")>=0;
+ var card=document.createElement("div");
+ card.style.cssText="background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:13px 15px;border-top:4px solid "+(hard?"var(--red)":"var(--green)");
+ card.innerHTML='<div style="font-family:Courier New,monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:'+(hard?"var(--red)":"var(--green-d)")+';margin-bottom:8px;font-weight:700">'+esc(s)+'</div>'
+  +'<div style="font-size:13px;font-family:Georgia,serif;margin-bottom:7px">'+bucket[s].length+' raw fields</div><ul style="margin:0;padding-left:16px">'
+  +bucket[s].map(function(x){return '<li style="font-size:12px;margin-bottom:3px">'+esc(x)+'</li>';}).join("")+'</ul>';
+ d1.appendChild(card);
+});
+})();
+</script>
+</body>
+</html>

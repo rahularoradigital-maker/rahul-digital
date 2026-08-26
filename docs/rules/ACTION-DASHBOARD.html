@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AdBrain - the action dashboard</title>
+<style>
+:root{
+ --bg:#F6F7F9; --bg2:#EEF0F4; --panel:#FFFFFF; --panel2:#F8F9FB; --line:#E5E8EE;
+ --ink:#1F2433; --dim:#5B6472; --faint:#97A0AF; --code:#F1F3F7;
+ --indigo:#4F46E5; --indigo-d:#4338CA; --green:#16A34A; --green-d:#15803D;
+ --red:#DC2626; --red-d:#B91C1C; --amber:#B45309; --amber-y:#D97706; --blue:#2563EB; --purple:#6D28D9;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1240px;margin:0 auto;padding:0 22px 80px}
+.mono{font-family:"SF Mono","Courier New",monospace}
+
+.vbar{background:#fff;border-bottom:1px solid var(--line);padding:16px 22px 18px;position:sticky;top:0;z-index:30;box-shadow:0 4px 20px rgba(31,36,51,.06)}
+.vbar .in{max-width:1240px;margin:0 auto}
+.vtop{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:11px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:#C0392B;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:13px}
+.brand b{font-size:15px} .brand .sub{color:var(--faint);font-size:11px}
+.vtop .meta{margin-left:auto;display:flex;gap:16px;align-items:center;color:var(--dim);font-size:11.5px}
+.vtop .meta .mono{color:var(--faint)}
+.verdict{display:flex;gap:14px;align-items:flex-start}
+.verdict .bolt{font-size:20px} .verdict .vtxt{font-size:15.5px;color:var(--dim)}
+.verdict .vtxt b{color:var(--ink)} .verdict .vtxt .exp{color:var(--green-d);font-weight:700}
+.verdict .recheck{margin-left:auto;white-space:nowrap;font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:20px;padding:5px 11px;align-self:center}
+
+h2{font-family:Georgia,serif;font-size:18px;margin:34px 0 4px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:10px}
+h2 .c{font-family:"SF Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--indigo);background:rgba(79,70,229,.1);padding:3px 9px;border-radius:10px}
+.sub2{color:var(--dim);font-size:12.5px;margin:2px 0 14px}
+
+.learn{background:#fff;border:1px solid var(--line);border-left:4px solid var(--indigo);border-radius:12px;padding:16px 18px;margin:14px 0}
+.learn h4{margin:0 0 8px;font-size:14px}
+.learn p{margin:0 0 8px;font-size:12.8px;color:var(--dim)} .learn p:last-child{margin:0}
+.learn code{font-family:"SF Mono",monospace;font-size:11px;background:var(--code);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--indigo-d)}
+
+.wtabs{display:flex;gap:7px;margin:14px 0 12px}
+.wtab{background:var(--panel);border:1px solid var(--line);color:var(--dim);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer}
+.wtab.on{background:var(--red-d);border-color:var(--red-d);color:#fff}
+.warn{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:11px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 0 rgba(31,36,51,.03)}
+.warn .wh{display:flex;align-items:flex-start;gap:11px}
+.warn .cd{font-family:"SF Mono",monospace;font-weight:800;font-size:12px;color:var(--red-d);background:rgba(220,38,38,.1);border-radius:7px;padding:5px 9px;white-space:nowrap;min-width:74px;text-align:center}
+.warn .cd small{display:block;font-size:8.5px;color:var(--faint);font-weight:600}
+.warn .wc{flex:1}
+.warn .wt{font-weight:700;color:var(--ink);font-size:14px;margin-bottom:3px}
+.warn .wd{color:var(--dim);font-size:12.8px} .warn .wd b{color:var(--amber-y)}
+.warn .wad{margin-top:7px;font-size:11.5px;color:var(--purple);font-family:"SF Mono",monospace}
+
+.board{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:6px}
+.col{background:var(--panel);border:1px solid var(--line);border-radius:13px;overflow:hidden;box-shadow:0 1px 0 rgba(31,36,51,.03)}
+.col .ch{padding:12px 15px;font-weight:800;font-size:13px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--line)}
+.col.scale .ch{color:var(--green-d);background:#ECFDF3} .col.cont .ch{color:var(--dim);background:#F4F6FA} .col.stop .ch{color:var(--red-d);background:#FEF2F2}
+.col .ch .n{margin-left:auto;font-family:"SF Mono",monospace;font-size:11px;background:#fff;border:1px solid var(--line);padding:2px 8px;border-radius:9px;color:var(--dim)}
+.col .cb{padding:11px 12px}
+.ad{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 12px;margin-bottom:9px}
+.ad:last-child{margin-bottom:0}
+.ad .an{font-weight:700;font-size:13px;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;gap:7px}
+.ad .thumb{width:18px;height:18px;border-radius:4px;flex:none}
+.ad .rz{color:var(--dim);font-size:12px} .ad .rz b{color:var(--ink)}
+.ad .num{font-family:"SF Mono",monospace;font-size:11px;margin-top:6px;display:flex;flex-wrap:wrap;gap:5px}
+.ad .num span{background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:var(--dim)}
+.ad .num span.bad{color:var(--red-d);border-color:#F3C6C1;background:#FEF2F2}
+.ad .num span.good{color:var(--green-d);border-color:#B7E4C7;background:#ECFDF3}
+.actbtn{margin-top:9px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.actbtn button{border:none;border-radius:7px;padding:6px 12px;font-size:11.5px;font-weight:800;cursor:pointer;font-family:inherit}
+.b-scale{background:var(--green-d);color:#fff} .b-stop{background:var(--red-d);color:#fff} .b-hold{background:#fff;color:var(--dim);border:1px solid var(--line)!important}
+.why{background:transparent;border:1px dashed var(--line)!important;color:var(--faint)!important;font-weight:700}
+.why:hover{color:var(--indigo)!important;border-color:var(--indigo)!important}
+
+.pills{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+.pill{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 17px;box-shadow:0 1px 0 rgba(31,36,51,.03)}
+.pill .ph{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.pill .pn{font-weight:800;font-size:14px}
+.pill .badge{margin-left:auto;font-family:"SF Mono",monospace;font-size:11px;font-weight:800;padding:3px 10px;border-radius:9px}
+.badge.ok{background:#DCFCE7;color:var(--green-d)} .badge.warnb{background:#FEF3C7;color:var(--amber)} .badge.badb{background:#FEE2E2;color:var(--red-d)}
+.pill .pi{font-size:13.5px;color:var(--ink);margin-bottom:8px}
+.pill .culprit{font-size:12px;color:var(--red-d);margin-bottom:5px} .pill .culprit b{font-family:"SF Mono",monospace}
+.pill .next{font-size:12.8px;color:var(--green-d);font-weight:600}
+.pill .next:before{content:"NEXT  ";font-family:"SF Mono",monospace;font-size:9px;letter-spacing:.1em;color:var(--faint);font-weight:700}
+
+/* setup gate */
+.setup{background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin:16px 0;box-shadow:0 2px 14px rgba(31,36,51,.05)}
+.setup h4{margin:0 0 3px;font-size:15px} .setup .sd{font-size:12.3px;color:var(--dim);margin-bottom:13px}
+.setup .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.setup .fld{flex:1;min-width:180px}
+.setup label{font-family:"SF Mono",monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700;display:block;margin-bottom:5px}
+.setup select{width:100%;font-family:inherit;font-size:13.5px;padding:9px 11px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer}
+.setup select:focus{outline:none;border-color:var(--indigo)}
+.setup .go{background:var(--indigo);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13.5px;font-weight:800;cursor:pointer;font-family:inherit}
+.setup .go:disabled{background:#C7CBD6;cursor:not-allowed}
+.setup .picked{margin-top:11px;font-size:12px;color:var(--green-d);font-weight:700;display:none}
+.setup.done .picked{display:block}
+.autobox{background:#EEF2FF;border:1px solid #DCE4FA;border-radius:9px;padding:11px 13px;margin:12px 0 4px;font-size:12.3px;color:var(--dim);line-height:1.6}
+.autobox .k{display:inline-block;font-family:"SF Mono",monospace;font-size:8px;font-weight:800;letter-spacing:.09em;background:var(--indigo);color:#fff;border-radius:5px;padding:2px 7px;margin-right:7px;vertical-align:middle}
+.autobox b{color:var(--ink)}
+.autobox .autohow{display:block;margin-top:6px;font-family:"SF Mono",monospace;font-size:10.5px;color:var(--faint)}
+.autobox .autohow code{background:#fff;border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--indigo-d)}
+/* editable knobs */
+.knobs{background:#fff;border:1px solid var(--line);border-radius:12px;padding:15px 17px;margin-top:6px}
+.knobs .kh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:11px}
+.knobs .kt{font-weight:800;font-size:14px} .knobs .ksub{font-size:11.5px;color:var(--faint)}
+.knobs .ksum{font-family:"SF Mono",monospace;font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:8px}
+.ksum.ok{background:#DCFCE7;color:var(--green-d)} .ksum.bad{background:#FEE2E2;color:var(--red-d)}
+.knobs .kbtn{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--dim);border-radius:7px;padding:5px 11px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.knobs .kbtn:hover{border-color:var(--indigo);color:var(--indigo)}
+.krow{display:grid;grid-template-columns:150px 78px 1fr;gap:10px;align-items:center;margin-bottom:8px}
+.krow label{font-size:12.5px;font-weight:700}
+.krow .kin{font-family:"SF Mono",monospace;font-size:13px;font-weight:700;text-align:center;padding:6px 4px;border:2px solid var(--indigo);border-radius:7px;background:#F5F7FF;color:var(--indigo-d);width:78px}
+.krow .kin:focus{outline:none;border-color:var(--green-d);background:#fff}
+.krow .kwhy{font-size:11.5px;color:var(--dim)}
+.knobs .knote{font-size:11px;color:var(--faint);margin-top:8px;border-top:1px dashed var(--line);padding-top:8px}
+.knobs .knote b{color:var(--ink)}
+.savedchip{font-family:"SF Mono",monospace;font-size:10px;color:var(--green-d);margin-left:8px;opacity:0;transition:opacity .3s}
+.savedchip.show{opacity:1}
+.setup input[type=date]{font-family:inherit;font-size:13px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.setup input[type=date]:focus{outline:none;border-color:var(--indigo)}
+/* meta-style multi-select */
+.ms{position:relative}
+.ms-btn{width:100%;text-align:left;font-family:inherit;font-size:13.5px;padding:9px 11px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:8px;min-height:40px;flex-wrap:wrap}
+.ms-btn:focus{outline:none;border-color:var(--indigo)}
+.ms.open .ms-btn{border-color:var(--indigo)}
+.ms-btn .ms-caret{margin-left:auto;color:var(--faint);font-size:11px}
+.ms-btn .oc{font-family:"SF Mono",monospace;font-size:10.5px;font-weight:800;background:#E7EDFF;color:#3730A3;border-radius:7px;padding:2px 8px}
+.ms-panel{position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 34px rgba(31,36,51,.18);padding:6px;z-index:25;display:none;max-height:300px;overflow:auto}
+.ms.open .ms-panel{display:block}
+.ms-opt{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:7px;cursor:pointer;font-size:13.5px}
+.ms-opt:hover{background:#F4F6FA}
+.ms-opt input{width:16px;height:16px;accent-color:var(--indigo);cursor:pointer}
+.ms-opt.checked{background:#EEF2FF}
+#stage{position:relative;transition:filter .3s}
+#stage.locked{filter:blur(6px) grayscale(.3);pointer-events:none;user-select:none}
+#lockmsg{position:absolute;inset:0;display:none;align-items:flex-start;justify-content:center;z-index:20;padding-top:80px}
+#stage.locked #lockmsg{display:flex}
+#lockmsg .lm{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 24px;box-shadow:0 10px 40px rgba(31,36,51,.18);text-align:center;max-width:360px}
+#lockmsg .lm b{font-size:15px} #lockmsg .lm p{font-size:12.5px;color:var(--dim);margin:6px 0 0}
+
+/* funnel grade */
+.gradehero{background:linear-gradient(120deg,#fff,#F5F7FF);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:6px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.gradebadge{width:78px;height:78px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;color:#fff;font-family:Georgia,serif}
+.gradebadge .g{font-size:36px;font-weight:700;line-height:1} .gradebadge .gs{font-family:"SF Mono",monospace;font-size:8px;letter-spacing:.1em;margin-top:2px;opacity:.9}
+.gg-A{background:#15803D} .gg-B{background:#2F9E44} .gg-C{background:#D97706} .gg-D{background:#DC2626} .gg-F{background:#991B1B}
+.gradehero .gt{flex:1;min-width:230px}
+.gradehero .gh{font-weight:800;font-size:15px;margin-bottom:4px}
+.gradehero .gtx{font-size:13px;color:var(--dim)} .gradehero .gtx b{color:var(--ink)}
+.gradehero .gnext{font-size:12.8px;color:var(--green-d);font-weight:700;margin-top:7px}
+.gradehero .gnext:before{content:"BALANCE  ";font-family:"SF Mono",monospace;font-size:8.5px;letter-spacing:.1em;color:var(--faint)}
+
+/* 4-source reference blend */
+.refblend{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:12px}
+.refblend .rt{font-weight:800;font-size:13px;margin-bottom:3px}
+.refblend .rd{font-size:11.5px;color:var(--dim);margin-bottom:11px}
+.refrow{display:grid;grid-template-columns:74px 1fr;gap:9px;align-items:center;margin-bottom:7px;font-size:11.5px}
+.refrow .rl{font-family:"SF Mono",monospace;font-size:9px;font-weight:800;padding:3px 6px;border-radius:7px;text-align:center}
+.rl-ours{background:#E7EDFF;color:#3730A3} .rl-ai{background:#F3E8FF;color:#6B21A8} .rl-comp{background:#FEF3C7;color:#92400E} .rl-world{background:#E0F2FE;color:#075985} .rl-target{background:#DCFCE7;color:#166534}
+.rbar{height:14px;border-radius:4px;background:#EEF0F4;position:relative;overflow:hidden}
+.rbar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:#A5B4FC}
+.rbar.tgt i{background:#34D399}
+.rbar span{position:absolute;right:5px;top:0;font-family:"SF Mono",monospace;font-size:9px;font-weight:800;color:var(--ink);line-height:14px}
+.refnote{font-size:11px;color:var(--faint);margin-top:6px}
+
+/* always-visible source/formula/logic caption */
+.srccap{background:#F1F5FF;border:1px solid #DCE4FA;border-radius:9px;padding:11px 13px;margin-top:11px;font-size:11.8px;color:var(--dim);line-height:1.7}
+.srccap .k{display:inline-block;font-family:"SF Mono",monospace;font-size:8px;font-weight:800;letter-spacing:.08em;background:var(--indigo);color:#fff;border-radius:5px;padding:2px 6px;margin:0 6px 0 0;vertical-align:middle}
+.srccap .k:not(:first-child){margin-top:5px}
+
+/* recipe chain */
+.recipe{background:#F5F7FF;border:1px solid #DfE3F5;border-radius:9px;padding:11px 12px;margin:2px 0 4px}
+.rchain{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rcomp{background:#fff;border:1px solid var(--line);border-radius:7px;padding:5px 9px;font-size:12px}
+.rcomp b{display:block;font-weight:700;color:var(--ink)} .rcomp small{font-size:9.5px;color:var(--dim)}
+.rcomp .st{font-family:"SF Mono",monospace;font-size:8px;font-weight:800;padding:1px 5px;border-radius:6px;margin-right:5px;vertical-align:middle}
+.st-OURS{background:#E7EDFF;color:#3730A3} .st-AI{background:#F3E8FF;color:#6B21A8} .st-COMP{background:#FEF3C7;color:#92400E} .st-WORLD{background:#E0F2FE;color:#075985} .st-CRYSTAL{background:#DCFCE7;color:#166534}
+.rplus{color:var(--faint);font-weight:800;font-size:14px}
+.recipehow{background:var(--code);border:1px solid var(--line);border-left:3px solid var(--indigo);border-radius:6px;padding:9px 11px;font-family:"SF Mono",monospace;font-size:10.5px;color:var(--ink);white-space:pre-wrap;line-height:1.55;margin-top:8px}
+
+/* funnel chips */
+.fnchip{font-family:"SF Mono",monospace;font-size:8.5px;font-weight:800;letter-spacing:.05em;padding:2px 7px;border-radius:8px;white-space:nowrap}
+.fn-TOF{background:#E7EDFF;color:#3730A3} .fn-MOF{background:#FEF3C7;color:#92400E} .fn-BOF{background:#DCFCE7;color:#166534} .fn-Cross{background:#EEF0F4;color:#5B6472}
+
+/* funnel legend */
+.fnlegend{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:14px 0}
+.fnl{background:#fff;border:1px solid var(--line);border-radius:11px;padding:14px 16px;border-top:4px solid}
+.fnl.tof{border-top-color:#4F46E5} .fnl.mof{border-top-color:#D97706} .fnl.bof{border-top-color:#16A34A}
+.fnl .fh{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.fnl .fn{font-weight:800;font-size:14px} .fnl .fsub{font-size:11px;color:var(--faint)}
+.fnl h6{margin:10px 0 4px;font-family:"SF Mono",monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.fnl .mets{font-family:"SF Mono",monospace;font-size:10.5px;color:var(--indigo-d);line-height:1.7}
+.fnl .cr{font-size:12px;color:var(--dim)}
+
+/* creative mix comparison */
+.mixwrap{background:#fff;border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin-top:6px}
+.mixgrid{display:grid;grid-template-columns:110px 1fr 1fr 1fr;gap:0;font-size:12px}
+.mixgrid .mh{font-family:"SF Mono",monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:6px 8px;border-bottom:2px solid var(--line)}
+.mixgrid .mh.brand{color:var(--indigo)} .mixgrid .mh.ai{color:var(--green-d)}
+.mixgrid .rl{padding:8px;font-weight:700;border-bottom:1px solid var(--line);align-self:center}
+.mixcell{padding:7px 8px;border-bottom:1px solid var(--line)}
+.mbar{height:16px;border-radius:4px;background:#EEF0F4;position:relative;overflow:hidden;margin-bottom:2px}
+.mbar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.mbar.bl i{background:#818CF8} .mbar.gr i{background:#6EE7B7} .mbar.aiv i{background:#34D399}
+.mbar span{position:absolute;right:5px;top:1px;font-family:"SF Mono",monospace;font-size:9.5px;font-weight:800;color:var(--ink)}
+.mlabels{font-family:"SF Mono",monospace;font-size:9px;color:var(--dim);display:flex;justify-content:space-between}
+.gapflag{display:inline-block;font-family:"SF Mono",monospace;font-size:9px;font-weight:800;padding:1px 6px;border-radius:7px;margin-left:6px}
+.gap-bad{background:#FEE2E2;color:var(--red-d)} .gap-ok{background:#DCFCE7;color:var(--green-d)}
+.mixread{background:#EFF4FF;border-left:3px solid var(--blue);border-radius:6px;padding:10px 13px;font-size:12.5px;color:var(--ink);margin-top:12px}
+.mixread b{color:var(--indigo-d)}
+
+/* concepts */
+.concepts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+.concept{background:#fff;border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.concept .cph{background:linear-gradient(120deg,#EEF2FF,#F5F3FF);padding:13px 16px;border-bottom:1px solid var(--line)}
+.concept .cph .tag{font-family:"SF Mono",monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--indigo);font-weight:700}
+.concept .cph .cn{font-family:Georgia,serif;font-size:17px;font-weight:600;margin-top:3px}
+.concept .cbd{padding:14px 16px}
+.concept h6{margin:12px 0 5px;font-family:"SF Mono",monospace;font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.concept h6:first-child{margin-top:0}
+.concept .look{font-size:13px;color:var(--ink)}
+.concept .basis{font-size:12.3px;color:var(--dim)} .concept .basis b{color:var(--purple)}
+.handoff{display:flex;flex-direction:column;gap:7px;background:#F7F6FF;border:1px solid #E4E0F5;border-left:3px solid var(--indigo);border-radius:8px;padding:10px 12px}
+.hstep{display:flex;gap:9px;align-items:flex-start;font-size:12.3px;color:var(--ink)}
+.hstep .hn{font-family:"SF Mono",monospace;font-size:8.5px;font-weight:800;color:#fff;background:var(--indigo);border-radius:5px;padding:3px 6px;white-space:nowrap;margin-top:1px}
+.hstep .ht{flex:1} .hstep .ht b{font-weight:700} .hstep .ht small{display:block;color:var(--faint);font-size:11px;margin-top:1px}
+.hchip{display:inline-block;background:#EEF2FF;color:var(--indigo);border:1px solid #DfE3F5;border-radius:5px;padding:1px 6px;margin:3px 4px 0 0;font-family:"SF Mono",monospace;font-size:9.5px}
+.hnote{font-size:11px;color:var(--faint);border-top:1px dashed #E4E0F5;padding-top:6px}
+
+/* spec drawer */
+.spec{margin-top:11px;border-top:1px dashed var(--line);padding-top:11px;display:none}
+.open .spec{display:block}
+.spec .row{margin-bottom:11px}
+.spec .k{font-family:"SF Mono",monospace;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:4px}
+.spec .frm{font-family:"SF Mono",monospace;font-size:11.5px;background:var(--code);border:1px solid var(--line);border-left:3px solid var(--indigo);border-radius:5px;padding:7px 10px;color:var(--ink);white-space:pre-wrap;line-height:1.5}
+.spec .v{font-size:12px;color:var(--dim);line-height:1.55} .spec .v b{color:var(--ink)}
+.fetch{background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-bottom:6px}
+.fetch .fs{font-weight:800;font-size:11.5px;color:var(--ink);display:flex;align-items:center;gap:7px}
+.fetch .fpill{font-family:"SF Mono",monospace;font-size:8.5px;padding:1px 6px;border-radius:8px;font-weight:700}
+.fp-meta{background:#E7EDFF;color:#3730A3} .fp-ga4{background:#FEF3C7;color:#92400E} .fp-shop{background:#DCFCE7;color:#166534} .fp-3p{background:#F3E8FF;color:#6B21A8} .fp-fin{background:#F1F5F9;color:#334155}
+.fetch .fh{font-family:"SF Mono",monospace;font-size:10.5px;color:var(--dim);margin-top:4px;white-space:pre-wrap;line-height:1.5}
+.nextlist{margin:0;padding-left:16px} .nextlist li{font-size:12px;margin-bottom:4px;color:var(--ink)}
+.ex{background:#EFF4FF;border-left:3px solid var(--blue);border-radius:5px;padding:8px 11px;font-size:12px;color:var(--dim);line-height:1.5}
+.ex b{color:var(--ink)}
+
+/* confidence */
+.conf{background:#fff;border:1px solid var(--line);border-radius:7px;padding:9px 11px}
+.conf .cnow{font-size:12.5px;font-weight:800;margin-bottom:7px} .conf .cnow b{font-size:15px}
+.cbar{display:flex;gap:4px;margin-bottom:6px}
+.cseg{flex:1;border-radius:5px;padding:5px 6px;text-align:center;border:1px solid var(--line);background:#F8F9FB}
+.cseg .cl{font-size:8.5px;font-family:"SF Mono",monospace;color:var(--faint);letter-spacing:.03em;display:block}
+.cseg .cp{font-family:"SF Mono",monospace;font-size:12px;font-weight:800;color:var(--dim)}
+.cseg.have{background:#ECFDF3;border-color:#B7E4C7} .cseg.have .cp{color:var(--green-d)}
+.cseg.cur{background:var(--indigo);border-color:var(--indigo)} .cseg.cur .cl{color:#C7D2FE} .cseg.cur .cp{color:#fff}
+.conf .craise{font-size:11.5px;color:var(--amber);margin-top:2px} .conf .craise b{color:var(--ink)}
+
+.foot{margin-top:44px;border-top:1px solid var(--line);padding-top:20px;color:var(--faint);font-size:11.5px}
+@media(max-width:900px){.board,.pills,.concepts{grid-template-columns:1fr}.verdict .recheck{display:none}.cbar{flex-wrap:wrap}.cseg{min-width:46%}}
+</style>
+</head>
+<body>
+
+<div class="vbar"><div class="in">
+ <div class="vtop">
+  <div class="brand"><div class="logo">b</div><div><b>boAt &middot; Airdopes</b><div class="sub">Meta ad account &middot; reading last 90 days, day by day</div></div></div>
+  <div class="meta"><span title="Auto-detected from your Meta ad account currency, business country, and objective + conversion signals. All world, competitor and AI references below are scoped to this country and business type, because every country and every model buys differently.">&#127760; India &middot; INR &middot; D2C <b style="color:var(--indigo)">auto</b></span><span>Health <b style="color:var(--amber-y)">74</b></span><span>Diversity <b style="color:var(--red-d)">54</b></span><span>Fatigue <b style="color:var(--amber-y)">early</b></span><span class="mono">20 Aug 2026 &middot; 06:00</span></div>
+ </div>
+ <div class="verdict">
+  <div class="bolt">&#9889;</div>
+  <div class="vtxt"><b>Your audience is not used up.</b> 3 creatives die within 6 days and you are absent on the comfort angle, worth about 19 percent of category attention. Scale 2 winners, stop 3 dying ads, shoot 3 new concepts below. <span class="exp">Expected: hold CPM, +5 to 8 percent ROAS.</span></div>
+  <div class="recheck">recheck in 14 days</div>
+ </div>
+</div></div>
+
+<div class="wrap">
+
+<!-- SETUP GATE: nothing moves until both are chosen -->
+<div class="setup" id="setup">
+ <h4>Start here</h4>
+ <div class="sd">Pick a duration and an objective. Nothing on the dashboard moves until both are set, because every number, grade and recommendation is computed for that window and that objective.</div>
+ <div class="autobox">
+  <span class="k">AUTO-DETECTED</span>
+  <b>India &middot; INR &middot; D2C.</b> Country and currency come from your Meta ad account. Business type (D2C or B2B) is read from your objectives, catalog and conversion type. <b>Every world, competitor and AI reference below is scoped to India and to D2C</b>, because a US B2B split is meaningless for an India D2C brand.
+  <span class="autohow">how: Marketing API <code>GET /{ad-account}</code> returns <code>currency</code> and <code>business_country</code>. D2C vs B2B is inferred from purchase events + product catalog (D2C) versus lead forms + long cycle + no catalog (B2B).</span>
+ </div>
+ <div class="autobox" style="background:#FFF7ED;border-color:#FBD9A8">
+  <span class="k" style="background:var(--amber)">FIRST FILTER</span>
+  <b>The system ignores anything that has not spent above Rs 300 (USD 5) in the last 7 days.</b> This runs first, at the moment data arrives from the Meta API, before any grade, trend or comparison. A number built on tiny spend is noise, and noise never reaches a decision.
+  <span class="autohow">how: at ingest, keep only ads/ad sets/creatives where spend in the last 7 days is above the floor (Rs 300 or USD 5 by account currency). Everything below is held as "not enough data yet, keep testing".</span>
+ </div>
+ <div class="autobox" style="background:#F0FDF4;border-color:#BBF7D0">
+  <span class="k" style="background:var(--green-d)">FAIR COMPARISON</span>
+  <b>Every comparison is same-objective only.</b> A conversion ad is judged against other conversion ads, never against traffic or engagement ads, because they do a different job. The "average to beat" is built mostly from this account's own 180 to 365 day history for that same objective.
+  <span class="autohow">how: group ads by campaign objective; objective_average(metric) = average across same-objective ads that passed the floor, weighted mostly by 180 to 365 day account history.</span>
+ </div>
+ <div class="row">
+  <div class="fld"><label>Duration (read day by day)</label>
+   <select id="selDur"><option value="">Select duration</option><option>Last 7 days</option><option>Last 14 days</option><option>Last 30 days</option><option>Last 60 days</option><option>Last 90 days</option><option value="custom">Custom date range...</option></select>
+   <div id="customDates" style="display:none;gap:8px;align-items:center;margin-top:9px">
+     <input type="date" id="dFrom" aria-label="From date"><span style="color:var(--faint);font-size:12px">to</span><input type="date" id="dTo" aria-label="To date"></div>
+  </div>
+  <div class="fld"><label>Objective (choose one or more, like Meta)</label>
+   <div class="ms" id="objMs">
+     <button class="ms-btn" id="objBtn" type="button"><span id="objLabel">Select objectives</span><span class="ms-caret">&#9662;</span></button>
+     <div class="ms-panel" id="objPanel">
+       <label class="ms-opt"><input type="checkbox" value="Prospecting (TOF)"><span>Prospecting (TOF)</span></label>
+       <label class="ms-opt"><input type="checkbox" value="Consideration (MOF)"><span>Consideration (MOF)</span></label>
+       <label class="ms-opt"><input type="checkbox" value="Conversion / Sales (BOF)"><span>Conversion / Sales (BOF)</span></label>
+       <label class="ms-opt"><input type="checkbox" value="Full funnel"><span>Full funnel</span></label>
+       <label class="ms-opt"><input type="checkbox" value="Retargeting"><span>Retargeting</span></label>
+       <label class="ms-opt"><input type="checkbox" value="Lead generation"><span>Lead generation</span></label>
+       <label class="ms-opt"><input type="checkbox" value="App installs"><span>App installs</span></label>
+       <label class="ms-opt"><input type="checkbox" value="Engagement"><span>Engagement</span></label>
+     </div>
+   </div>
+  </div>
+  <button class="go" id="goBtn" disabled>Load dashboard</button>
+ </div>
+ <div class="picked" id="picked"></div>
+</div>
+
+<div id="stage" class="locked">
+ <div id="lockmsg"><div class="lm"><b>Pick a duration and an objective to begin</b><p>The dashboard stays locked until both are set. This is deliberate: a number without a window and an objective is meaningless.</p></div></div>
+
+<!-- FUNNEL BALANCE GRADE -->
+<h2><span class="c">account rating</span>Funnel balance grade</h2>
+<div class="sub2">How well your TOF, MOF and BOF are split, graded against a blend of four reference points: your own best day-wise period, the outside world, the AI category model, and competitors.</div>
+<div class="knobs" id="knobsHost"></div>
+<div id="gradeHost"></div>
+
+<!-- HOW IT LEARNS -->
+<h2><span class="c">how it thinks</span>Reading 90 days, day by day</h2>
+<div class="learn">
+ <h4>Every recommendation on this page comes from reading the account day by day, not as a single average.</h4>
+ <p>The tool pulls the last 60 to 90 days at <code>time_increment=1</code> (one row per creative per day), so it sees the <b>slope</b> of every metric, not just today's value. A single average hides a creative that is dying. A day-wise series shows the decay, the weekday pattern, the festival spike, and the exact day a trend will cross a line.</p>
+ <p><b>From that day-wise history it learns four things:</b> which creative elements win and how fast they fatigue, the account's own healthy ranges (never a public benchmark), the seasonal shape, and, where useful, the gaps against competitors read from the public ad library. Those four feed the next steps and the new concepts below.</p>
+ <p>Every tile here carries its full working. Click <b>why? / how this was decided</b> on any card to see exactly what to fetch, from where, how to retrieve it, the formula, the logic, an example, the next step, and a confidence score that rises as you connect more data sources.</p>
+</div>
+
+<!-- EARLY WARNING -->
+<h2><span class="c">act in advance</span>What will break, and when</h2>
+<div class="sub2">The page leads with the future. Not a problem yet, but will be, with the exact ad and the day.</div>
+<div class="wtabs"><button class="wtab on" data-w="7">Next 7 days</button><button class="wtab" data-w="14">Next 14 days</button></div>
+<div id="warns"></div>
+
+<!-- ACTION BOARD -->
+<h2><span class="c">do this</span>Scale, continue, stop &middot; exact ads</h2>
+<div class="sub2">The actual ads to touch today, one line on why, and the full working behind each button.</div>
+<div class="board">
+ <div class="col scale"><div class="ch">&#9650; SCALE<span class="n" id="nS">0</span></div><div class="cb" id="cScale"></div></div>
+ <div class="col cont"><div class="ch">&#61; CONTINUE<span class="n" id="nC">0</span></div><div class="cb" id="cCont"></div></div>
+ <div class="col stop"><div class="ch">&#9632; STOP<span class="n" id="nX">0</span></div><div class="cb" id="cStop"></div></div>
+</div>
+
+<!-- FUNNEL + CREATIVE MIX -->
+<h2><span class="c">funnel + mix</span>Which stage, and how our mix compares</h2>
+<div class="sub2">Every action above serves a funnel stage. Here is what each stage is, which metrics matter there, and how our creative mix stacks up against competitors and the AI-recommended mix for this category.</div>
+
+<h4 style="margin:18px 0 2px;font-size:13px;color:var(--dim)">The three stages, and the metrics that matter at each</h4>
+<div class="fnlegend" id="fnlegend"></div>
+
+<h4 style="margin:20px 0 2px;font-size:13px;color:var(--dim)">Our creative mix vs the category</h4>
+<div class="autobox" style="margin:6px 0 8px"><span class="k">CATEGORY PEER SET</span><b>India &middot; audio &middot; products within +/- 30 percent of your average selling price.</b> The category, competitor and AI references are always the whole category of your country in your price band, so we compare like with like. A Rs 1,299 earbud is judged against Rs 900 to Rs 1,690 rivals, not against a Rs 15,000 headphone.<span class="autohow">how: Ad Library brands in the same country and category, filtered to products whose price sits within 0.7x to 1.3x of the account's average selling price (from Shopify or the catalog feed).</span></div>
+<div class="mixwrap" id="mixwrap"></div>
+
+<!-- NEW CONCEPTS -->
+<h2><span class="c">what to make next</span>New concepts to shoot this week</h2>
+<div class="sub2">Each concept is a buildable recipe, and every part is chosen from four sources: our own winners, the AI category model, competitor ads, and the world norm. Nothing is a guess, every piece traces to a number. From here it hands off on its own: the recipe goes to Claude for the script and image prompt, then to nano-banana for the visuals with every asset attached, then to the Media Team to approve.</div>
+<div class="recipehow" id="recipeHow">recipe = pick(SKU) + pick(format) + pick(concept) + pick(offer) + pick(landing)
+each pick = argmax over candidates of:
+   0.40 x our_performance   (day-wise, what already wins for us)
+ + 0.25 x ai_fit            (AdBrain category model)
+ + 0.20 x competitor_gap    (whitespace vs the category peer set: your country + category + products within +/- 30% of your price)
+ + 0.15 x world_norm        (category benchmark)
+constraints:  SKU in stock and margin healthy &middot; concept fills the top funnel or message gap
+              format = our best-winning for that stage &middot; offer protects margin &middot; landing fixes the weakest funnel step
+Source tags on each part:  OURS = our data &middot; AI = model &middot; COMP = competitor &middot; WORLD = norm &middot; CRYSTAL = decode taxonomy</div>
+<div class="concepts" id="concepts"></div>
+
+<!-- PILLARS -->
+<h2><span class="c">why</span>The four reads, one line each</h2>
+<div class="sub2">Five old screens, compressed to four sentences and a next step. Full working behind each.</div>
+<div class="pills" id="pills"></div>
+
+<!-- ACCOUNT CHANGE HISTORY (backend-tracked, footer) -->
+<h2><span class="c">history</span>Account change history</h2>
+<div class="sub2">Tracked in the backend, day by day. Open this to see, for any period, what changed and whether an ad went down because of a media buyer action or an algorithm call. Every day's plus or minus is computed from the real metric change of the affected ad or ad set, not a made-up score.</div>
+<div id="clHost"></div>
+
+</div><!-- /stage -->
+
+<div class="foot" id="foot"></div>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fnchip(fn){if(!fn)return "";return '<span class="fnchip fn-'+fn+'">'+esc(fn)+'</span>';}
+
+/* ================= EDITABLE reference weights + category rules (shared, persistent) ================= */
+var WKEY="AdBrain_dash_weights_v1";
+var DEFW={ours:0.40,ai:0.25,comp:0.20,world:0.15,band:30};
+function loadW(){try{var r=localStorage.getItem(WKEY);if(r){var o=JSON.parse(r);for(var k in DEFW)if(o[k]===undefined)o[k]=DEFW[k];return o;}}catch(e){}return Object.assign({},DEFW);}
+var WEIGHTS=loadW();
+function saveW(){try{localStorage.setItem(WKEY,JSON.stringify(WEIGHTS));}catch(e){}}
+function wsum(){return Math.round((WEIGHTS.ours+WEIGHTS.ai+WEIGHTS.comp+WEIGHTS.world)*100)/100;}
+function renderKnobs(){
+ var host=document.getElementById("knobsHost");if(!host)return;
+ var s=wsum(),ok=Math.abs(s-1)<0.005;
+ var rows=[
+  ["ours","Our own best","the split that already worked for this brand, day-wise"],
+  ["ai","AI category model","AdBrain's fitted model for this country and business type"],
+  ["comp","Competitor","the category peer set in your price band"],
+  ["world","World norm","the published category benchmark"]
+ ].map(function(r){
+  return '<div class="krow"><label>'+esc(r[1])+'</label>'
+   +'<input class="kin" type="number" step="0.05" min="0" max="1" data-w="'+r[0]+'" value="'+WEIGHTS[r[0]].toFixed(2)+'">'
+   +'<span class="kwhy">'+esc(r[2])+'</span></div>';
+ }).join("");
+ var band='<div class="krow"><label>Price band (+/- %)</label>'
+   +'<input class="kin" type="number" step="5" min="5" max="100" data-w="band" value="'+WEIGHTS.band+'">'
+   +'<span class="kwhy">peer set = same country + category + products within this percent of your price</span></div>';
+ host.innerHTML='<div class="kh"><span class="kt">Reference weights and category rules</span><span class="ksub">editable, and they recompute the grade live</span>'
+   +'<span class="ksum '+(ok?"ok":"bad")+'">weights add to '+s.toFixed(2)+(ok?"":" &middot; fix to 1.00")+'</span>'
+   +'<span class="savedchip" id="savedChip">saved</span>'
+   +'<button class="kbtn" id="balW">Balance to 1.00</button><button class="kbtn" id="resetW">Reset</button></div>'
+   +rows+band
+   +'<div class="knote"><b>From:</b> these knobs drive the funnel grade formula, the recipe picker, and the creative-mix target. <b>Formula:</b> target = ours&times;w + ai&times;w + competitor&times;w + world&times;w. <b>Logic:</b> your own proven best counts most by default, the others stop us over-fitting to a lucky window. The canonical source of truth for weights is the Measurement Canon; edits here are for this account.</div>';
+ host.querySelectorAll("[data-w]").forEach(function(inp){
+  inp.addEventListener("input",function(){
+   var v=parseFloat(inp.value);var k=inp.getAttribute("data-w");
+   WEIGHTS[k]=isNaN(v)?0:v; saveW(); flashSaved();
+   renderKnobs(); renderGrade(); updateRecipeFormula();
+  });
+ });
+ document.getElementById("resetW").addEventListener("click",function(){WEIGHTS=Object.assign({},DEFW);saveW();renderKnobs();renderGrade();updateRecipeFormula();flashSaved();});
+ document.getElementById("balW").addEventListener("click",function(){
+  var keys=["ours","ai","comp","world"],sum=keys.reduce(function(a,k){return a+WEIGHTS[k];},0);
+  if(sum<=0)return;keys.forEach(function(k){WEIGHTS[k]=Math.round(WEIGHTS[k]/sum*100)/100;});
+  var s2=keys.reduce(function(a,k){return a+WEIGHTS[k];},0);var big=keys.reduce(function(a,k){return WEIGHTS[k]>WEIGHTS[a]?k:a;},keys[0]);
+  WEIGHTS[big]=Math.round((WEIGHTS[big]+(1-s2))*100)/100;
+  saveW();renderKnobs();renderGrade();updateRecipeFormula();flashSaved();
+ });
+}
+var savedT;
+function flashSaved(){var c=document.getElementById("savedChip");if(!c)return;c.classList.add("show");clearTimeout(savedT);savedT=setTimeout(function(){c.classList.remove("show");},1200);}
+function updateRecipeFormula(){
+ var el=document.getElementById("recipeHow");if(!el)return;
+ el.innerHTML="recipe = pick(SKU) + pick(format) + pick(concept) + pick(offer) + pick(landing)\n"
+  +"each pick = argmax over candidates of:\n"
+  +"   "+WEIGHTS.ours.toFixed(2)+" x our_performance   (day-wise, what already wins for us)\n"
+  +" + "+WEIGHTS.ai.toFixed(2)+" x ai_fit            (AdBrain category model, this country + business type)\n"
+  +" + "+WEIGHTS.comp.toFixed(2)+" x competitor_gap    (whitespace vs the category peer set, within +/- "+WEIGHTS.band+"% of our price)\n"
+  +" + "+WEIGHTS.world.toFixed(2)+" x world_norm        (category benchmark)\n"
+  +"constraints:  SKU in stock and margin healthy · concept fills the top funnel or message gap\n"
+  +"              format = our best-winning for that stage · offer protects margin · landing fixes the weakest funnel step\n"
+  +"Source tags on each part:  OURS = our data · AI = model · COMP = competitor · WORLD = norm · CRYSTAL = decode taxonomy";
+}
+
+/* ================= SETUP GATE: duration (preset OR custom) + one-or-more objectives ================= */
+var selDur=document.getElementById("selDur"),goBtn=document.getElementById("goBtn");
+var customDates=document.getElementById("customDates"),dFrom=document.getElementById("dFrom"),dTo=document.getElementById("dTo");
+var objMs=document.getElementById("objMs"),objBtn=document.getElementById("objBtn"),objPanel=document.getElementById("objPanel"),objLabel=document.getElementById("objLabel");
+var objBoxes=Array.prototype.slice.call(objPanel.querySelectorAll("input[type=checkbox]"));
+
+function durationText(){
+ if(selDur.value==="custom") return (dFrom.value&&dTo.value)?(dFrom.value+" to "+dTo.value):"";
+ return selDur.value||"";
+}
+function selectedObjectives(){return objBoxes.filter(function(b){return b.checked;}).map(function(b){return b.value;});}
+function durationOK(){return !!durationText();}
+function chkReady(){goBtn.disabled=!(durationOK()&&selectedObjectives().length>0);}
+
+selDur.addEventListener("change",function(){
+ customDates.style.display=selDur.value==="custom"?"flex":"none";
+ chkReady();
+});
+dFrom.addEventListener("change",chkReady);dTo.addEventListener("change",chkReady);
+
+// meta-style multi-select
+objBtn.addEventListener("click",function(e){e.stopPropagation();objMs.classList.toggle("open");});
+document.addEventListener("click",function(e){if(!objMs.contains(e.target))objMs.classList.remove("open");});
+objBoxes.forEach(function(b){b.addEventListener("change",function(){
+ b.closest(".ms-opt").classList.toggle("checked",b.checked);
+ var sel=selectedObjectives();
+ if(sel.length===0)objLabel.innerHTML="Select objectives";
+ else if(sel.length<=2)objLabel.innerHTML=sel.join(", ");
+ else objLabel.innerHTML=sel.slice(0,2).join(", ")+' <span class="oc">+'+(sel.length-2)+' more</span>';
+ chkReady();
+});});
+
+goBtn.addEventListener("click",function(){
+ document.getElementById("stage").classList.remove("locked");
+ document.getElementById("setup").classList.add("done");
+ var objs=selectedObjectives();
+ document.getElementById("picked").textContent="Loaded for "+durationText()+" and "+objs.length+" objective"+(objs.length>1?"s":"")+" ("+objs.join(", ")+"). Every grade, number and recommendation below is computed for this window and these objectives.";
+ document.getElementById("stage").scrollIntoView({behavior:"smooth",block:"start"});
+});
+
+// confidence tiers
+var LVLS=[["dash","Dashboard","Meta Ads only"],["ga4","+ GA4","site funnel"],["shop","+ Shopify","real money"],["3p","+ 3rd party","true attribution"]];
+function confBlock(c){
+ // c = {dash,ga4,shop,tp, have:'ga4'}  have = highest connected source
+ var order=["dash","ga4","shop","tp"];
+ var haveIdx=order.indexOf(c.have);
+ var vals={dash:c.dash,ga4:c.ga4,shop:c.shop,tp:c.tp};
+ var segs=LVLS.map(function(L,i){
+  var cls=i<haveIdx?"have":i===haveIdx?"cur":"";
+  return '<div class="cseg '+cls+'"><span class="cl">'+esc(L[1])+'</span><span class="cp">'+vals[order[i]]+'%</span></div>';
+ }).join("");
+ var now=vals[c.have];
+ var raise="";
+ if(haveIdx<3){var nxt=order[haveIdx+1],nxtL=LVLS[haveIdx+1][1].replace("+ ","");
+  raise='<div class="craise">Connect <b>'+esc(nxtL)+'</b> to raise this to <b>'+vals[nxt]+'%</b>.</div>';}
+ return '<div class="conf"><div class="cnow">Confidence now: <b style="color:'+(now>=90?"var(--green-d)":now>=75?"var(--amber-y)":"var(--red-d)")+'">'+now+'%</b> <span style="color:var(--faint);font-weight:600;font-size:11px">with '+esc(LVLS[haveIdx][1])+'</span></div>'
+  +'<div class="cbar">'+segs+'</div>'+raise+'</div>';
+}
+
+// full spec drawer
+function spec(o){
+ var fetch=o.fetch.map(function(f){
+  return '<div class="fetch"><div class="fs"><span class="fpill fp-'+f.t+'">'+esc(f.tag)+'</span>'+esc(f.what)+'</div><div class="fh">'+esc(f.how)+'</div></div>';
+ }).join("");
+ var next=o.next.map(function(n){return '<li>'+esc(n)+'</li>';}).join("");
+ return '<div class="spec">'
+  +'<div class="row"><div class="k">What to fetch, from where, and how to retrieve it</div>'+fetch+'</div>'
+  +'<div class="row"><div class="k">Formula, simplest form</div><div class="frm">'+esc(o.formula)+'</div></div>'
+  +'<div class="row"><div class="k">Why we say this (logic)</div><div class="v">'+esc(o.logic)+'</div></div>'
+  +'<div class="row"><div class="k">Example</div><div class="ex">'+o.example+'</div></div>'
+  +'<div class="row"><div class="k">What next</div><ul class="nextlist">'+next+'</ul></div>'
+  +'<div class="row"><div class="k">Confidence in this action</div>'+confBlock(o.conf)+'</div>'
+  +'</div>';
+}
+// fetch shorthand
+function fMeta(what,how){return {t:"meta",tag:"META API",what:what,how:how};}
+function fGA4(what,how){return {t:"ga4",tag:"GA4",what:what,how:how};}
+function fShop(what,how){return {t:"shop",tag:"SHOPIFY",what:what,how:how};}
+function f3P(what,how){return {t:"3p",tag:"3RD PARTY",what:what,how:how};}
+function fFin(what,how){return {t:"fin",tag:"FINANCE",what:what,how:how};}
+
+/* ================= EARLY WARNINGS ================= */
+var WARN={
+"7":[
+ {cd:"6 days",when:"Aug 24",fn:"TOF",t:"Bass Test v3 will burn out",d:"CTR down <b>22 percent</b> over 7 days, fatigue climbing to 0.71. At this slope it crosses the pause line in 6 days.",ad:"AD_META_BASSTEST_V3 &middot; Rockerz prospecting",
+  spec:{fetch:[fMeta("Day-wise CTR, impressions, reach for this creative","GET /{ad-account}/insights  level=ad  fields=impressions,reach,inline_link_clicks,spend  time_increment=1  date_preset=last_90d  filtering=[{field:'ad.id',value:AD_ID}]"),
+    fMeta("Exposure count N","N = sum(impressions)/sum(reach) for this creative across ALL ad sets it runs in. Group insights by ad.id, not adset.id.")],
+   formula:"days_to_death = (N_half - N_now) / daily_exposure_gain\nN_half solved from  CTR_first x (N+1)^-0.4 = 0.5 x CTR_first",
+   logic:"Fatigue is a creative-level decay, so we roll exposure up across every ad set the creative runs in, fit the day-wise CTR slope, and project the day it halves. Meta's own paper says frequency is the wrong unit, so we do not use it.",
+   example:"CTR 1.40 to 1.15 over 7 days, N_now 2.1, stacking 0.35/day. days_to_death = (4.66 - 2.1)/0.35 = <b>7.3 days</b>, so Aug 24.",
+   next:["Queue 3 replacement creatives now (see New Concepts).","Do not raise budget on this ad, it only burns faster.","On Aug 23 if 3 replacements are live, stop this one."],
+   conf:{dash:88,ga4:90,shop:92,tp:94,have:"dash"}}},
+ {cd:"5 days",when:"Aug 25",fn:"TOF",t:"CPM ceiling breach on prospecting",d:"Prospecting CPM up <b>18 percent</b> in 7 days, trending toward your Rs 240 ceiling. Breaches in about 5 days.",ad:"CAMPAIGN_PROSPECTING_AIRDOPES",
+  spec:{fetch:[fMeta("Day-wise CPM by campaign","GET /{campaign-id}/insights  fields=spend,impressions  time_increment=1  date_preset=last_60d  -> CPM = spend/impressions x 1000 per day"),
+    fMeta("Same window last year (for festival check)","same call with time_range set to Aug last year, to separate festival rise from a real problem.")],
+   formula:"projected_CPM = CPM_now x (1 + weekly_slope)^(days/7)\nbreach when projected_CPM > your_ceiling",
+   logic:"Read the 7-day slope and extend it, so the buyer widens the audience or adds diversity before the breach, not after. During a known festival window we compare to the same window last year instead of flagging.",
+   example:"CPM Rs 203 now, +18%/week. projected day 5 = 203 x 1.18^(5/7) = <b>Rs 243</b>, just over the Rs 240 ceiling.",
+   next:["Widen the prospecting audience by 20 percent, or add 3 fresh concepts to lower creative similarity.","Check the diversity pillar below, low diversity is often the real cause of a CPM climb."],
+   conf:{dash:82,ga4:84,shop:86,tp:88,have:"dash"}}}
+],
+"14":[
+ {cd:"11 days",when:"Aug 31",fn:"Cross",t:"Diversity will fall below the danger line",d:"8 of 19 live ads now cluster as near-copies. Diversity will cross under <b>50</b> in about 11 days if no new concepts ship.",ad:"11x 'UPTO 50% OFF' sale statics",
+  spec:{fetch:[fMeta("Every live ad's creative asset","GET /{ad-account}/ads  fields=creative{image_url,video_id,body,title}  effective_status=['ACTIVE']"),
+    {t:"3p",tag:"DECODER",what:"Element tags + fingerprint per ad",how:"Decoder service: frame sample at 1fps + transcribe, output hook,angle,persona,format,language, and vision+text embedding vectors. Store embeddings forever."},
+    fMeta("Spend per ad, day-wise","insights level=ad time_increment=1, to weight clusters by money.")],
+   formula:"retrieval_distinctness = 100 x (1 - ads_in_a_cluster / active_ads)\ncluster two ads when cosine(fingerprints) > 0.92",
+   logic:"Meta treats near-identical ads as one, so 19 thumbnails can be 12 real options. We project the trend as more copies ship and fewer new concepts land, and warn before Meta's optimisation chokes.",
+   example:"19 live, 8 inside clusters. distinctness = 100 x (1 - 8/19) = <b>58</b> today, sliding under 50 in ~11 days at the current copy rate.",
+   next:["Ship the 3 new concepts below to add distinct signal.","Stop 10 of the 11 sale-static copies, keep the best one (see Stop column)."],
+   conf:{dash:70,ga4:72,shop:74,tp:80,have:"dash"}}},
+ {cd:"14 days",when:"Sep 3",fn:"BOF",t:"Checkout leak becomes material",d:"Checkout completion slipped <b>45 to 41 percent</b> over 10 days. If it holds, roughly Rs 6 lakh per week leaked by day 14. Not an ads problem.",ad:"Site checkout step, not a creative",
+  spec:{fetch:[fGA4("Day-wise begin_checkout and purchase","GA4 Data API runReport  dimensions=[date]  metrics=[checkouts, ecommercePurchases]  dateRange=last_60d"),
+    fShop("Real orders and value to size the leak","Admin API GET /orders.json?created_at_min=... status=any  -> orders per day, total_price for AOV.")],
+   formula:"projected_completion = completion_now + slope x days\nleak_per_week = at_risk_orders x AOV",
+   logic:"A steady checkout decline is almost never the creative, it is a payment or page problem. Surfacing it here stops the team from wrongly blaming and pausing good ads.",
+   example:"Completion 45 to 41 over 10 days = -0.4/day. By day 14, ~<b>Rs 6L/week</b> at risk at current order volume and AOV.",
+   next:["Engineering: check the payment step, shipping-cost surprise, and any recent theme or app update.","Do not pause ads for this, the funnel below the click is the culprit."],
+   conf:{dash:40,ga4:78,shop:90,tp:92,have:"shop"}}}
+]
+};
+function renderWarns(win){
+ var host=document.getElementById("warns");host.innerHTML="";
+ WARN[win].forEach(function(w){
+  var el=document.createElement("div");el.className="warn";
+  el.innerHTML='<div class="wh"><div class="cd">'+esc(w.cd)+'<small>'+esc(w.when)+'</small></div>'
+   +'<div class="wc"><div class="wt">'+esc(w.t)+' '+fnchip(w.fn)+'</div><div class="wd">'+w.d+'</div><div class="wad">culprit: '+esc(w.ad)+'</div>'
+   +'<div style="margin-top:9px"><button class="why" data-t>how this was decided</button></div>'+spec(w.spec)+'</div></div>';
+  host.appendChild(el);
+ });
+}
+document.querySelectorAll(".wtab").forEach(function(b){b.addEventListener("click",function(){
+ document.querySelectorAll(".wtab").forEach(function(x){x.classList.remove("on");});b.classList.add("on");renderWarns(b.getAttribute("data-w"));});});
+
+/* ================= ACTION BOARD ================= */
+var TH={green:"#16A34A",amber:"#D97706",red:"#DC2626",blue:"#2563EB"};
+var ACT={
+ scale:[
+  {c:TH.green,fn:"TOF",n:"Airdopes 141 &middot; Founder POV v2",rz:"Fresh winner. ROAS <b>5.8</b>, top 10 percent hook in campaign, fatigue 0.18.",num:[["ROAS 5.8","good"],["fatigue 0.18","good"],["CTR p90","good"]],btn:'<button class="b-scale">Scale +30%</button>',
+   spec:{fetch:[fMeta("Ad-level ROAS, CTR, spend, day-wise","insights level=ad time_increment=1 fields=spend,purchase_roas,inline_link_clicks,actions date_preset=last_60d"),
+     fMeta("Fatigue + hook percentile","fatigue engine output + hook_rate percentile within the same campaign, last 14 days.")],
+    formula:"scale if:  fatigue < 0.30  AND  ROAS > account_median_ROAS  AND  hook_percentile > 75",
+    logic:"Only scale ads that are both winning and still fresh. Scaling a tiring winner just burns it faster, so the fatigue gate protects the spend.",
+    example:"ROAS 5.8 vs account median 3.9, fatigue 0.18, hook p92. All three gates pass, so <b>+30 percent budget</b> is safe.",
+    next:["Raise budget 30 percent, not more, to avoid a learning reset.","Re-check fatigue in 3 days, scaling raises frequency.","If it holds, duplicate the winning elements into the new concepts."],
+    conf:{dash:84,ga4:86,shop:90,tp:93,have:"dash"}}},
+  {c:TH.green,fn:"TOF",n:"Rockerz 255 &middot; Gym drop v4",rz:"Crossed <b>10x</b> account median spend (a true winner), hold rate 61 percent.",num:[["winner","good"],["hold 61%","good"],["ROAS 4.9","good"]],btn:'<button class="b-scale">Duplicate x2</button>',
+   spec:{fetch:[fMeta("Lifetime spend per ad + account median","insights level=ad fields=spend date_preset=maximum -> winner if spend >= 10 x median_single_ad_spend"),
+     fMeta("Hold rate","video_p25/p50/p75/p100 watched + 15s plays / 3s views.")],
+    formula:"winner = spend >= 10 x median_single_ad_spend (this account)",
+    logic:"The winner bar scales with the account, so it is fair at any size. Duplicating a proven concept to fresh audiences is lower risk than a brand-new shoot.",
+    example:"This ad's spend is 11.4x the account median, hold 61 percent. Duplicate to 2 fresh lookalikes.",
+    next:["Duplicate into 2 new audiences, keep the creative identical.","Do not merge into the winning ad set, keep learning clean."],
+    conf:{dash:83,ga4:85,shop:89,tp:92,have:"dash"}}}
+ ],
+ continue:[
+  {c:TH.blue,fn:"MOF",n:"Airdopes &middot; Rainproof demo",rz:"Steady. Fatigue 0.42, ATC rate on par. No action, keep budget flat.",num:[["fatigue 0.42",""],["ATC on par",""]],btn:'<button class="b-hold">Hold budget</button>',
+   spec:{fetch:[fMeta("Fatigue score + CTR vs the ad's own 14-day baseline","insights level=ad time_increment=1, compare last 3 days to prior 14."),
+     fGA4("ATC rate for this ad's traffic","GA4 add_to_cart / sessions, filtered to the ad's UTM.")],
+    formula:"continue if:  0.30 <= fatigue <= 0.55  AND  performance within +/- 10% of baseline",
+    logic:"The boring middle. Not fresh enough to scale, not tired enough to touch. The right move is to watch, which is itself a decision.",
+    example:"Fatigue 0.42, CTR within 4 percent of its own baseline. Hold.",
+    next:["No change. Re-evaluate in the next daily run.","If fatigue crosses 0.55, it moves to the Stop watchlist automatically."],
+    conf:{dash:80,ga4:88,shop:90,tp:92,have:"ga4"}}}
+ ],
+ stop:[
+  {c:TH.red,fn:"TOF",n:"Bass Test v3",rz:"Burnt. Fatigue <b>0.78</b>, cost per result <b>2.1x</b> your past ads, CTR down 22 percent.",num:[["fatigue 0.78","bad"],["cost 2.1x","bad"],["CTR -22%","bad"]],btn:'<button class="b-stop">Stop now</button>',
+   spec:{fetch:[fMeta("Day-wise cost per result vs the account's past ads","insights level=ad time_increment=1 fields=cost_per_action_type -> ratio vs trailing 30-day account average"),
+     fMeta("Queued replacement count","creative pipeline: count of approved unlaunched ads for this angle.")],
+    formula:"stop if:  fatigue > 0.70  AND  cost_per_result > 2x past  AND  3 replacements queued",
+    logic:"Two gates so one noisy signal cannot pause a good ad, and never stop without replacements ready. Meta's own label calls 2x cost 'creative fatigue'.",
+    example:"Fatigue 0.78, cost 2.1x, 3 replacements ready. All gates pass, <b>stop now</b>.",
+    next:["Stop this ad today.","Launch the 3 queued replacements in the same ad set to hold delivery.","Log the stop and its 30-day outcome to the ledger."],
+    conf:{dash:90,ga4:91,shop:93,tp:95,have:"dash"}}},
+  {c:TH.red,fn:"BOF",n:"11x 'UPTO 50% OFF' sale statics",rz:"11 near-copies. <b>Rs 4.1 lakh</b> trapped in the losers, Meta reads them as one ad.",num:[["11 copies","bad"],["Rs 4.1L waste","bad"]],btn:'<button class="b-stop">Stop 10, keep 1</button>',
+   spec:{fetch:[{t:"3p",tag:"DECODER",what:"Fingerprint every live static",how:"vision embedding per image; cosine-cluster at > 0.92."},
+     fMeta("Spend per ad in each cluster","insights level=ad fields=spend, to find the best performer and the trapped spend.")],
+    formula:"cluster_waste = cluster_spend - best_performer_spend\nflag when a cluster has >= 4 near-copies",
+    logic:"Near-copies compete with each other and split learning. Keep the best, cut the rest, and freed budget flows to the winner. Points at the exact 10 ad ids.",
+    example:"Cluster of 11, total spend Rs 5.0L, best performer Rs 0.9L. Trapped = <b>Rs 4.1L</b>. Keep the best, stop 10.",
+    next:["Stop the 10 named ad ids, keep the single best performer.","Redirect the freed budget to the two Scale winners above."],
+    conf:{dash:75,ga4:76,shop:78,tp:82,have:"dash"}}},
+  {c:TH.red,fn:"TOF",n:"Diwali generic reel",rz:"Spending <b>Rs 90k a day</b> to an out-of-stock SKU page that cannot convert.",num:[["OOS SKU","bad"],["Rs 90k/day","bad"]],btn:'<button class="b-stop">Stop now</button>',
+   spec:{fetch:[fShop("Daily stock per SKU","Admin API GET /products.json fields=variants{inventory_quantity} -> daily snapshot per SKU"),
+     fMeta("Ad destination URL + spend","insights + creative{link_url} to join the ad to its SKU.")],
+    formula:"waste flag if:  destination_sku.stock = 0  AND  spend > 0",
+    logic:"Ads to a page nobody can buy from are 100 percent waste, and no creative or bid change fixes it. A daily stock join catches it in a day.",
+    example:"Destination SKU stock 0 since Aug 18, ad still spent Rs 90k/day for 2 days. Pure waste, <b>stop now</b>.",
+    next:["Stop the ad today.","Relaunch only after the SKU restocks, or point it at an in-stock SKU."],
+    conf:{dash:55,ga4:60,shop:92,tp:93,have:"shop"}}}
+ ]
+};
+function renderCol(key,hostId,countId){
+ var host=document.getElementById(hostId);host.innerHTML="";
+ ACT[key].forEach(function(a){
+  var nums=a.num.map(function(x){return '<span class="'+(x[1]||"")+'">'+esc(x[0])+'</span>';}).join("");
+  var el=document.createElement("div");el.className="ad";
+  el.innerHTML='<div class="an"><span class="thumb" style="background:'+a.c+'"></span>'+esc(a.n)+' '+fnchip(a.fn)+'</div>'
+   +'<div class="rz">'+a.rz+'</div><div class="num">'+nums+'</div>'
+   +'<div class="actbtn">'+a.btn+'<button class="why" data-t>why?</button></div>'+spec(a.spec);
+  host.appendChild(el);
+ });
+ document.getElementById(countId).textContent=ACT[key].length;
+}
+
+/* ================= FUNNEL BALANCE GRADE (blend of 4 reference points) ================= */
+var FGRADE={
+ stages:[
+  {k:"TOF",now:62,ours:52,world:50,ai:50,comp:45},
+  {k:"MOF",now:8, ours:22,world:25,ai:25,comp:25},
+  {k:"BOF",now:30,ours:26,world:25,ai:25,comp:30}],
+ w:{ours:0.40,ai:0.25,comp:0.20,world:0.15},
+ spec:{fetch:[
+   {t:"meta",tag:"META API",what:"Country, currency and business type (auto)",how:"GET /{ad-account} returns currency and business_country. D2C vs B2B inferred from purchase events + catalog (D2C) vs lead forms + no catalog (B2B). This scopes every reference below."},
+   {t:"3p",tag:"DECODER",what:"Funnel stage tag + spend on every OUR ad, day-wise",how:"Decode each ad to a stage (objective + audience + creative cues), weight by daily spend from the Marketing API."},
+   {t:"meta",tag:"META API",what:"Our own best-performing window",how:"scan the 90-day day-wise series, find the 30-day window with the best contribution ROAS, read its funnel split. This is the 'ours' reference."},
+   {t:"3p",tag:"DECODER",what:"Competitor funnel split (same country)",how:"decode rivals' live ads from the public Ad Library, filtered to the SAME COUNTRY, same category, and products within +/- 30 percent of your price. Same stage tags."},
+   {t:"3p",tag:"CATEGORY MODEL",what:"World + AI split, for this country and business type",how:"the category norm (world) and AdBrain's fitted model (AI) are both selected for India + D2C, never a global default, because a US B2B split is meaningless here."}],
+  formula:"references are selected for the AUTO-DETECTED country and business type first\ntarget(stage) = 0.40 x ours + 0.25 x ai + 0.20 x competitor + 0.15 x world\ndistance = sum over stages of | now(stage) - target(stage) |\nscore = 100 - distance\ngrade:  A >=85   B >=70   C >=55   D >=40   else F",
+  logic:"A healthy account is not just efficient, it is balanced across the funnel. We grade the split against a blend of four reference points so it is never one opinion: our own proven best (counts most, because it worked for us), the AI category model, competitors, and the world norm. Every reference is first scoped to the account's country and business type, auto-detected from the Meta API, because every country and every model (D2C vs B2B) buys differently. The biggest negative gap is the stage to feed next.",
+  example:"Our split is TOF 62, MOF 8, BOF 30. The blend targets about TOF 50, MOF 24, BOF 26. Distance = 12 + 16 + 4 = 32, so score 68, grade C. MOF is starved by 16 points, which is why add-to-cart lags.",
+  next:["Shift new production toward MOF (consideration): demos, comparisons, product realism.","Hold TOF, it is over-served. Do not add more prospecting video.","Re-grade weekly, the competitor and world references move."],
+  conf:{dash:55,ga4:62,shop:70,tp:86,have:"dash"}}
+};
+function renderGrade(){
+ var s=FGRADE.stages,w=WEIGHTS,target={},dist=0;
+ s.forEach(function(x){var t=w.ours*x.ours+w.ai*x.ai+w.comp*x.comp+w.world*x.world;target[x.k]=Math.round(t);dist+=Math.abs(x.now-target[x.k]);});
+ var score=Math.max(0,100-dist);
+ var grade=score>=85?"A":score>=70?"B":score>=55?"C":score>=40?"D":"F";
+ var worst=s.slice().sort(function(a,b){return (target[a.k]-a.now)-(target[b.k]-b.now);})[s.length-1];
+ var worstGap=target[worst.k]-worst.now;
+ var rows=s.map(function(x){
+  return '<div style="display:grid;grid-template-columns:52px 1fr 1fr;gap:8px;align-items:center;margin-bottom:6px;font-size:12px">'
+   +'<span class="fnchip fn-'+x.k+'">'+x.k+'</span>'
+   +'<div class="rbar"><i style="width:'+x.now+'%"></i><span>now '+x.now+'%</span></div>'
+   +'<div class="rbar tgt"><i style="width:'+target[x.k]+'%"></i><span>target '+target[x.k]+'%</span></div></div>';
+ }).join("");
+ var refBlend='<div class="refblend"><div class="rt">The target is a blend of four reference points</div>'
+  +'<div class="rd">Each stage target = 0.40 our own best + 0.25 AI + 0.20 competitor + 0.15 world.</div>';
+ [["ours","Our best"],["ai","AI model"],["comp","Competitor"],["world","World"]].forEach(function(p){
+  var vals=s.map(function(x){return x.k+" "+x[p[0]]+"%";}).join("  &middot;  ");
+  refBlend+='<div class="refrow"><span class="rl rl-'+p[0]+'">'+esc(p[1])+'</span><div style="font-family:SF Mono,monospace;font-size:10.5px;color:var(--dim)">'+vals+'</div></div>';
+ });
+ refBlend+='<div class="refrow"><span class="rl rl-target">Blend</span><div style="font-family:SF Mono,monospace;font-size:10.5px;color:var(--green-d);font-weight:700">'+s.map(function(x){return x.k+" "+target[x.k]+"%";}).join("  &middot;  ")+'</div></div>'
+  +'<div class="refnote">Our own best-performing window counts most (0.40), because a split that already worked for this brand beats any outside opinion.</div></div>';
+ // always-visible source + formula caption, so the working is never hidden
+ var srcCaption='<div class="srccap">'
+   +'<div><span class="k">SCOPED TO</span>India &middot; INR &middot; D2C (auto-detected from Meta API). Every world and competitor reference is chosen for this country and business type.</div>'
+   +'<div style="margin-top:5px"><span class="k">FROM</span>Decoder (funnel tag per ad) + Meta Marketing API (spend, day-wise) + Ad Library (competitor, same country) + AdBrain category model (AI + world, for India D2C)</div>'
+   +'<div style="margin-top:5px"><span class="k">FORMULA</span>target = 0.40 our best + 0.25 AI + 0.20 competitor + 0.15 world &middot; score = 100 - sum|now - target| &middot; A&ge;85 B&ge;70 C&ge;55 D&ge;40</div>'
+   +'<div style="margin-top:5px"><span class="k">LOGIC</span>a healthy account is balanced across the funnel, graded against four references so it is never one opinion; the biggest gap names the stage to feed next</div>'
+   +'</div>';
+ document.getElementById("gradeHost").innerHTML=
+  '<div class="gradehero"><div class="gradebadge gg-'+grade+'"><span class="g">'+grade+'</span><span class="gs">SCORE '+score+'</span></div>'
+   +'<div class="gt"><div class="gh">Funnel balance: grade '+grade+' ('+score+' out of 100)</div>'
+    +'<div class="gtx">'+rows+'</div>'
+    +'<div class="gnext">'+worst.k+' is '+(worstGap>0?"starved by "+worstGap+" points":"over-served")+'. Shift new creative toward '+worst.k+'.</div></div></div>'
+  +srcCaption
+  +refBlend
+  +'<div class="mixwrap open" style="margin-top:12px" id="gradeSpecWrap"><button class="why" data-t>hide the working</button>'+spec(FGRADE.spec)+'</div>';
+}
+renderKnobs();renderGrade();updateRecipeFormula();
+
+/* ================= MEDIA BUYER CHANGE LOG vs PERFORMANCE ================= */
+var CHANGELOG={
+ // each day: perf = the day's performance delta, COMPUTED from the metric moves in 'why'.
+ // ch = [label, source] where source is BUYER or ALGO. why = the metric deltas behind perf.
+ days:[
+  {d:"Aug 07",perf:+2,why:"ROAS 3.8 to 4.0, CPA -Rs 8",ch:[]},
+  {d:"Aug 08",perf:+1,why:"ROAS 4.0 to 4.1 after scale",ch:[["scaled 2 ad sets +20%","BUYER"]]},
+  {d:"Aug 09",perf:+3,why:"ROAS 4.1 to 4.4, CTR +0.1%",ch:[["Meta shifted spend to a winner","ALGO"]]},
+  {d:"Aug 10",perf:-1,why:"ROAS 4.4 to 4.3, a winner went dark",ch:[["paused 1 winner by mistake","BUYER"]]},
+  {d:"Aug 11",perf:+1,why:"ROAS recovered to 4.4",ch:[["relaunched the paused winner","BUYER"]]},
+  {d:"Aug 12",perf:0,why:"flat, no metric moved",ch:[]},
+  {d:"Aug 13",perf:+2,why:"AOV +Rs 60 on the new offer",ch:[["offer changed: 10% off to flat Rs 200 off","BUYER"]]},
+  {d:"Aug 14",perf:-4,why:"CPM +18%, CPA +Rs 34, learning reset on 5 ad sets",ch:[["6 budget changes","BUYER"],["paused 3 ads","BUYER"],["offer reverted","BUYER"]]},
+  {d:"Aug 15",perf:-6,why:"CPA +Rs 52, ATC/LP -22%, 5 ad sets back in learning",ch:[["8 budget changes","BUYER"],["2 new ad sets","BUYER"],["audience edited twice","BUYER"]]},
+  {d:"Aug 16",perf:-2,why:"CPM still high, ROAS 3.5",ch:[["3 budget changes","BUYER"],["Meta throttled a fatigued ad","ALGO"]]},
+  {d:"Aug 17",perf:+1,why:"delivery stabilised, CPA -Rs 10",ch:[["froze changes, let it learn","BUYER"]]},
+  {d:"Aug 18",perf:+3,why:"ROAS 3.6 to 3.9 as learning cleared",ch:[["Meta re-optimised after freeze","ALGO"]]},
+  {d:"Aug 19",perf:+2,why:"ROAS 3.9 to 4.1 after clean scale",ch:[["scaled 1 winner +30%","BUYER"]]},
+  {d:"Aug 20",perf:+2,why:"ROAS 4.1 to 4.3, CTR steady",ch:[]}],
+ spec:{fetch:[
+   {t:"meta",tag:"META API",what:"Every account change, day-wise (backend log)",how:"GET /{ad-account}/activities  fields=event_type,object_name,extra_data,event_time  since=window. Logs budget changes, pauses, status flips, audience and bid edits. Stored in our backend so any past period can be replayed."},
+   {t:"3p",tag:"AdBrain LEDGER",what:"Offer and landing changes",how:"our own change ledger + Shopify price/offer history, joined by date."},
+   {t:"meta",tag:"META API",what:"Per ad and ad set metrics, day-wise",how:"insights level=ad and level=adset, time_increment=1: ROAS, CPA, CTR, CPM, ATC/LP. The day's +/- is COMPUTED from these deltas, not entered by hand."}],
+  formula:"perf(day) = weighted change in the affected ad/adset metrics vs prior day\n           (ROAS up good, CPA down good, CTR up good, CPM down good, ATC/LP up good)\n\nsource of a change:\n  BUYER  if it appears in the activities log (a person did it)\n  ALGO   if delivery shifted with no logged change (Meta reallocation / learning)\n\nattribution of a DROP:\n  if a >=4-change BUYER day is followed by a >=2-point drop  -> blame the buyer\n  else if metrics moved with no logged change                -> algorithm call\n  else walk the creative cause ladder (4.4)",
+  logic:"This is the account's memory. Every plus or minus is tied to the real metric move of the exact ad or ad set that caused it, and every change is labelled as a human action or an algorithm call. So when an ad goes down, the history says plainly whether the buyer did it or Meta did it, before anyone blames the creative. Meta relearns on every manual edit, so too many changes in a day reset learning and mimic fatigue.",
+  example:"The Aug 14-15 dip (-4 then -6) was all BUYER: 14 budget changes, 5 pauses and 2 offer swaps in two days pushed 5 ad sets back into learning, CPA rose Rs 52 and ATC/LP fell 22 percent. The Aug 18 recovery (+3) was ALGO: Meta re-optimised on its own once changes were frozen.",
+  next:["Freeze changes on the two worst ad sets and let delivery relearn for 72 hours.","Cap manual budget changes at 1 per ad set per day, the volatility is self-inflicted.","Every change is already logged in the backend, so this history is replayable for any past period."],
+  conf:{dash:82,ga4:84,shop:88,tp:90,have:"dash"}}
+};
+function renderChangeLog(){
+ var host=document.getElementById("clHost");if(!host)return;
+ function srcTag(s){var col=s==="BUYER"?["#E7EDFF","#3730A3"]:["#F3E8FF","#6B21A8"];
+  return '<span style="font-family:SF Mono,monospace;font-size:8px;font-weight:800;background:'+col[0]+';color:'+col[1]+';border-radius:5px;padding:1px 5px;margin-right:5px">'+s+'</span>';}
+ var rows=CHANGELOG.days.map(function(x){
+  var pc=x.perf>0?"var(--green-d)":x.perf<0?"var(--red-d)":"var(--faint)";
+  var pb=x.perf>0?"#DCFCE7":x.perf<0?"#FEE2E2":"#EEF0F4";
+  var buyerCount=x.ch.filter(function(c){return c[1]==="BUYER";}).length;
+  var heavy=buyerCount>=4;
+  var chips=x.ch.length?x.ch.map(function(c){var isB=c[1]==="BUYER";
+    return '<span style="display:inline-block;background:'+(heavy&&isB?"#FEE2E2":"#F8F9FB")+';border:1px solid '+(heavy&&isB?"#F3C6C1":"var(--line)")+';border-radius:6px;padding:2px 7px;margin:2px 4px 2px 0;font-size:11px;color:'+(heavy&&isB?"var(--red-d)":"var(--dim)")+'">'+srcTag(c[1])+esc(c[0])+'</span>';}).join(""):'<span style="font-size:11px;color:var(--faint)">no changes &middot; algorithm delivery only</span>';
+  return '<div style="display:grid;grid-template-columns:58px 52px 1fr;gap:10px;align-items:start;padding:8px 0;border-bottom:1px solid var(--line)">'
+   +'<span class="mono" style="font-size:11.5px;color:var(--dim);padding-top:2px">'+esc(x.d)+'</span>'
+   +'<span class="mono" style="font-size:11.5px;font-weight:800;text-align:center;border-radius:6px;padding:2px 0;background:'+pb+';color:'+pc+'">'+(x.perf>0?"+":"")+x.perf+'</span>'
+   +'<div>'+chips+(heavy?' <span style="font-family:SF Mono,monospace;font-size:9px;font-weight:800;color:var(--red-d);background:#FEE2E2;border-radius:6px;padding:1px 6px">TOO MANY</span>':'')
+     +'<div style="font-family:SF Mono,monospace;font-size:10px;color:var(--faint);margin-top:3px">why the '+(x.perf>0?"+":"")+x.perf+': '+esc(x.why)+'</div></div></div>';
+ }).join("");
+ host.innerHTML='<div class="srccap" style="margin-bottom:10px">'
+   +'<div><span class="k">FROM</span>Meta activity log (GET /{ad-account}/activities, stored in our backend) + AdBrain change ledger + Shopify offer history + per-ad and per-adset daily metrics.</div>'
+   +'<div style="margin-top:5px"><span class="k">FORMULA</span>each day\'s +/- is computed from the real metric change of the affected ad or ad set (ROAS, CPA, CTR, CPM, ATC/LP). A change is tagged BUYER if a person logged it, ALGO if delivery moved with no logged change.</div>'
+   +'<div style="margin-top:5px"><span class="k">LOGIC</span>this is the account\'s memory. When an ad goes down it says plainly whether the buyer did it or the algorithm did it, before anyone blames the creative.</div></div>'
+  +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:11px;color:var(--dim)">'
+   +'<span>'+srcTag("BUYER")+'a person changed it</span><span>'+srcTag("ALGO")+'Meta delivery moved on its own</span>'
+   +'<span style="font-family:SF Mono,monospace;font-size:9px;font-weight:800;color:var(--red-d);background:#FEE2E2;border-radius:6px;padding:1px 6px">TOO MANY</span> <span>4+ buyer changes that day</span></div>'
+  +'<div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px">'
+   +'<div style="display:grid;grid-template-columns:58px 52px 1fr;gap:10px;font-family:SF Mono,monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;padding-bottom:5px;border-bottom:2px solid var(--line)"><span>Day</span><span style="text-align:center">Perf</span><span>What changed, and who</span></div>'
+   +rows
+   +'<div class="mixread" style="margin-top:12px"><b>The read:</b> the Aug 14 to 15 dip (-4, -6) was a <b>BUYER</b> cause: 14 budget changes, 5 pauses and 2 offer swaps pushed 5 ad sets back into learning, CPA rose Rs 52 and ATC to LP fell 22 percent. The Aug 18 recovery (+3) was an <b>ALGO</b> call: Meta re-optimised on its own after changes were frozen. Not creative fatigue in either case.</div>'
+   +'<div class="mixwrap open" style="margin-top:10px"><button class="why" data-t>hide the working</button>'+spec(CHANGELOG.spec)+'</div>'
+  +'</div>';
+}
+renderChangeLog();
+
+/* ================= NEW CONCEPTS ================= */
+var CONC=[
+ {tag:"whitespace + our gap",fn:"MOF",n:"Comfort, a full day, no ear pain",
+  recipe:[["Airdopes 141","OURS","best margin SKU, in stock"],["UGC POV","OURS","14% hit rate, our winning format"],["Comfort: full day","CRYSTAL","gap 0% ours, 19% category"],["Free case bundle","AI","AOV lever, not a discount"],["Fit-proof PDP","WORLD","our landing is weak on fit"]],
+  look:"One real user, one unbroken day: metro to desk to gym to a long call, Airdopes never come out. Close-ups on the ear, a line at second 2: 'poora din, kaan nahi dukhte'. Phone-shot, no studio.",
+  basis:"90-day decode shows we run <b>0 comfort ads</b>. The message-gap engine weights comfort at <b>19 percent</b> of category attention, and rivals Noise and boult are also low, so it is open ground, not a crowded fight.",
+  spec:{fetch:[{t:"3p",tag:"DECODER",what:"Motivator tags on our 90-day ads AND on rival ads",how:"Decode our ads (0 comfort) + pull the category peer set from the Ad Library (same country + category + products within +/- 30% of our price) and decode them, to confirm the gap is open."},
+    fMeta("Which of our angles win, day-wise","insights level=ad joined to decoded angle, to copy the winning FORMAT (founder POV) into this new ANGLE.")],
+   formula:"concept_priority = motivator_market_weight x (comp_best_coverage - our_coverage)\npick the highest, cross it with our best-winning format",
+   logic:"We do not guess concepts. We take the motivator with the biggest gap (comfort), and shoot it in the format that already wins for us (real-person POV). Whitespace angle, proven format.",
+   example:"comfort: weight 0.19, our coverage 0, rival best 20. priority 0.19 x 20 = <b>3.8</b>, the top gap. Founder/UGC POV is our best-hit format, so comfort x UGC POV.",
+   next:["Brief 3 variants: metro, gym, work-call.","Shoot phone-first, one real creator, under a day.","Launch into the ad set losing 'Bass Test v3' so delivery holds."],
+   conf:{dash:70,ga4:78,shop:82,tp:90,have:"ga4"}}},
+ {tag:"copy our winner",fn:"BOF",n:"Founder explains the price",
+  recipe:[["Rockerz 255","OURS","best BOF converter, in stock"],["Founder to-camera","OURS","highest hit + longest half-life"],["Price justify Rs 1299","OURS","our proven winning angle"],["EMI + 7-day return","WORLD","BOF trust levers beat discounts"],["Comparison PDP","AI","fixes weak decision step"]],
+  look:"Founder to camera, 15 seconds: 'Why Airdopes are Rs 1,299 and not Rs 3,000.' Cuts to the driver, the battery, the case. Ends on the price badge.",
+  basis:"Founder POV v2 is our <b>top winner</b> this month. The 90-day read shows founder POV has the highest hit rate of any format we run, and it fatigues slower than sale statics.",
+  spec:{fetch:[fMeta("Hit rate by format, 90 days","insights level=ad joined to decoded format tag -> winners / tested per format."),
+    fMeta("Fatigue half-life by format","fatigue engine grouped by format, to confirm founder POV lasts longer.")],
+   formula:"format_score = win_rate(format) x avg_half_life(format)\nreplicate the top-scoring format into a new message",
+   logic:"The safest new concept is the winning format applied to a fresh message. It carries the pattern that already works for this brand, so it starts warm.",
+   example:"Founder POV: win rate 14 percent vs account 7, half-life 12 days vs 6 for statics. format_score double the next best.",
+   next:["Reuse the founder and setup from POV v2, change the script to price justification.","One shoot, 3 length cuts (15s, 22s, 30s) to test pacing."],
+   conf:{dash:78,ga4:80,shop:84,tp:90,have:"dash"}}},
+ {tag:"funnel gap",fn:"MOF",n:"Side-by-side bass test",
+  recipe:[["Airdopes 311 Pro","OURS","bass hero SKU"],["Static side-by-side","COMP","rivals under-use demo"],["Bass demo","CRYSTAL","product realism thin"],["Free shipping over Rs 999","WORLD","beats a percent discount"],["Bass-meter PDP","AI","lifts add-to-cart"]],
+  look:"Split screen, our earbud vs a generic one, same track, a bass meter reacting. No words needed for 5 seconds, then 'feel the difference'. Sound-on unlock, but works muted too.",
+  basis:"Product realism is thin across the whole category and for us. Our funnel read shows the <b>ATC rate is the weak link</b>, and a demo that proves the product lifts add-to-cart more than another sale hook.",
+  spec:{fetch:[fGA4("ATC rate by landing, day-wise","GA4 add_to_cart/sessions split by landing page, to prove demos raise ATC."),
+    {t:"3p",tag:"DECODER",what:"Which of our ads carry a 'demo/realism' tag",how:"decode to confirm we under-index on product realism."}],
+   formula:"expected_ATC_lift = benchmark_ATC(demo ads) - current_ATC(sale ads)\nprioritise concepts that lift the weakest funnel step",
+   logic:"The ROAS decomposition shows ATC rate is our biggest locked-up gain. A demo attacks that step directly, unlike another discount hook which only competes on price.",
+   example:"Sale-hook ads ATC 2.0 percent, our few demo ads 3.1 percent. A demo concept targets the exact weak step.",
+   next:["Shoot one clean side-by-side, 9:16, sound-on and sound-off versions.","Point it at the product page, measure ATC lift in 7 days."],
+   conf:{dash:60,ga4:82,shop:86,tp:90,have:"ga4"}}}
+];
+// Build the auto-handoff strip for a concept.
+// Assets attached to nano-banana are pulled straight from this concept's recipe parts.
+function handoffHTML(c){
+ var parts=(c.recipe||[]);
+ var sku=parts.find(function(r){return /141|255|SKU|Airdopes|Rockerz/i.test(r[0]);});
+ var chips=['<span class="hchip">SKU pack shot'+(sku?': '+esc(sku[0]):'')+'</span>',
+   '<span class="hchip">brand kit + logo</span>',
+   '<span class="hchip">price + offer badge</span>',
+   '<span class="hchip">winning-format reference</span>',
+   '<span class="hchip">PDP screenshot</span>'];
+ return '<h6>Auto handoff to production</h6><div class="handoff">'
+  +'<div class="hstep"><span class="hn">1 &middot; AdBrain</span><div class="ht"><b>Locks the recipe above</b><small>SKU, format, concept, offer and landing, each already chosen from the four sources.</small></div></div>'
+  +'<div class="hstep"><span class="hn">2 &middot; CLAUDE</span><div class="ht"><b>Writes the shooting script and the image prompt</b><small>Built from this exact recipe, the look note and the why. Scripts always route to Claude, never hand-written from scratch.</small></div></div>'
+  +'<div class="hstep"><span class="hn">3 &middot; NANO-BANANA</span><div class="ht"><b>Generates the visuals, assets attached on their own</b><small>AdBrain passes the concept plus every asset the shot needs, no manual upload:</small>'+chips.join("")+'</div></div>'
+  +'<div class="hstep"><span class="hn">4 &middot; MEDIA TEAM</span><div class="ht"><b>Approves before anything goes live</b><small>Governance stays on. The system builds the concept, the script and the frames, but does not launch on its own.</small></div></div>'
+  +'<div class="hnote">One click on a concept starts this chain. Nothing is retyped and no asset is chased by hand.</div></div>';
+}
+var ch=document.getElementById("concepts");
+CONC.forEach(function(c){
+ var el=document.createElement("div");el.className="concept";
+ var rchain=(c.recipe||[]).map(function(r,i){
+  return (i>0?'<span class="rplus">+</span>':'')+'<span class="rcomp"><b><span class="st st-'+r[1]+'">'+esc(r[1])+'</span>'+esc(r[0])+'</b><small>'+esc(r[2])+'</small></span>';
+ }).join("");
+ el.innerHTML='<div class="cph"><div class="tag">'+esc(c.tag)+' '+fnchip(c.fn)+'</div><div class="cn">'+esc(c.n)+'</div></div>'
+  +'<div class="cbd"><h6>The recipe (what to actually build)</h6><div class="recipe"><div class="rchain">'+rchain+'</div></div>'
+   +'<h6>How it should look</h6><div class="look">'+esc(c.look)+'</div>'
+   +'<h6>Why, from the data</h6><div class="basis">'+c.basis+'</div>'
+   +handoffHTML(c)
+   +'<div style="margin-top:11px"><button class="why" data-t>the working: fetch, formula, logic, next, confidence</button></div>'+spec(c.spec)+'</div>';
+ ch.appendChild(el);
+});
+
+/* ================= PILLARS ================= */
+var PILL=[
+ {fn:"Cross",n:"Meta account health",badge:["74","warnb"],pi:"Signal is clean and delivery is fine, but checkout completion is slipping, 45 to 41 percent over 10 days.",culprit:"culprit: the <b>checkout step</b>, not any ad",next:"engineering to check the payment step before day 14.",
+  spec:{fetch:[fMeta("10 delivery + auction dials, day-wise","insights account + campaign level, time_increment=1, last 90 days."),fGA4("Funnel step rates","runReport metrics sessions,add_to_cart,checkouts,purchases by date."),fShop("Real orders + returns","Admin API orders + refunds."),fFin("COGS, shipping, fees","the finance sheet, typed monthly.")],
+   formula:"Health = weighted sum of 10 dimensions (signal, learning, efficiency, profit, supply, auction, waste, proof, hygiene, safety)",
+   logic:"Health gates everything. If signal quality drops below 60 the whole board is suppressed, because a broken ruler makes every other number a lie.",
+   example:"Signal 81, delivery fine, but checkout completion trend is red. Score 74, dragged by the funnel dimension.",
+   next:["Send the checkout leak to engineering.","Keep spending, the account itself is healthy, the leak is below the click."],
+   conf:{dash:45,ga4:70,shop:88,tp:92,have:"shop"}}},
+ {fn:"Cross",n:"Creative analytics",badge:["7% win","ok"],pi:"Win rate 7 percent, on the panel norm. The biggest locked-up ROAS is add-to-cart rate at 2.1 percent versus your own best of 4.0.",culprit:"culprit: the <b>landing to cart</b> step, not the hook",next:"fix the product page and offer clarity.",
+  spec:{fetch:[fMeta("Ad-level results + video metrics, day-wise","insights level=ad time_increment=1 fields=spend,actions,video_p25..p100,inline_link_clicks."),fGA4("Funnel rates per step","add_to_cart/sessions, begin_checkout/add_to_cart, purchase/begin_checkout."),fShop("Orders + AOV","to close the funnel to money.")],
+   formula:"ROAS = (CTR x LP x ATC x Checkout x Purchase x AOV x 1000) / CPM ; rank levers by gap-vs-own-best",
+   logic:"ROAS is a product of funnel rates. A 10 percent lift in the weakest rate moves ROAS the same as a 10 percent lift in the hook, and the weak step is usually not the one everyone argues about.",
+   example:"ATC 2.1 vs own best 4.0 is the biggest gap in the chain, so the next rupee of effort goes to landing-to-cart, not another hook test.",
+   next:["Brief the demo concept above to lift ATC.","Product team: clearer price and proof on the PDP."],
+   conf:{dash:55,ga4:85,shop:90,tp:93,have:"ga4"}}},
+ {fn:"Cross",n:"Creative diversity",badge:["54","badb"],pi:"Meta sees your 19 live ads as about 12. Eleven are the same sale-static hook, so the machine has fewer real options than you think.",culprit:"culprit: <b>11x same-hook sale statics</b>",next:"ship the 3 new concepts above, not more variants.",
+  spec:{fetch:[fMeta("Every live ad's creative","GET /{ad-account}/ads creative{...} effective_status ACTIVE."),{t:"3p",tag:"DECODER",what:"Element tags + fingerprints",how:"decode + embed every ad, cosine cluster at 0.92."},fMeta("Spend per element","to weight variety by money.")],
+   formula:"Diversity = weighted variety across hook, angle, persona, funnel, format, language, distinctness, minus duplicate concentration",
+   logic:"Measured on the portfolio you supplied, not the spend Meta allocates, because Meta concentrates budget on purpose. Distinctness is measured to Meta's eye, not the human eye.",
+   example:"19 ads, 12 real clusters, hook variety 4 of 12. Score 54, danger side.",
+   next:["Launch the 3 concepts above (comfort, founder price, bass demo).","Stop 10 of 11 duplicate statics."],
+   conf:{dash:70,ga4:72,shop:74,tp:80,have:"dash"}}},
+ {fn:"Cross",n:"Creative fatigue",badge:["3 burnt","badb"],pi:"39 healthy, 47 on watch, 3 burnt. The burnt ones still take real spend, so money goes to ads that stopped working.",culprit:"culprit: <b>Bass Test v3</b> + 2 others",next:"stop the 3 burnt, launch the queued replacements.",
+  spec:{fetch:[fMeta("Day-wise exposure, cost, CTR, negative feedback per creative","insights level=ad time_increment=1 fields=impressions,reach,cost_per_action_type,inline_link_clicks + quality_ranking.")],
+   formula:"Fatigue = 0.40 exposure(Meta curve) + 0.30 cost-rise + 0.15 CTR-decay + 0.10 annoyance + 0.05 age",
+   logic:"Built on Meta's own published exposure curve, at creative level, not on a frequency threshold, because Meta says frequency is the wrong unit.",
+   example:"3 ads above 0.70 fatigue still holding 12 percent of spend. Stop them, and that budget flows to the winners.",
+   next:["Stop the 3 burnt ads.","Launch the 3 new concepts as their replacements."],
+   conf:{dash:88,ga4:89,shop:91,tp:94,have:"dash"}}}
+];
+var ph=document.getElementById("pills");
+PILL.forEach(function(p){
+ var el=document.createElement("div");el.className="pill";
+ el.innerHTML='<div class="ph"><span class="pn">'+esc(p.n)+'</span> '+fnchip(p.fn)+'<span class="badge '+p.badge[1]+'">'+esc(p.badge[0])+'</span></div>'
+  +'<div class="pi">'+esc(p.pi)+'</div><div class="culprit">'+p.culprit+'</div><div class="next">'+esc(p.next)+'</div>'
+  +'<div style="margin-top:10px"><button class="why" data-t>how this was decided</button></div>'+spec(p.spec);
+ ph.appendChild(el);
+});
+
+/* toggle any drawer */
+document.body.addEventListener("click",function(e){
+ var b=e.target.closest("[data-t]");if(!b)return;
+ var host=b.closest(".warn,.ad,.pill,.concept,.mixwrap");if(!host)return;
+ host.classList.toggle("open");
+ var open=host.classList.contains("open");
+ if(host.classList.contains("concept")||host.classList.contains("mixwrap"))b.textContent=open?"hide the working":"the working: fetch, formula, logic, next, confidence";
+ else if(host.classList.contains("ad"))b.textContent=open?"hide the working":"why?";
+ else b.textContent=open?"hide the working":"how this was decided";
+});
+
+/* ================= FUNNEL LEGEND ================= */
+var FUNNEL=[
+ {k:"TOF",cls:"tof",name:"Top of funnel",sub:"awareness, new people",
+  mets:"CPM &middot; reach &middot; frequency &middot; hook rate (3s) &middot; thumbstop &middot; video views 25/50/75/100 &middot; CTR",
+  cr:"Broad, problem-first creative for people who do not know you. New angles, strong 3-second hooks, fresh faces. Judged on stopping the scroll, not on ROAS."},
+ {k:"MOF",cls:"mof",name:"Middle of funnel",sub:"consideration, weighing it",
+  mets:"hold rate &middot; landing page views &middot; view content &middot; ATC rate &middot; ATC / landing &middot; engagement &middot; time on page",
+  cr:"Proof and demonstration for people deciding. Comparisons, product realism, how-it-works, reviews. Judged on moving from interest to cart. This is the stage most brands starve."},
+ {k:"BOF",cls:"bof",name:"Bottom of funnel",sub:"conversion, ready to buy",
+  mets:"checkout rate &middot; purchase rate &middot; CPA &middot; ROAS &middot; AOV &middot; retargeting frequency &middot; return rate",
+  cr:"Offers, urgency, price justification, guarantees, retargeting. For people who already want it. Judged on closing the sale and protecting margin."}
+];
+var fl=document.getElementById("fnlegend");
+FUNNEL.forEach(function(f){
+ var el=document.createElement("div");el.className="fnl "+f.cls;
+ el.innerHTML='<div class="fh"><span class="fnchip fn-'+f.k+'">'+f.k+'</span><span class="fn">'+esc(f.name)+'</span></div>'
+  +'<div class="fsub">'+esc(f.sub)+'</div>'
+  +'<h6>Metrics that matter here</h6><div class="mets">'+f.mets+'</div>'
+  +'<h6>What creative works here</h6><div class="cr">'+esc(f.cr)+'</div>';
+ fl.appendChild(el);
+});
+
+/* ================= CREATIVE MIX COMPARISON ================= */
+var MIX={
+ format:{label:"Format mix",rows:[
+  ["Video",62,48,55],["Static",30,40,30],["Carousel",8,10,12],["Collection",0,2,3]]},
+ funnel:{label:"Funnel mix",rows:[
+  ["TOF",62,45,50],["MOF",8,25,25],["BOF",30,30,25]]},
+ spec:{fetch:[
+   {t:"3p",tag:"DECODER",what:"Format + funnel tag on every one of OUR live ads",how:"Decode each ad: format (video/static/carousel/collection) and funnel stage (from objective + audience + creative cues)."},
+   {t:"3p",tag:"DECODER",what:"Same tags on COMPETITOR ads",how:"Pull rivals' live ads from the public Ad Library (no login), limited to the whole category in your country within +/- 30 percent of your price, and run the same decode."},
+   {t:"meta",tag:"META API",what:"Spend per ad to weight the mix by money",how:"insights level=ad fields=spend, so mix is share of spend, not just count."},
+   {t:"meta",tag:"META API",what:"Country + business type (auto), scopes the references",how:"GET /{ad-account} currency + business_country; D2C vs B2B from conversion type. The AI and competitor mixes below are then selected for India + D2C, not a global default."},
+   {t:"3p",tag:"CATEGORY MODEL",what:"AI-recommended mix for THIS country and business type",how:"AdBrain's category research model: the format and funnel split that wins for India D2C audio, learned from outcomes across accounts in the same country and business type. Not a guess, a fitted target."}],
+  formula:"mix_share(x) = spend_on_x / total_spend x 100   (per format, per funnel stage)\ngap(x) = our_share(x) - recommended_share(x)",
+  logic:"A brand's creative mix is a fingerprint. Comparing our format and funnel split against competitors shows where we are crowded or absent, and comparing against the AI-recommended split shows where the category actually rewards spend. The biggest negative gap is the stage to feed next.",
+  example:"Our MOF share is <b>8 percent</b> vs a recommended <b>25</b> and a competitor average of 25. That 17-point hole is the single clearest reason our add-to-cart rate lags: we barely run consideration creative.",
+  next:["Shift new production toward MOF: demos, comparisons, product realism (see the concepts below).","Add a Collection format test, we run zero and the category runs some.","Re-pull the competitor mix weekly, it moves."],
+  conf:{dash:58,ga4:64,shop:70,tp:86,have:"dash"}}
+};
+function mixTable(){
+ var host=document.getElementById("mixwrap");
+ function block(key){
+  var m=MIX[key];
+  var h='<div style="font-weight:800;font-size:13px;margin:'+(key==="funnel"?"16px":"2px")+' 0 8px">'+esc(m.label)+'</div>'
+   +'<div class="mixgrid"><div class="mh"></div><div class="mh brand">boAt</div><div class="mh">Category avg</div><div class="mh ai">AI recommended</div>';
+  m.rows.forEach(function(r){
+   var us=r[1],comp=r[2],ai=r[3];
+   var gap=us-ai;
+   var flag=Math.abs(gap)>=10?'<span class="gapflag gap-bad">'+(gap>0?"+":"")+gap+'</span>':'';
+   h+='<div class="rl">'+esc(r[0])+flag+'</div>'
+    +'<div class="mixcell"><div class="mbar bl"><i style="width:'+us+'%"></i><span>'+us+'%</span></div></div>'
+    +'<div class="mixcell"><div class="mbar gr"><i style="width:'+comp+'%"></i><span>'+comp+'%</span></div></div>'
+    +'<div class="mixcell"><div class="mbar aiv"><i style="width:'+ai+'%"></i><span>'+ai+'%</span></div></div>';
+  });
+  h+='</div>';
+  return h;
+ }
+ host.innerHTML=block("format")+block("funnel")
+  +'<div class="mixread"><b>The read:</b> we are over-indexed on TOF video and BOF sale statics, and starved at MOF (8 percent vs a recommended 25). That gap is why add-to-cart lags. The fix is not more hooks, it is consideration creative: demos and comparisons. We also run zero Collection, which the category uses. <span style="color:var(--faint)">A red gap flag marks any stage more than 10 points off the recommended mix.</span></div>'
+  +'<div style="margin-top:11px"><button class="why" data-t>the working: fetch, formula, logic, next, confidence</button></div>'
+  +spec(MIX.spec);
+}
+mixTable();
+
+renderWarns("7");renderCol("scale","cScale","nS");renderCol("continue","cCont","nC");renderCol("stop","cStop","nX");
+document.getElementById("foot").innerHTML=
+ "AdBrain action dashboard, mockup v2. Reads the account 60 to 90 days day by day. Every tile carries its full working: exactly what to fetch and from where, the formula, the logic, an example, the next step, and a confidence score that rises as you connect GA4, then Shopify, then third-party tracking. "
+ +"Design rule: no tile ships unless it ends in an action pointing at an exact ad, with the confidence to back it. Figures are illustrative, modelled on a real account pattern.";
+})();
+</script>
+</body>
+</html>
