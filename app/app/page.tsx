@@ -1,8 +1,6 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { fetchLiveCockpit } from "@/lib/meta-sync";
-import { analyzeAccount, type CockpitView, type Verdict } from "@/lib/cockpit/analyze";
-import { SAMPLE_ADS } from "@/lib/sample/account";
+import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
+import { ConnectState } from "@/components/app/connect-state";
+import { type CockpitView, type Verdict } from "@/lib/cockpit/analyze";
 import { HealthRing } from "@/components/cockpit/HealthRing";
 import { HealthComposition, type CompositionRow } from "@/components/cockpit/HealthComposition";
 import { KpiCard } from "@/components/cockpit/KpiCard";
@@ -10,59 +8,25 @@ import { ActionList } from "@/components/cockpit/ActionList";
 import { FatigueRadar } from "@/components/cockpit/FatigueRadar";
 import { Leaderboard } from "@/components/cockpit/Leaderboard";
 
-// The account cockpit. Shows REAL data from the user's connected Meta account (no dummy
-// data). If nothing is connected yet, it shows a Connect screen instead.
+// The Account Cockpit. Real connected-account data only: if nothing real is
+// available, loadCockpit returns connected:false and we render the Connect state.
+// No sample or placeholder numbers ever reach this screen.
 
 const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
+  const { days } = await searchParams;
+  const data = await loadCockpit(parseDays(days));
 
-  const live = await fetchLiveCockpit(user.id);
-
-  // Not connected yet: render the FULL designed cockpit populated with a sample account,
-  // clearly labelled as a preview, above a Connect banner. This shows the real design
-  // before any account is linked; live data replaces it the moment Meta is connected.
-  if (live.status === "not_connected" || live.status === "error") {
-    const sample = analyzeAccount(SAMPLE_ADS);
-    return (
-      <div className="space-y-6">
-        <ConnectBanner error={live.status === "error" ? live.message : undefined} />
-        <Cockpit view={sample} accountName="Sample preview" adsAnalyzed={SAMPLE_ADS.length} preview />
-      </div>
-    );
+  if (!data.connected) {
+    return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <Cockpit view={live.view} accountName={live.accountName} adsAnalyzed={live.adsAnalyzed} />;
+  return <Cockpit view={data.view} accountName={data.accountName} adsAnalyzed={data.adsAnalyzed} days={data.days} />;
 }
 
-function ConnectBanner({ error }: { error?: string }) {
-  return (
-    <div className="flex flex-col items-start gap-3 rounded-[10px] border border-[var(--accent)] bg-[var(--accent-soft)] p-5 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <div className="font-semibold text-[var(--ink)]">This is a sample preview.</div>
-        <div className="mt-0.5 text-sm text-[var(--ink-muted)]">
-          Connect your Meta account to replace it with your real ads. Nothing is ever changed automatically.
-          {error ? ` (Last sync note: ${error})` : ""}
-        </div>
-      </div>
-      <a
-        href="/api/connect/meta/authorize"
-        className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--ink)] px-6 py-2.5 font-medium text-white transition hover:opacity-90"
-      >
-        Connect Meta
-      </a>
-    </div>
-  );
-}
-
-// Share of total spend sitting on each verdict, a real, honest breakdown of where the
-// Account Health score comes from (leaderboard verdicts + view.totals), not fabricated
-// component scores.
+// Share of total spend on each verdict, an honest breakdown of where Account Health
+// comes from (leaderboard verdicts + totals), not fabricated component scores.
 function compositionRows(view: CockpitView): CompositionRow[] {
   const total = view.totals.spendRs;
   const shareOn = (v: Verdict) =>
@@ -77,7 +41,7 @@ function compositionRows(view: CockpitView): CompositionRow[] {
   ];
 }
 
-function Cockpit({ view, accountName, adsAnalyzed, preview }: { view: CockpitView; accountName: string; adsAnalyzed: number; preview?: boolean }) {
+function Cockpit({ view, accountName, adsAnalyzed, days }: { view: CockpitView; accountName: string; adsAnalyzed: number; days: number }) {
   const health = view.accountHealth;
   const roas = view.totals.roas;
   const conc = view.concentration;
@@ -87,10 +51,8 @@ function Cockpit({ view, accountName, adsAnalyzed, preview }: { view: CockpitVie
       {/* Context line */}
       <div>
         <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
-          <span className={`h-1.5 w-1.5 rounded-full ${preview ? "bg-[var(--warn-ink)]" : "bg-[var(--good-ink)]"}`} />
-          {preview
-            ? `Sample preview · ${adsAnalyzed} example ads · last 30 days`
-            : `Live · ${accountName} · ${adsAnalyzed} real ads · last 30 days`}
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
+          {`Live · ${accountName} · ${adsAnalyzed} real ads · last ${days} days`}
         </div>
         <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Here&apos;s what to ship this week.</h1>
       </div>

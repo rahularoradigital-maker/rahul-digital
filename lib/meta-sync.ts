@@ -18,7 +18,7 @@ export type LiveCockpit =
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
-export async function fetchLiveCockpit(userId: string): Promise<LiveCockpit> {
+export async function fetchLiveCockpit(userId: string, lookbackDays: number = LOOKBACK_DAYS): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
   let acct: { id: string; external_id: string; name: string | null } | null = null;
@@ -50,7 +50,7 @@ export async function fetchLiveCockpit(userId: string): Promise<LiveCockpit> {
 
   try {
     const ads = await metaSource.listAds(acct.external_id, token);
-    const since = daysAgo(LOOKBACK_DAYS);
+    const since = daysAgo(lookbackDays);
     // Fetch every ad's metrics in PARALLEL, not one-after-another. Sequential await made
     // the page wait on up to 25 back-to-back Meta round-trips (the slowness). allSettled
     // so one failed/slow ad drops out instead of stalling or failing the whole cockpit.
