@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
-import type { CockpitView, Verdict } from "@/lib/cockpit/analyze";
+import { analyzeAccount, type CockpitView, type Verdict } from "@/lib/cockpit/analyze";
+import { SAMPLE_ADS } from "@/lib/sample/account";
 import { HealthRing } from "@/components/cockpit/HealthRing";
 import { HealthComposition, type CompositionRow } from "@/components/cockpit/HealthComposition";
 import { KpiCard } from "@/components/cockpit/KpiCard";
@@ -23,31 +24,38 @@ export default async function DashboardPage() {
 
   const live = await fetchLiveCockpit(user.id);
 
-  if (live.status === "not_connected") return <ConnectPrompt />;
-  if (live.status === "error") return <ConnectPrompt error={live.message} />;
+  // Not connected yet: render the FULL designed cockpit populated with a sample account,
+  // clearly labelled as a preview, above a Connect banner. This shows the real design
+  // before any account is linked; live data replaces it the moment Meta is connected.
+  if (live.status === "not_connected" || live.status === "error") {
+    const sample = analyzeAccount(SAMPLE_ADS);
+    return (
+      <div className="space-y-6">
+        <ConnectBanner error={live.status === "error" ? live.message : undefined} />
+        <Cockpit view={sample} accountName="Sample preview" adsAnalyzed={SAMPLE_ADS.length} preview />
+      </div>
+    );
+  }
 
   return <Cockpit view={live.view} accountName={live.accountName} adsAnalyzed={live.adsAnalyzed} />;
 }
 
-function ConnectPrompt({ error }: { error?: string }) {
+function ConnectBanner({ error }: { error?: string }) {
   return (
-    <div className="mx-auto max-w-lg py-16 text-center">
-      <h1 className="text-2xl font-semibold tracking-tight">Connect your Meta ad account</h1>
-      <p className="mt-3 text-[var(--ink-muted)]">
-        AdBrain reads your real ads and tells you what to do next — what to scale, refresh, or kill,
-        and why. Connect Meta to pull your live account. Nothing is ever changed automatically.
-      </p>
+    <div className="flex flex-col items-start gap-3 rounded-[10px] border border-[var(--accent)] bg-[var(--accent-soft)] p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="font-semibold text-[var(--ink)]">This is a sample preview.</div>
+        <div className="mt-0.5 text-sm text-[var(--ink-muted)]">
+          Connect your Meta account to replace it with your real ads. Nothing is ever changed automatically.
+          {error ? ` (Last sync note: ${error})` : ""}
+        </div>
+      </div>
       <a
         href="/api/connect/meta/authorize"
-        className="mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--ink)] px-7 py-3 font-medium text-white transition hover:opacity-90"
+        className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--ink)] px-6 py-2.5 font-medium text-white transition hover:opacity-90"
       >
         Connect Meta
       </a>
-      {error && (
-        <p className="mt-6 text-sm text-[var(--bad-ink)]">
-          Could not sync: {error}. Try connecting again.
-        </p>
-      )}
     </div>
   );
 }
@@ -69,18 +77,20 @@ function compositionRows(view: CockpitView): CompositionRow[] {
   ];
 }
 
-function Cockpit({ view, accountName, adsAnalyzed }: { view: CockpitView; accountName: string; adsAnalyzed: number }) {
+function Cockpit({ view, accountName, adsAnalyzed, preview }: { view: CockpitView; accountName: string; adsAnalyzed: number; preview?: boolean }) {
   const health = view.accountHealth;
   const roas = view.totals.roas;
   const conc = view.concentration;
 
   return (
     <div className="space-y-6">
-      {/* Live context */}
+      {/* Context line */}
       <div>
         <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
-          <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
-          Live · {accountName} · {adsAnalyzed} real ads · last 30 days
+          <span className={`h-1.5 w-1.5 rounded-full ${preview ? "bg-[var(--warn-ink)]" : "bg-[var(--good-ink)]"}`} />
+          {preview
+            ? `Sample preview · ${adsAnalyzed} example ads · last 30 days`
+            : `Live · ${accountName} · ${adsAnalyzed} real ads · last 30 days`}
         </div>
         <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Here&apos;s what to ship this week.</h1>
       </div>
