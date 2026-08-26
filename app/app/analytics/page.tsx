@@ -16,13 +16,33 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const liveValues: Record<string, string> = {};
   if (data.connected) {
     const { totals } = data.view;
+    const m = data.metrics;
+    const count = new Intl.NumberFormat("en-IN");
+    const rs = (v: number | null) => (v === null ? undefined : rupees.format(v));
+    const pct = (v: number | null) => (v === null ? undefined : `${v.toFixed(2)}%`);
     const roasValue = totals.roas === null ? "n/a" : `${totals.roas.toFixed(2)}x`;
+
+    // Account-level values the Meta account answers directly (all real, no fabrication).
     liveValues.SPEND = rupees.format(totals.spendRs);
     liveValues.REVENUE = rupees.format(totals.revenueRs);
+    liveValues.CONV_VALUE = rupees.format(totals.revenueRs);
     liveValues.ROAS = roasValue;
+    liveValues.IMPR = count.format(m.impressions);
+    liveValues.CLICKS = count.format(m.clicks);
+    const cpm = rs(m.cpm);
+    if (cpm) liveValues.CPM = cpm;
+    const ctr = pct(m.ctrAll);
+    if (ctr) liveValues.CTR_ALL = ctr;
+    const cpc = rs(m.cpcAll);
+    if (cpc) liveValues.CPC_ALL = cpc;
+    const cpa = rs(m.cpa);
+    if (cpa) {
+      liveValues.CPA = cpa;
+      liveValues.CPP = cpa; // cost per purchase = spend / purchases (same base)
+    }
 
-    // The catalog's "platform ROAS" entry may or may not share the literal "ROAS"
-    // code, so find it by code or name and map the same value onto it too.
+    // The catalog's "platform ROAS" entry may not share the literal "ROAS" code,
+    // so map the same value onto any roas-coded entry too.
     for (const kpi of KPI_CATALOG) {
       if (/roas/i.test(kpi.code) || kpi.name.toLowerCase().includes("platform roas")) {
         liveValues[kpi.code] = roasValue;

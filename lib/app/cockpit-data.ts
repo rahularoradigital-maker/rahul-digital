@@ -10,8 +10,10 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { fetchLiveCockpit } from "@/lib/meta-sync";
+import { fetchLiveCockpit, type AccountMetrics } from "@/lib/meta-sync";
 import type { CockpitView } from "@/lib/cockpit/analyze";
+
+export type { AccountMetrics } from "@/lib/meta-sync";
 
 // Date-window constants live in a client-safe module (no server imports); re-exported
 // here so server pages keep a single import site for the loader + windows.
@@ -22,7 +24,7 @@ export type ConnectReason = "not_connected" | "error" | "no_data";
 // Discriminated on `connected`: a page either has real data to render, or it does
 // not and must render the Connect/empty state. There is deliberately no sample view.
 export type CockpitData =
-  | { connected: true; view: CockpitView; accountName: string; adsAnalyzed: number; days: number; userEmail?: string }
+  | { connected: true; view: CockpitView; metrics: AccountMetrics; accountName: string; adsAnalyzed: number; days: number; userEmail?: string }
   | { connected: false; days: number; reason: ConnectReason; accountName?: string; errorNote?: string; userEmail?: string };
 
 /**
@@ -46,7 +48,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
   const live = await fetchLiveCockpit(user.id, days, campaignId);
 
   if (live.status === "connected" && live.adsAnalyzed > 0) {
-    return { connected: true, view: live.view, accountName: live.accountName, adsAnalyzed: live.adsAnalyzed, days, userEmail };
+    return { connected: true, view: live.view, metrics: live.metrics, accountName: live.accountName, adsAnalyzed: live.adsAnalyzed, days, userEmail };
   }
 
   // Connected but nothing spent in the window is a real, honest "no data yet" state,

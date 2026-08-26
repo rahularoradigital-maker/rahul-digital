@@ -41,8 +41,21 @@ export async function getUserMetaSession(
 const MAX_ADS = 25;
 const LOOKBACK_DAYS = 30;
 
+// Account-level raw metrics summed from the real day-wise rows, for KPIs the Meta
+// account can answer directly (impressions, clicks, CPM, CTR, CPC, CPA). Derived
+// ratios are null when the denominator is zero (never a fabricated number).
+export type AccountMetrics = {
+  impressions: number;
+  clicks: number;
+  purchases: number;
+  cpm: number | null;
+  ctrAll: number | null;
+  cpcAll: number | null;
+  cpa: number | null;
+};
+
 export type LiveCockpit =
-  | { status: "connected"; accountName: string; adsAnalyzed: number; view: CockpitView }
+  | { status: "connected"; accountName: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -97,7 +110,31 @@ export async function fetchLiveCockpit(userId: string, lookbackDays: number = LO
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
     const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
     const view = analyzeAccount(inputs, "LIVE");
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, adsAnalyzed: inputs.length, view };
+
+    // Sum the raw day-wise rows for account-level metrics (real numbers only).
+    let sSpend = 0;
+    let sImpr = 0;
+    let sClicks = 0;
+    let sPur = 0;
+    for (const ad of realAds) {
+      for (const r of ad.rows) {
+        sSpend += r.spend;
+        sImpr += r.impressions;
+        sClicks += r.clicks;
+        sPur += r.purchases;
+      }
+    }
+    const metrics: AccountMetrics = {
+      impressions: sImpr,
+      clicks: sClicks,
+      purchases: sPur,
+      cpm: sImpr > 0 ? (sSpend / sImpr) * 1000 : null,
+      ctrAll: sImpr > 0 ? (sClicks / sImpr) * 100 : null,
+      cpcAll: sClicks > 0 ? sSpend / sClicks : null,
+      cpa: sPur > 0 ? sSpend / sPur : null,
+    };
+
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, adsAnalyzed: inputs.length, view, metrics };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }
