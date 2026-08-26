@@ -60,7 +60,7 @@ function ConnectBanner({ error }: { error?: string }) {
   );
 }
 
-// Share of total spend sitting on each verdict — a real, honest breakdown of where the
+// Share of total spend sitting on each verdict, a real, honest breakdown of where the
 // Account Health score comes from (leaderboard verdicts + view.totals), not fabricated
 // component scores.
 function compositionRows(view: CockpitView): CompositionRow[] {
@@ -139,7 +139,7 @@ function Cockpit({ view, accountName, adsAnalyzed, preview }: { view: CockpitVie
 
       {/* This week's plan + Fatigue radar */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
-        <ActionList items={view.doThis} />
+        <ActionList items={view.doThis} ads={view.leaderboard} />
         <FatigueRadar ads={view.leaderboard} />
       </div>
 
@@ -151,7 +151,7 @@ function Cockpit({ view, accountName, adsAnalyzed, preview }: { view: CockpitVie
         <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
           <div className="mb-1 text-base font-semibold">Budget waste</div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
-            High spend plus poor economics. Small-spend low-ROAS ads are excluded — insufficient data is not waste.
+            High spend plus poor economics. Small-spend low-ROAS ads are excluded. Insufficient data is not waste.
           </div>
           <div className="flex items-end justify-between gap-4 border-t border-[var(--surface-alt)] pt-4">
             <div>

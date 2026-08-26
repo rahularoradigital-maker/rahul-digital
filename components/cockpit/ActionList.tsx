@@ -1,12 +1,19 @@
-// "This week's plan" — the ranked action queue. Straight from view.doThis (already
-// sorted by priority upstream). Priority chips carry the telli DO NOW / DO NEXT /
-// WATCH semantics. No fabricated ordering or metrics.
-import type { CockpitAction, Priority } from "@/lib/cockpit/analyze";
-import { PRIORITY_STYLE } from "./styles";
+// "This week's plan" the ranked action queue, straight from view.doThis (already
+// sorted by priority upstream). Each row is joined to its real CockpitAd so the row
+// carries a real confidence bar and the engine's Scale / Iterate / Kill verdict chip,
+// matching the design's ranked test-plan list. No fabricated ordering or metrics.
+import type { CockpitAction, CockpitAd, Verdict } from "@/lib/cockpit/analyze";
+import { VERDICT_STYLE } from "./styles";
 
 type PlanItem = CockpitAction & { adId: string; adName: string };
 
-export function ActionList({ items }: { items: PlanItem[] }) {
+function confColor(v: Verdict): string {
+  return v === "winner" ? "bg-[var(--good-ink)]" : v === "loser" ? "bg-[var(--bad-ink)]" : "bg-[var(--warn-ink)]";
+}
+
+export function ActionList({ items, ads }: { items: PlanItem[]; ads: CockpitAd[] }) {
+  const byId = new Map(ads.map((a) => [a.id, a]));
+
   if (items.length === 0) {
     return (
       <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6 text-sm text-[var(--ink-muted)]">
@@ -16,18 +23,20 @@ export function ActionList({ items }: { items: PlanItem[] }) {
   }
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-2 flex items-start justify-between gap-3">
         <div>
-          <div className="text-base font-semibold">This week&apos;s plan</div>
+          <div className="text-base font-semibold">This week&apos;s ranked plan</div>
           <div className="text-[13px] text-[var(--ink-muted)]">Ranked by priority · what to ship first</div>
         </div>
-        <span className="rounded-[70px] bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+        <span className="shrink-0 rounded-[70px] bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
           {items.filter((a) => a.priority === "DO_NOW").length} do-now
         </span>
       </div>
       <div>
         {items.map((a, i) => {
-          const p = PRIORITY_STYLE[a.priority as Priority];
+          const ad = byId.get(a.adId);
+          const conf = ad ? Math.round(ad.confidence * 100) : null;
+          const v = ad ? VERDICT_STYLE[ad.verdict] : VERDICT_STYLE[a.priority === "DO_NOW" ? "loser" : "do_not_kill_yet"];
           return (
             <div
               key={`${a.adId}-${i}`}
@@ -37,12 +46,27 @@ export function ActionList({ items }: { items: PlanItem[] }) {
                 {String(i + 1).padStart(2, "0")}
               </span>
               <div className="min-w-0">
-                <div className="text-sm font-medium">{a.label}</div>
-                <div className="mt-1 truncate text-[13px] text-[var(--ink-muted)]">
-                  {a.adName} &middot; {a.why}
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-medium">{a.adName}</span>
+                  {ad && (
+                    <span className="shrink-0 rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
+                      {ad.objective}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1.5 flex items-center gap-2">
+                  {conf !== null && (
+                    <>
+                      <div className="h-1.5 w-full max-w-[180px] overflow-hidden rounded-[70px] bg-[var(--surface-alt)]">
+                        <div className={`h-full rounded-[70px] ${ad ? confColor(ad.verdict) : "bg-[var(--ink-muted)]"}`} style={{ width: `${conf}%` }} />
+                      </div>
+                      <span className="shrink-0 text-xs text-[var(--ink-muted)] tabular-nums">{conf}% confidence</span>
+                    </>
+                  )}
+                  {conf === null && <span className="truncate text-[13px] text-[var(--ink-muted)]">{a.why}</span>}
                 </div>
               </div>
-              <span className={`rounded-[70px] px-3 py-1 text-xs font-semibold ${p.cls}`}>{p.label}</span>
+              <span className={`shrink-0 rounded-[70px] px-3 py-1 text-xs font-semibold ${v.cls}`}>{v.label}</span>
             </div>
           );
         })}

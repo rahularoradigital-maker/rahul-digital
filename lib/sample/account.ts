@@ -1,4 +1,4 @@
-// SAMPLE account data — NOT real performance. It exists so the cockpit renders
+// SAMPLE account data - NOT real performance. It exists so the cockpit renders
 // real engine output (verdicts, diagnoses, waste) before a live Meta/Google
 // account is connected. When OAuth ingest lands, live-derived ads replace this
 // array and analyzeAccount() is called with dataSource "LIVE"; nothing else changes.
@@ -9,7 +9,7 @@ import type { CockpitAdInput } from "../cockpit/analyze.ts";
 export const SAMPLE_ADS: CockpitAdInput[] = [
   {
     id: "ad_hero_ugc",
-    name: "UGC — founder story (hero)",
+    name: "UGC - founder story (hero)",
     objective: "conversion",
     performance: 88,
     trend: 82,
@@ -25,7 +25,7 @@ export const SAMPLE_ADS: CockpitAdInput[] = [
   },
   {
     id: "ad_carousel_sale",
-    name: "Carousel — 20% sale",
+    name: "Carousel - 20% sale",
     objective: "conversion",
     performance: 24,
     trend: 18,
@@ -50,7 +50,7 @@ export const SAMPLE_ADS: CockpitAdInput[] = [
   },
   {
     id: "ad_reels_demo",
-    name: "Reels — product demo",
+    name: "Reels - product demo",
     objective: "conversion",
     performance: 40,
     trend: 26,
@@ -75,7 +75,7 @@ export const SAMPLE_ADS: CockpitAdInput[] = [
   },
   {
     id: "ad_static_offer",
-    name: "Static — free shipping",
+    name: "Static - free shipping",
     objective: "conversion",
     performance: 58,
     trend: 44,
@@ -100,7 +100,7 @@ export const SAMPLE_ADS: CockpitAdInput[] = [
   },
   {
     id: "ad_new_angle",
-    name: "New angle — dermatologist",
+    name: "New angle - dermatologist",
     objective: "conversion",
     performance: 95,
     trend: 90,
