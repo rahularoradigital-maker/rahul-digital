@@ -19,20 +19,33 @@ export type LiveCockpit =
   | { status: "error"; message: string };
 
 export async function fetchLiveCockpit(userId: string): Promise<LiveCockpit> {
-  const admin = createAdminClient();
-  const { data: acct, error } = await admin
-    .from("ad_accounts")
-    .select("id, external_id, name")
-    .eq("user_id", userId)
-    .eq("platform", "meta")
-    .eq("status", "connected")
-    .order("connected_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) return { status: "error", message: error.message };
+  // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
+  // also throw. Either way the dashboard must render the Connect screen, never 500.
+  let acct: { id: string; external_id: string; name: string | null } | null = null;
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("ad_accounts")
+      .select("id, external_id, name")
+      .eq("user_id", userId)
+      .eq("platform", "meta")
+      .eq("status", "connected")
+      .order("connected_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return { status: "error", message: error.message };
+    acct = data;
+  } catch {
+    return { status: "not_connected" };
+  }
   if (!acct) return { status: "not_connected" };
 
-  const token = await readToken(acct.id);
+  let token;
+  try {
+    token = await readToken(acct.id);
+  } catch {
+    return { status: "not_connected" };
+  }
   if (!token) return { status: "not_connected" };
 
   try {
