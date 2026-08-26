@@ -59,6 +59,12 @@ export function AccountSwitcher() {
     const id = e.target.value;
     const acct = accounts.find((a) => a.externalId === id);
     if (!id || !acct) return;
+    // Drop the cached account list so the new active account is reflected on reload.
+    try {
+      sessionStorage.removeItem("adbrain.accounts");
+    } catch {
+      // ignore
+    }
     window.location.href = `/api/connect/meta/select-account?id=${encodeURIComponent(id)}&name=${encodeURIComponent(acct.name)}`;
   }
 
