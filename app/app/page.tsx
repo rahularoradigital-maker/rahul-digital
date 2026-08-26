@@ -1,25 +1,18 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
-import type { CockpitView, Verdict, Priority } from "@/lib/cockpit/analyze";
+import type { CockpitView, Verdict } from "@/lib/cockpit/analyze";
+import { HealthRing } from "@/components/cockpit/HealthRing";
+import { HealthComposition, type CompositionRow } from "@/components/cockpit/HealthComposition";
+import { KpiCard } from "@/components/cockpit/KpiCard";
+import { ActionList } from "@/components/cockpit/ActionList";
+import { FatigueRadar } from "@/components/cockpit/FatigueRadar";
+import { Leaderboard } from "@/components/cockpit/Leaderboard";
 
 // The account cockpit. Shows REAL data from the user's connected Meta account (no dummy
 // data). If nothing is connected yet, it shows a Connect screen instead.
 
 const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
-
-const VERDICT_STYLE: Record<Verdict, { label: string; cls: string }> = {
-  winner: { label: "Winner", cls: "bg-[var(--good-bg)] text-[var(--good-ink)]" },
-  refresh: { label: "Refresh", cls: "bg-[var(--warn-bg)] text-[var(--warn-ink)]" },
-  do_not_kill_yet: { label: "Do not kill yet", cls: "bg-[var(--accent-soft)] text-[var(--accent)]" },
-  loser: { label: "Loser", cls: "bg-[var(--bad-bg)] text-[var(--bad-ink)]" },
-};
-
-const PRIORITY_STYLE: Record<Priority, { label: string; cls: string }> = {
-  DO_NOW: { label: "Do now", cls: "bg-[var(--bad-bg)] text-[var(--bad-ink)]" },
-  DO_NEXT: { label: "Do next", cls: "bg-[var(--warn-bg)] text-[var(--warn-ink)]" },
-  WATCH: { label: "Watch", cls: "bg-[var(--surface-alt)] text-[var(--ink-muted)]" },
-};
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -40,7 +33,7 @@ function ConnectPrompt({ error }: { error?: string }) {
   return (
     <div className="mx-auto max-w-lg py-16 text-center">
       <h1 className="text-2xl font-semibold tracking-tight">Connect your Meta ad account</h1>
-      <p className="mt-3 text-[var(--muted)]">
+      <p className="mt-3 text-[var(--ink-muted)]">
         AdBrain reads your real ads and tells you what to do next — what to scale, refresh, or kill,
         and why. Connect Meta to pull your live account. Nothing is ever changed automatically.
       </p>
@@ -51,7 +44,7 @@ function ConnectPrompt({ error }: { error?: string }) {
         Connect Meta
       </a>
       {error && (
-        <p className="mt-6 text-sm text-red-500">
+        <p className="mt-6 text-sm text-[var(--bad-ink)]">
           Could not sync: {error}. Try connecting again.
         </p>
       )}
@@ -59,107 +52,109 @@ function ConnectPrompt({ error }: { error?: string }) {
   );
 }
 
-function Cockpit({ view, accountName, adsAnalyzed }: { view: CockpitView; accountName: string; adsAnalyzed: number }) {
-  const health = view.accountHealth;
-  return (
-    <div className="space-y-8">
-      <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-        <strong>Live — {accountName}.</strong> Analyzing {adsAnalyzed} of your real ads from the last 30 days.
-      </div>
-
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Account cockpit</h1>
-        <p className="mt-1 text-[var(--muted)]">What to do next, with the reason behind every call.</p>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-4">
-        <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-5 sm:col-span-1">
-          <div className="text-sm text-[var(--muted)]">Account Health</div>
-          <div className="mt-1 text-3xl font-semibold">{health.score}<span className="text-lg text-[var(--muted)]">/100</span></div>
-          <div className="mt-1 text-xs text-[var(--muted)]">{health.basis} · {health.factLabel}</div>
-        </div>
-        <Stat label="Spend" value={rupees.format(view.totals.spendRs)} />
-        <Stat label="Revenue" value={rupees.format(view.totals.revenueRs)} />
-        <Stat label="ROAS" value={view.totals.roas === null ? "n/a" : `${view.totals.roas.toFixed(2)}x`} />
-      </div>
-
-      {view.doThis.length > 0 && (
-        <section>
-          <h2 className="text-lg font-semibold">Do this next</h2>
-          <div className="mt-3 divide-y divide-[var(--border)] rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
-            {view.doThis.map((a, i) => {
-              const p = PRIORITY_STYLE[a.priority];
-              return (
-                <div key={`${a.adId}-${i}`} className="flex items-start gap-3 p-4">
-                  <span className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${p.cls}`}>{p.label}</span>
-                  <div className="min-w-0">
-                    <div className="font-medium">{a.label} <span className="text-[var(--muted)]">— {a.adName}</span></div>
-                    <div className="text-sm text-[var(--muted)]">{a.why}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-xs text-[var(--muted)]">Nothing is applied automatically. You make each change in your ad account.</p>
-        </section>
-      )}
-
-      <section>
-        <h2 className="text-lg font-semibold">Creative leaderboard</h2>
-        <div className="mt-3 overflow-x-auto rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
-          <table className="w-full text-sm">
-            <thead className="text-left text-[var(--muted)]">
-              <tr className="border-b border-[var(--border)]">
-                <th className="p-3 font-medium">Ad</th>
-                <th className="p-3 font-medium">Verdict</th>
-                <th className="p-3 font-medium text-right">Score</th>
-                <th className="p-3 font-medium text-right">Spend</th>
-                <th className="p-3 font-medium text-right">ROAS</th>
-                <th className="p-3 font-medium text-right">Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.leaderboard.map((ad) => {
-                const v = VERDICT_STYLE[ad.verdict];
-                return (
-                  <tr key={ad.id} className="border-b border-[var(--border)] align-top last:border-0">
-                    <td className="p-3">
-                      <div className="font-medium">{ad.name}</div>
-                      <div className="mt-1 text-xs text-[var(--muted)]">{ad.why[0]}</div>
-                    </td>
-                    <td className="p-3"><span className={`rounded-full px-2 py-0.5 text-xs font-medium ${v.cls}`}>{v.label}</span></td>
-                    <td className="p-3 text-right tabular-nums">{ad.score.toFixed(0)}</td>
-                    <td className="p-3 text-right tabular-nums">{rupees.format(ad.spendRs)}</td>
-                    <td className="p-3 text-right tabular-nums">{ad.roas === null ? "n/a" : `${ad.roas.toFixed(1)}x`}</td>
-                    <td className="p-3 text-right tabular-nums">{Math.round(ad.confidence * 100)}%</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {view.waste.status === "ok" && (
-        <section>
-          <h2 className="text-lg font-semibold">Wasted spend</h2>
-          <div className="mt-3 rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-5">
-            <div className="text-2xl font-semibold">{rupees.format(view.waste.totalWastedRs)}</div>
-            <div className="mt-1 text-sm text-[var(--muted)]">
-              {Math.round(view.waste.shareOfSpend * 100)}% of spend is going to ads the engine flags as spent. Clearing the Do-now list is where this comes back.
-            </div>
-          </div>
-        </section>
-      )}
-    </div>
-  );
+// Share of total spend sitting on each verdict — a real, honest breakdown of where the
+// Account Health score comes from (leaderboard verdicts + view.totals), not fabricated
+// component scores.
+function compositionRows(view: CockpitView): CompositionRow[] {
+  const total = view.totals.spendRs;
+  const shareOn = (v: Verdict) =>
+    total > 0 ? view.leaderboard.filter((a) => a.verdict === v).reduce((acc, a) => acc + a.spendRs, 0) / total : 0;
+  const wasteShare = view.waste.status === "ok" ? view.waste.shareOfSpend : 0;
+  return [
+    { label: "Spend on winners", share: shareOn("winner"), bar: "bg-[var(--good-ink)]" },
+    { label: "Needs refresh", share: shareOn("refresh"), bar: "bg-[var(--warn-ink)]" },
+    { label: "On hold / watch", share: shareOn("do_not_kill_yet"), bar: "bg-[var(--accent)]" },
+    { label: "Spend on losers", share: shareOn("loser"), bar: "bg-[var(--bad-ink)]" },
+    { label: "Wasted spend", share: wasteShare, bar: "bg-[var(--bad-ink)]" },
+  ];
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Cockpit({ view, accountName, adsAnalyzed }: { view: CockpitView; accountName: string; adsAnalyzed: number }) {
+  const health = view.accountHealth;
+  const roas = view.totals.roas;
+  const conc = view.concentration;
+
   return (
-    <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-5">
-      <div className="text-sm text-[var(--muted)]">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+    <div className="space-y-6">
+      {/* Live context */}
+      <div>
+        <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
+          Live · {accountName} · {adsAnalyzed} real ads · last 30 days
+        </div>
+        <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Here&apos;s what to ship this week.</h1>
+      </div>
+
+      {/* Account Health */}
+      <div className="grid grid-cols-1 items-center gap-8 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6 md:grid-cols-[200px_1fr]">
+        <HealthRing score={health.score} />
+        <div>
+          <div className="mb-3.5 flex items-center justify-between gap-3">
+            <div className="text-base font-semibold">Account Health</div>
+            <span className="rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
+              Internal calculation · {health.factLabel}
+            </span>
+          </div>
+          <div className="mb-4 text-[13px] text-[var(--ink-muted)]">{health.basis}</div>
+          <HealthComposition rows={compositionRows(view)} />
+        </div>
+      </div>
+
+      {/* Decision KPIs */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard
+          label="Blended ROAS"
+          tip="Revenue divided by spend, blended across the account. Source: connected Meta account."
+          value={roas === null ? "n/a" : `${roas.toFixed(2)}x`}
+          sub={`${rupees.format(view.totals.revenueRs)} on ${rupees.format(view.totals.spendRs)}`}
+        />
+        <KpiCard
+          label="MER"
+          tip="Marketing efficiency ratio = total revenue divided by total ad spend."
+          insufficient="Connect Shopify for store revenue"
+        />
+        <KpiCard
+          label="nCAC"
+          tip="New-customer acquisition cost. Requires Shopify new-vs-returning split."
+          insufficient="Connect more sources"
+        />
+        <KpiCard
+          label="Concentration"
+          tip="Share of spend on the single top ad. Internal calculation over your account."
+          value={conc.status === "ok" ? `${Math.round(conc.top1Share * 100)}%` : undefined}
+          insufficient={conc.status === "ok" ? undefined : "Not enough spend to assess"}
+          sub={conc.status === "ok" ? "top ad share of spend" : undefined}
+        />
+      </div>
+
+      {/* This week's plan + Fatigue radar */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
+        <ActionList items={view.doThis} />
+        <FatigueRadar ads={view.leaderboard} />
+      </div>
+
+      {/* Creative leaderboard */}
+      <Leaderboard ads={view.leaderboard} rupees={rupees} />
+
+      {/* Wasted spend */}
+      {view.waste.status === "ok" && (
+        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+          <div className="mb-1 text-base font-semibold">Budget waste</div>
+          <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
+            High spend plus poor economics. Small-spend low-ROAS ads are excluded — insufficient data is not waste.
+          </div>
+          <div className="flex items-end justify-between gap-4 border-t border-[var(--surface-alt)] pt-4">
+            <div>
+              <div className="text-[30px] font-semibold tracking-tight tabular-nums leading-none text-[var(--bad-ink)]">
+                {rupees.format(view.waste.totalWastedRs)}
+              </div>
+              <div className="mt-1.5 text-[13px] text-[var(--ink-muted)]">
+                {Math.round(view.waste.shareOfSpend * 100)}% of spend. Clearing the Do-now list is where this comes back.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

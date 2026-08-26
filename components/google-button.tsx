@@ -45,7 +45,7 @@ export function GoogleButton({ label }: { label: string }) {
         </svg>
         {pending ? "Redirecting..." : label}
       </button>
-      {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      {error && <p className="mt-2 text-sm text-[var(--bad-ink)]">{error}</p>}
     </div>
   );
 }

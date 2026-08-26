@@ -13,33 +13,42 @@ export async function proxy(request: NextRequest) {
   }
 
   let response = NextResponse.next({ request });
+  let user = null;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+  // A Supabase outage, a malformed cookie, or any runtime hiccup here must never
+  // 500 a page (e.g. /login). On any failure we treat the request as
+  // unauthenticated and fall through to the normal response / gate below.
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value),
+            );
+            response = NextResponse.next({ request });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options),
+            );
+          },
         },
       },
-    },
-  );
+    );
 
-  // IMPORTANT: getUser() refreshes the token. Do not run logic between
-  // createServerClient and getUser or sessions can drop intermittently.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    // IMPORTANT: getUser() refreshes the token. Do not run logic between
+    // createServerClient and getUser or sessions can drop intermittently.
+    const {
+      data: { user: fetchedUser },
+    } = await supabase.auth.getUser();
+    user = fetchedUser;
+  } catch {
+    user = null;
+  }
 
   const path = request.nextUrl.pathname;
   const isProtected = path === "/app" || path.startsWith("/app/");

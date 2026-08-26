@@ -1,43 +1,45 @@
 import Link from "next/link";
 import { Logo } from "@/components/site-header";
 
+const COLS = [
+  { title: "Platform", links: ["Use Cases", "Features", "Solutions", "Book a demo"] },
+  { title: "Solutions", links: ["Beauty & Skincare", "Apparel", "Health & Wellness", "Agencies"] },
+  { title: "Resources", links: ["Blog", "Trending Ads", "Attention Heatmap", "Documentation"] },
+  { title: "Company", links: ["Contact us", "About us", "Join us", "Terms"] },
+];
+
 export function SiteFooter() {
   return (
-    <footer className="mt-16 border-t border-[var(--hairline)]">
-      <div className="mx-auto grid max-w-6xl gap-8 px-6 py-14 text-sm sm:grid-cols-2 md:grid-cols-4">
-        <div>
-          <div className="flex items-center gap-2 font-medium">
-            <Logo className="h-6 w-6" />
-            AdBrain AI
+    <footer className="border-t border-[var(--hairline)] bg-[var(--surface)] py-16">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-[1.5fr_repeat(4,1fr)]">
+          <div>
+            <div className="flex items-center gap-2 text-[22px] font-medium">
+              <Logo />
+              AdBrain AI
+            </div>
+            <p className="mt-4 text-sm text-[var(--ink-muted)]">Bengaluru | San Francisco</p>
           </div>
-          <p className="mt-3 max-w-xs text-[var(--ink-muted)]">
-            Creative decision intelligence for Meta growth teams. Decide, do not just report.
-          </p>
+          {COLS.map((col) => (
+            <div key={col.title}>
+              <h4 className="text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                {col.title}
+              </h4>
+              <ul className="mt-4 flex flex-col gap-2.5">
+                {col.links.map((lk) => (
+                  <li key={lk}>
+                    <Link href="/signup" className="text-[15px] hover:text-[var(--accent)]">
+                      {lk}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <div>
-          <p className="font-medium">Product</p>
-          <ul className="mt-3 space-y-2 text-[var(--ink-muted)]">
-            <li><a href="/#features" className="hover:text-[var(--ink)]">Features</a></li>
-            <li><Link href="/signup" className="hover:text-[var(--ink)]">Get started</Link></li>
-          </ul>
+        <div className="mt-12 border-t border-[var(--hairline)] pt-6 text-[13px] text-[var(--ink-muted)]">
+          &copy; 2026 adbrain.ai, All rights reserved
         </div>
-        <div>
-          <p className="font-medium">Company</p>
-          <ul className="mt-3 space-y-2 text-[var(--ink-muted)]">
-            <li><a href="/#how" className="hover:text-[var(--ink)]">How it works</a></li>
-            <li><Link href="/login" className="hover:text-[var(--ink)]">Log in</Link></li>
-          </ul>
-        </div>
-        <div>
-          <p className="font-medium">Legal</p>
-          <ul className="mt-3 space-y-2 text-[var(--ink-muted)]">
-            <li><span>Privacy</span></li>
-            <li><span>Terms</span></li>
-          </ul>
-        </div>
-      </div>
-      <div className="border-t border-[var(--hairline)] py-6 text-center text-xs text-[var(--ink-muted)]">
-        © 2026 AdBrain AI. All rights reserved.
       </div>
     </footer>
   );
