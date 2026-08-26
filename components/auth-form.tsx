@@ -1,15 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import type { AuthState } from "@/app/(auth)/actions";
+import { createClient } from "@/lib/supabase/client";
 import { GoogleButton } from "@/components/google-button";
 import { Logo } from "@/components/site-header";
 
 type Props = {
+  mode: "login" | "signup";
   title: string;
   cta: string;
-  action: (prev: AuthState, formData: FormData) => Promise<AuthState>;
   altText: string;
   altHref: string;
   altLabel: string;
@@ -18,8 +18,51 @@ type Props = {
 const inputCls =
   "mt-1.5 w-full rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2.5 outline-none transition focus:border-[var(--accent)]";
 
-export function AuthForm({ title, cta, action, altText, altHref, altLabel }: Props) {
-  const [state, formAction, pending] = useActionState(action, null);
+// Auth runs entirely in the browser via the Supabase browser client (cookie-based
+// session, shared with the server). This deliberately avoids Next.js Server Actions,
+// which some browser extensions that wrap window.fetch break (causing a POST /login 500).
+export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPending(true);
+    setError(null);
+    setMessage(null);
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get("email") ?? "");
+    const password = String(form.get("password") ?? "");
+    try {
+      const supabase = createClient();
+      if (mode === "login") {
+        const { error: err } = await supabase.auth.signInWithPassword({ email, password });
+        if (err) {
+          setError(err.message);
+          setPending(false);
+          return;
+        }
+      } else {
+        const { data, error: err } = await supabase.auth.signUp({ email, password });
+        if (err) {
+          setError(err.message);
+          setPending(false);
+          return;
+        }
+        if (!data.session) {
+          setMessage("Check your email to confirm your account, then log in.");
+          setPending(false);
+          return;
+        }
+      }
+      // Full navigation so the server picks up the fresh session cookie.
+      window.location.href = "/app";
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setPending(false);
+    }
+  }
 
   return (
     <div className="mx-auto flex min-h-[80vh] w-full max-w-md flex-col justify-center px-6">
@@ -40,7 +83,7 @@ export function AuthForm({ title, cta, action, altText, altHref, altLabel }: Pro
           <span className="h-px flex-1 bg-[var(--hairline)]" />
         </div>
 
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="text-sm text-[var(--ink-muted)]">Email</label>
             <input id="email" name="email" type="email" required autoComplete="email" className={inputCls} />
@@ -50,8 +93,8 @@ export function AuthForm({ title, cta, action, altText, altHref, altLabel }: Pro
             <input id="password" name="password" type="password" required minLength={6} autoComplete="current-password" className={inputCls} />
           </div>
 
-          {state?.error && <p className="text-sm text-[var(--bad-ink)]">{state.error}</p>}
-          {state?.message && <p className="text-sm text-[var(--accent)]">{state.message}</p>}
+          {error && <p className="text-sm text-[var(--bad-ink)]">{error}</p>}
+          {message && <p className="text-sm text-[var(--accent)]">{message}</p>}
 
           <button
             type="submit"
