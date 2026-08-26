@@ -6,8 +6,17 @@ import { NextResponse, type NextRequest } from "next/server";
  * it refreshes the Supabase session cookie and gates the /app area.
  */
 export async function proxy(request: NextRequest) {
-  // Before Supabase keys are configured, skip auth entirely so the public
-  // marketing site and auth pages still render. See SETUP.md.
+  const path = request.nextUrl.pathname;
+  const isProtected = path === "/app" || path.startsWith("/app/");
+
+  // Public pages (landing, /login, /signup, marketing) never need an auth check.
+  // Skipping Supabase entirely here means a Supabase or edge-runtime hiccup can
+  // NEVER 500 a public page. Only the /app area does the session check below.
+  if (!isProtected) {
+    return NextResponse.next({ request });
+  }
+
+  // Before Supabase keys are configured, let /app render (it self-redirects home).
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next({ request });
   }
@@ -15,9 +24,8 @@ export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   let user = null;
 
-  // A Supabase outage, a malformed cookie, or any runtime hiccup here must never
-  // 500 a page (e.g. /login). On any failure we treat the request as
-  // unauthenticated and fall through to the normal response / gate below.
+  // Even inside /app, a Supabase/runtime hiccup must never 500: on failure we
+  // treat the request as unauthenticated and redirect to /login below.
   try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,10 +58,8 @@ export async function proxy(request: NextRequest) {
     user = null;
   }
 
-  const path = request.nextUrl.pathname;
-  const isProtected = path === "/app" || path.startsWith("/app/");
-
-  if (isProtected && !user) {
+  // We only reach here for /app paths. Unauthenticated -> login.
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);
