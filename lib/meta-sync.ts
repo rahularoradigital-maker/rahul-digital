@@ -51,11 +51,21 @@ export async function fetchLiveCockpit(userId: string): Promise<LiveCockpit> {
   try {
     const ads = await metaSource.listAds(acct.external_id, token);
     const since = daysAgo(LOOKBACK_DAYS);
-    const realAds: RealAd[] = [];
-    for (const ad of ads.slice(0, MAX_ADS)) {
-      const rows = await metaSource.fetchMetrics(ad.externalId, since, token);
-      realAds.push({ externalId: ad.externalId, name: ad.name ?? ad.externalId, rows });
-    }
+    // Fetch every ad's metrics in PARALLEL, not one-after-another. Sequential await made
+    // the page wait on up to 25 back-to-back Meta round-trips (the slowness). allSettled
+    // so one failed/slow ad drops out instead of stalling or failing the whole cockpit.
+    const settled = await Promise.allSettled(
+      ads.slice(0, MAX_ADS).map(
+        async (ad): Promise<RealAd> => ({
+          externalId: ad.externalId,
+          name: ad.name ?? ad.externalId,
+          rows: await metaSource.fetchMetrics(ad.externalId, since, token),
+        }),
+      ),
+    );
+    const realAds: RealAd[] = settled
+      .filter((r): r is PromiseFulfilledResult<RealAd> => r.status === "fulfilled")
+      .map((r) => r.value);
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
     const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
     const view = analyzeAccount(inputs, "LIVE");
