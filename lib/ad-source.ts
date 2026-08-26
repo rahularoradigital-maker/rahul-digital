@@ -33,8 +33,8 @@ export type MetricsRow = {
 
 export interface AdSource {
   readonly platform: Platform;
-  /** List the ads under a connected account. */
-  listAds(accountExternalId: string, token: TokenSet): Promise<SourceAd[]>;
+  /** List the ads under a connected account, optionally filtered to one campaign. */
+  listAds(accountExternalId: string, token: TokenSet, campaignId?: string): Promise<SourceAd[]>;
   /** Fetch daily metrics for an ad since a date (incremental sync). */
   fetchMetrics(adExternalId: string, since: string, token: TokenSet): Promise<MetricsRow[]>;
   /** Exchange a refresh token for a fresh access token. */

@@ -7,6 +7,7 @@
 // shows a Connect/empty state, never fabricated numbers. Every section page uses this
 // so the rule lives in exactly one place.
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
@@ -37,7 +38,12 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
   if (!user) redirect("/login");
   const userEmail = user.email ?? undefined;
 
-  const live = await fetchLiveCockpit(user.id, days);
+  // Optional campaign filter set by the topbar campaign picker (a cookie, so it scopes
+  // every page globally without threading a param through each one). Empty = all campaigns.
+  const cookieStore = await cookies();
+  const campaignId = cookieStore.get("adbrain.campaign")?.value || undefined;
+
+  const live = await fetchLiveCockpit(user.id, days, campaignId);
 
   if (live.status === "connected" && live.adsAnalyzed > 0) {
     return { connected: true, view: live.view, accountName: live.accountName, adsAnalyzed: live.adsAnalyzed, days, userEmail };

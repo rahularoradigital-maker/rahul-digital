@@ -42,17 +42,22 @@ function sumAction(list: MetaInsightAction[] | undefined, type: string): number 
 export const metaSource: AdSource = {
   platform: "meta",
 
-  async listAds(accountExternalId: string, token: TokenSet): Promise<SourceAd[]> {
+  async listAds(accountExternalId: string, token: TokenSet, campaignId?: string): Promise<SourceAd[]> {
     // accountExternalId is the numeric Meta ad account id (without the act_ prefix).
     // Large accounts return thousands of ads; requesting 200 with nested creative
     // expansion makes Meta reject the call with "reduce the amount of data" (code 1).
     // Ask only for the fields we use, cap the page small, and bias to ACTIVE ads
     // (the ones a weekly decision cares about, and the ones most likely to have spend).
-    const data = await graphGet<{ data: MetaAd[] }>(`act_${accountExternalId}/ads`, token.accessToken, {
+    const params: Record<string, string> = {
       fields: "id,name,effective_status",
       effective_status: '["ACTIVE"]',
       limit: "25",
-    });
+    };
+    // Optional campaign filter (the topbar campaign picker). Narrows the pull to one campaign.
+    if (campaignId) {
+      params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: [campaignId] }]);
+    }
+    const data = await graphGet<{ data: MetaAd[] }>(`act_${accountExternalId}/ads`, token.accessToken, params);
     return (data.data ?? []).map((ad) => ({
       externalId: ad.id,
       name: ad.name,

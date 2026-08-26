@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { titleFor } from "@/lib/app/nav";
 import { WINDOWS } from "@/lib/app/windows";
 import { AccountSwitcher } from "@/components/app/account-switcher";
+import { CampaignSwitcher } from "@/components/app/campaign-switcher";
 
 // The working topbar. Every control does its job:
 //  - date window  -> sets ?days= and re-scopes the whole page (rulebook setup gate)
@@ -64,8 +65,9 @@ export function Topbar() {
           ) : null}
         </form>
 
-        {/* Account switcher (BM -> Account) */}
+        {/* Account switcher (BM -> Account) + campaign filter */}
         <AccountSwitcher />
+        <CampaignSwitcher />
 
         {/* Date window (setup gate) */}
         <label className="hidden items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium md:flex">
