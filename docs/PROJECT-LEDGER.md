@@ -98,6 +98,13 @@ Each real document Rahul shared, mirrored into `docs/`, and what it changed in t
 ---
 
 ## 5. Change log (dated)
+- **2026-08-27 (batch 6, 10x master brief)** System AUDIT + missing-intelligence report + metric
+  dictionary + time-window mapping + roadmap (docs/10x-audit-and-plan.md). Four new pure, tested
+  engines built in parallel: MARGINAL SCALING (elasticity -> Underfunded/Healthy/Saturated +
+  marginal ROAS, MODELLED), DATA-QUALITY (small-sample/spend-shock/gap -> confidence penalty),
+  FATIGUE FORECAST (7/14-day probability, PREDICTED), CREATIVE WINNER (quality x scale x
+  stability x longevity). Wired into the cockpit: Scaling-headroom card + per-ad 7/14-day fatigue
+  risk on the radar. Every value labeled OFFICIAL/INTERNAL/MODELLED/PREDICTED. All 22 checks green.
 - **2026-08-27 (batch 5, autonomous)** Fatigue is now OBJECTIVE-AWARE (conversion fatigues on
   falling ROAS / rising CPA + CPM, awareness on reach, engagement/traffic on CTR) and the
   half-life is CAPPED by the ad set / campaign END DATE (a creative cannot outlive its ad set).
