@@ -7,6 +7,8 @@ import { KpiCard } from "@/components/cockpit/KpiCard";
 import { ActionList } from "@/components/cockpit/ActionList";
 import { FatigueRadar } from "@/components/cockpit/FatigueRadar";
 import { Leaderboard } from "@/components/cockpit/Leaderboard";
+import { FunnelCard } from "@/components/cockpit/FunnelCard";
+import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import { WhyDrawer } from "@/components/cockpit/WhyDrawer";
 
 // The Account Cockpit. Real connected-account data only: if nothing real is
@@ -23,7 +25,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} days={data.days} />;
+  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} days={data.days} />;
 }
 
 // Share of total spend on each verdict, an honest breakdown of where Account Health
@@ -42,7 +44,7 @@ function compositionRows(view: CockpitView): CompositionRow[] {
   ];
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; days: number }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; days: number }) {
   const health = view.accountHealth;
   const roas = view.totals.roas;
   const conc = view.concentration;
@@ -102,6 +104,9 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           sub={conc.status === "ok" ? "top ad share of spend" : undefined}
         />
       </div>
+
+      {/* Ad-level funnel metrics */}
+      <FunnelCard funnel={funnel} />
 
       {/* This week's plan + Fatigue radar */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">

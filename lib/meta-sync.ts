@@ -9,6 +9,7 @@ import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective, list
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
+import { windowFunnel, type FunnelMetrics, type ExtendedMetricsRow } from "./metrics/funnel-metrics.ts";
 
 // The user's currently-active Meta account (most-recently connected) and its token.
 // One user OAuth token works across all their ad accounts, so the account picker and
@@ -60,7 +61,7 @@ export type AccountMetrics = {
 export type ProcessedCounts = { campaigns: number; adSets: number; ads: number };
 
 export type LiveCockpit =
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; processed: ProcessedCounts }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; processed: ProcessedCounts; funnel: FunnelMetrics }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -162,6 +163,25 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     }
     const processed: ProcessedCounts = { campaigns: campaignSet.size, adSets: adSetSet.size, ads: inputs.length };
 
+    // Account-level D2C funnel metrics (thumb-stop, hold rate, LP/ATC/checkout ratios) from the
+    // real day-wise rows. Ratios are null when their denominator is 0 (e.g. no video, no ATC).
+    const extRows: ExtendedMetricsRow[] = realAds.flatMap((ad) =>
+      ad.rows.map((r) => ({
+        date: r.date,
+        spend: r.spend,
+        impressions: r.impressions,
+        clicks: r.clicks,
+        outboundClicks: r.outboundClicks ?? 0,
+        video3sViews: r.video3sViews ?? 0,
+        videoThruplays: r.videoThruplays ?? 0,
+        landingPageViews: r.landingPageViews ?? 0,
+        addToCarts: r.addToCarts ?? 0,
+        initiateCheckouts: r.initiateCheckouts ?? 0,
+        purchases: r.purchases,
+      })),
+    );
+    const funnel = windowFunnel(extRows);
+
     // Sum the raw day-wise rows for account-level metrics (real numbers only).
     let sSpend = 0;
     let sImpr = 0;
@@ -185,7 +205,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       cpa: sPur > 0 ? sSpend / sPur : null,
     };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, processed };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, processed, funnel };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }

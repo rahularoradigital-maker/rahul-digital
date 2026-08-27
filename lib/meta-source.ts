@@ -52,6 +52,24 @@ function purchaseValue(list: MetaInsightAction[] | undefined): number {
   return 0;
 }
 
+// Sum every value in a single-purpose action list (video plays, thruplays, outbound clicks).
+function sumActions(list: MetaInsightAction[] | undefined): number {
+  if (!list) return 0;
+  return list.reduce((acc, a) => acc + Number(a.value || 0), 0);
+}
+
+// Sum the first action type (in preference order) that has a value - accounts report the
+// same funnel step under different type names (omni_ vs offsite pixel), so we avoid double
+// counting by taking the first non-zero, mirroring purchaseValue.
+function firstActionValue(list: MetaInsightAction[] | undefined, types: string[]): number {
+  if (!list) return 0;
+  for (const t of types) {
+    const v = list.filter((a) => a.action_type === t).reduce((acc, a) => acc + Number(a.value || 0), 0);
+    if (v > 0) return v;
+  }
+  return 0;
+}
+
 export const metaSource: AdSource = {
   platform: "meta",
 
@@ -256,19 +274,27 @@ export async function fetchAdInsights(
   if (adExternalIds.length === 0) return byAd;
   const params: Record<string, string> = {
     level: "ad",
-    // campaign_id + adset_id let us report how many campaigns / ad sets / ads a run processed.
-    fields: "ad_id,campaign_id,adset_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective",
+    // campaign_id + adset_id let us report how many campaigns / ad sets / ads a run processed;
+    // the video + outbound-click fields feed the D2C funnel metrics (thumb-stop, hold, LP...).
+    fields:
+      "ad_id,campaign_id,adset_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective,video_play_actions,video_thruplay_watched_actions,outbound_clicks",
     // until defaults to today so existing preset callers are unaffected; a range passes both.
     time_range: JSON.stringify({ since, until: until ?? today() }),
     time_increment: "1",
     limit: "500",
     filtering: JSON.stringify([{ field: "ad.id", operator: "IN", value: adExternalIds }]),
   };
-  const data = await graphGet<{ data: (MetaInsightRow & { ad_id: string; objective?: string; campaign_id?: string; adset_id?: string })[] }>(
-    `act_${accountExternalId}/insights`,
-    token.accessToken,
-    params,
-  );
+  const data = await graphGet<{
+    data: (MetaInsightRow & {
+      ad_id: string;
+      objective?: string;
+      campaign_id?: string;
+      adset_id?: string;
+      video_play_actions?: MetaInsightAction[];
+      video_thruplay_watched_actions?: MetaInsightAction[];
+      outbound_clicks?: MetaInsightAction[];
+    })[];
+  }>(`act_${accountExternalId}/insights`, token.accessToken, params);
   for (const row of data.data ?? []) {
     const entry = byAd.get(row.ad_id) ?? { rows: [], objective: undefined };
     if (!entry.campaignId && row.campaign_id) entry.campaignId = row.campaign_id;
@@ -282,6 +308,12 @@ export async function fetchAdInsights(
       frequency: Number(row.frequency || 0),
       purchases: purchaseValue(row.actions),
       revenue: purchaseValue(row.action_values),
+      video3sViews: sumActions(row.video_play_actions),
+      videoThruplays: sumActions(row.video_thruplay_watched_actions),
+      outboundClicks: sumActions(row.outbound_clicks),
+      landingPageViews: firstActionValue(row.actions, ["landing_page_view", "omni_landing_page_view"]),
+      addToCarts: firstActionValue(row.actions, ["add_to_cart", "omni_add_to_cart", "offsite_conversion.fct_add_to_cart"]),
+      initiateCheckouts: firstActionValue(row.actions, ["initiate_checkout", "omni_initiated_checkout", "offsite_conversion.fct_initiate_checkout"]),
     });
     if (!entry.objective && row.objective) entry.objective = row.objective;
     byAd.set(row.ad_id, entry);

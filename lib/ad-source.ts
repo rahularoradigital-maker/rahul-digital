@@ -29,6 +29,15 @@ export type MetricsRow = {
   purchases: number;
   revenue: number;
   frequency: number;
+  // Funnel/video actions for the D2C ad-level metrics (thumb-stop, hold rate, LP/ATC/checkout
+  // ratios). Optional so fixtures and the per-ad fetcher that do not populate them still work;
+  // absent = 0 in the funnel engine.
+  video3sViews?: number;
+  videoThruplays?: number;
+  outboundClicks?: number;
+  landingPageViews?: number;
+  addToCarts?: number;
+  initiateCheckouts?: number;
 };
 
 export interface AdSource {
