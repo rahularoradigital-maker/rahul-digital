@@ -38,7 +38,7 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate text-[15px] font-semibold" dateParam={dateParam} />
+                  <AdLink accountId={accountId} adId={ad.id} adSetId={ad.adSetId} campaignId={ad.campaignId} name={ad.name} className="truncate text-[15px] font-semibold" dateParam={dateParam} />
                   <span className="shrink-0 rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
                     {ad.objective}
                   </span>

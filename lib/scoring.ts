@@ -16,6 +16,8 @@ export type RealAd = {
   objective?: Objective; // from the campaign; defaults to conversion
   rows: MetricsRow[]; // daily performance rows (oldest..newest order not required)
   endsInDays?: number | null; // days until the ad set / campaign end date, if scheduled
+  adSetId?: string; // parent ad set id, for the Ads Manager deep link (campaign -> ad set -> ad)
+  campaignId?: string; // parent campaign id, for the Ads Manager deep link
 };
 
 type Agg = {
@@ -177,6 +179,8 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
     return {
       id: ad.externalId,
       name: ad.name,
+      adSetId: ad.adSetId,
+      campaignId: ad.campaignId,
       objective,
       performance,
       trend: trendScore(ad.rows, objective),

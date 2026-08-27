@@ -11,6 +11,7 @@ import { FunnelCard } from "@/components/cockpit/FunnelCard";
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import type { MarginalRead } from "@/lib/scoring/marginal";
 import type { DataQuality } from "@/lib/scoring/data-quality";
+import type { ScopeTotals } from "@/lib/meta-sync";
 import { WhyDrawer } from "@/components/cockpit/WhyDrawer";
 
 // The Account Cockpit. Real connected-account data only: if nothing real is
@@ -27,7 +28,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} days={data.days} />;
+  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} scopeTotals={data.scopeTotals} days={data.days} />;
 }
 
 // Honest confidence de-rating: when the day-wise series has quality problems (thin
@@ -110,9 +111,11 @@ function compositionRows(view: CockpitView): CompositionRow[] {
   ];
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; days: number }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; days: number }) {
   const health = view.accountHealth;
-  const roas = view.totals.roas;
+  // Headline KPIs use the TRUE scope totals (all campaigns/ads of the selected objective),
+  // so spend / revenue / ROAS match Ads Manager - not the analyzed-ads subset in view.totals.
+  const roas = scopeTotals.roas;
   const conc = view.concentration;
 
   return (
@@ -153,7 +156,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           label="Blended ROAS"
           tip="Revenue divided by spend, blended across the account. Source: connected Meta account."
           value={roas === null ? "n/a" : `${roas.toFixed(2)}x`}
-          sub={`${rupees.format(view.totals.revenueRs)} on ${rupees.format(view.totals.spendRs)}`}
+          sub={`${rupees.format(scopeTotals.revenueRs)} on ${rupees.format(scopeTotals.spendRs)}`}
         />
         <KpiCard
           label="MER"

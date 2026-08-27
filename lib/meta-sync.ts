@@ -5,7 +5,7 @@
 import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
@@ -64,8 +64,13 @@ export type AccountMetrics = {
 // the user asked to see the coverage of every workflow run).
 export type ProcessedCounts = { campaigns: number; adSets: number; ads: number };
 
+// Headline totals for the KPI cards, from the true scope (all campaigns/ads of the selected
+// objective), so spend / revenue / ROAS match Ads Manager - distinct from the analyzed-ads
+// subset in view.totals that the leaderboard and composition break down.
+export type ScopeTotals = { spendRs: number; revenueRs: number; roas: number | null };
+
 export type LiveCockpit =
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -165,6 +170,8 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
         rows: entry?.rows ?? [],
         objective: mapMetaObjective(entry?.objective),
         endsInDays,
+        adSetId: entry?.adsetId,
+        campaignId: entry?.campaignId,
       };
     });
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
@@ -221,19 +228,22 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     const marginal = marginalScaling(dayRows);
     const dataQuality = assessDataQuality(dayRows);
 
-    // Sum the raw day-wise rows for account-level metrics (real numbers only).
-    let sSpend = 0;
-    let sImpr = 0;
-    let sClicks = 0;
-    let sPur = 0;
-    for (const ad of realAds) {
-      for (const r of ad.rows) {
-        sSpend += r.spend;
-        sImpr += r.impressions;
-        sClicks += r.clicks;
-        sPur += r.purchases;
-      }
+    // TRUE totals for the exact scope (all campaigns/ad sets/ads of the selected objective or
+    // campaign filter), summed at campaign level across the whole account - NOT the sum of the
+    // top-N analyzed ads. This is what makes the headline KPIs match Ads Manager: the leaderboard
+    // deep-analyzes the top ads, but spend / revenue / ROAS / impressions must reflect everything
+    // in scope. Best-effort: if it fails, fall back to the analyzed-ads sum rather than 500.
+    let scope;
+    try {
+      scope = await fetchScopeInsights(acct.external_id, since, token, campaignIds, until);
+    } catch {
+      scope = null;
     }
+    const sSpend = scope ? scope.spend : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.spend, 0), 0);
+    const sImpr = scope ? scope.impressions : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.impressions, 0), 0);
+    const sClicks = scope ? scope.clicks : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.clicks, 0), 0);
+    const sPur = scope ? scope.purchases : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.purchases, 0), 0);
+    const sRev = scope ? scope.revenue : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.revenue, 0), 0);
     const metrics: AccountMetrics = {
       impressions: sImpr,
       clicks: sClicks,
@@ -243,8 +253,11 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       cpcAll: sClicks > 0 ? sSpend / sClicks : null,
       cpa: sPur > 0 ? sSpend / sPur : null,
     };
+    // Headline totals for the KPI cards, from the true scope (Ads-Manager-matching). Kept
+    // separate from view.totals, which is the analyzed-ads subset the leaderboard breaks down.
+    const scopeTotals = { spendRs: Math.round(sSpend), revenueRs: Math.round(sRev), roas: sSpend > 0 ? sRev / sSpend : null };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, processed, funnel, marginal, dataQuality };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }

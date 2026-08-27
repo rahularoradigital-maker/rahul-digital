@@ -56,7 +56,7 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
             <div key={ad.id} className="border-t border-[var(--surface-alt)] py-3 first:border-t-0">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
-                  <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate text-sm font-medium" dateParam={dateParam} />
+                  <AdLink accountId={accountId} adId={ad.id} adSetId={ad.adSetId} campaignId={ad.campaignId} name={ad.name} className="truncate text-sm font-medium" dateParam={dateParam} />
                   <span className={`shrink-0 rounded-[70px] px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
                 </div>
                 <span className="shrink-0 text-xs font-medium text-[var(--ink-muted)] tabular-nums">

@@ -344,6 +344,46 @@ export async function listAllCampaignObjectives(
   return rows.map((c) => ({ id: c.id, objective: c.objective }));
 }
 
+export type ScopeInsights = { spend: number; impressions: number; clicks: number; purchases: number; revenue: number };
+
+/**
+ * TRUE totals for the current scope over the window, so the dashboard KPIs match Ads Manager.
+ * This is level=campaign, summed across EVERY campaign in scope (paginated), NOT the sum of the
+ * top-N analyzed ads. That distinction is the whole point: we deep-analyze the top ads for the
+ * leaderboard/fatigue, but the headline spend/revenue/ROAS must reflect all campaigns, ad sets
+ * and ads of the selected objective - which is exactly what Ads Manager shows when you filter to
+ * that objective. campaignIds scopes it: undefined = whole account; [ids] = those campaigns;
+ * [] = nothing in scope (an objective with no campaigns) -> all zeros, an honest empty state.
+ */
+export async function fetchScopeInsights(
+  accountExternalId: string,
+  since: string,
+  token: TokenSet,
+  campaignIds?: string[],
+  until?: string,
+): Promise<ScopeInsights> {
+  const empty: ScopeInsights = { spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0 };
+  if (campaignIds && campaignIds.length === 0) return empty;
+  const params: Record<string, string> = {
+    level: "campaign",
+    fields: "spend,impressions,clicks,actions,action_values",
+    time_range: JSON.stringify({ since, until: until ?? today() }),
+    limit: "500",
+  };
+  if (campaignIds && campaignIds.length > 0) {
+    params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }]);
+  }
+  const rows = await graphGetAll<MetaInsightRow>(`act_${accountExternalId}/insights`, token.accessToken, params, 20);
+  return rows.reduce<ScopeInsights>((acc, r) => {
+    acc.spend += Number(r.spend || 0);
+    acc.impressions += Number(r.impressions || 0);
+    acc.clicks += Number(r.clicks || 0);
+    acc.purchases += purchaseValue(r.actions);
+    acc.revenue += purchaseValue(r.action_values);
+    return acc;
+  }, { ...empty });
+}
+
 /**
  * Top ads by spend in the window, via account-level insights (level=ad, sorted by
  * spend). This surfaces the ads that actually matter on a big account, instead of the

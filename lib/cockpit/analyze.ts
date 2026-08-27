@@ -37,6 +37,8 @@ const DECISION_LABEL: Record<Decision["action"], string> = {
 export type CockpitAdInput = VerdictInput & {
   id: string;
   name: string;
+  adSetId?: string; // parent ad set / campaign ids, for the Ads Manager deep link hierarchy
+  campaignId?: string;
   objective: Objective;
   spendRs: number;
   revenueRs: number;
@@ -58,6 +60,8 @@ export type CockpitAction = { label: string; priority: Priority; why: string };
 export type CockpitAd = {
   id: string;
   name: string;
+  adSetId?: string; // parent ad set / campaign ids, for the Ads Manager deep link hierarchy
+  campaignId?: string;
   objective: Objective;
   spendRs: number;
   revenueRs: number;
@@ -222,6 +226,8 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
     return {
       id: input.id,
       name: input.name,
+      adSetId: input.adSetId,
+      campaignId: input.campaignId,
       objective: input.objective,
       spendRs: input.spendRs,
       revenueRs: input.revenueRs,

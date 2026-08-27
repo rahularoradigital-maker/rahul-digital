@@ -15,9 +15,20 @@ assert.ok(base.includes("selected_ad_ids=120210000000000000"));
 assert.ok(!base.includes("date="));
 
 // A date window is threaded through as a date param (URL-encoded underscore stays "_").
-const dated = adsManagerUrl("266769781", "120210000000000000", "2026-08-13_2026-08-27");
+const dated = adsManagerUrl("266769781", "120210000000000000", { dateParam: "2026-08-13_2026-08-27" });
 assert.ok(dated);
 assert.ok(dated.includes("date=2026-08-13_2026-08-27"));
+
+// The ad set + campaign are selected too, so the ad opens in its campaign -> ad set -> ad
+// context (trace fatigue to the exact campaign/ad set), still opened at the Ads tab.
+const full = adsManagerUrl("266769781", "120210000000000000", { adSetId: "23840000000000000", campaignId: "23850000000000000" });
+assert.ok(full);
+assert.ok(full.includes("selected_campaign_ids=23850000000000000"), "campaign selected");
+assert.ok(full.includes("selected_adset_ids=23840000000000000"), "ad set selected");
+assert.ok(full.includes("selected_ad_ids=120210000000000000"), "ad selected");
+// Parents are omitted (not empty) when unknown, so the link never carries a blank id.
+assert.ok(!base.includes("selected_campaign_ids="), "no campaign param when not provided");
+assert.ok(!base.includes("selected_adset_ids="), "no ad set param when not provided");
 
 // Missing either id yields null so the UI falls back to plain text (never a broken link).
 assert.equal(adsManagerUrl(undefined, "123"), null);
