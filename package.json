@@ -24,7 +24,8 @@
     "check:comparator": "node --experimental-strip-types scripts/check-comparator.ts",
     "check:verdict": "node --experimental-strip-types scripts/check-verdict.ts",
     "check:cockpit": "node --experimental-strip-types scripts/check-cockpit.ts",
-    "check:scoring": "node --experimental-strip-types scripts/check-scoring.ts"
+    "check:scoring": "node --experimental-strip-types scripts/check-scoring.ts",
+    "check:objective": "node --experimental-strip-types scripts/check-objective.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

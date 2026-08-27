@@ -4,7 +4,7 @@
 
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective } from "./meta-source.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
@@ -107,11 +107,15 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // request per ad (26 round-trips -> 2). This is the main page-speed fix.
     const top = ads.slice(0, MAX_ADS);
     const rowsByAd = await fetchAdInsights(acct.external_id, top.map((a) => a.externalId), since, token);
-    const realAds: RealAd[] = top.map((ad) => ({
-      externalId: ad.externalId,
-      name: ad.name ?? ad.externalId,
-      rows: rowsByAd.get(ad.externalId) ?? [],
-    }));
+    const realAds: RealAd[] = top.map((ad) => {
+      const entry = rowsByAd.get(ad.externalId);
+      return {
+        externalId: ad.externalId,
+        name: ad.name ?? ad.externalId,
+        rows: entry?.rows ?? [],
+        objective: mapMetaObjective(entry?.objective),
+      };
+    });
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
     const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
     const view = analyzeAccount(inputs, "LIVE");

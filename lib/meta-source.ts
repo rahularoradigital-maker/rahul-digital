@@ -4,6 +4,7 @@
 // Pure data-fetching; scoring/verdicts happen in the rules engine, not here.
 
 import type { AdSource, TokenSet, SourceAd, MetricsRow } from "./ad-source.ts";
+import type { Objective } from "./rules/comparator.ts";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
@@ -214,35 +215,53 @@ export async function listTopSpendingAds(
 }
 
 /**
+ * Map a raw Meta campaign objective (legacy or ODAX naming) to our internal Objective
+ * (J2: same-objective comparison only). Case-insensitive substring match; order matters
+ * since the broad SALES/ENGAGEMENT buckets would otherwise swallow LEAD/APP/AWARENESS/TRAFFIC.
+ * Unknown or missing objective falls back to "conversion" (the prior, safe default).
+ */
+export function mapMetaObjective(raw?: string): Objective {
+  const o = (raw ?? "").toUpperCase();
+  if (o.includes("LEAD")) return "leads";
+  if (o.includes("APP")) return "app_installs";
+  if (o.includes("AWARENESS") || o.includes("REACH") || o.includes("RECALL")) return "awareness";
+  if (o.includes("TRAFFIC") || o.includes("LINK_CLICK")) return "traffic";
+  if (o.includes("SALES") || o.includes("CONVERSION") || o.includes("PURCHASE") || o.includes("CATALOG")) return "conversion";
+  if (o.includes("ENGAGEMENT") || o.includes("VIDEO") || o.includes("POST") || o.includes("PAGE_LIKE") || o.includes("MESSAGE") || o.includes("EVENT")) return "engagement";
+  return "conversion";
+}
+
+/**
  * Daily metric rows for a set of ads in ONE account-level insights call (level=ad,
  * time_increment=1, filtered to those ad ids). Replaces N per-ad calls: for 25 ads
  * this is a single request instead of 25, which is the difference between a snappy
- * page and a very slow one. Returns rows grouped by ad id.
+ * page and a very slow one. Returns rows grouped by ad id, plus each ad's raw campaign
+ * objective (constant across its rows, so we just take it from any row).
  */
 export async function fetchAdInsights(
   accountExternalId: string,
   adExternalIds: string[],
   since: string,
   token: TokenSet,
-): Promise<Map<string, MetricsRow[]>> {
-  const byAd = new Map<string, MetricsRow[]>();
+): Promise<Map<string, { rows: MetricsRow[]; objective?: string }>> {
+  const byAd = new Map<string, { rows: MetricsRow[]; objective?: string }>();
   if (adExternalIds.length === 0) return byAd;
   const params: Record<string, string> = {
     level: "ad",
-    fields: "ad_id,date_start,spend,impressions,clicks,frequency,actions,action_values",
+    fields: "ad_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective",
     time_range: JSON.stringify({ since, until: today() }),
     time_increment: "1",
     limit: "500",
     filtering: JSON.stringify([{ field: "ad.id", operator: "IN", value: adExternalIds }]),
   };
-  const data = await graphGet<{ data: (MetaInsightRow & { ad_id: string })[] }>(
+  const data = await graphGet<{ data: (MetaInsightRow & { ad_id: string; objective?: string })[] }>(
     `act_${accountExternalId}/insights`,
     token.accessToken,
     params,
   );
   for (const row of data.data ?? []) {
-    const list = byAd.get(row.ad_id) ?? [];
-    list.push({
+    const entry = byAd.get(row.ad_id) ?? { rows: [], objective: undefined };
+    entry.rows.push({
       adExternalId: row.ad_id,
       date: row.date_start,
       spend: Number(row.spend || 0),
@@ -252,7 +271,8 @@ export async function fetchAdInsights(
       purchases: purchaseValue(row.actions),
       revenue: purchaseValue(row.action_values),
     });
-    byAd.set(row.ad_id, list);
+    if (!entry.objective && row.objective) entry.objective = row.objective;
+    byAd.set(row.ad_id, entry);
   }
   return byAd;
 }
