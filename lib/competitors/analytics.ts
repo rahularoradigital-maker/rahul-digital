@@ -4,7 +4,7 @@
 // (42-attribute creative analysis, SWOT, written recommendations) are gated on Gemini and
 // are NOT computed here.
 
-import type { AnalyzedCreative, BrandAnalytics, CompetitorReport, Counted, MediaCategory, NormalizedAd } from "./types.ts";
+import type { AnalyzedCreative, BrandAnalytics, BrandTraffic, CompetitorReport, Counted, MediaCategory, NormalizedAd } from "./types.ts";
 
 const EMPTY_MIX: Record<MediaCategory, number> = { video: 0, image: 0, carousel: 0, other: 0 };
 
@@ -60,6 +60,58 @@ export function analyzeBrand(ads: NormalizedAd[]): BrandAnalytics {
   };
 }
 
+// The landing-page host for one ad, lowercased and stripped of a leading "www.". Null when
+// the link is missing or unparseable (those ads bucket to "Other", not a fake destination).
+function hostOf(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+// Bucket one landing-page host into a destination category.
+function destinationOf(linkUrl: string | null): string {
+  const host = hostOf(linkUrl);
+  if (!host) return "Other";
+  if (host === "apps.apple.com" || host === "play.google.com") return "App store";
+  if (host.includes("amazon.")) return "Amazon";
+  if (host.includes("flipkart.")) return "Flipkart";
+  if (host.includes("myntra.")) return "Myntra";
+  // ponytail: we do not store each brand's own domain, so any host that is NOT a known
+  // marketplace/app-store is treated as the brand's own D2C site. Ceiling: this over-counts
+  // "Own site" if a brand links to some other third party we do not list. Upgrade path =
+  // store each brand's domain and match the host against it explicitly.
+  return "Own site";
+}
+
+// Ad Traffic Distribution: per brand, where the ad clicks go, counted from each ad's
+// landing-page host. Percentages are per brand (of that brand's ads with a link bucket).
+// Only destinations that actually occur are returned, most-used first. My brand leads, then
+// competitors by descending ad volume - matching buildCreativeIntel's ordering.
+export function buildTrafficByBrand(ads: NormalizedAd[]): BrandTraffic[] {
+  const byBrand = new Map<string, { label: string; isMyBrand: boolean; counts: Map<string, number>; total: number }>();
+  for (const a of ads) {
+    const row = byBrand.get(a.pageId) ?? { label: a.brandLabel, isMyBrand: a.isMyBrand, counts: new Map<string, number>(), total: 0 };
+    const dest = destinationOf(a.linkUrl);
+    row.counts.set(dest, (row.counts.get(dest) ?? 0) + 1);
+    row.total += 1;
+    byBrand.set(a.pageId, row);
+  }
+  return [...byBrand.values()]
+    .map((r) => ({
+      label: r.label,
+      isMyBrand: r.isMyBrand,
+      total: r.total,
+      destinations: [...r.counts.entries()]
+        .map(([label, count]) => ({ label, count, pct: r.total ? Math.round((count / r.total) * 100) : 0 }))
+        .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)),
+    }))
+    .sort((a, b) => Number(b.isMyBrand) - Number(a.isMyBrand) || b.total - a.total)
+    .map(({ total: _total, ...row }) => row);
+}
+
 // Group the flat ad list by brand (pageId) and analyze each. Insertion order of the first
 // ad per brand is preserved so my brand keeps the position it arrived in.
 export function buildReport(ads: NormalizedAd[]): CompetitorReport {
@@ -94,6 +146,7 @@ export function buildReport(ads: NormalizedAd[]): CompetitorReport {
       formats: myBrand ? [...compFormats].filter((f) => !myFormats.has(f)) : [],
       ctas: myBrand ? [...compCtas].filter((c) => !myCtas.has(c)) : [],
     },
+    trafficByBrand: buildTrafficByBrand(ads),
   };
 }
 

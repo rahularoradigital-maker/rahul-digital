@@ -1,4 +1,4 @@
-import type { BrandAnalytics, MediaCategory } from "@/lib/competitors/types";
+import type { BrandAnalytics, BrandTraffic, MediaCategory } from "@/lib/competitors/types";
 import type { CompetitorData as Data } from "@/lib/competitors/data";
 import type { CreativeIntel, FunnelMix } from "@/lib/competitors/analytics";
 import { AnalyzeControl } from "@/components/app/market/analyze-control";
@@ -120,6 +120,9 @@ export function CompetitorDashboard({ data }: { data: Data }) {
         </div>
       )}
 
+      {/* Ad traffic distribution: where each brand sends its ad clicks (landing-page hosts) */}
+      {report.trafficByBrand.length > 0 && <TrafficSection traffic={report.trafficByBrand} />}
+
       {/* Stage 7 trigger + AI creative intelligence */}
       <AnalyzeControl analyzedCount={report ? (data.creativeIntel?.analyzedCount ?? 0) : 0} />
       {data.creativeIntel && <CreativeIntelSection intel={data.creativeIntel} />}
@@ -198,6 +201,37 @@ function CreativeIntelSection({ intel }: { intel: CreativeIntel }) {
         <Patterns title="Hook types" items={intel.hookTypes} />
         <Patterns title="Offers" items={intel.offers} />
         <Patterns title="Emotions" items={intel.emotions} />
+      </div>
+    </div>
+  );
+}
+
+function TrafficSection({ traffic }: { traffic: BrandTraffic[] }) {
+  return (
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+      <div className="mb-1 text-base font-semibold">Where competitors send traffic</div>
+      <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
+        Each brand's ad clicks by landing-page destination - own D2C site vs the big marketplaces and app stores.
+      </div>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        {traffic.map((b) => (
+          <div key={b.label}>
+            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+              <span className="truncate">{b.label}</span>
+              {b.isMyBrand && <span className="text-[var(--accent)]">(You)</span>}
+            </div>
+            <div className="space-y-1.5">
+              {b.destinations.map((d) => (
+                <div key={d.label} className="flex items-center justify-between gap-2 text-[13px]">
+                  <span className="truncate text-[var(--ink)]">{d.label}</span>
+                  <span className="tabular-nums text-[var(--ink-muted)]">
+                    {d.count} · {d.pct}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

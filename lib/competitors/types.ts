@@ -80,10 +80,17 @@ export type BrandAnalytics = {
   topCreatives: NormalizedAd[]; // active first, then most recent, up to 10
 };
 
+// Ad traffic distribution: where a brand sends its ad clicks, bucketed from each ad's
+// landing-page host (own D2C site vs the big marketplaces / app stores). Counts + percentages.
+export type TrafficDestination = { label: string; count: number; pct: number };
+export type BrandTraffic = { label: string; isMyBrand: boolean; destinations: TrafficDestination[] };
+
 export type CompetitorReport = {
   myBrand: BrandAnalytics | null;
   competitors: BrandAnalytics[];
   // Whitespace: formats and CTAs competitors run that my brand does not (stage 8 gap
   // analysis, the deterministic part - the LLM-written recommendations are gated on Gemini).
   gaps: { formats: MediaCategory[]; ctas: string[] };
+  // Where each brand sends its ad clicks, from the stored landing-page URLs.
+  trafficByBrand: BrandTraffic[];
 };

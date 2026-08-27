@@ -77,7 +77,10 @@ async function resolveCampaignIds(
   return campaigns.filter((c) => objectives.includes(mapMetaObjective(c.objective))).map((c) => c.id);
 }
 
-async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = []): Promise<LiveCockpit> {
+// An explicit {since, until} custom range (YYYY-MM-DD) overrides lookbackDays for the pull.
+export type ExplicitWindow = { since: string; until: string };
+
+async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = [], window?: ExplicitWindow): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
   let acct: { id: string; external_id: string; name: string | null } | null = null;
@@ -108,7 +111,9 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
   if (!token) return { status: "not_connected" };
 
   try {
-    const since = daysAgo(lookbackDays);
+    // A custom range wins over lookbackDays; otherwise since = daysAgo, until = today.
+    const since = window ? window.since : daysAgo(lookbackDays);
+    const until = window ? window.until : undefined;
     // Which campaigns to include: the campaign picker, or the objective picker mapped to
     // the account's campaigns of those objectives. undefined = all; [] = matched nothing.
     const campaignIds = await resolveCampaignIds(acct.external_id, token, campaignId, objectives);
@@ -116,7 +121,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // matter on a big account), scoped to the resolved campaigns.
     let ads: { externalId: string; name?: string }[] = [];
     try {
-      ads = await listTopSpendingAds(acct.external_id, since, token, campaignIds, MAX_ADS);
+      ads = await listTopSpendingAds(acct.external_id, since, token, campaignIds, MAX_ADS, until);
     } catch {
       ads = [];
     }
@@ -128,7 +133,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // Pull daily metrics for all of these ads in ONE account-level call instead of one
     // request per ad (26 round-trips -> 2). This is the main page-speed fix.
     const top = ads.slice(0, MAX_ADS);
-    const rowsByAd = await fetchAdInsights(acct.external_id, top.map((a) => a.externalId), since, token);
+    const rowsByAd = await fetchAdInsights(acct.external_id, top.map((a) => a.externalId), since, token, until);
     const realAds: RealAd[] = top.map((ad) => {
       const entry = rowsByAd.get(ad.externalId);
       return {
@@ -203,8 +208,8 @@ export async function bustCockpitCache(userId?: string): Promise<void> {
 
 // Live pull, then write both cache levels. Returned to callers and also used as the
 // background refresh body.
-async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string): Promise<LiveCockpit> {
-  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives);
+async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow): Promise<LiveCockpit> {
+  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives, window);
   if (value.status !== "error") {
     cockpitCache.set(memKey, { at: Date.now(), value });
     try {
@@ -224,12 +229,15 @@ export async function fetchLiveCockpit(
   lookbackDays: number = LOOKBACK_DAYS,
   campaignId?: string,
   objectives: string[] = [],
+  window?: ExplicitWindow,
 ): Promise<LiveCockpit> {
   // Key the cache by the ACTIVE account too: without this, every account shares one
   // cache entry, so switching account keeps showing the previous account's numbers.
   const session = await getUserMetaSession(userId);
   const activeId = session?.activeExternalId ?? "none";
-  const cacheKey = `${activeId}:${lookbackDays}:${campaignId ?? ""}:${[...objectives].sort().join(",")}`;
+  // Include the custom range in the key so it never collides with a preset (which has no window).
+  const windowKey = window ? `${window.since}_${window.until}` : "";
+  const cacheKey = `${activeId}:${lookbackDays}:${windowKey}:${campaignId ?? ""}:${[...objectives].sort().join(",")}`;
   const memKey = `${userId}:${cacheKey}`;
   const now = Date.now();
 
@@ -260,7 +268,7 @@ export async function fetchLiveCockpit(
     if (cached.age < STALE_MS) {
       // Serve stale immediately, refresh in the background so the next load is fresh.
       try {
-        after(() => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey));
+        after(() => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window));
       } catch {
         // after() unavailable outside a request scope; the stale value is still fine.
       }
@@ -269,7 +277,7 @@ export async function fetchLiveCockpit(
   }
 
   // Cold or too stale: block on the live pull (skeleton shows while this runs).
-  return pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey);
+  return pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window);
 }
 
 function daysAgo(n: number): string {

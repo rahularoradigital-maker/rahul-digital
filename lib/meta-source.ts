@@ -195,6 +195,7 @@ export async function listTopSpendingAds(
   token: TokenSet,
   campaignIds?: string[],
   limit = 25,
+  until?: string,
 ): Promise<{ externalId: string; name: string }[]> {
   // campaignIds semantics: undefined = no filter (all campaigns); [] = filter matches
   // nothing (e.g. an objective with no active campaigns), so return nothing rather than
@@ -203,7 +204,9 @@ export async function listTopSpendingAds(
   const params: Record<string, string> = {
     level: "ad",
     fields: "ad_id,ad_name,spend",
-    time_range: JSON.stringify({ since, until: today() }),
+    // until defaults to today so a plain since-only call (a preset window) is unchanged;
+    // an explicit range passes both bounds.
+    time_range: JSON.stringify({ since, until: until ?? today() }),
     sort: "spend_descending",
     limit: String(limit),
   };
@@ -247,13 +250,15 @@ export async function fetchAdInsights(
   adExternalIds: string[],
   since: string,
   token: TokenSet,
+  until?: string,
 ): Promise<Map<string, { rows: MetricsRow[]; objective?: string }>> {
   const byAd = new Map<string, { rows: MetricsRow[]; objective?: string }>();
   if (adExternalIds.length === 0) return byAd;
   const params: Record<string, string> = {
     level: "ad",
     fields: "ad_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective",
-    time_range: JSON.stringify({ since, until: today() }),
+    // until defaults to today so existing preset callers are unaffected; a range passes both.
+    time_range: JSON.stringify({ since, until: until ?? today() }),
     time_increment: "1",
     limit: "500",
     filtering: JSON.stringify([{ field: "ad.id", operator: "IN", value: adExternalIds }]),

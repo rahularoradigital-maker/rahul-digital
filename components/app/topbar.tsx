@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { titleFor } from "@/lib/app/nav";
 import { WINDOWS } from "@/lib/app/windows";
 import { AccountSwitcher } from "@/components/app/account-switcher";
@@ -10,25 +10,15 @@ import { ObjectiveSwitcher } from "@/components/app/objective-switcher";
 import { rescanCockpit } from "@/app/app/actions";
 
 // The working topbar. Every control does its job:
-//  - date window  -> sets ?days= and re-scopes the whole page (rulebook setup gate)
+//  - date window  -> sets the adbrain.window cookie and re-scopes the whole page
 //  - Re-scan      -> router.refresh() re-pulls live Meta data on the server
 //  - Switch acct  -> re-runs Meta OAuth so the user can connect/switch account
 //  - Ask          -> honest: acknowledges until the AI answer engine is wired
 export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const params = useSearchParams();
   const [pending, startTransition] = useTransition();
   const [asked, setAsked] = useState(false);
-
-  const current = Number(params.get("days"));
-  const days = (WINDOWS as readonly number[]).includes(current) ? current : 14;
-
-  function setDays(next: number) {
-    const q = new URLSearchParams(Array.from(params.entries()));
-    q.set("days", String(next));
-    router.push(`${pathname}?${q.toString()}`);
-  }
 
   return (
     <div className="flex flex-col gap-3 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between md:py-3.5">
@@ -72,22 +62,8 @@ export function Topbar() {
         <AccountSwitcher />
         <CampaignSwitcher />
 
-        {/* Date window (setup gate) */}
-        <label className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium">
-          <span className="text-[var(--ink-muted)]">Meta ·</span>
-          <select
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-            aria-label="Date window"
-            className="cursor-pointer bg-transparent font-medium text-[var(--ink)] outline-none"
-          >
-            {WINDOWS.map((w) => (
-              <option key={w} value={w}>
-                Last {w} days
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* Date window (setup gate): presets + custom range, via the adbrain.window cookie */}
+        <DateWindow onChange={() => startTransition(() => router.refresh())} />
 
         {/* Objective filter (setup gate) */}
         <ObjectiveSwitcher />
@@ -107,6 +83,146 @@ export function Topbar() {
           {pending ? "Scanning..." : "Re-scan signals"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function readCookie(name: string): string {
+  if (typeof document === "undefined") return "";
+  for (const part of document.cookie.split("; ")) {
+    const i = part.indexOf("=");
+    if (i > -1 && part.slice(0, i) === name) return decodeURIComponent(part.slice(i + 1));
+  }
+  return "";
+}
+
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Date-window control. A preset writes "days:<n>"; a custom range writes
+// "range:<from>:<to>" into the adbrain.window cookie, which loadCockpit reads server-side.
+// Same dropdown + click-outside pattern as the objective/campaign switchers.
+function DateWindow({ onChange }: { onChange: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [showCustom, setShowCustom] = useState(false);
+  const [label, setLabel] = useState("Last 14 days");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState(todayISO());
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Seed the label (and the custom inputs) from the cookie so the control reflects the
+  // window that is actually in effect on load.
+  useEffect(() => {
+    const raw = readCookie("adbrain.window");
+    if (raw.startsWith("days:")) {
+      const n = Number(raw.slice(5));
+      if (Number.isFinite(n) && n > 0) setLabel(`Last ${n} days`);
+    } else if (raw.startsWith("range:")) {
+      const [s, u] = raw.slice(6).split(":");
+      if (s && u) {
+        setLabel(`${s} to ${u}`);
+        setFrom(s);
+        setTo(u);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  function write(value: string) {
+    document.cookie = `adbrain.window=${value}; path=/; max-age=${60 * 60 * 24 * 30}`;
+    setOpen(false);
+    setShowCustom(false);
+    onChange();
+  }
+
+  function choosePreset(n: number) {
+    setLabel(`Last ${n} days`);
+    write(`days:${n}`);
+  }
+
+  function applyRange() {
+    if (!from || !to || from > to) return;
+    setLabel(`${from} to ${to}`);
+    write(`range:${from}:${to}`);
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
+      >
+        <span className="text-[var(--ink-muted)]">Meta ·</span>
+        <span className="max-w-[170px] truncate">{label}</span>
+        <span className="text-[var(--ink-muted)]">▾</span>
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-60 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
+          {WINDOWS.map((w) => (
+            <button
+              key={w}
+              type="button"
+              onClick={() => choosePreset(w)}
+              className={`w-full rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${label === `Last ${w} days` ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+            >
+              Last {w} days
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setShowCustom((s) => !s)}
+            className={`w-full rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${showCustom || label.includes(" to ") ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+          >
+            Custom range
+          </button>
+          {showCustom ? (
+            <div className="mt-1 flex flex-col gap-2 border-t border-[var(--hairline)] px-1 pt-2">
+              <label className="flex flex-col gap-1 text-[12px] text-[var(--ink-muted)]">
+                From
+                <input
+                  type="date"
+                  value={from}
+                  max={to || todayISO()}
+                  onChange={(e) => setFrom(e.target.value)}
+                  aria-label="From date"
+                  className="rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1.5 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-[12px] text-[var(--ink-muted)]">
+                To
+                <input
+                  type="date"
+                  value={to}
+                  min={from || undefined}
+                  max={todayISO()}
+                  onChange={(e) => setTo(e.target.value)}
+                  aria-label="To date"
+                  className="rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1.5 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--accent)]"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={applyRange}
+                disabled={!from || !to || from > to}
+                className="rounded-[var(--radius-pill)] bg-[var(--ink)] px-3 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+              >
+                Apply range
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

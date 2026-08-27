@@ -7,6 +7,7 @@ import { KpiCard } from "@/components/cockpit/KpiCard";
 import { ActionList } from "@/components/cockpit/ActionList";
 import { FatigueRadar } from "@/components/cockpit/FatigueRadar";
 import { Leaderboard } from "@/components/cockpit/Leaderboard";
+import { WhyDrawer } from "@/components/cockpit/WhyDrawer";
 
 // The Account Cockpit. Real connected-account data only: if nothing real is
 // available, loadCockpit returns connected:false and we render the Connect state.
@@ -62,7 +63,10 @@ function Cockpit({ view, accountName, accountId, adsAnalyzed, days }: { view: Co
         <HealthRing score={health.score} />
         <div>
           <div className="mb-3.5 flex items-center justify-between gap-3">
-            <div className="text-base font-semibold">Account Health</div>
+            <div className="flex items-center gap-2">
+              <div className="text-base font-semibold">Account Health</div>
+              <WhyDrawer explanation={view.accountHealth.explain} />
+            </div>
             <span className="rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
               Internal calculation · {health.factLabel}
             </span>
@@ -124,6 +128,30 @@ function Cockpit({ view, accountName, accountId, adsAnalyzed, days }: { view: Co
                 {Math.round(view.waste.shareOfSpend * 100)}% of spend. Clearing the Do-now list is where this comes back.
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Opportunity loss: money actively bleeding (wasted + at-risk / fatiguing spend) */}
+      {view.opportunity.totalLossRs > 0 && (
+        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+          <div className="mb-1 text-base font-semibold">Opportunity loss</div>
+          <div className="mb-4 text-[13px] text-[var(--ink-muted)]">{view.opportunity.basis}</div>
+          <div className="flex flex-wrap items-end gap-8 border-t border-[var(--surface-alt)] pt-4">
+            <div>
+              <div className="text-[30px] font-semibold tabular-nums leading-none text-[var(--bad-ink)]">
+                {rupees.format(view.opportunity.totalLossRs)}
+              </div>
+              <div className="mt-1.5 text-[13px] text-[var(--ink-muted)]">
+                {Math.round(view.opportunity.lossShare * 100)}% of spend actively bleeding
+              </div>
+            </div>
+            {view.opportunity.drivers.map((d) => (
+              <div key={d.label}>
+                <div className="text-[15px] font-semibold tabular-nums">{rupees.format(d.rs)}</div>
+                <div className="mt-1 text-[13px] text-[var(--ink-muted)]">{d.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       )}

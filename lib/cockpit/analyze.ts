@@ -12,6 +12,8 @@ import type { DiagnoseResult } from "../causality.ts";
 import type { Objective } from "../rules/comparator.ts";
 import type { FatigueRead } from "../scoring/fatigue.ts";
 import { decide, type Decision } from "../scoring/decision.ts";
+import type { Explanation } from "../scoring/rubrics.ts";
+import { opportunityLoss, type OpportunityLoss } from "../scoring/opportunity.ts";
 
 // Map the objective-aware decision to the leaderboard's verdict vocabulary + the action row.
 const DECISION_VERDICT: Record<Decision["action"], Verdict> = {
@@ -81,8 +83,10 @@ export type CreativeHalfLife = {
 export type CockpitView = {
   dataSource: "SAMPLE" | "LIVE";
   totals: { spendRs: number; revenueRs: number; roas: number | null };
-  accountHealth: { score: number; factLabel: "MODEL_ESTIMATE"; basis: string };
+  accountHealth: { score: number; factLabel: "MODEL_ESTIMATE"; basis: string; explain: Explanation };
   creativeHalfLife: CreativeHalfLife;
+  opportunity: OpportunityLoss; // money bleeding: wasted + at-risk (fatiguing) spend
+
   leaderboard: CockpitAd[]; // sorted by CreativeScore, best first
   doThis: (CockpitAction & { adId: string; adName: string })[]; // sorted by priority
   waste: ReturnType<typeof wasteRollup>;
@@ -127,7 +131,17 @@ function roasOf(spendRs: number, revenueRs: number): number | null {
  */
 function accountHealth(ads: CockpitAd[], inputs: CockpitAdInput[], totalSpendRs: number, totalWastedRs: number): CockpitView["accountHealth"] {
   if (ads.length === 0 || totalSpendRs <= 0) {
-    return { score: 0, factLabel: "MODEL_ESTIMATE", basis: "no spend to assess" };
+    return {
+      score: 0,
+      factLabel: "MODEL_ESTIMATE",
+      basis: "no spend to assess",
+      explain: {
+        rubricId: "account_health",
+        headline: "0/100: no spend to assess yet.",
+        steps: [{ label: "Account Health", value: "0/100" }],
+        contributions: [],
+      },
+    };
   }
   // Spend-weight each ad's absolute objective score (fall back to CreativeScore). ads and
   // inputs are index-aligned: scored is inputs.map(...) upstream.
@@ -144,10 +158,31 @@ function accountHealth(ads: CockpitAd[], inputs: CockpitAdInput[], totalSpendRs:
   const wasteShare = totalWastedRs / totalSpendRs;
   const score = Math.max(0, Math.min(100, Math.round(base - 25 * wasteShare)));
   const winnerShare = ads.filter((a) => a.verdict === "winner").reduce((acc, a) => acc + a.spendRs, 0) / totalSpendRs;
+  // Top ads by spend become the per-ad drivers in the "Why this score?" drawer. Each ad's
+  // absolute objective score (fall back to CreativeScore) is what the spend-weighted base is
+  // built from, so these rows are the honest breakdown of the headline number.
+  const contributions = ads
+    .map((a, i) => {
+      const h = inputs[i]?.healthScore ?? a.score;
+      return { name: a.name, tag: a.objective, metric: `${h}/100`, score: h, spendShare: a.spendRs / totalSpendRs };
+    })
+    .sort((x, y) => y.spendShare - x.spendShare)
+    .slice(0, 6);
+  const explain: Explanation = {
+    rubricId: "account_health",
+    headline: `${score}/100: spend-weighted average of each ad's objective score (${Math.round(base)}), minus a ${Math.round(wasteShare * 100)}% waste penalty.`,
+    steps: [
+      { label: "Spend-weighted objective performance", value: `${Math.round(base)}/100` },
+      { label: "Waste penalty", value: `-${Math.round(25 * wasteShare)}` },
+      { label: "Account Health", value: `${score}/100` },
+    ],
+    contributions,
+  };
   return {
     score,
     factLabel: "MODEL_ESTIMATE",
     basis: `${Math.round(base)}/100 objective performance, spend-weighted; ${Math.round(winnerShare * 100)}% on winners, ${Math.round(wasteShare * 100)}% wasted`,
+    explain,
   };
 }
 
@@ -220,6 +255,7 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
     totals: { spendRs: totalSpendRs, revenueRs: totalRevenueRs, roas: roasOf(totalSpendRs, totalRevenueRs) },
     accountHealth: accountHealth(scored, ads, totalSpendRs, totalWastedRs),
     creativeHalfLife: creativeHalfLife(scored),
+    opportunity: opportunityLoss(scored),
     leaderboard,
     doThis,
     waste,

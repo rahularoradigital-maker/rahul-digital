@@ -3,7 +3,7 @@
 // Run: node --experimental-strip-types scripts/check-competitors.ts
 import assert from "node:assert/strict";
 import { pageIdFromAdLibraryUrl } from "../lib/scrapecreators.ts";
-import { analyzeBrand, buildReport, buildCreativeIntel } from "../lib/competitors/analytics.ts";
+import { analyzeBrand, buildReport, buildCreativeIntel, buildTrafficByBrand } from "../lib/competitors/analytics.ts";
 import { mergeAttributes, anyFilled } from "../lib/agents/creative/orchestrator.ts";
 import type { AnalyzedCreative, CreativeAttributes, NormalizedAd } from "../lib/competitors/types.ts";
 
@@ -54,6 +54,33 @@ assert.deepEqual(report.gaps.ctas.sort(), ["Learn More", "Sign Up"], "CTAs the r
 const noMine = buildReport(rival);
 assert.equal(noMine.myBrand, null);
 assert.deepEqual(noMine.gaps.formats, []);
+
+// --- Ad traffic distribution: where each brand sends its ad clicks (landing-page host). ---
+const trafficAds: NormalizedAd[] = [
+  ad({ pageId: "me", brandLabel: "My Brand", isMyBrand: true, linkUrl: "https://mybrand.in/product/123" }),
+  ad({ pageId: "me", brandLabel: "My Brand", isMyBrand: true, linkUrl: "https://www.amazon.in/dp/B0XYZ" }),
+  ad({ pageId: "rv", brandLabel: "Rival", linkUrl: "https://www.flipkart.com/rival-shirt/p/abc" }),
+  ad({ pageId: "rv", brandLabel: "Rival", linkUrl: "https://play.google.com/store/apps/details?id=com.rival" }),
+  ad({ pageId: "rv", brandLabel: "Rival", linkUrl: null }),
+];
+const traffic = buildTrafficByBrand(trafficAds);
+const myTraffic = traffic.find((t) => t.isMyBrand)!;
+assert.equal(traffic[0].isMyBrand, true, "my brand leads the traffic table");
+const myDest = (label: string) => myTraffic.destinations.find((d) => d.label === label);
+assert.equal(myDest("Own site")?.count, 1, "a brand-site host buckets to Own site");
+assert.equal(myDest("Amazon")?.count, 1, "an amazon.in host buckets to Amazon");
+assert.equal(myDest("Own site")?.pct, 50);
+const rivalTraffic = traffic.find((t) => !t.isMyBrand)!;
+const rivalDest = (label: string) => rivalTraffic.destinations.find((d) => d.label === label);
+assert.equal(rivalDest("Flipkart")?.count, 1, "a flipkart.com host buckets to Flipkart");
+assert.equal(rivalDest("App store")?.count, 1, "a play.google.com host buckets to App store");
+assert.equal(rivalDest("Other")?.count, 1, "a missing link buckets to Other, not a fake destination");
+for (const t of traffic) {
+  const sum = t.destinations.reduce((acc, d) => acc + d.pct, 0);
+  assert.ok(Math.abs(sum - 100) <= 2, `percentages sum to ~100 for ${t.label} (got ${sum})`);
+}
+// The same data flows through buildReport onto the report.
+assert.deepEqual(buildReport(trafficAds).trafficByBrand, traffic, "buildReport carries trafficByBrand");
 
 // --- Stage 7 aggregation: funnel mix per brand + hook/offer/emotion patterns. ---
 function attrs(over: Partial<CreativeAttributes>): CreativeAttributes {

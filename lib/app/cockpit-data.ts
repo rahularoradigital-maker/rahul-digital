@@ -44,19 +44,52 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
   const objectivesRaw = cookieStore.get("adbrain.objectives")?.value || "";
   const objectives = objectivesRaw ? objectivesRaw.split(",").filter(Boolean) : [];
 
-  const live = await fetchLiveCockpit(user.id, days, campaignId, objectives);
+  // Date window set by the topbar (a cookie, so it scopes every page globally). Either a
+  // preset ("days:<n>") or an explicit custom range ("range:<from>:<to>"). Absent = fall
+  // back to the `days` argument the page derived from ?days.
+  const win = parseWindowCookie(cookieStore.get("adbrain.window")?.value);
+  const lookbackDays = win?.kind === "days" ? win.days : win?.kind === "range" ? rangeDays(win.since, win.until) : days;
+  const explicitWindow = win?.kind === "range" ? { since: win.since, until: win.until } : undefined;
+  const effectiveDays = lookbackDays;
+
+  const live = await fetchLiveCockpit(user.id, lookbackDays, campaignId, objectives, explicitWindow);
 
   if (live.status === "connected" && live.adsAnalyzed > 0) {
-    return { connected: true, view: live.view, metrics: live.metrics, accountName: live.accountName, accountId: live.accountExternalId, adsAnalyzed: live.adsAnalyzed, days, userEmail };
+    return { connected: true, view: live.view, metrics: live.metrics, accountName: live.accountName, accountId: live.accountExternalId, adsAnalyzed: live.adsAnalyzed, days: effectiveDays, userEmail };
   }
 
   // Connected but nothing spent in the window is a real, honest "no data yet" state,
   // distinct from never having connected or a sync error.
   if (live.status === "connected") {
-    return { connected: false, days, reason: "no_data", accountName: live.accountName, userEmail };
+    return { connected: false, days: effectiveDays, reason: "no_data", accountName: live.accountName, userEmail };
   }
   if (live.status === "error") {
-    return { connected: false, days, reason: "error", errorNote: live.message, userEmail };
+    return { connected: false, days: effectiveDays, reason: "error", errorNote: live.message, userEmail };
   }
-  return { connected: false, days, reason: "not_connected", userEmail };
+  return { connected: false, days: effectiveDays, reason: "not_connected", userEmail };
+}
+
+// Parse the adbrain.window cookie. "days:<n>" -> preset; "range:<from>:<to>" -> custom
+// range (validated YYYY-MM-DD, from <= to). Anything malformed returns null (caller falls
+// back to the ?days-derived default), so a bad cookie never breaks the load.
+type ParsedWindow = { kind: "days"; days: number } | { kind: "range"; since: string; until: string };
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseWindowCookie(raw?: string): ParsedWindow | null {
+  if (!raw) return null;
+  if (raw.startsWith("days:")) {
+    const n = Number(raw.slice(5));
+    return Number.isFinite(n) && n > 0 ? { kind: "days", days: n } : null;
+  }
+  if (raw.startsWith("range:")) {
+    const [since, until] = raw.slice(6).split(":");
+    if (ISO_DATE.test(since) && ISO_DATE.test(until) && since <= until) return { kind: "range", since, until };
+  }
+  return null;
+}
+
+// Inclusive day span of a range, so the "Last N days" label stays a sensible number.
+function rangeDays(since: string, until: string): number {
+  const ms = new Date(until).getTime() - new Date(since).getTime();
+  return Math.max(1, Math.round(ms / 86_400_000) + 1);
 }
