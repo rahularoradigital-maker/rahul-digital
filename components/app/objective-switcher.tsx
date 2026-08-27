@@ -28,6 +28,7 @@ export function ObjectiveSwitcher() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
   const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -83,7 +84,15 @@ export function ObjectiveSwitcher() {
       </button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
-          {OBJECTIVES.map((o) => (
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search objectives..."
+            aria-label="Search objectives"
+            className="mb-1.5 w-full rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]"
+          />
+          {OBJECTIVES.filter((o) => o.label.toLowerCase().includes(query.trim().toLowerCase())).map((o) => (
             <label
               key={o.key}
               className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"

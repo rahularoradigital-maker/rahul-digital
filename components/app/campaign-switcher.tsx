@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 type Camp = { id: string; name: string; objective?: string };
@@ -15,15 +15,19 @@ function readCookie(name: string): string {
   return "";
 }
 
-// Campaign filter for the active account. Self-fetches (non-blocking), stores the choice
-// in the "adbrain.campaign" cookie which loadCockpit reads on the server, then refreshes
-// so every page re-scopes to that campaign. "All campaigns" clears the cookie.
+// Campaign filter for the active account, as a SEARCHABLE dropdown (accounts can have 100+
+// campaigns, so a plain select is unusable). Self-fetches; stores the choice in the
+// "adbrain.campaign" cookie which loadCockpit reads server-side, then refreshes so every
+// page re-scopes. "All campaigns" clears the cookie.
 export function CampaignSwitcher() {
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<Camp[]>([]);
   const [selected, setSelected] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [, startTransition] = useTransition();
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setSelected(readCookie("adbrain.campaign"));
@@ -43,32 +47,79 @@ export function CampaignSwitcher() {
     };
   }, []);
 
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return campaigns;
+    return campaigns.filter((c) => c.name.toLowerCase().includes(q));
+  }, [campaigns, query]);
+
   if (!loaded || campaigns.length === 0) return null;
 
-  function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const id = e.target.value;
+  function choose(id: string) {
     setSelected(id);
+    setOpen(false);
+    setQuery("");
     const maxAge = id ? 60 * 60 * 24 * 30 : 0;
     document.cookie = `adbrain.campaign=${encodeURIComponent(id)}; path=/; max-age=${maxAge}`;
     startTransition(() => router.refresh());
   }
 
+  const label = selected ? campaigns.find((c) => c.id === selected)?.name ?? "1 campaign" : "All campaigns";
+
   return (
-    <label className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium">
-      <span className="text-[var(--ink-muted)]">Campaign ·</span>
-      <select
-        value={selected}
-        onChange={onChange}
-        aria-label="Campaign"
-        className="max-w-[150px] cursor-pointer truncate bg-transparent font-medium text-[var(--ink)] outline-none"
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
       >
-        <option value="">All campaigns</option>
-        {campaigns.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
-        ))}
-      </select>
-    </label>
+        <span className="text-[var(--ink-muted)]">Campaign ·</span>
+        <span className="max-w-[150px] truncate">{label}</span>
+        <span className="text-[var(--ink-muted)]">▾</span>
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-80 max-w-[85vw] rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search campaigns..."
+            aria-label="Search campaigns"
+            className="mb-1.5 w-full rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]"
+          />
+          <div className="max-h-72 overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => choose("")}
+              className={`w-full truncate rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${selected === "" ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+            >
+              All campaigns
+            </button>
+            {filtered.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => choose(c.id)}
+                title={c.name}
+                className={`w-full truncate rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${selected === c.id ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+              >
+                {c.name}
+              </button>
+            ))}
+            {filtered.length === 0 && <div className="px-2.5 py-2 text-[13px] text-[var(--ink-muted)]">No campaigns match.</div>}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }

@@ -12,6 +12,24 @@ import { AnalyzeControl } from "@/components/app/market/analyze-control";
 const MEDIA_LABEL: Record<MediaCategory, string> = { video: "Video", image: "Image", carousel: "Carousel", other: "Other" };
 const MEDIA_ORDER: MediaCategory[] = ["video", "image", "carousel", "other"];
 
+// The brand's live Facebook Ad Library page, to cross-check what we pulled against source.
+function adLibraryUrl(pageId: string): string {
+  return `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=ALL&view_all_page_id=${pageId}`;
+}
+
+function LibraryLink({ pageId }: { pageId: string }) {
+  return (
+    <a
+      href={adLibraryUrl(pageId)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="shrink-0 rounded-[var(--radius-pill)] border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+    >
+      Ad Library ↗
+    </a>
+  );
+}
+
 function pct(n: number, total: number): number {
   return total > 0 ? Math.round((n / total) * 100) : 0;
 }
@@ -60,12 +78,13 @@ export function CompetitorDashboard({ data }: { data: Data }) {
             {brands.map((b) => (
               <tr key={b.pageId} className="border-b border-[var(--surface-alt)] last:border-b-0">
                 <td className="px-[22px] py-3">
-                  <span className="font-medium">{b.label}</span>
-                  {b.isMyBrand && (
-                    <span className="ml-2 rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">
-                      You
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{b.label}</span>
+                    {b.isMyBrand && (
+                      <span className="rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">You</span>
+                    )}
+                    <LibraryLink pageId={b.pageId} />
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums">{b.totalAds}</td>
                 <td className="px-4 py-3 text-right tabular-nums">{b.activeAds}</td>
@@ -195,6 +214,8 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
         <span className="text-[13px] text-[var(--ink-muted)]">
           {brand.activeAds} active · {brand.inactiveAds} inactive
         </span>
+        <span className="flex-1" />
+        <LibraryLink pageId={brand.pageId} />
       </div>
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -242,35 +263,46 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
         </div>
       </div>
 
-      {/* Top live creatives, each linking to the real Ad Library ad */}
+      {/* Live creatives, shown as cards like the Facebook Ad Library; each opens the real ad. */}
       {brand.topCreatives.length > 0 && (
         <div className="mt-5 border-t border-[var(--surface-alt)] pt-4">
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Top live creatives</div>
-          <div className="space-y-2">
+          <div className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+            Live creatives (as in the Ad Library)
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {brand.topCreatives.slice(0, 6).map((ad) => (
-              <div key={ad.adArchiveId} className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <a
-                    href={ad.adUrl ?? "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="truncate text-[13px] font-medium text-[var(--ink)] underline decoration-[var(--hairline)] underline-offset-2 transition hover:text-[var(--accent)] hover:decoration-[var(--accent)]"
-                  >
-                    {ad.title || ad.body?.slice(0, 60) || `Ad ${ad.adArchiveId}`}
-                  </a>
-                  {ad.body && <div className="truncate text-xs text-[var(--ink-muted)]">{ad.body.slice(0, 90)}</div>}
+              <a
+                key={ad.adArchiveId}
+                href={ad.adUrl ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] transition hover:border-[var(--accent)]"
+              >
+                <div className="relative aspect-square w-full overflow-hidden bg-[var(--surface-alt)]">
+                  {ad.imageUrl || ad.videoThumbUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={ad.imageUrl ?? ad.videoThumbUrl ?? ""} alt="" loading="lazy" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-[11px] text-[var(--ink-muted)]">No preview</div>
+                  )}
+                  <div className="absolute left-2 top-2 flex gap-1">
+                    <span className="rounded-[var(--radius-pill)] bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">{MEDIA_LABEL[ad.media]}</span>
+                    {ad.isActive && (
+                      <span className="rounded-[var(--radius-pill)] bg-[var(--good-ink)] px-2 py-0.5 text-[10px] font-semibold text-white">Active</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <span className="rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
-                    {MEDIA_LABEL[ad.media]}
-                  </span>
-                  {ad.isActive && (
-                    <span className="rounded-[var(--radius-pill)] bg-[var(--good-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--good-ink)]">
-                      Active
+                <div className="p-2.5">
+                  <div className="line-clamp-2 text-[12px] font-medium text-[var(--ink)]">
+                    {ad.title || ad.body?.slice(0, 80) || `Ad ${ad.adArchiveId}`}
+                  </div>
+                  {ad.ctaText && (
+                    <span className="mt-1.5 inline-block rounded-[var(--radius-pill)] bg-[var(--surface-alt)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">
+                      {ad.ctaText}
                     </span>
                   )}
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </div>
