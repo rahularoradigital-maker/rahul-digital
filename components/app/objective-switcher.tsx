@@ -61,7 +61,7 @@ export function ObjectiveSwitcher() {
   const label = sel.size === 0 ? "All objectives" : `${sel.size} objective${sel.size === 1 ? "" : "s"}`;
 
   return (
-    <div ref={ref} className="relative hidden lg:block">
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

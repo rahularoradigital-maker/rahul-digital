@@ -83,7 +83,7 @@ export function AccountSwitcher() {
   }
 
   return (
-    <label className="hidden items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium md:flex">
+    <label className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium">
       <span className="text-[var(--ink-muted)]">Account ·</span>
       <select
         value={active}

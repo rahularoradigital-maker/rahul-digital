@@ -31,7 +31,7 @@ export function Topbar() {
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 px-6 py-3.5">
+    <div className="flex flex-col gap-3 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between md:py-3.5">
       <div className="flex min-w-0 items-center gap-3">
         <h1 className="truncate text-xl font-semibold tracking-tight">{titleFor(pathname)}</h1>
         <span className="hidden items-center gap-1.5 text-xs text-[var(--ink-muted)] sm:flex">
@@ -40,7 +40,8 @@ export function Topbar() {
         </span>
       </div>
 
-      <div className="flex items-center gap-3 text-sm">
+      {/* Controls wrap onto multiple rows on small screens so every option stays reachable. */}
+      <div className="flex flex-wrap items-center gap-2 text-sm md:gap-3">
         {/* Ask */}
         <form
           onSubmit={(e) => {
@@ -72,7 +73,7 @@ export function Topbar() {
         <CampaignSwitcher />
 
         {/* Date window (setup gate) */}
-        <label className="hidden items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium md:flex">
+        <label className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium">
           <span className="text-[var(--ink-muted)]">Meta ·</span>
           <select
             value={days}
