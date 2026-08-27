@@ -1,0 +1,264 @@
+<title>How AdBrain Decides</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --ground:#FAF9F6; --surface:#FFFFFF; --surface-2:#F3F1EB;
+    --ink:#1A1A1C; --muted:#6E6E73; --faint:#8E8E93; --hairline:#E7E4DE;
+    --accent:#0A66C2; --accent-soft:#E9F1FB;
+    --good:#0F8A4D; --good-bg:#E7F4EC; --warn:#B06B00; --warn-bg:#FBF1DF; --bad:#C0392B; --bad-bg:#FBECEA;
+    --rail:#DAD6CE;
+    --shadow:0 1px 2px rgba(26,26,28,.04), 0 8px 24px -12px rgba(26,26,28,.10);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#131316; --surface:#1B1B1F; --surface-2:#232329;
+      --ink:#ECEBE8; --muted:#9A9A9F; --faint:#77777D; --hairline:#2C2C31;
+      --accent:#6FB2F5; --accent-soft:#17293C;
+      --good:#4ec98a; --good-bg:#16281f; --warn:#e0a24e; --warn-bg:#2a2113; --bad:#e8746a; --bad-bg:#2c1613;
+      --rail:#33333A;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#131316; --surface:#1B1B1F; --surface-2:#232329;
+    --ink:#ECEBE8; --muted:#9A9A9F; --faint:#77777D; --hairline:#2C2C31;
+    --accent:#6FB2F5; --accent-soft:#17293C;
+    --good:#4ec98a; --good-bg:#16281f; --warn:#e0a24e; --warn-bg:#2a2113; --bad:#e8746a; --bad-bg:#2c1613;
+    --rail:#33333A;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground); color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+    line-height:1.55; margin:0; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:840px; margin:0 auto; padding:56px 24px 72px}
+  mono,.mono{font-family:"IBM Plex Mono","SF Mono",ui-monospace,monospace}
+
+  /* ---- header ---- */
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:12px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--accent); margin:0 0 14px;
+  }
+  h1{
+    font-family:"Zilla Slab",Georgia,serif; font-weight:500; font-size:clamp(34px,6vw,52px);
+    line-height:1.04; letter-spacing:-.01em; margin:0 0 18px; text-wrap:balance;
+  }
+  .principle{
+    font-size:clamp(16px,2.4vw,19px); color:var(--ink); max-width:62ch; margin:0;
+  }
+  .principle b{font-weight:600; color:var(--accent)}
+  .lede-muted{color:var(--muted); font-size:15px; margin:14px 0 0; max-width:60ch}
+
+  /* ---- flow legend ---- */
+  .flowline{
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px;
+    margin:34px 0 6px; font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--muted);
+  }
+  .flowline .n{color:var(--ink); font-weight:600}
+  .flowline .arw{color:var(--faint)}
+
+  .rule{height:1px; background:var(--hairline); border:0; margin:30px 0 6px}
+
+  /* ---- pipeline ---- */
+  .pipe{position:relative; margin:26px 0 0; padding-left:0}
+  .stage{
+    position:relative; display:grid; grid-template-columns:64px 1fr; gap:18px;
+    padding:0 0 22px;
+  }
+  .stage:last-child{padding-bottom:0}
+  /* connecting rail */
+  .rail{position:relative; display:flex; flex-direction:column; align-items:center}
+  .rail .dot{
+    width:44px; height:44px; border-radius:12px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--surface); border:1px solid var(--hairline); box-shadow:var(--shadow);
+    font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:13px; color:var(--accent);
+    letter-spacing:.02em;
+  }
+  .stage:not(:last-child) .rail::after{
+    content:""; width:2px; flex:1; margin-top:6px; background:var(--rail); border-radius:2px; min-height:22px;
+  }
+  .card{
+    background:var(--surface); border:1px solid var(--hairline); border-radius:14px;
+    padding:17px 19px 18px; box-shadow:var(--shadow);
+  }
+  .card h3{
+    font-family:"Zilla Slab",Georgia,serif; font-weight:600; font-size:19px; letter-spacing:-.01em;
+    margin:0 0 3px; line-height:1.2;
+  }
+  .card .file{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint); margin:0 0 9px;
+  }
+  .card p{margin:0; font-size:14.5px; color:var(--ink)}
+  .card p.does{color:var(--ink)}
+  .honest{
+    display:flex; gap:8px; align-items:baseline; margin-top:11px; padding-top:11px;
+    border-top:1px dashed var(--hairline);
+  }
+  .honest .tag{
+    font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--good); background:var(--good-bg);
+    padding:2px 7px; border-radius:6px; flex:none; white-space:nowrap;
+  }
+  .honest p{font-size:13.5px; color:var(--muted)}
+
+  /* verdict legend chips */
+  .verdicts{display:flex; flex-wrap:wrap; gap:7px; margin-top:12px}
+  .chip{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:600;
+    padding:3px 10px; border-radius:20px; letter-spacing:.02em;
+  }
+  .chip.sc{color:var(--good); background:var(--good-bg)}
+  .chip.rf{color:var(--warn); background:var(--warn-bg)}
+  .chip.hd{color:var(--accent); background:var(--accent-soft)}
+  .chip.kl{color:var(--bad); background:var(--bad-bg)}
+
+  /* ---- guards ---- */
+  .guards{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px}
+  @media (max-width:560px){ .guards{grid-template-columns:1fr} .stage{grid-template-columns:52px 1fr; gap:14px} .rail .dot{width:40px;height:40px} }
+  .guard{
+    background:var(--surface-2); border:1px solid var(--hairline); border-radius:14px; padding:16px 18px;
+  }
+  .guard h4{
+    font-family:"Zilla Slab",Georgia,serif; font-weight:600; font-size:16px; margin:0 0 4px; display:flex; align-items:center; gap:8px;
+  }
+  .guard .file{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); margin:0 0 8px}
+  .guard p{margin:0; font-size:13.5px; color:var(--muted)}
+
+  .sectlabel{
+    font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:12px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--faint); margin:38px 0 4px;
+  }
+
+  /* ---- footer law ---- */
+  .law{
+    margin-top:40px; padding:22px 24px; border-radius:16px;
+    background:linear-gradient(180deg,var(--accent-soft),transparent); border:1px solid var(--hairline);
+  }
+  .law p{margin:0; font-family:"Zilla Slab",Georgia,serif; font-size:clamp(17px,2.6vw,21px); font-weight:500; line-height:1.4; color:var(--ink); text-wrap:balance}
+  .foot{margin-top:26px; color:var(--faint); font-size:12.5px; font-family:"IBM Plex Mono",monospace}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">AdBrain · the brain</p>
+  <h1>How AdBrain decides what to ship, kill&nbsp;and scale</h1>
+  <p class="principle">Raw Meta numbers go in one end; a ranked list of honest moves comes out the other. In between, a fixed chain of rules does the thinking &mdash; and <b>no number is ever shown unless a stated rule produced it.</b></p>
+  <p class="lede-muted">Every stage is plain, deterministic code (no AI guessing the numbers). "Not enough data" is a real answer the engine is allowed to give, at every step.</p>
+
+  <div class="flowline">
+    <span class="n">J1</span><span class="arw">→</span>
+    <span class="n">J2</span><span class="arw">→</span>
+    <span class="n">J3/J4</span><span class="arw">→</span>
+    <span class="n">J6</span><span class="arw">→</span>
+    <span class="n">J10</span><span class="arw">→</span>
+    <span class="n">objective decision</span><span class="arw">→</span>
+    <span class="n">rubric</span>
+  </div>
+
+  <hr class="rule">
+
+  <div class="pipe">
+
+    <div class="stage">
+      <div class="rail"><div class="dot">J1</div></div>
+      <div class="card">
+        <h3>The spend floor</h3>
+        <p class="file">lib/rules/spend-floor.ts</p>
+        <p class="does">Before anything is judged, an ad must have spent above a small floor (₹300 / $5) in the last 7 days. Below that it is held as "keep testing", re&#8209;checked daily &mdash; never scored, never deleted.</p>
+        <div class="honest"><span class="tag">Honest rule</span><p>No verdict on an ad that never got enough budget to prove itself.</p></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="dot">J2</div></div>
+      <div class="card">
+        <h3>Compare like with like</h3>
+        <p class="file">lib/rules/comparator.ts</p>
+        <p class="does">An ad is only ever measured against other ads with the <em>same objective</em>, weighted toward your own long history. A sales ad is never graded against a traffic ad.</p>
+        <div class="honest"><span class="tag">Honest rule</span><p>No borrowed public benchmarks, no cross&#8209;objective comparisons.</p></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="dot">J3·J4</div></div>
+      <div class="card">
+        <h3>The causality ladder</h3>
+        <p class="file">lib/causality.ts</p>
+        <p class="does">When a number drops, the cause is diagnosed in a fixed order: measurement first, then tracking, auction/CPM, landing page, stock, audience saturation, too&#8209;many&#8209;edits &mdash; and <em>creative fatigue last.</em></p>
+        <div class="honest"><span class="tag">Honest rule</span><p>A broken pixel or a costlier auction is not a bad creative. Never blame the ad until every cheaper cause is ruled out.</p></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="dot">J6</div></div>
+      <div class="card">
+        <h3>Trust gates</h3>
+        <p class="file">lib/rules/trust-gates.ts</p>
+        <p class="does">Concrete "not worthy until" thresholds. A winner needs at least ~100 purchases and 3 days of delivery. "8&times; ROAS on 2 sales" is a coin toss, so the gate blocks it whatever the headline says.</p>
+        <div class="honest"><span class="tag">Honest rule</span><p>A small sample never earns a big claim. Missing data is dropped, never filled with an average.</p></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="dot">J10</div></div>
+      <div class="card">
+        <h3>The verdict</h3>
+        <p class="file">lib/rules/verdict.ts</p>
+        <p class="does">A CreativeScore blends performance, day&#8209;wise trend, freshness and funnel health, then lands one call. A <em>kill</em> only after the causality ladder has cleared every non&#8209;creative cause.</p>
+        <div class="verdicts">
+          <span class="chip sc">SCALE</span>
+          <span class="chip rf">REFRESH</span>
+          <span class="chip hd">HOLD / WATCH</span>
+          <span class="chip kl">KILL</span>
+        </div>
+        <div class="honest"><span class="tag">Honest rule</span><p>Never kill on a symptom. When in doubt, "do not kill yet".</p></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="dot">DEC</div></div>
+      <div class="card">
+        <h3>Objective&#8209;aware decision</h3>
+        <p class="file">lib/scoring/decision.ts</p>
+        <p class="does">Not every ad is about sales. Traffic, engagement and awareness ads are read on <em>their own</em> metric (CTR, reach) plus day&#8209;wise fatigue &mdash; giving real Scale / Continue / Refresh / Pause / Hold calls instead of one blanket ROAS. Confidence rises as more days of data arrive.</p>
+        <div class="honest"><span class="tag">Honest rule</span><p>Judge each ad on the job it was set to do, not on a metric it was never optimised for.</p></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="rail"><div class="dot">RUB</div></div>
+      <div class="card">
+        <h3>The rubric registry</h3>
+        <p class="file">lib/scoring/rubrics.ts</p>
+        <p class="does">Every score on screen carries its rubric &mdash; the question it answers, the formula, the real inputs, the benchmark. The compute path and the "Why this score?" panel read the same source, so a number and its explanation can never drift apart.</p>
+        <div class="honest"><span class="tag">Honest rule</span><p>If it is on the screen, you can open the exact reason it says what it says.</p></div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="sectlabel">Two guards running the whole way through</p>
+  <div class="guards">
+    <div class="guard">
+      <h4>Confidence framework</h4>
+      <p class="file">lib/confidence.ts</p>
+      <p>Every recommendation carries a confidence built from data completeness, sample size and signal agreement &mdash; and hard caps stop a pretty blend from outranking a thin or confounded read. It rises as you connect GA4 and Shopify.</p>
+    </div>
+    <div class="guard">
+      <h4>The honesty validator</h4>
+      <p class="file">lib/validator.ts</p>
+      <p>Plain code (no AI) checks the written summary before it reaches you: every money figure must match a real computed number, every claim must cite real evidence. If not, it is held back, not shown.</p>
+    </div>
+  </div>
+
+  <div class="law">
+    <p>The one law behind all of it: insufficient data is a state, not a guess. The engine would rather tell you "not enough data yet" than show you a confident wrong number.</p>
+  </div>
+
+  <p class="foot">AdBrain · decision engine · deterministic rules, AI only narrates &mdash; it never invents the numbers.</p>
+</div>
