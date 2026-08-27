@@ -11,6 +11,23 @@ import { wasteRollup, budgetConcentration, type ConcentrationResult, type AdSumm
 import type { DiagnoseResult } from "../causality.ts";
 import type { Objective } from "../rules/comparator.ts";
 import type { FatigueRead } from "../scoring/fatigue.ts";
+import { decide, type Decision } from "../scoring/decision.ts";
+
+// Map the objective-aware decision to the leaderboard's verdict vocabulary + the action row.
+const DECISION_VERDICT: Record<Decision["action"], Verdict> = {
+  scale: "winner",
+  continue: "winner",
+  refresh: "refresh",
+  pause: "loser",
+  hold: "do_not_kill_yet",
+};
+const DECISION_LABEL: Record<Decision["action"], string> = {
+  scale: "Scale the budget",
+  continue: "Keep running",
+  refresh: "Refresh the creative",
+  pause: "Pause this ad",
+  hold: "Hold - gather more data",
+};
 
 /** One ad as the cockpit needs it. Sub-scores are 0-100 (produced upstream by the
  *  scoring engines); the raw facts drive verdict, waste, and the action queue. */
@@ -137,18 +154,46 @@ function accountHealth(ads: CockpitAd[], inputs: CockpitAdInput[], totalSpendRs:
 export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LIVE" = "SAMPLE"): CockpitView {
   const scored: CockpitAd[] = ads.map((input) => {
     const v = verdict(input);
+    const roas = roasOf(input.spendRs, input.revenueRs);
+    // Conversion ads keep the rigorous verdict engine (ROAS + causality ladder). Non-conversion
+    // ads (engagement/traffic/awareness/leads/installs) have no ROAS or purchase gate, so the
+    // verdict engine collapsed every one to Hold/35%. Route those through the objective-aware
+    // decision engine: it decides on the objective's own score + the day-wise fatigue read, so
+    // they get real Scale/Continue/Refresh/Pause calls with varied, data-volume-based confidence.
+    let vVerdict = v.verdict;
+    let confidence = v.confidence;
+    let why = v.why;
+    let action = actionFor(v.verdict, input);
+    if (input.objective !== "conversion") {
+      const d = decide({
+        objective: input.objective,
+        objectiveScore: input.healthScore ?? v.score,
+        performance: input.performance,
+        fatigueState: input.fatigueRead?.state ?? "watch",
+        fatigueTrajectory: input.fatigueRead?.trajectory ?? "stable",
+        fatigueSufficiency: input.fatigueRead?.sufficiency ?? "insufficient_data",
+        roas,
+        conversions: input.conversions,
+        days: input.days,
+        roomToScale: input.roomToScale,
+      });
+      vVerdict = DECISION_VERDICT[d.action];
+      confidence = d.confidence;
+      why = d.why;
+      action = { label: DECISION_LABEL[d.action], priority: d.priority, why: d.why[0] ?? "" };
+    }
     return {
       id: input.id,
       name: input.name,
       objective: input.objective,
       spendRs: input.spendRs,
       revenueRs: input.revenueRs,
-      roas: roasOf(input.spendRs, input.revenueRs),
-      verdict: v.verdict,
+      roas,
+      verdict: vVerdict,
       score: v.score,
-      confidence: v.confidence,
-      why: v.why,
-      action: actionFor(v.verdict, input),
+      confidence,
+      why,
+      action,
       wastedRs: input.wastedRs,
       fatigueRead: input.fatigueRead,
       halfLifeDays: input.halfLifeDays,
