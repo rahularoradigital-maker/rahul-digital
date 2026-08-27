@@ -38,9 +38,11 @@ export async function getUserMetaSession(
   }
 }
 
-// v1 cost guard: how many ads to pull metrics for on a page load, and the lookback window.
-// ponytail: a background sync job replaces this per-request fetch once volume grows (ADR-0004).
-const MAX_ADS = 25;
+// How many top-spending ads to analyze per load, and the default lookback. Raised from 25 to
+// 100 now that the insights pull paginates - a big account's meaningful spend sits well beyond
+// the top 25. The SWR cache serves instantly after the first load, so the deeper pull is paid
+// once per window. ponytail: a background sync job replaces this per-request fetch at scale (ADR-0004).
+const MAX_ADS = 100;
 const LOOKBACK_DAYS = 30;
 
 // Account-level raw metrics summed from the real day-wise rows, for KPIs the Meta

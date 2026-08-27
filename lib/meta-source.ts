@@ -36,6 +36,22 @@ async function graphGet<T>(path: string, token: string, params: Record<string, s
   return (await res.json()) as T;
 }
 
+// GET every page of a Graph list endpoint by following the `after` cursor, up to maxPages
+// (a hard ceiling so a runaway account cannot hang the request). This is what lets us pull
+// deeper than one 500-row page - day-wise rows for many ads over a long window.
+async function graphGetAll<Row>(path: string, token: string, params: Record<string, string>, maxPages = 12): Promise<Row[]> {
+  const out: Row[] = [];
+  let after: string | undefined;
+  for (let page = 0; page < maxPages; page++) {
+    const pageParams = after ? { ...params, after } : params;
+    const json = await graphGet<{ data?: Row[]; paging?: { cursors?: { after?: string }; next?: string } }>(path, token, pageParams);
+    for (const r of json.data ?? []) out.push(r);
+    after = json.paging?.cursors?.after;
+    if (!after || !json.paging?.next || (json.data?.length ?? 0) === 0) break;
+  }
+  return out;
+}
+
 // Accounts report purchases under different action types depending on their setup
 // (omni_purchase already combines web + app + onsite, so it is preferred to avoid
 // double counting; then the classic pixel type; then the plain aggregate). We take
@@ -284,8 +300,8 @@ export async function fetchAdInsights(
     limit: "500",
     filtering: JSON.stringify([{ field: "ad.id", operator: "IN", value: adExternalIds }]),
   };
-  const data = await graphGet<{
-    data: (MetaInsightRow & {
+  const rows = await graphGetAll<
+    MetaInsightRow & {
       ad_id: string;
       objective?: string;
       campaign_id?: string;
@@ -293,9 +309,9 @@ export async function fetchAdInsights(
       video_play_actions?: MetaInsightAction[];
       video_thruplay_watched_actions?: MetaInsightAction[];
       outbound_clicks?: MetaInsightAction[];
-    })[];
-  }>(`act_${accountExternalId}/insights`, token.accessToken, params);
-  for (const row of data.data ?? []) {
+    }
+  >(`act_${accountExternalId}/insights`, token.accessToken, params);
+  for (const row of rows) {
     const entry = byAd.get(row.ad_id) ?? { rows: [], objective: undefined };
     if (!entry.campaignId && row.campaign_id) entry.campaignId = row.campaign_id;
     if (!entry.adsetId && row.adset_id) entry.adsetId = row.adset_id;
