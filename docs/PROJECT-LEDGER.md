@@ -98,6 +98,13 @@ Each real document Rahul shared, mirrored into `docs/`, and what it changed in t
 ---
 
 ## 5. Change log (dated)
+- **2026-08-27 (batch 2)** WhyDrawer wired onto Account Health (live "why 21/100?" per-ad
+  breakdown); custom date range (presets + from/to via the `adbrain.window` cookie);
+  searchable campaign + objective dropdowns; Ad Library links + FB-style creative gallery
+  (Ad Library links verified live); Ad Traffic Distribution (own-site vs Amazon/Flipkart/app);
+  opportunity-loss card (wasted + at-risk spend in rupees); decision_triples audit module +
+  funnel-metrics engine (built, tested); RLEF audit architecture doc; new cookie
+  `adbrain.window`. Delivered via 9 parallel subagents across two waves. All 22 checks green.
 - **2026-08-27** Account-switch cache fix; email remember; objective-aware Account Health (no
   more flat 50); every ad -> Ads Manager link; competitor pipeline stages 1-9 live on real
   data; multi-agent Gemini stage 7 (verified reading static images); day-wise fatigue engine
