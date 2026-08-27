@@ -159,11 +159,13 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
 // to L1 + a live pull (today's behavior) rather than breaking.
 type CacheEntry = { at: number; value: LiveCockpit };
 // FRESH: serve straight from cache. STALE: still serve instantly, but kick off a
-// background refresh so the NEXT load is fresh. Only a truly cold or very old cache
-// blocks on the ~9s live pull. This is what makes navigation feel instant after the
-// first load, on any serverless instance.
-const FRESH_MS = 300_000; // 5 minutes
-const STALE_MS = 3_600_000; // 1 hour
+// background refresh so the NEXT load is fresh. Only a cache that has never been
+// populated blocks on the ~9s live pull, so after the very first load a user
+// effectively never waits again, on any serverless instance. The stale window is wide
+// (a day) on purpose: a day-old view shown instantly while it refreshes in the
+// background beats making the user watch a 9s spinner after being idle overnight.
+const FRESH_MS = 300_000; // 5 minutes: serve without a background refresh
+const STALE_MS = 86_400_000; // 24 hours: still serve instantly, refresh in the background
 const cockpitCache = new Map<string, CacheEntry>();
 
 /** Clear the cockpit cache. Pass userId to also clear that user's shared L2 rows. */
