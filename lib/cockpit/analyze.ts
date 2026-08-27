@@ -20,6 +20,10 @@ export type CockpitAdInput = VerdictInput & {
   spendRs: number;
   revenueRs: number;
   wastedRs: number; // per-ad wasted spend (upstream waste calc; sample supplies it)
+  // Absolute 0-100 objective score (scoring.healthScoreOf): ROAS-vs-benchmark for
+  // conversion, CTR-vs-benchmark for click objectives, reach+freshness for awareness.
+  // Optional so hand-built fixtures / the sample account fall back to CreativeScore.
+  healthScore?: number | null;
 };
 
 export type Priority = "DO_NOW" | "DO_NEXT" | "WATCH";
@@ -79,25 +83,37 @@ function roasOf(spendRs: number, revenueRs: number): number | null {
 }
 
 /**
- * Account Health 0-100: one honest composite. Rewards spend sitting on winners,
- * penalises spend on losers and wasted spend. INTERNAL CALIBRATION (calibrate-at-
- * build), labelled MODEL_ESTIMATE because it is a modelled score, not a fact.
+ * Account Health 0-100: the spend-weighted ABSOLUTE objective score of the account's
+ * ads (scoring.healthScoreOf: ROAS-vs-benchmark, CTR-vs-benchmark, reach+freshness),
+ * then a waste penalty. Because the base is absolute (benchmark-anchored), not a within-
+ * account percentile, it genuinely differs between accounts and moves with real
+ * performance, instead of pinning to 50 whenever nothing is a clear winner or loser.
+ * Ads with no explicit healthScore (the sample account / hand-built fixtures) fall back
+ * to their CreativeScore. INTERNAL CALIBRATION, labelled MODEL_ESTIMATE.
  */
-function accountHealth(ads: CockpitAd[], totalSpendRs: number, totalWastedRs: number): CockpitView["accountHealth"] {
+function accountHealth(ads: CockpitAd[], inputs: CockpitAdInput[], totalSpendRs: number, totalWastedRs: number): CockpitView["accountHealth"] {
   if (ads.length === 0 || totalSpendRs <= 0) {
     return { score: 0, factLabel: "MODEL_ESTIMATE", basis: "no spend to assess" };
   }
-  const shareOn = (v: Verdict) =>
-    ads.filter((a) => a.verdict === v).reduce((acc, a) => acc + a.spendRs, 0) / totalSpendRs;
-  const winnerShare = shareOn("winner");
-  const loserShare = shareOn("loser");
+  // Spend-weight each ad's absolute objective score (fall back to CreativeScore). ads and
+  // inputs are index-aligned: scored is inputs.map(...) upstream.
+  let weighted = 0;
+  let weight = 0;
+  ads.forEach((a, i) => {
+    const h = inputs[i]?.healthScore ?? a.score;
+    if (h === null) return; // genuinely unscorable ad: leave it out of the average
+    const w = Math.max(a.spendRs, 0);
+    weighted += w * h;
+    weight += w;
+  });
+  const base = weight > 0 ? weighted / weight : 0;
   const wasteShare = totalWastedRs / totalSpendRs;
-  const raw = 50 + 50 * winnerShare - 40 * loserShare - 30 * wasteShare;
-  const score = Math.max(0, Math.min(100, Math.round(raw)));
+  const score = Math.max(0, Math.min(100, Math.round(base - 25 * wasteShare)));
+  const winnerShare = ads.filter((a) => a.verdict === "winner").reduce((acc, a) => acc + a.spendRs, 0) / totalSpendRs;
   return {
     score,
     factLabel: "MODEL_ESTIMATE",
-    basis: `${Math.round(winnerShare * 100)}% spend on winners, ${Math.round(loserShare * 100)}% on losers, ${Math.round(wasteShare * 100)}% wasted`,
+    basis: `${Math.round(base)}/100 objective performance, spend-weighted; ${Math.round(winnerShare * 100)}% on winners, ${Math.round(wasteShare * 100)}% wasted`,
   };
 }
 
@@ -138,7 +154,7 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
   return {
     dataSource,
     totals: { spendRs: totalSpendRs, revenueRs: totalRevenueRs, roas: roasOf(totalSpendRs, totalRevenueRs) },
-    accountHealth: accountHealth(scored, totalSpendRs, totalWastedRs),
+    accountHealth: accountHealth(scored, ads, totalSpendRs, totalWastedRs),
     leaderboard,
     doThis,
     waste,

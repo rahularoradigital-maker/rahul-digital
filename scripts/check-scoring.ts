@@ -2,6 +2,7 @@
 // node --experimental-strip-types scripts/check-scoring.ts
 import assert from "node:assert/strict";
 import { toCockpitInputs, type RealAd } from "../lib/scoring.ts";
+import { analyzeAccount } from "../lib/cockpit/analyze.ts";
 import type { MetricsRow } from "../lib/ad-source.ts";
 
 function row(date: string, spend: number, revenue: number, purchases: number, impressions: number, clicks: number, frequency: number): MetricsRow {
@@ -73,5 +74,33 @@ const aware = objectiveInputs.find((i) => i.id === "aware-low-roas")!;
 const conv = objectiveInputs.find((i) => i.id === "conv-low-roas")!;
 assert.equal(aware.wastedRs, 0, "a non-conversion ad is never counted as wasted spend");
 assert.equal(conv.wastedRs, 1000, "a conversion ad with ROAS < 1 is still wasted spend");
+
+// --- Objective-aware performance: engagement ads (no ROAS) are ranked by CTR, not zeroed. ---
+const engagementAds: RealAd[] = [
+  {
+    externalId: "eng-hi", name: "Eng Hi", objective: "engagement", rows: [
+      row("2026-08-01", 1000, 0, 0, 100000, 3000, 2.0), // 3% CTR
+      row("2026-08-02", 1000, 0, 0, 100000, 3200, 2.1),
+    ],
+  },
+  {
+    externalId: "eng-lo", name: "Eng Lo", objective: "engagement", rows: [
+      row("2026-08-01", 1000, 0, 0, 100000, 500, 2.0), // 0.5% CTR
+      row("2026-08-02", 1000, 0, 0, 100000, 480, 2.1),
+    ],
+  },
+];
+const eng = toCockpitInputs(engagementAds);
+const engHi = eng.find((i) => i.id === "eng-hi")!;
+const engLo = eng.find((i) => i.id === "eng-lo")!;
+assert.ok(engHi.performance > engLo.performance, "higher-CTR engagement ad ranks higher though neither has ROAS");
+assert.ok((engHi.healthScore ?? 0) > (engLo.healthScore ?? 0), "higher CTR -> higher absolute health score");
+assert.ok((engHi.healthScore ?? 0) > 60 && (engLo.healthScore ?? 100) < 40, "health is an absolute CTR benchmark, not a self-percentile");
+
+// --- Account Health differs per account and is NOT pinned to 50 for engagement accounts. ---
+const goodAcct = analyzeAccount(toCockpitInputs([engagementAds[0]]), "LIVE").accountHealth.score;
+const poorAcct = analyzeAccount(toCockpitInputs([engagementAds[1]]), "LIVE").accountHealth.score;
+assert.notEqual(goodAcct, 50, "engagement account health is no longer pinned to 50");
+assert.ok(goodAcct > poorAcct, "a better-CTR account is healthier than a worse-CTR one");
 
 console.log("PASS: scoring (real metrics -> brain inputs) checks");

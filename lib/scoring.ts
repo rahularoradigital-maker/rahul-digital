@@ -45,17 +45,62 @@ function fatigueScore(avgFrequency: number): number {
   return Math.round(100 * (1 - Math.pow(n + 1, -0.4)));
 }
 
-// Trend: split the ad's own rows by date at the midpoint, compare later-half ROAS to
-// earlier-half. 50 = flat; >50 improving; <50 declining. Real day-wise comparison, not a guess.
-function trendScore(rows: MetricsRow[]): number {
+// The metric an objective is actually optimised for (higher = better). Conversion is
+// judged on ROAS; awareness on reach per rupee (impressions/spend); everything else
+// (traffic, engagement, leads, app_installs) on click-through rate. Returns null when
+// the metric cannot be formed (e.g. no spend, no impressions), never a fabricated value.
+// This is J2 in practice: an ad is judged against its own objective, not a blanket ROAS.
+function goodnessOf(objective: Objective, a: Agg): number | null {
+  if (objective === "conversion") return a.roas;
+  if (objective === "awareness") return a.spend > 0 ? a.impressions / a.spend : null;
+  return a.impressions > 0 ? a.clicks / a.impressions : null; // ctr
+}
+
+// Trend: split the ad's own rows by date at the midpoint and compare the later half to
+// the earlier half ON THE OBJECTIVE'S OWN METRIC. 50 = flat; >50 improving; <50 declining.
+// Real day-wise comparison, not a guess. Objective-aware so an engagement ad trends on
+// its CTR, not on a ROAS it was never optimised for.
+function trendScore(rows: MetricsRow[], objective: Objective): number {
   const byDate = [...rows].sort((a, b) => a.date.localeCompare(b.date));
   if (byDate.length < 2) return 50;
   const mid = Math.floor(byDate.length / 2);
-  const early = aggregate(byDate.slice(0, mid));
-  const late = aggregate(byDate.slice(mid));
-  if (early.roas === null || late.roas === null || early.roas === 0) return 50;
-  const change = (late.roas - early.roas) / early.roas; // -1..+inf
-  return clamp(Math.round(50 + change * 100), 0, 100); // +50% ROAS -> ~100; -50% -> ~0
+  const early = goodnessOf(objective, aggregate(byDate.slice(0, mid)));
+  const late = goodnessOf(objective, aggregate(byDate.slice(mid)));
+  if (early === null || late === null || early === 0) return 50;
+  const change = (late - early) / early; // -1..+inf
+  return clamp(Math.round(50 + change * 100), 0, 100); // +50% -> ~100; -50% -> ~0
+}
+
+// Absolute 0-100 "is this ad doing its job", judged on the objective's own metric against
+// a real-world benchmark, NOT a within-account percentile. This is what lets Account Health
+// differ between accounts: a self-relative percentile averages to ~50 for every account by
+// construction, so health could never move. calibrate-at-build benchmarks:
+//   ROAS: 1x break-even ~39, 2x ~63, 4x ~86 (100*(1-e^-0.5r))
+//   CTR:  ~1% ~49, ~2% ~74, ~4% ~93 (100*(1-e^-(ctr/0.015)))
+function roasToScore(roas: number): number {
+  if (roas <= 0) return 0;
+  return clamp(Math.round(100 * (1 - Math.exp(-0.5 * roas))), 0, 100);
+}
+function ctrToScore(ctr: number): number {
+  if (ctr <= 0) return 0;
+  return clamp(Math.round(100 * (1 - Math.exp(-ctr / 0.015))), 0, 100);
+}
+
+// Per-ad absolute objective score used for Account Health. Conversion is scored on ROAS
+// (falling back to CTR when no revenue is tracked, so the ad still gets an honest read);
+// awareness blends click-through with freshness (low fatigue); the click objectives score
+// on CTR. Returns null only when there is genuinely nothing to score (no impressions).
+function healthScoreOf(objective: Objective, a: Agg): number | null {
+  const ctr = a.impressions > 0 ? a.clicks / a.impressions : null;
+  if (objective === "conversion") {
+    if (a.roas !== null) return roasToScore(a.roas);
+    return ctr === null ? null : ctrToScore(ctr);
+  }
+  if (objective === "awareness") {
+    const fresh = 100 - fatigueScore(a.avgFrequency);
+    return ctr === null ? fresh : Math.round(0.6 * ctrToScore(ctr) + 0.4 * fresh);
+  }
+  return ctr === null ? null : ctrToScore(ctr);
 }
 
 // Performance: the ad's ROAS as a percentile within its account (J2: judged vs its own
@@ -94,16 +139,30 @@ function isStable(rows: MetricsRow[]): boolean {
  */
 export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
   const aggs = ads.map((ad) => aggregate(ad.rows));
+  const objectives = ads.map((ad) => ad.objective ?? "conversion");
   const roasList = aggs.filter((a) => a.roas !== null).map((a) => a.roas as number);
   const ctrList = aggs.map((a) => (a.impressions > 0 ? a.clicks / a.impressions : 0));
   const cvrList = aggs.map((a) => (a.clicks > 0 ? a.purchases / a.clicks : 0));
   const medianRoas = median(roasList);
 
+  // Performance is a percentile WITHIN the same objective (J2), on that objective's own
+  // metric, so an engagement ad is ranked by CTR against other engagement ads, not by a
+  // ROAS it has none of. Precompute one goodness list per objective present in the account.
+  const goodnessByObjective = new Map<Objective, number[]>();
+  aggs.forEach((a, i) => {
+    const g = goodnessOf(objectives[i], a);
+    if (g === null) return;
+    const list = goodnessByObjective.get(objectives[i]) ?? [];
+    list.push(g);
+    goodnessByObjective.set(objectives[i], list);
+  });
+
   return ads.map((ad, i) => {
     const a = aggs[i];
-    const objective = ad.objective ?? "conversion";
+    const objective = objectives[i];
     const fatigue = fatigueScore(a.avgFrequency);
-    const performance = a.roas === null ? 0 : percentile(a.roas, roasList);
+    const goodness = goodnessOf(objective, a);
+    const performance = goodness === null ? 0 : percentile(goodness, goodnessByObjective.get(objective) ?? []);
     const roomToScale = a.roas !== null && medianRoas !== null && a.roas > medianRoas && fatigue < 60;
     const wastedRs = objective === "conversion" && a.roas !== null && a.roas < 1 ? a.spend : 0;
     return {
@@ -111,13 +170,14 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
       name: ad.name,
       objective,
       performance,
-      trend: trendScore(ad.rows),
+      trend: trendScore(ad.rows, objective),
       fatigue,
       funnel: funnelScore(a, ctrList, cvrList),
       conversions: a.purchases,
       days: a.days,
       stable: isStable(ad.rows),
       roomToScale,
+      healthScore: healthScoreOf(objective, a),
       spendRs: Math.round(a.spend),
       revenueRs: Math.round(a.revenue),
       wastedRs: Math.round(wastedRs),
