@@ -101,11 +101,11 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="text-sm text-[var(--ink-muted)]">Email</label>
-            <input id="email" name="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+            <input id="email" name="email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <div>
             <label htmlFor="password" className="text-sm text-[var(--ink-muted)]">Password</label>
-            <input id="password" name="password" type="password" required minLength={6} autoComplete="current-password" className={inputCls} />
+            <input id="password" name="password" type="password" required minLength={6} autoComplete={mode === "signup" ? "new-password" : "current-password"} className={inputCls} />
           </div>
 
           {error && <p className="text-sm text-[var(--bad-ink)]">{error}</p>}
