@@ -252,7 +252,21 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
         <LibraryLink pageId={brand.pageId} />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-4">
+        {/* Platform mix (where this brand runs) */}
+        <div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Platforms</div>
+          <div className="space-y-1.5">
+            {brand.platformMix.length === 0 && <div className="text-[13px] text-[var(--ink-muted)]">None detected</div>}
+            {brand.platformMix.slice(0, 5).map((p) => (
+              <div key={p.label} className="flex items-center justify-between text-[13px]">
+                <span className="truncate capitalize text-[var(--ink)]">{p.label.toLowerCase()}</span>
+                <span className="tabular-nums text-[var(--ink-muted)]">{pct(p.count, brand.totalAds)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Format mix */}
         <div>
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Format mix</div>
