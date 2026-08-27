@@ -14,6 +14,7 @@ import type { FatigueRead } from "../scoring/fatigue.ts";
 import { decide, type Decision } from "../scoring/decision.ts";
 import type { Explanation } from "../scoring/rubrics.ts";
 import { opportunityLoss, type OpportunityLoss } from "../scoring/opportunity.ts";
+import { winnerScores, type WinnerScores } from "../scoring/winner.ts";
 
 // Map the objective-aware decision to the leaderboard's verdict vocabulary + the action row.
 const DECISION_VERDICT: Record<Decision["action"], Verdict> = {
@@ -69,6 +70,7 @@ export type CockpitAd = {
   wastedRs: number;
   fatigueRead?: FatigueRead; // day-wise fatigue read (state, trajectory, evidence)
   halfLifeDays?: number | null; // creative half-life: days to the fatigue floor
+  winner?: WinnerScores; // multi-factor winner rank (quality x scale x stability x opportunity)
 };
 
 // Account creative half-life: the spend-weighted median of the ads' half-lives (days to the
@@ -233,6 +235,26 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       fatigueRead: input.fatigueRead,
       halfLifeDays: input.halfLifeDays,
     };
+  });
+
+  // Winner scores: a multi-factor rank (quality x proven scale x stability x upside) so a
+  // tiny-spend high-ROAS fluke cannot outrank a scaled workhorse. Needs the account's biggest
+  // spender to normalise the scale term, so it runs as a second pass once every ad is scored.
+  const accountMaxSpend = scored.reduce((m, a) => Math.max(m, a.spendRs), 0);
+  scored.forEach((a, i) => {
+    const input = ads[i];
+    a.winner = winnerScores(
+      {
+        objectiveScore: input.healthScore ?? a.score,
+        spendRs: a.spendRs,
+        roas: a.roas,
+        fatigueState: input.fatigueRead?.state ?? "watch",
+        stable: (input.fatigueRead?.trajectory ?? "stable") !== "worsening",
+        days: input.days,
+        halfLifeDays: input.halfLifeDays ?? null,
+      },
+      accountMaxSpend,
+    );
   });
 
   const leaderboard = [...scored].sort((a, b) => b.score - a.score);

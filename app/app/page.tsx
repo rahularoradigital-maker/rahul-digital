@@ -10,6 +10,7 @@ import { Leaderboard } from "@/components/cockpit/Leaderboard";
 import { FunnelCard } from "@/components/cockpit/FunnelCard";
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import type { MarginalRead } from "@/lib/scoring/marginal";
+import type { DataQuality } from "@/lib/scoring/data-quality";
 import { WhyDrawer } from "@/components/cockpit/WhyDrawer";
 
 // The Account Cockpit. Real connected-account data only: if nothing real is
@@ -26,7 +27,39 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} days={data.days} />;
+  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} days={data.days} />;
+}
+
+// Honest confidence de-rating: when the day-wise series has quality problems (thin
+// sample, spend shock, pause gap, tracking gap) we say so and show how much the
+// scores below are being trusted, rather than presenting a shaky read as certain.
+const DQ_SEVERITY_STYLE: Record<"info" | "warning" | "critical", string> = {
+  info: "bg-[var(--surface-alt)] text-[var(--ink-muted)]",
+  warning: "bg-[var(--warn-bg)] text-[var(--warn-ink)]",
+  critical: "bg-[var(--bad-bg)] text-[var(--bad-ink)]",
+};
+
+function ConfidenceBanner({ dq }: { dq: DataQuality }) {
+  if (dq.flags.length === 0) return null;
+  const worst = dq.flags.some((f) => f.severity === "critical") ? "critical" : dq.flags.some((f) => f.severity === "warning") ? "warning" : "info";
+  const border = worst === "critical" ? "border-[var(--bad-ink)]" : worst === "warning" ? "border-[var(--warn-ink)]" : "border-[var(--hairline)]";
+  return (
+    <div className={`rounded-[10px] border ${border} bg-[var(--surface)] p-4`}>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span className="text-[13px] font-semibold">{dq.reliable ? "Read with some caution" : "Low-confidence data"}</span>
+        <span className="rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
+          confidence de-rated {Math.round(dq.confidencePenalty * 100)}% · {dq.days} days
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {dq.flags.map((f) => (
+          <span key={f.code} className={`rounded-[var(--radius-pill)] px-2.5 py-0.5 text-[11px] font-medium ${DQ_SEVERITY_STYLE[f.severity]}`}>
+            {f.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 const MARGINAL_STYLE: Record<MarginalRead["classification"], { label: string; cls: string }> = {
@@ -77,7 +110,7 @@ function compositionRows(view: CockpitView): CompositionRow[] {
   ];
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; days: number }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; days: number }) {
   const health = view.accountHealth;
   const roas = view.totals.roas;
   const conc = view.concentration;
@@ -92,6 +125,9 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
         </div>
         <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Here&apos;s what to ship this week.</h1>
       </div>
+
+      {/* Data-quality de-rating: honest confidence note when the series is thin or broken */}
+      <ConfidenceBanner dq={dataQuality} />
 
       {/* Account Health */}
       <div className="grid grid-cols-1 items-center gap-8 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6 md:grid-cols-[200px_1fr]">

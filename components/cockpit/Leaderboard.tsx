@@ -58,6 +58,14 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
                 <span className="text-xs text-[var(--ink-muted)] tabular-nums">
                   {ad.roas === null ? "n/a" : `${ad.roas.toFixed(1)}x`}
                 </span>
+                {ad.winner && (
+                  <span
+                    className="text-[11px] text-[var(--ink-muted)] tabular-nums"
+                    title={`Winner score (quality x proven scale x stability x upside): ${ad.winner.why.join(" · ")}`}
+                  >
+                    win {Math.round(ad.winner.overall)}
+                  </span>
+                )}
               </div>
             </div>
           );

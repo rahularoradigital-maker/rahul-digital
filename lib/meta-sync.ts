@@ -11,6 +11,7 @@ import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
 import { windowFunnel, type FunnelMetrics, type ExtendedMetricsRow } from "./metrics/funnel-metrics.ts";
 import { marginalScaling, type MarginalRead } from "./scoring/marginal.ts";
+import { assessDataQuality, type DataQuality, type QualityRow } from "./scoring/data-quality.ts";
 
 // The user's currently-active Meta account (most-recently connected) and its token.
 // One user OAuth token works across all their ad accounts, so the account picker and
@@ -64,7 +65,7 @@ export type AccountMetrics = {
 export type ProcessedCounts = { campaigns: number; adSets: number; ads: number };
 
 export type LiveCockpit =
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -199,16 +200,23 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
 
     // Marginal scaling: aggregate the day-wise rows to account spend/revenue per day and model
     // the spend->revenue elasticity (diminishing returns). MODELLED; UNKNOWN without revenue.
-    const byDay = new Map<string, { spend: number; revenue: number }>();
+    const byDay = new Map<string, QualityRow>();
     for (const ad of realAds) {
       for (const r of ad.rows) {
-        const d = byDay.get(r.date) ?? { spend: 0, revenue: 0 };
+        const d = byDay.get(r.date) ?? { date: r.date, spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0 };
         d.spend += r.spend;
+        d.impressions += r.impressions;
+        d.clicks += r.clicks;
+        d.purchases += r.purchases;
         d.revenue += r.revenue;
         byDay.set(r.date, d);
       }
     }
-    const marginal = marginalScaling([...byDay.values()]);
+    // Sort ascending by date: the spend-shock and delivery-gap detectors read the series
+    // in order, and marginal scaling wants a stable chronological curve.
+    const dayRows = [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
+    const marginal = marginalScaling(dayRows);
+    const dataQuality = assessDataQuality(dayRows);
 
     // Sum the raw day-wise rows for account-level metrics (real numbers only).
     let sSpend = 0;
@@ -233,7 +241,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       cpa: sPur > 0 ? sSpend / sPur : null,
     };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, processed, funnel, marginal };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, processed, funnel, marginal, dataQuality };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }
