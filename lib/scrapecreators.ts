@@ -49,6 +49,7 @@ export async function searchCompanies(query: string, limit = 10): Promise<Compan
   if (!res.ok) throw new Error(`ScrapeCreators search ${res.status}`);
   const json = (await res.json()) as { searchResults?: RawCompany[] };
   const results = Array.isArray(json.searchResults) ? json.searchResults : [];
+  const ql = q.toLowerCase();
   return results
     .filter((r) => r.page_id && !r.page_is_deleted)
     .map((r) => ({
@@ -59,9 +60,21 @@ export async function searchCompanies(query: string, limit = 10): Promise<Compan
       likes: typeof r.likes === "number" ? r.likes : null,
       verified: Boolean(r.verification && r.verification !== "NOT_VERIFIED"),
     }))
-    // Verified first, then most-liked: the real brand page rises to the top.
-    .sort((a, b) => Number(b.verified) - Number(a.verified) || (b.likes ?? 0) - (a.likes ?? 0))
+    // Rank by NAME RELEVANCE first, then verified, then likes. Likes alone let a big unrelated
+    // verified page (e.g. a footballer for query "boat") outrank the actual brand; an exact/
+    // prefix name match pins the real brand (boAt) to the top.
+    .sort((a, b) => nameRelevance(b.name, ql) - nameRelevance(a.name, ql) || Number(b.verified) - Number(a.verified) || (b.likes ?? 0) - (a.likes ?? 0))
     .slice(0, limit);
+}
+
+// 4 = exact name, 3 = starts with the query, 2 = query is a whole word, 1 = substring, 0 = none.
+function nameRelevance(name: string, ql: string): number {
+  const n = name.toLowerCase();
+  if (n === ql) return 4;
+  if (n.startsWith(ql)) return 3;
+  if (n.split(/\s+/).includes(ql)) return 2;
+  if (n.includes(ql)) return 1;
+  return 0;
 }
 
 type RawCompany = {
