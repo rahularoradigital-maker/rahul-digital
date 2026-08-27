@@ -98,6 +98,16 @@ Each real document Rahul shared, mirrored into `docs/`, and what it changed in t
 ---
 
 ## 5. Change log (dated)
+- **2026-08-27 (batch 5, autonomous)** Fatigue is now OBJECTIVE-AWARE (conversion fatigues on
+  falling ROAS / rising CPA + CPM, awareness on reach, engagement/traffic on CTR) and the
+  half-life is CAPPED by the ad set / campaign END DATE (a creative cannot outlive its ad set).
+  Searchable ACCOUNT selector (200+ accounts). Discovery gets a name-relevance boost so the
+  exact brand (boAt) outranks big unrelated pages (Boateng). Ad Performance Intelligence summary
+  on the competitor dashboard (live ads / active / creative mix / new-7d, real counts only).
+  Verified data flow live: real ad_ids + objectives flowing (via the decision_triples audit).
+  NOTE: the "Ad Performance Intelligence" screenshot Rahul shared is the Imagive.ai reference
+  tool; our equivalent is Market -> Competitors (now with the summary row + platform/traffic/
+  longevity). Device-level breakdown data is a NEXT data pull. All checks green.
 - **2026-08-27 (batch 4, autonomous)** Competitor discovery re-ranked (verified + most-liked
   brand page first, with badges) so the RIGHT Meta page is picked; funnel metrics wired to the
   cockpit (thumb-stop, hold, CTR/CPM/CPC, LP/ATC/checkout from real actions); Meta pull now
