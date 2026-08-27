@@ -19,7 +19,7 @@ function halfLifeLabel(days: number | null | undefined): string {
   return `~${days}d left`;
 }
 
-export function FatigueRadar({ ads, halfLife, accountId }: { ads: CockpitAd[]; halfLife?: CreativeHalfLife; accountId?: string }) {
+export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: CockpitAd[]; halfLife?: CreativeHalfLife; accountId?: string; dateParam?: string }) {
   // Worst first: highest fatigue index at the top so the ads to act on lead.
   const rows = [...ads]
     .filter((a) => a.fatigueRead)
@@ -55,7 +55,7 @@ export function FatigueRadar({ ads, halfLife, accountId }: { ads: CockpitAd[]; h
             <div key={ad.id} className="border-t border-[var(--surface-alt)] py-3 first:border-t-0">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
-                  <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate text-sm font-medium" />
+                  <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate text-sm font-medium" dateParam={dateParam} />
                   <span className={`shrink-0 rounded-[70px] px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
                 </div>
                 <span className="shrink-0 text-xs font-medium text-[var(--ink-muted)] tabular-nums">

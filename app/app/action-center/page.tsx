@@ -22,7 +22,7 @@ export default async function ActionCenterPage({ searchParams }: { searchParams:
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <ActionCenter view={data.view} accountId={data.accountId} />;
+  return <ActionCenter view={data.view} accountId={data.accountId} dateParam={data.dateParam} />;
 }
 
 const SECTIONS: { priority: Priority; heading: string }[] = [
@@ -31,7 +31,7 @@ const SECTIONS: { priority: Priority; heading: string }[] = [
   { priority: "WATCH", heading: "Watch" },
 ];
 
-function ActionCenter({ view, accountId }: { view: CockpitView; accountId?: string }) {
+function ActionCenter({ view, accountId, dateParam }: { view: CockpitView; accountId?: string; dateParam?: string }) {
   const byId = new Map(view.leaderboard.map((a) => [a.id, a]));
   const doNow = view.doThis.filter((a) => a.priority === "DO_NOW");
   const doNowSpendRs = doNow.reduce((acc, a) => acc + (byId.get(a.adId)?.spendRs ?? 0), 0);
@@ -61,7 +61,7 @@ function ActionCenter({ view, accountId }: { view: CockpitView; accountId?: stri
       {SECTIONS.map(({ priority, heading }) => {
         const items = view.doThis.filter((a) => a.priority === priority);
         if (items.length === 0) return null;
-        return <ActionSection key={priority} heading={heading} items={items} doThis={view.doThis} byId={byId} accountId={accountId} />;
+        return <ActionSection key={priority} heading={heading} items={items} doThis={view.doThis} byId={byId} accountId={accountId} dateParam={dateParam} />;
       })}
 
       <p className="text-xs text-[var(--ink-muted)]">Nothing is applied automatically. You make each change in your ad account.</p>
@@ -84,12 +84,14 @@ function ActionSection({
   doThis,
   byId,
   accountId,
+  dateParam,
 }: {
   heading: string;
   items: PlanItem[];
   doThis: PlanItem[];
   byId: Map<string, CockpitAd>;
   accountId?: string;
+  dateParam?: string;
 }) {
   const style = PRIORITY_STYLE[items[0].priority];
   return (
@@ -115,7 +117,7 @@ function ActionSection({
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <AdLink accountId={accountId} adId={item.adId} name={item.adName} className="truncate text-sm font-medium" />
+                  <AdLink accountId={accountId} adId={item.adId} name={item.adName} className="truncate text-sm font-medium" dateParam={dateParam} />
                   <span className="shrink-0 text-sm text-[var(--ink-muted)]">·</span>
                   <span className="shrink-0 truncate text-sm text-[var(--ink)]">{item.label}</span>
                 </div>

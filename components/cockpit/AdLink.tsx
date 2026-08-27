@@ -8,13 +8,15 @@ export function AdLink({
   adId,
   name,
   className,
+  dateParam,
 }: {
   accountId?: string;
   adId: string;
   name: string;
   className?: string;
+  dateParam?: string;
 }) {
-  const href = adsManagerUrl(accountId, adId);
+  const href = adsManagerUrl(accountId, adId, dateParam);
   if (!href) return <span className={className}>{name}</span>;
   return (
     <a

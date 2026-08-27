@@ -23,7 +23,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} adsAnalyzed={data.adsAnalyzed} days={data.days} />;
+  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} days={data.days} />;
 }
 
 // Share of total spend on each verdict, an honest breakdown of where Account Health
@@ -42,7 +42,7 @@ function compositionRows(view: CockpitView): CompositionRow[] {
   ];
 }
 
-function Cockpit({ view, accountName, accountId, adsAnalyzed, days }: { view: CockpitView; accountName: string; accountId: string; adsAnalyzed: number; days: number }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; days: number }) {
   const health = view.accountHealth;
   const roas = view.totals.roas;
   const conc = view.concentration;
@@ -105,12 +105,12 @@ function Cockpit({ view, accountName, accountId, adsAnalyzed, days }: { view: Co
 
       {/* This week's plan + Fatigue radar */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
-        <ActionList items={view.doThis} ads={view.leaderboard} accountId={accountId} />
-        <FatigueRadar ads={view.leaderboard} halfLife={view.creativeHalfLife} accountId={accountId} />
+        <ActionList items={view.doThis} ads={view.leaderboard} accountId={accountId} dateParam={dateParam} />
+        <FatigueRadar ads={view.leaderboard} halfLife={view.creativeHalfLife} accountId={accountId} dateParam={dateParam} />
       </div>
 
       {/* Creative leaderboard */}
-      <Leaderboard ads={view.leaderboard} rupees={rupees} accountId={accountId} />
+      <Leaderboard ads={view.leaderboard} rupees={rupees} accountId={accountId} dateParam={dateParam} />
 
       {/* Wasted spend */}
       {view.waste.status === "ok" && (
