@@ -3,6 +3,7 @@ import { ConnectState } from "@/components/app/connect-state";
 import type { CockpitAd, CockpitView, Priority } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE, PRIORITY_STYLE } from "@/components/cockpit/styles";
 import { AdLink } from "@/components/cockpit/AdLink";
+import { JudgmentButtons } from "@/components/app/judgment-buttons";
 
 // Action Center: the full ranked action queue (rulebook 7.1 Scale/Continue/Stop
 // gates + 5.6 law "every screen ends in a ranked action with a number"). Renders
@@ -122,6 +123,11 @@ function ActionSection({
                   <span className="shrink-0 truncate text-sm text-[var(--ink)]">{item.label}</span>
                 </div>
                 <div className="mt-1 text-[13px] text-[var(--ink-muted)]">{item.why}</div>
+                {dateParam && (
+                  <div className="mt-2">
+                    <JudgmentButtons adId={item.adId} timeWindow={dateParam} />
+                  </div>
+                )}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
                 {ad && <span className={`rounded-[70px] px-3 py-1 text-xs font-semibold ${VERDICT_STYLE[ad.verdict].cls}`}>{VERDICT_STYLE[ad.verdict].label}</span>}
