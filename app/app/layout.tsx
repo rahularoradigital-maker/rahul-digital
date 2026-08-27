@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/app/user";
 import { signOut } from "@/app/(auth)/actions";
 import { Logo } from "@/components/site-header";
 import { SidebarNav } from "@/components/app/sidebar-nav";
+import { MobileNav } from "@/components/app/mobile-nav";
 import { Topbar } from "@/components/app/topbar";
 
 // AdBrain app shell: fixed 256px sidebar (grouped nav + user footer) + working
@@ -51,9 +52,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-10 border-b border-[var(--hairline)] bg-[var(--bg)]/85 backdrop-blur">
-          <Topbar />
+          <div className="flex items-start">
+            <div className="pl-2 pt-2.5 md:hidden">
+              <MobileNav userEmail={user?.email} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <Topbar />
+            </div>
+          </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8 md:py-10">{children}</main>
       </div>
     </div>
   );
