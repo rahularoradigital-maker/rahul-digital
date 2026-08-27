@@ -16,15 +16,17 @@ export async function GET() {
   const session = await getUserMetaSession(user.id);
   if (!session) return NextResponse.json({ connected: false, accounts: [] });
 
+  const activeOnly = [{ externalId: session.activeExternalId, name: session.activeAccountName }];
   try {
     const accounts = await listAllAccessibleAdAccounts(session.token);
-    return NextResponse.json({ connected: true, activeExternalId: session.activeExternalId, accounts });
-  } catch {
-    // Fall back to just the active account so the switcher still shows the current one.
+    // If the token can only see the one granted account (no business_management yet),
+    // still return that active account so the switcher renders and offers "connect more".
     return NextResponse.json({
       connected: true,
       activeExternalId: session.activeExternalId,
-      accounts: [{ externalId: session.activeExternalId, name: session.activeAccountName }],
+      accounts: accounts.length > 0 ? accounts : activeOnly,
     });
+  } catch {
+    return NextResponse.json({ connected: true, activeExternalId: session.activeExternalId, accounts: activeOnly });
   }
 }

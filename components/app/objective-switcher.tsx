@@ -1,0 +1,99 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+
+// The setup-gate objective filter (rulebook 5A): multi-select the campaign objectives
+// to scope the whole dashboard to. Stored in the "adbrain.objectives" cookie which
+// loadCockpit reads server-side, then a refresh re-scopes every page. Empty = all.
+const OBJECTIVES: { key: string; label: string }[] = [
+  { key: "conversion", label: "Conversion" },
+  { key: "awareness", label: "Awareness" },
+  { key: "traffic", label: "Traffic" },
+  { key: "engagement", label: "Engagement" },
+  { key: "leads", label: "Leads" },
+  { key: "app_installs", label: "App installs" },
+];
+
+function readCookie(name: string): string {
+  if (typeof document === "undefined") return "";
+  for (const part of document.cookie.split("; ")) {
+    const i = part.indexOf("=");
+    if (i > -1 && part.slice(0, i) === name) return decodeURIComponent(part.slice(i + 1));
+  }
+  return "";
+}
+
+export function ObjectiveSwitcher() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [, startTransition] = useTransition();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const raw = readCookie("adbrain.objectives");
+    setSel(new Set(raw ? raw.split(",").filter(Boolean) : []));
+  }, []);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  function apply(next: Set<string>) {
+    setSel(next);
+    const val = Array.from(next).join(",");
+    document.cookie = `adbrain.objectives=${encodeURIComponent(val)}; path=/; max-age=${val ? 60 * 60 * 24 * 30 : 0}`;
+    startTransition(() => router.refresh());
+  }
+
+  function toggle(key: string) {
+    const next = new Set(sel);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    apply(next);
+  }
+
+  const label = sel.size === 0 ? "All objectives" : `${sel.size} objective${sel.size === 1 ? "" : "s"}`;
+
+  return (
+    <div ref={ref} className="relative hidden lg:block">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
+      >
+        <span className="text-[var(--ink-muted)]">Objective:</span> {label}
+        <span className="text-[var(--ink-muted)]">▾</span>
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
+          {OBJECTIVES.map((o) => (
+            <label
+              key={o.key}
+              className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
+            >
+              <input type="checkbox" checked={sel.has(o.key)} onChange={() => toggle(o.key)} className="h-4 w-4 accent-[var(--accent)]" />
+              {o.label}
+            </label>
+          ))}
+          {sel.size > 0 ? (
+            <button
+              type="button"
+              onClick={() => apply(new Set())}
+              className="mt-1 w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--ink-muted)] transition hover:bg-[var(--surface-alt)] hover:text-[var(--ink)]"
+            >
+              Clear (show all)
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}

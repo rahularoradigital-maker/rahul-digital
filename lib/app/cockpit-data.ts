@@ -41,8 +41,10 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
   // every page globally without threading a param through each one). Empty = all campaigns.
   const cookieStore = await cookies();
   const campaignId = cookieStore.get("adbrain.campaign")?.value || undefined;
+  const objectivesRaw = cookieStore.get("adbrain.objectives")?.value || "";
+  const objectives = objectivesRaw ? objectivesRaw.split(",").filter(Boolean) : [];
 
-  const live = await fetchLiveCockpit(user.id, days, campaignId);
+  const live = await fetchLiveCockpit(user.id, days, campaignId, objectives);
 
   if (live.status === "connected" && live.adsAnalyzed > 0) {
     return { connected: true, view: live.view, metrics: live.metrics, accountName: live.accountName, adsAnalyzed: live.adsAnalyzed, days, userEmail };

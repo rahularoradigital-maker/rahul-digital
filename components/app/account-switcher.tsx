@@ -57,6 +57,12 @@ export function AccountSwitcher() {
 
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value;
+    // The reconnect option: re-run Meta login so the user can grant more accounts
+    // (needed when the token only has access to the one account it was created with).
+    if (id === "__connect__") {
+      window.location.href = "/api/connect/meta/authorize";
+      return;
+    }
     const acct = accounts.find((a) => a.externalId === id);
     if (!id || !acct) return;
     // Drop the cached account list so the new active account is reflected on reload.
@@ -77,7 +83,7 @@ export function AccountSwitcher() {
   }
 
   return (
-    <label className="hidden items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium xl:flex">
+    <label className="hidden items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium md:flex">
       <span className="text-[var(--ink-muted)]">Account ·</span>
       <select
         value={active}
@@ -94,6 +100,7 @@ export function AccountSwitcher() {
             ))}
           </optgroup>
         ))}
+        <option value="__connect__">+ Connect more accounts</option>
       </select>
     </label>
   );

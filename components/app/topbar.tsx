@@ -6,6 +6,7 @@ import { titleFor } from "@/lib/app/nav";
 import { WINDOWS } from "@/lib/app/windows";
 import { AccountSwitcher } from "@/components/app/account-switcher";
 import { CampaignSwitcher } from "@/components/app/campaign-switcher";
+import { ObjectiveSwitcher } from "@/components/app/objective-switcher";
 import { rescanCockpit } from "@/app/app/actions";
 
 // The working topbar. Every control does its job:
@@ -87,13 +88,8 @@ export function Topbar() {
           </select>
         </label>
 
-        {/* Switch / connect account */}
-        <a
-          href="/api/connect/meta/authorize"
-          className="hidden rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)] sm:inline"
-        >
-          Switch account
-        </a>
+        {/* Objective filter (setup gate) */}
+        <ObjectiveSwitcher />
 
         {/* Re-scan */}
         <button

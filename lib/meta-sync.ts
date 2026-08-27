@@ -60,7 +60,7 @@ export type LiveCockpit =
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
-async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string): Promise<LiveCockpit> {
+async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = []): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
   let acct: { id: string; external_id: string; name: string | null } | null = null;
@@ -117,8 +117,10 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
         objective: mapMetaObjective(entry?.objective),
       };
     });
+    // Optional objective filter (the topbar objective picker): scope to selected objectives.
+    const scoped = objectives.length === 0 ? realAds : realAds.filter((ad) => objectives.includes(ad.objective ?? "conversion"));
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
-    const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
+    const inputs = toCockpitInputs(scoped).filter((a) => a.spendRs > 0);
     const view = analyzeAccount(inputs, "LIVE");
 
     // Sum the raw day-wise rows for account-level metrics (real numbers only).
@@ -126,7 +128,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     let sImpr = 0;
     let sClicks = 0;
     let sPur = 0;
-    for (const ad of realAds) {
+    for (const ad of scoped) {
       for (const r of ad.rows) {
         sSpend += r.spend;
         sImpr += r.impressions;
@@ -182,8 +184,8 @@ export async function bustCockpitCache(userId?: string): Promise<void> {
 
 // Live pull, then write both cache levels. Returned to callers and also used as the
 // background refresh body.
-async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, cacheKey: string, memKey: string): Promise<LiveCockpit> {
-  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId);
+async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string): Promise<LiveCockpit> {
+  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives);
   if (value.status !== "error") {
     cockpitCache.set(memKey, { at: Date.now(), value });
     try {
@@ -202,8 +204,9 @@ export async function fetchLiveCockpit(
   userId: string,
   lookbackDays: number = LOOKBACK_DAYS,
   campaignId?: string,
+  objectives: string[] = [],
 ): Promise<LiveCockpit> {
-  const cacheKey = `${lookbackDays}:${campaignId ?? ""}`;
+  const cacheKey = `${lookbackDays}:${campaignId ?? ""}:${[...objectives].sort().join(",")}`;
   const memKey = `${userId}:${cacheKey}`;
   const now = Date.now();
 
@@ -234,7 +237,7 @@ export async function fetchLiveCockpit(
     if (cached.age < STALE_MS) {
       // Serve stale immediately, refresh in the background so the next load is fresh.
       try {
-        after(() => pullAndStore(userId, lookbackDays, campaignId, cacheKey, memKey));
+        after(() => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey));
       } catch {
         // after() unavailable outside a request scope; the stale value is still fine.
       }
@@ -243,7 +246,7 @@ export async function fetchLiveCockpit(
   }
 
   // Cold or too stale: block on the live pull (skeleton shows while this runs).
-  return pullAndStore(userId, lookbackDays, campaignId, cacheKey, memKey);
+  return pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey);
 }
 
 function daysAgo(n: number): string {
