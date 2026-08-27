@@ -8,7 +8,7 @@ mirror to Google Drive for review.
 - **Repo:** `~/adbrain-mvp` · **Live:** https://rahul-digital.vercel.app
 - **Biggest rule:** no number is ever shown that is not derived from a stated rule/formula.
 - **Absolute rule:** the former collaborator's name never appears anywhere in this project.
-- **Last updated:** 2026-08-27
+- **Last updated:** 2026-08-27 (batch 7)
 
 ---
 
@@ -98,6 +98,15 @@ Each real document Rahul shared, mirrored into `docs/`, and what it changed in t
 ---
 
 ## 5. Change log (dated)
+- **2026-08-27 (batch 7, 10x wiring)** The last two built engines are now wired into the
+  cockpit. DATA-QUALITY: the account's day-wise series is checked for thin sample, spend
+  shock, mid-series pause gap and zero-revenue tracking gaps; when any fire, an honest
+  confidence banner shows how much the scores below are being de-rated (nothing is shown
+  as certain that the data cannot support). WINNER: every ad now carries a multi-factor
+  winner score (quality x proven scale x stability x upside) on the leaderboard, so a
+  tiny-spend high-ROAS fluke no longer reads as a real winner. Day aggregation is sorted
+  chronologically and reused for both marginal scaling and data quality. tsc clean; all 30
+  check:* pass; next build green.
 - **2026-08-27 (batch 6, 10x master brief)** System AUDIT + missing-intelligence report + metric
   dictionary + time-window mapping + roadmap (docs/10x-audit-and-plan.md). Four new pure, tested
   engines built in parallel: MARGINAL SCALING (elasticity -> Underfunded/Healthy/Saturated +
