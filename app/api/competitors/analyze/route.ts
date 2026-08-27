@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { analyzeCreative } from "@/lib/agents/creative/orchestrator";
+import { probeGemini } from "@/lib/gemini";
 
 // Stage 7 (LLM Creative Analysis): pick the top N creatives per brand and have Gemini read
 // each one, writing the 42-attribute set + TOF/MOF/BOF into competitor_creative_analysis.
@@ -125,5 +126,9 @@ export async function POST(request: NextRequest) {
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, worker));
 
-  return NextResponse.json({ ok: true, analyzed: ok, failed, remaining });
+  // If everything failed, surface the real Gemini error (status + snippet) instead of a
+  // silent "0 analyzed", so the cause is confirmed, not guessed.
+  const diag = ok === 0 && failed > 0 ? await probeGemini() : undefined;
+
+  return NextResponse.json({ ok: true, analyzed: ok, failed, remaining, diag });
 }

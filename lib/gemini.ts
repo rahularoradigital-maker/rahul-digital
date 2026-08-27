@@ -14,8 +14,28 @@ export type InlineImage = { data: string; mimeType: string };
 
 // A minimal JSON schema: an object whose named keys are all strings. Every agent's schema
 // is this shape (a handful of nullable-string attributes), so agents stay small and uniform.
+// Gemini's REST responseSchema requires the OpenAPI enum TYPES IN UPPERCASE (OBJECT/STRING);
+// lowercase is rejected with a 400, which is why the first cut analyzed 0 creatives.
 export function stringObjectSchema(keys: string[]): Record<string, unknown> {
-  return { type: "object", properties: Object.fromEntries(keys.map((k) => [k, { type: "string" }])) };
+  return { type: "OBJECT", properties: Object.fromEntries(keys.map((k) => [k, { type: "STRING" }])) };
+}
+
+// One tiny diagnostic call so a failing run can report WHY (status + body snippet) instead
+// of a silent "0 analyzed". Text-only; no schema. Never throws.
+export async function probeGemini(): Promise<{ ok: boolean; status: number; body: string }> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return { ok: false, status: 0, body: "GEMINI_API_KEY not set" };
+  try {
+    const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(key)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Reply with the word ok." }] }] }),
+    });
+    const body = (await res.text()).slice(0, 300);
+    return { ok: res.ok, status: res.status, body };
+  } catch (e) {
+    return { ok: false, status: 0, body: e instanceof Error ? e.message : "probe failed" };
+  }
 }
 
 // Fetch a still image and return base64 + mime, or null (missing / too large / not an image /
