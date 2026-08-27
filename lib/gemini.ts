@@ -4,7 +4,7 @@
 // task and its own schema; this only carries the request. Returns null on any failure so an
 // agent can fail alone without taking down the orchestration.
 
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const MAX_IMAGE_BYTES = 8_000_000; // skip inlining a still larger than this; run copy-only
 

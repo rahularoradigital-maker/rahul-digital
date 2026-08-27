@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { analyzeCreative } from "@/lib/agents/creative/orchestrator";
-import { probeGemini } from "@/lib/gemini";
+import { probeGemini, GEMINI_MODEL } from "@/lib/gemini";
 
 // Stage 7 (LLM Creative Analysis): pick the top N creatives per brand and have Gemini read
 // each one, writing the 42-attribute set + TOF/MOF/BOF into competitor_creative_analysis.
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
           primary_emotion: attrs.primaryEmotion,
           offer: attrs.offer,
           attributes: attrs,
-          model: "gemini-2.5-flash",
+          model: GEMINI_MODEL,
           analyzed_at: new Date().toISOString(),
         },
         { onConflict: "user_id,ad_archive_id" },
