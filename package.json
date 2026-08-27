@@ -32,7 +32,11 @@
     "check:funnel-metrics": "node --experimental-strip-types scripts/check-funnel-metrics.ts",
     "check:decision-triples": "node --experimental-strip-types scripts/check-decision-triples.ts",
     "check:opportunity": "node --experimental-strip-types scripts/check-opportunity.ts",
-    "check:revenue": "node --experimental-strip-types scripts/check-revenue.ts"
+    "check:revenue": "node --experimental-strip-types scripts/check-revenue.ts",
+    "check:marginal": "node --experimental-strip-types scripts/check-marginal.ts",
+    "check:data-quality": "node --experimental-strip-types scripts/check-data-quality.ts",
+    "check:fatigue-forecast": "node --experimental-strip-types scripts/check-fatigue-forecast.ts",
+    "check:winner": "node --experimental-strip-types scripts/check-winner.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
