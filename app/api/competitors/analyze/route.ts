@@ -12,7 +12,9 @@ import { probeGemini, GEMINI_MODEL } from "@/lib/gemini";
 export const maxDuration = 60;
 
 const REQUEST_CAP = 40; // max creatives analyzed per call (resume by calling again)
-const CONCURRENCY = 4;
+// Each creative fans out to ~6 specialist agents, so keep the outer concurrency low: 2
+// creatives x 6 agents = 12 concurrent Gemini calls, which stays under typical rate limits.
+const CONCURRENCY = 2;
 
 type Body = { perBrand?: number };
 

@@ -71,22 +71,38 @@ export async function callGemini(
 
   const parts: Record<string, unknown>[] = [{ text: prompt }];
   if (inline) parts.push({ inline_data: { mime_type: inline.mimeType, data: inline.data } });
+  const bodyJson = JSON.stringify({
+    contents: [{ role: "user", parts }],
+    generationConfig: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.2 },
+  });
 
-  try {
-    const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(key)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts }],
-        generationConfig: { responseMimeType: "application/json", responseSchema: schema, temperature: 0.2 },
-      }),
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
-    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) return null;
-    return JSON.parse(text) as Record<string, unknown>;
-  } catch {
-    return null;
+  // One retry with a short backoff on the transient rate-limit / overload statuses (429/503),
+  // which is what makes many creatives fail on a burst; a hard error (400/404) is not retried.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(key)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: bodyJson,
+      });
+      if (!res.ok) {
+        if ((res.status === 429 || res.status === 503) && attempt === 0) {
+          await new Promise((r) => setTimeout(r, 1200));
+          continue;
+        }
+        return null;
+      }
+      const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+      const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) return null;
+      return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 1200));
+        continue;
+      }
+      return null;
+    }
   }
+  return null;
 }
