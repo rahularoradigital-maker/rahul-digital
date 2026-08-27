@@ -87,6 +87,11 @@ function ContributorList({ items, accountId, dateParam, kind }: { items: SpendCo
           <div key={c.adId} className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <AdLink accountId={accountId} adId={c.adId} adSetId={c.adSetId} campaignId={c.campaignId} name={c.name} className="block truncate text-[13px] font-medium" dateParam={dateParam} />
+              {(c.campaignName || c.adsetName) && (
+                <div className="truncate text-[11px] text-[var(--ink-muted)]">
+                  {[c.campaignName, c.adsetName].filter(Boolean).join(" · ")}
+                </div>
+              )}
               <div className="mt-0.5 text-[11px] text-[var(--ink-muted)] tabular-nums">
                 {kind === "waste"
                   ? `${c.roas === null ? "n/a" : `${c.roas.toFixed(2)}x`} ROAS on ${rupees.format(c.spendRs)} spent - below 1x break-even`

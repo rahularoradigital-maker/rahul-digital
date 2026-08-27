@@ -39,6 +39,8 @@ export type CockpitAdInput = VerdictInput & {
   name: string;
   adSetId?: string; // parent ad set / campaign ids, for the Ads Manager deep link hierarchy
   campaignId?: string;
+  adsetName?: string; // readable parent names, so money figures trace to a campaign / ad set
+  campaignName?: string;
   active?: boolean; // current delivery status; false = paused/archived (hidden from suggestions)
   objective: Objective;
   spendRs: number;
@@ -63,6 +65,8 @@ export type CockpitAd = {
   name: string;
   adSetId?: string; // parent ad set / campaign ids, for the Ads Manager deep link hierarchy
   campaignId?: string;
+  adsetName?: string; // readable parent names, so money figures trace to a campaign / ad set
+  campaignName?: string;
   active?: boolean; // current delivery status; false = paused/archived (hidden from suggestions)
   objective: Objective;
   spendRs: number;
@@ -96,6 +100,8 @@ export type SpendContributor = {
   name: string;
   adSetId?: string;
   campaignId?: string;
+  adsetName?: string; // readable campaign / ad set the ad belongs to
+  campaignName?: string;
   amountRs: number; // the rupees this ad contributes to the total
   roas: number | null;
   spendRs: number;
@@ -246,6 +252,8 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       name: input.name,
       adSetId: input.adSetId,
       campaignId: input.campaignId,
+      adsetName: input.adsetName,
+      campaignName: input.campaignName,
       active: input.active,
       objective: input.objective,
       spendRs: input.spendRs,
@@ -305,12 +313,12 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
     .filter((a) => a.active !== false && a.wastedRs > 0)
     .sort((a, b) => b.wastedRs - a.wastedRs)
     .slice(0, 8)
-    .map((a) => ({ adId: a.id, name: a.name, adSetId: a.adSetId, campaignId: a.campaignId, amountRs: a.wastedRs, roas: a.roas, spendRs: a.spendRs }));
+    .map((a) => ({ adId: a.id, name: a.name, adSetId: a.adSetId, campaignId: a.campaignId, adsetName: a.adsetName, campaignName: a.campaignName, amountRs: a.wastedRs, roas: a.roas, spendRs: a.spendRs }));
   const atRiskContributors: SpendContributor[] = scored
     .filter((a) => a.active !== false && a.spendRs > 0 && (a.fatigueRead?.state === "fatiguing" || a.fatigueRead?.state === "fatigued"))
     .sort((a, b) => b.spendRs - a.spendRs)
     .slice(0, 8)
-    .map((a) => ({ adId: a.id, name: a.name, adSetId: a.adSetId, campaignId: a.campaignId, amountRs: a.spendRs, roas: a.roas, spendRs: a.spendRs, fatigueState: a.fatigueRead?.state }));
+    .map((a) => ({ adId: a.id, name: a.name, adSetId: a.adSetId, campaignId: a.campaignId, adsetName: a.adsetName, campaignName: a.campaignName, amountRs: a.spendRs, roas: a.roas, spendRs: a.spendRs, fatigueState: a.fatigueRead?.state }));
 
   const concentration = budgetConcentration(
     scored.map<AdSummary>((a) => ({ adId: a.id, spend: a.spendRs, revenue: a.revenueRs, fatigueIndex: null })),

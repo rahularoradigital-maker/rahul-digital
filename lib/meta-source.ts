@@ -371,27 +371,30 @@ export async function listAllCampaignObjectives(
   return rows.map((c) => ({ id: c.id, objective: c.objective }));
 }
 
+export type AdMeta = { status?: string; adsetName?: string; campaignName?: string };
+
 /**
- * Current effective_status per ad (batch ?ids= call, 50 per request). effective_status ROLLS UP
- * the campaign -> ad set -> ad pause state, so "ACTIVE" means all three are live and delivering;
- * anything else (PAUSED / ADSET_PAUSED / CAMPAIGN_PAUSED / ARCHIVED / WITH_ISSUES / ...) is not
- * actively spending. Used to hide paused ads from action suggestions - nobody needs to be told to
- * kill an ad that is already paused. An ad missing from the map = unknown (caller treats as active
- * so we never hide a real budget leak). Best-effort: a failed batch just leaves those ads unknown.
+ * Per-ad metadata in ONE batch ?ids= call (50 per request): current effective_status + the ad
+ * set NAME + the campaign NAME. effective_status ROLLS UP the campaign -> ad set -> ad pause
+ * state, so "ACTIVE" means all three are live; anything else is not actively spending (used to
+ * hide paused ads from suggestions). The names make every money figure traceable to a readable
+ * campaign / ad set, not just an id. An ad missing from the map = unknown (caller treats status
+ * as active so we never hide a real budget leak). Best-effort: a failed batch is just skipped.
  */
-export async function fetchAdStatuses(accountExternalId: string, adIds: string[], token: TokenSet): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
+export async function fetchAdMeta(accountExternalId: string, adIds: string[], token: TokenSet): Promise<Map<string, AdMeta>> {
+  const out = new Map<string, AdMeta>();
   if (adIds.length === 0) return out;
   for (let i = 0; i < adIds.length; i += 50) {
     const batch = adIds.slice(i, i + 50);
     try {
-      const json = await graphGet<Record<string, { effective_status?: string }>>("", token.accessToken, {
-        ids: batch.join(","),
-        fields: "effective_status",
-      });
+      const json = await graphGet<Record<string, { effective_status?: string; adset?: { name?: string }; campaign?: { name?: string } }>>(
+        "",
+        token.accessToken,
+        { ids: batch.join(","), fields: "effective_status,adset{name},campaign{name}" },
+      );
       for (const adId of batch) {
-        const s = json[adId]?.effective_status;
-        if (s) out.set(adId, s);
+        const e = json[adId];
+        if (e) out.set(adId, { status: e.effective_status, adsetName: e.adset?.name, campaignName: e.campaign?.name });
       }
     } catch {
       // this batch stays unknown; keep going
