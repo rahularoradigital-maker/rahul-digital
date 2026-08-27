@@ -134,6 +134,11 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // Which campaigns to include: the campaign picker, or the objective picker mapped to
     // the account's campaigns of those objectives. undefined = all; [] = matched nothing.
     const campaignIds = await resolveCampaignIds(acct.external_id, token, campaignId, objectives);
+    // PERF: the scope totals (true spend/revenue for the whole objective) only depend on
+    // campaignIds, NOT on the per-ad pipeline below. Kick it off NOW so it runs concurrently
+    // with listTopSpendingAds -> fetchAdInsights -> listAdSetEnds instead of after them; we
+    // await it only where the numbers are actually used. Best-effort (null on failure).
+    const scopePromise = fetchScopeInsights(acct.external_id, since, token, campaignIds, until).catch(() => null);
     // Prefer the ads that actually SPENT in the window, sorted by spend (the ones that
     // matter on a big account), scoped to the resolved campaigns.
     let ads: { externalId: string; name?: string }[] = [];
@@ -233,12 +238,9 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // top-N analyzed ads. This is what makes the headline KPIs match Ads Manager: the leaderboard
     // deep-analyzes the top ads, but spend / revenue / ROAS / impressions must reflect everything
     // in scope. Best-effort: if it fails, fall back to the analyzed-ads sum rather than 500.
-    let scope;
-    try {
-      scope = await fetchScopeInsights(acct.external_id, since, token, campaignIds, until);
-    } catch {
-      scope = null;
-    }
+    // Already in flight since right after campaignIds resolved (see scopePromise above), so
+    // this await usually returns immediately - it overlapped the whole ad pipeline.
+    const scope = await scopePromise;
     const sSpend = scope ? scope.spend : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.spend, 0), 0);
     const sImpr = scope ? scope.impressions : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.impressions, 0), 0);
     const sClicks = scope ? scope.clicks : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.clicks, 0), 0);
