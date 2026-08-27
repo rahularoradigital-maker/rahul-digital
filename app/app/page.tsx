@@ -23,7 +23,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} days={data.days} />;
+  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} days={data.days} />;
 }
 
 // Share of total spend on each verdict, an honest breakdown of where Account Health
@@ -42,18 +42,18 @@ function compositionRows(view: CockpitView): CompositionRow[] {
   ];
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; days: number }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; days: number }) {
   const health = view.accountHealth;
   const roas = view.totals.roas;
   const conc = view.concentration;
 
   return (
     <div className="space-y-6">
-      {/* Context line */}
+      {/* Context line: coverage of this run (campaigns / ad sets / ads processed) */}
       <div>
         <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
-          {`Live · ${accountName} · ${adsAnalyzed} real ads · last ${days} days`}
+          {`Live · ${accountName} · ${processed.campaigns} campaign${processed.campaigns === 1 ? "" : "s"} · ${processed.adSets} ad set${processed.adSets === 1 ? "" : "s"} · ${adsAnalyzed} ads · last ${days} days`}
         </div>
         <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Here&apos;s what to ship this week.</h1>
       </div>

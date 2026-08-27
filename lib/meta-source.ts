@@ -251,25 +251,28 @@ export async function fetchAdInsights(
   since: string,
   token: TokenSet,
   until?: string,
-): Promise<Map<string, { rows: MetricsRow[]; objective?: string }>> {
-  const byAd = new Map<string, { rows: MetricsRow[]; objective?: string }>();
+): Promise<Map<string, { rows: MetricsRow[]; objective?: string; campaignId?: string; adsetId?: string }>> {
+  const byAd = new Map<string, { rows: MetricsRow[]; objective?: string; campaignId?: string; adsetId?: string }>();
   if (adExternalIds.length === 0) return byAd;
   const params: Record<string, string> = {
     level: "ad",
-    fields: "ad_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective",
+    // campaign_id + adset_id let us report how many campaigns / ad sets / ads a run processed.
+    fields: "ad_id,campaign_id,adset_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective",
     // until defaults to today so existing preset callers are unaffected; a range passes both.
     time_range: JSON.stringify({ since, until: until ?? today() }),
     time_increment: "1",
     limit: "500",
     filtering: JSON.stringify([{ field: "ad.id", operator: "IN", value: adExternalIds }]),
   };
-  const data = await graphGet<{ data: (MetaInsightRow & { ad_id: string; objective?: string })[] }>(
+  const data = await graphGet<{ data: (MetaInsightRow & { ad_id: string; objective?: string; campaign_id?: string; adset_id?: string })[] }>(
     `act_${accountExternalId}/insights`,
     token.accessToken,
     params,
   );
   for (const row of data.data ?? []) {
     const entry = byAd.get(row.ad_id) ?? { rows: [], objective: undefined };
+    if (!entry.campaignId && row.campaign_id) entry.campaignId = row.campaign_id;
+    if (!entry.adsetId && row.adset_id) entry.adsetId = row.adset_id;
     entry.rows.push({
       adExternalId: row.ad_id,
       date: row.date_start,

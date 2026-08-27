@@ -35,7 +35,7 @@ Every request/feedback, newest at the bottom. Status: 🟢 done · 🟠 partial/
 | 16 | Day-wise fatigue (real, per 7/14/30d), not a proxy | 🟢 |
 | 17 | Creative half-life score (account + per-ad) | 🟢 |
 | 18 | Multiple small agents + orchestration layer (no single agent) | 🟢 (stage-7 orchestrator) |
-| 19 | Show campaigns / ad-sets / ads processed each run | 🔴 (lands with data expansion) |
+| 19 | Show campaigns / ad-sets / ads processed each run | 🟢 (cockpit context line: N campaigns, M ad sets, K ads) |
 | 20 | Can a static ad image be read? | 🟢 (yes - verified: Gemini describes the image) |
 | 21 | Ad Library link button per brand; show ads as in FB Ad Library | 🟢 |
 | 22 | Incorporate Imagive.ai data/logics/items | 🟠 (spec in docs/imagive-spec.md; building) |
@@ -98,6 +98,11 @@ Each real document Rahul shared, mirrored into `docs/`, and what it changed in t
 ---
 
 ## 5. Change log (dated)
+- **2026-08-27 (batch 3)** Mobile nav drawer (sidebar was hidden on phones); ad links filter to
+  the exact ad + carry the AdBrain date window; Meta data expansion started - the insights pull
+  now captures campaign_id/adset_id, and the cockpit shows how many campaigns / ad sets / ads a
+  run processed; orchestration plan (MetricsSource connector interface, not LangGraph). Ledger
+  mirrored to Google Drive.
 - **2026-08-27 (batch 2)** WhyDrawer wired onto Account Health (live "why 21/100?" per-ad
   breakdown); custom date range (presets + from/to via the `adbrain.window` cookie);
   searchable campaign + objective dropdowns; Ad Library links + FB-style creative gallery

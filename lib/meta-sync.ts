@@ -55,8 +55,12 @@ export type AccountMetrics = {
   cpa: number | null;
 };
 
+// How many campaigns / ad sets / ads a single run actually processed (transparency:
+// the user asked to see the coverage of every workflow run).
+export type ProcessedCounts = { campaigns: number; adSets: number; ads: number };
+
 export type LiveCockpit =
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; processed: ProcessedCounts }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -147,6 +151,17 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
     const view = analyzeAccount(inputs, "LIVE");
 
+    // Coverage of this run: distinct campaigns / ad sets across the ads we actually analyzed.
+    const analyzedIds = new Set(inputs.map((a) => a.id));
+    const campaignSet = new Set<string>();
+    const adSetSet = new Set<string>();
+    for (const [adId, entry] of rowsByAd) {
+      if (!analyzedIds.has(adId)) continue;
+      if (entry.campaignId) campaignSet.add(entry.campaignId);
+      if (entry.adsetId) adSetSet.add(entry.adsetId);
+    }
+    const processed: ProcessedCounts = { campaigns: campaignSet.size, adSets: adSetSet.size, ads: inputs.length };
+
     // Sum the raw day-wise rows for account-level metrics (real numbers only).
     let sSpend = 0;
     let sImpr = 0;
@@ -170,7 +185,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       cpa: sPur > 0 ? sSpend / sPur : null,
     };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, processed };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }
