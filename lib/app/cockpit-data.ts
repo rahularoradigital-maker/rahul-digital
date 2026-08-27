@@ -9,10 +9,12 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { getCurrentUser } from "@/lib/app/user";
 import { fetchLiveCockpit, type AccountMetrics, type ProcessedCounts } from "@/lib/meta-sync";
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import type { CockpitView } from "@/lib/cockpit/analyze";
+import { recordDecisionTriples } from "@/lib/audit/record";
 
 export type { AccountMetrics } from "@/lib/meta-sync";
 
@@ -63,6 +65,12 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
   const live = await fetchLiveCockpit(user.id, lookbackDays, campaignId, objectives, explicitWindow);
 
   if (live.status === "connected" && live.adsAnalyzed > 0) {
+    // Log the run's recommendations as labeled triples (deferred, deduped per day). Best-effort.
+    try {
+      after(() => recordDecisionTriples(user.id, live.accountExternalId, dateParam, live.view));
+    } catch {
+      // after() unavailable outside a request scope; skip logging rather than fail the load.
+    }
     return { connected: true, view: live.view, metrics: live.metrics, funnel: live.funnel, accountName: live.accountName, accountId: live.accountExternalId, dateParam, adsAnalyzed: live.adsAnalyzed, processed: live.processed, days: effectiveDays, userEmail };
   }
 
