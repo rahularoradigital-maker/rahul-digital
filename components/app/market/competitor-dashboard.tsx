@@ -1,0 +1,203 @@
+import type { BrandAnalytics, MediaCategory } from "@/lib/competitors/types";
+import type { CompetitorData as Data } from "@/lib/competitors/data";
+
+// Stages 8-9 (deterministic): the Competitor Creative Intelligence dashboard rendered from
+// stored, real Ad Library data. Comparison table, format mix, CTA/hook patterns, whitespace
+// gaps, and each brand's top live creatives (each linking to the real ad). The 42-attribute
+// LLM creative analysis and written SWOT/recommendations (stage 7) are a separate, gated
+// layer; nothing here is invented - every number is a count over real ads.
+
+const MEDIA_LABEL: Record<MediaCategory, string> = { video: "Video", image: "Image", carousel: "Carousel", other: "Other" };
+const MEDIA_ORDER: MediaCategory[] = ["video", "image", "carousel", "other"];
+
+function pct(n: number, total: number): number {
+  return total > 0 ? Math.round((n / total) * 100) : 0;
+}
+
+function topCta(b: BrandAnalytics): string {
+  return b.ctaMix[0]?.label ?? "-";
+}
+
+function fmtDate(unix: number | null): string {
+  if (!unix) return "";
+  const d = new Date(unix * 1000);
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+export function CompetitorDashboard({ data }: { data: Data }) {
+  const { report } = data;
+  const brands = [report.myBrand, ...report.competitors].filter(Boolean) as BrandAnalytics[];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-[22px] font-semibold tracking-tight">Competitor Creative Intelligence</h2>
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
+            {data.brandCount} brand{data.brandCount === 1 ? "" : "s"} · {data.adCount} live ads from the Facebook Ad Library
+            {data.updatedAt ? ` · updated ${fmtDate(Math.floor(new Date(data.updatedAt).getTime() / 1000))}` : ""}
+          </p>
+        </div>
+      </div>
+
+      {/* Comparison table (stage 8) */}
+      <div className="overflow-x-auto rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)]">
+        <table className="w-full min-w-[680px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-[var(--hairline)] text-left text-[13px] text-[var(--ink-muted)]">
+              <th className="px-[22px] py-3 font-medium">Brand</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">Live ads</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">Active</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">Video</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">Image</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">Carousel</th>
+              <th className="px-4 py-3 font-medium">Top CTA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {brands.map((b) => (
+              <tr key={b.pageId} className="border-b border-[var(--surface-alt)] last:border-b-0">
+                <td className="px-[22px] py-3">
+                  <span className="font-medium">{b.label}</span>
+                  {b.isMyBrand && (
+                    <span className="ml-2 rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">
+                      You
+                    </span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">{b.totalAds}</td>
+                <td className="px-4 py-3 text-right tabular-nums">{b.activeAds}</td>
+                <td className="px-4 py-3 text-right tabular-nums text-[var(--ink-muted)]">{pct(b.formatMix.video, b.totalAds)}%</td>
+                <td className="px-4 py-3 text-right tabular-nums text-[var(--ink-muted)]">{pct(b.formatMix.image, b.totalAds)}%</td>
+                <td className="px-4 py-3 text-right tabular-nums text-[var(--ink-muted)]">{pct(b.formatMix.carousel, b.totalAds)}%</td>
+                <td className="px-4 py-3 text-[var(--ink)]">{topCta(b)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Whitespace / gaps (stage 8, deterministic) */}
+      {report.myBrand && (report.gaps.formats.length > 0 || report.gaps.ctas.length > 0) && (
+        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+          <div className="mb-1 text-base font-semibold">Whitespace vs your brand</div>
+          <div className="mb-3 text-[13px] text-[var(--ink-muted)]">
+            Formats and CTAs your competitors run that {report.myBrand.label} does not. A factual gap, not advice.
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {report.gaps.formats.map((f) => (
+              <span key={f} className="rounded-[var(--radius-pill)] bg-[var(--warn-bg)] px-3 py-1 text-xs font-medium text-[var(--warn-ink)]">
+                {MEDIA_LABEL[f]} format
+              </span>
+            ))}
+            {report.gaps.ctas.map((c) => (
+              <span key={c} className="rounded-[var(--radius-pill)] bg-[var(--surface-alt)] px-3 py-1 text-xs font-medium text-[var(--ink)]">
+                {c} CTA
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Per-brand detail (stages 4-6 + top creatives) */}
+      {brands.map((b) => (
+        <BrandCard key={b.pageId} brand={b} />
+      ))}
+    </div>
+  );
+}
+
+function BrandCard({ brand }: { brand: BrandAnalytics }) {
+  return (
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-base font-semibold">{brand.label}</span>
+        {brand.isMyBrand && (
+          <span className="rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">You</span>
+        )}
+        <span className="text-[13px] text-[var(--ink-muted)]">
+          {brand.activeAds} active · {brand.inactiveAds} inactive
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        {/* Format mix */}
+        <div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Format mix</div>
+          <div className="space-y-1.5">
+            {MEDIA_ORDER.filter((m) => brand.formatMix[m] > 0).map((m) => (
+              <div key={m} className="flex items-center justify-between text-[13px]">
+                <span className="text-[var(--ink)]">{MEDIA_LABEL[m]}</span>
+                <span className="tabular-nums text-[var(--ink-muted)]">
+                  {brand.formatMix[m]} · {pct(brand.formatMix[m], brand.totalAds)}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top CTAs */}
+        <div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Top CTAs</div>
+          <div className="space-y-1.5">
+            {brand.ctaMix.length === 0 && <div className="text-[13px] text-[var(--ink-muted)]">None detected</div>}
+            {brand.ctaMix.slice(0, 5).map((c) => (
+              <div key={c.label} className="flex items-center justify-between text-[13px]">
+                <span className="truncate text-[var(--ink)]">{c.label}</span>
+                <span className="tabular-nums text-[var(--ink-muted)]">{c.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top hooks */}
+        <div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Most-used hooks</div>
+          <div className="space-y-1.5">
+            {brand.topHooks.length === 0 && <div className="text-[13px] text-[var(--ink-muted)]">No copy detected</div>}
+            {brand.topHooks.slice(0, 5).map((h) => (
+              <div key={h.label} className="truncate text-[13px] text-[var(--ink-muted)]" title={h.label}>
+                {h.count > 1 ? `${h.count}x ` : ""}
+                {h.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Top live creatives, each linking to the real Ad Library ad */}
+      {brand.topCreatives.length > 0 && (
+        <div className="mt-5 border-t border-[var(--surface-alt)] pt-4">
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Top live creatives</div>
+          <div className="space-y-2">
+            {brand.topCreatives.slice(0, 6).map((ad) => (
+              <div key={ad.adArchiveId} className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <a
+                    href={ad.adUrl ?? "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate text-[13px] font-medium text-[var(--ink)] underline decoration-[var(--hairline)] underline-offset-2 transition hover:text-[var(--accent)] hover:decoration-[var(--accent)]"
+                  >
+                    {ad.title || ad.body?.slice(0, 60) || `Ad ${ad.adArchiveId}`}
+                  </a>
+                  {ad.body && <div className="truncate text-xs text-[var(--ink-muted)]">{ad.body.slice(0, 90)}</div>}
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <span className="rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
+                    {MEDIA_LABEL[ad.media]}
+                  </span>
+                  {ad.isActive && (
+                    <span className="rounded-[var(--radius-pill)] bg-[var(--good-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--good-ink)]">
+                      Active
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

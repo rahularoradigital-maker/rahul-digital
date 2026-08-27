@@ -1,10 +1,35 @@
 import { CompetitorInput } from "@/components/app/market/competitor-input";
+import { CompetitorDashboard } from "@/components/app/market/competitor-dashboard";
+import { getCurrentUser } from "@/lib/app/user";
+import { loadCompetitorData } from "@/lib/competitors/data";
 
 // Competitor Creative Intelligence, built to the 9-stage pipeline: URL input (manual) ->
 // ScrapeCreators data -> processing -> analytics -> LLM creative analysis -> competitive
-// engine -> dashboard. Stage 1 (input) is live now; the automated stages activate as the
-// ScrapeCreators data layer and the Gemini creative-analysis key are connected. Nothing is
-// fabricated: the outputs below are the pipeline map, not invented numbers.
+// engine -> dashboard. Once a user has run the pipeline, this renders the live dashboard
+// from stored real Ad Library data (with the input kept below to re-run or add brands).
+// Before that, it shows the input + the pipeline map. Nothing is fabricated: the pipeline
+// map is a map, and every dashboard number is a count over real ads.
+
+export async function CompetitorsSection() {
+  const user = await getCurrentUser();
+  const data = user ? await loadCompetitorData(user.id) : null;
+
+  if (data) {
+    return (
+      <div className="space-y-6">
+        <CompetitorDashboard data={data} />
+        <details className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+          <summary className="cursor-pointer text-sm font-medium text-[var(--ink)]">Re-run or add competitors</summary>
+          <div className="mt-4">
+            <CompetitorInput />
+          </div>
+        </details>
+      </div>
+    );
+  }
+
+  return <CompetitorsIntro />;
+}
 
 type Status = "ready" | "scrape" | "gemini";
 
@@ -24,7 +49,7 @@ const BADGE: Record<Status, { label: string; cls: string }> = {
   gemini: { label: "Needs Gemini", cls: "bg-[var(--accent-soft)] text-[var(--accent)]" },
 };
 
-export function CompetitorsSection() {
+function CompetitorsIntro() {
   return (
     <div className="space-y-6">
       <div>
