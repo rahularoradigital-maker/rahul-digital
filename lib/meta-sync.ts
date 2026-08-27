@@ -5,7 +5,7 @@
 import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective, listMetaCampaigns } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective, listMetaCampaigns, listAdSetEnds } from "./meta-source.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
@@ -141,13 +141,25 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // request per ad (26 round-trips -> 2). This is the main page-speed fix.
     const top = ads.slice(0, MAX_ADS);
     const rowsByAd = await fetchAdInsights(acct.external_id, top.map((a) => a.externalId), since, token, until);
+    // Ad set end dates cap the fatigue half-life (a creative cannot outlive its ad set).
+    const adsetIds = [...new Set([...rowsByAd.values()].map((e) => e.adsetId).filter((x): x is string => Boolean(x)))];
+    let adsetEnds = new Map<string, number>();
+    try {
+      adsetEnds = await listAdSetEnds(acct.external_id, adsetIds, token);
+    } catch {
+      // end dates are optional; a failure here just means no half-life cap
+    }
+    const nowSec = Math.floor(Date.now() / 1000);
     const realAds: RealAd[] = top.map((ad) => {
       const entry = rowsByAd.get(ad.externalId);
+      const endUnix = entry?.adsetId ? adsetEnds.get(entry.adsetId) : undefined;
+      const endsInDays = typeof endUnix === "number" ? Math.max(0, Math.round((endUnix - nowSec) / 86_400)) : null;
       return {
         externalId: ad.externalId,
         name: ad.name ?? ad.externalId,
         rows: entry?.rows ?? [],
         objective: mapMetaObjective(entry?.objective),
+        endsInDays,
       };
     });
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).

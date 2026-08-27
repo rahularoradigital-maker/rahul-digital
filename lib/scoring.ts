@@ -15,6 +15,7 @@ export type RealAd = {
   name: string;
   objective?: Objective; // from the campaign; defaults to conversion
   rows: MetricsRow[]; // daily performance rows (oldest..newest order not required)
+  endsInDays?: number | null; // days until the ad set / campaign end date, if scheduled
 };
 
 type Agg = {
@@ -167,7 +168,7 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
     const objective = objectives[i];
     // Real day-wise fatigue read; fall back to the absolute frequency proxy only when there
     // are too few days for a trend. This is what feeds CreativeScore and the fatigue radar.
-    const fatigueRead = readFatigue(ad.rows);
+    const fatigueRead = readFatigue(ad.rows, { endsInDays: ad.endsInDays, objective });
     const fatigue = fatigueRead.sufficiency === "ok" ? fatigueRead.index : fatigueScore(a.avgFrequency);
     const goodness = goodnessOf(objective, a);
     const performance = goodness === null ? 0 : percentile(goodness, goodnessByObjective.get(objective) ?? []);

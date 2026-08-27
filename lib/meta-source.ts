@@ -204,6 +204,27 @@ export async function listAllAccessibleAdAccounts(token: TokenSet): Promise<Meta
   return Array.from(byId.values());
 }
 
+/**
+ * Scheduled end date (unix seconds) per ad set, for the ads we analyze. Feeds the fatigue
+ * half-life: a creative cannot outlive its ad set, so the half-life is capped at the end date.
+ * Ad sets with no end_time are simply absent from the map (open-ended). Paginated + filtered.
+ */
+export async function listAdSetEnds(accountExternalId: string, adsetIds: string[], token: TokenSet): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (adsetIds.length === 0) return map;
+  const rows = await graphGetAll<{ id: string; end_time?: string }>(`act_${accountExternalId}/adsets`, token.accessToken, {
+    fields: "id,end_time",
+    filtering: JSON.stringify([{ field: "id", operator: "IN", value: adsetIds }]),
+    limit: "200",
+  });
+  for (const a of rows) {
+    if (!a.end_time) continue;
+    const t = Math.floor(new Date(a.end_time).getTime() / 1000);
+    if (Number.isFinite(t)) map.set(a.id, t);
+  }
+  return map;
+}
+
 /** Active campaigns in an ad account (numeric id, no act_ prefix), for the campaign filter. */
 export async function listMetaCampaigns(
   accountExternalId: string,

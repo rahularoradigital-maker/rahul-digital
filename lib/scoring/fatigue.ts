@@ -10,6 +10,7 @@
 // Pure, no I/O. calibrate-at-build constants are marked. One runnable check accompanies it.
 
 import type { MetricsRow } from "../ad-source.ts";
+import type { Objective } from "../rules/comparator.ts";
 
 export type FatigueState = "fresh" | "watch" | "fatiguing" | "fatigued";
 export type Trajectory = "improving" | "stable" | "worsening";
@@ -63,9 +64,11 @@ function saturation(freq: number): number {
 
 /**
  * Read fatigue for one ad from its daily rows. `windowDays` is informational (the lookback
- * the user selected); the read itself uses the days actually present.
+ * the user selected); the read itself uses the days actually present. `opts.endsInDays` is the
+ * days until the ad's AD SET / CAMPAIGN end date, if any - a creative cannot outlive its ad
+ * set, so the half-life (days-to-fatigue) is capped at that, whichever comes first.
  */
-export function readFatigue(rows: MetricsRow[]): FatigueRead {
+export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | null; objective?: Objective } = {}): FatigueRead {
   // One row per day (sum same-day duplicates), oldest first, only days that actually delivered.
   const byDate = new Map<string, { spend: number; impressions: number; clicks: number; revenue: number; freqSum: number; freqN: number }>();
   for (const r of rows) {
@@ -83,6 +86,10 @@ export function readFatigue(rows: MetricsRow[]): FatigueRead {
   const windowDays = days.length;
 
   if (windowDays < MIN_DAYS) {
+    // Even without a trend, a scheduled end date IS a hard half-life ceiling worth reporting.
+    const endDays = opts.endsInDays ?? null;
+    const evidence = [`Only ${windowDays} day${windowDays === 1 ? "" : "s"} of delivery: too few to read a fatigue trend.`];
+    if (endDays !== null && endDays >= 0) evidence.push(`Ad set / campaign ends in ~${endDays} days.`);
     return {
       sufficiency: "insufficient_data",
       windowDays,
@@ -90,31 +97,48 @@ export function readFatigue(rows: MetricsRow[]): FatigueRead {
       state: "fresh",
       trajectory: "stable",
       signals: { frequency: 0, ctrDecay: 0, cpmRise: 0 },
-      daysToFatigue: null,
-      evidence: [`Only ${windowDays} day${windowDays === 1 ? "" : "s"} of delivery: too few to read a fatigue trend.`],
+      daysToFatigue: endDays !== null && endDays >= 0 ? endDays : null,
+      evidence,
     };
   }
 
-  const ctr = days.map((d) => d.clicks / d.impressions); // fraction
   const cpm = days.map((d) => (d.spend / d.impressions) * 1000);
   const freq = days.map((d) => (d.freqN ? d.freqSum / d.freqN : 0));
+  const ctr = days.map((d) => d.clicks / d.impressions); // fraction (fallback + evidence)
 
-  const ctrMean = mean(ctr);
+  // OBJECTIVE-AWARE primary metric: the thing this objective is actually optimised for, whose
+  // DECLINE is the real fatigue signal. Conversion decays on ROAS (a rising CPA is a falling
+  // ROAS); awareness on reach-per-rupee; the click objectives on CTR. Fall back to CTR when the
+  // objective metric cannot be formed (e.g. a conversion ad with no tracked revenue).
+  const objective = opts.objective ?? "conversion";
+  function primaryOf(d: (typeof days)[number]): number {
+    if (objective === "conversion") return d.spend > 0 ? d.revenue / d.spend : 0; // ROAS
+    if (objective === "awareness") return d.spend > 0 ? d.impressions / d.spend : 0; // reach / rupee
+    return d.impressions > 0 ? d.clicks / d.impressions : 0; // CTR
+  }
+  let primary = days.map(primaryOf);
+  let metricLabel = objective === "conversion" ? "ROAS" : objective === "awareness" ? "reach/rupee" : "CTR";
+  if (mean(primary) === 0) {
+    primary = ctr;
+    metricLabel = "CTR";
+  }
+
   const cpmMean = mean(cpm);
-  const ctrSlope = slope(ctr); // per-day change in CTR fraction
   const cpmSlope = slope(cpm);
   const latestFreq = freq[freq.length - 1];
+  const primaryMean = mean(primary);
+  const primarySlope = slope(primary);
 
-  // Relative per-day slopes (dimensionless): a declining CTR and a rising CPM both add fatigue.
-  const ctrRelSlope = ctrMean > 0 ? ctrSlope / ctrMean : 0; // negative = decaying
+  // Relative per-day slopes (dimensionless): a declining primary metric and a rising CPM add fatigue.
+  const primaryRelSlope = primaryMean > 0 ? primarySlope / primaryMean : 0; // negative = decaying
   const cpmRelSlope = cpmMean > 0 ? cpmSlope / cpmMean : 0; // positive = rising
 
   const frequencySignal = saturation(latestFreq);
-  const ctrDecaySignal = clamp(-ctrRelSlope * REL_SLOPE_GAIN, 0, 100);
+  const decaySignal = clamp(-primaryRelSlope * REL_SLOPE_GAIN, 0, 100);
   const cpmRiseSignal = clamp(cpmRelSlope * REL_SLOPE_GAIN, 0, 100);
 
   const index = clamp(
-    Math.round(WEIGHTS.frequency * frequencySignal + WEIGHTS.ctrDecay * ctrDecaySignal + WEIGHTS.cpmRise * cpmRiseSignal),
+    Math.round(WEIGHTS.frequency * frequencySignal + WEIGHTS.ctrDecay * decaySignal + WEIGHTS.cpmRise * cpmRiseSignal),
     0,
     100,
   );
@@ -123,31 +147,41 @@ export function readFatigue(rows: MetricsRow[]): FatigueRead {
     index < STATE_CUTS.fresh ? "fresh" : index < STATE_CUTS.watch ? "watch" : index < STATE_CUTS.fatiguing ? "fatiguing" : "fatigued";
 
   const trajectory: Trajectory =
-    ctrRelSlope < -0.01 || cpmRelSlope > 0.02 ? "worsening" : ctrRelSlope > 0.01 && cpmRelSlope < 0 ? "improving" : "stable";
+    primaryRelSlope < -0.01 || cpmRelSlope > 0.02 ? "worsening" : primaryRelSlope > 0.01 && cpmRelSlope < 0 ? "improving" : "stable";
 
-  // Days-to-fatigue: extrapolate the CTR decline to a floor of 60% of the starting CTR.
-  // Only meaningful when CTR is actually declining and above the floor.
+  // Days-to-fatigue: extrapolate the primary metric's decline to a floor of 60% of its start.
+  // Only meaningful when it is actually declining and above the floor.
   let daysToFatigue: number | null = null;
-  const startCtr = ctr[0];
-  const latestCtr = ctr[ctr.length - 1];
-  if (ctrSlope < 0 && startCtr > 0) {
-    const floor = startCtr * CTR_FLOOR_FRACTION;
-    if (latestCtr > floor) {
-      daysToFatigue = Math.max(1, Math.round((latestCtr - floor) / -ctrSlope));
+  const startPrimary = primary[0];
+  const latestPrimary = primary[primary.length - 1];
+  if (primarySlope < 0 && startPrimary > 0) {
+    const floor = startPrimary * CTR_FLOOR_FRACTION;
+    if (latestPrimary > floor) {
+      daysToFatigue = Math.max(1, Math.round((latestPrimary - floor) / -primarySlope));
     } else {
       daysToFatigue = 0; // already at/below the fatigue floor
     }
   }
 
-  const pctCtr = (v: number) => `${(v * 100).toFixed(2)}%`;
+  // The creative cannot outlive its ad set / campaign: cap the half-life at the days until the
+  // scheduled end date. If the CTR is not declining (no fatigue date) but the ad set ends soon,
+  // the end date IS the effective half-life.
+  const endsInDays = opts.endsInDays ?? null;
+  const cappedByEnd = endsInDays !== null && endsInDays >= 0 && (daysToFatigue === null || endsInDays < daysToFatigue);
+  if (cappedByEnd) daysToFatigue = endsInDays;
+
+  // Format the primary metric for the evidence: CTR as a percentage, ROAS / reach as a ratio.
+  const fmtPrimary = (v: number) => (metricLabel === "CTR" ? `${(v * 100).toFixed(2)}%` : v.toFixed(2));
   const evidence: string[] = [
-    `CTR ${pctCtr(startCtr)} -> ${pctCtr(latestCtr)} over ${windowDays} days (${ctrRelSlope >= 0 ? "+" : ""}${(ctrRelSlope * 100).toFixed(1)}%/day).`,
+    `${metricLabel} ${fmtPrimary(startPrimary)} -> ${fmtPrimary(latestPrimary)} over ${windowDays} days (${primaryRelSlope >= 0 ? "+" : ""}${(primaryRelSlope * 100).toFixed(1)}%/day).`,
     `Frequency now ${latestFreq.toFixed(1)} (saturation ${frequencySignal}/100).`,
     `CPM ${cpm[0].toFixed(0)} -> ${cpm[cpm.length - 1].toFixed(0)} (${cpmRelSlope >= 0 ? "+" : ""}${(cpmRelSlope * 100).toFixed(1)}%/day).`,
   ];
-  if (daysToFatigue !== null) {
+  if (cappedByEnd) {
+    evidence.push(`Ad set / campaign ends in ~${endsInDays} days, which caps the half-life.`);
+  } else if (daysToFatigue !== null) {
     evidence.push(daysToFatigue === 0 ? "CTR has already fallen past the fatigue floor." : `At this decline, ~${daysToFatigue} days to the fatigue floor.`);
   }
 
-  return { sufficiency: "ok", windowDays, index, state, trajectory, signals: { frequency: frequencySignal, ctrDecay: ctrDecaySignal, cpmRise: cpmRiseSignal }, daysToFatigue, evidence };
+  return { sufficiency: "ok", windowDays, index, state, trajectory, signals: { frequency: frequencySignal, ctrDecay: decaySignal, cpmRise: cpmRiseSignal }, daysToFatigue, evidence };
 }
