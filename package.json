@@ -27,7 +27,9 @@
     "check:scoring": "node --experimental-strip-types scripts/check-scoring.ts",
     "check:objective": "node --experimental-strip-types scripts/check-objective.ts",
     "check:competitors": "node --experimental-strip-types scripts/check-competitors.ts",
-    "check:fatigue-daywise": "node --experimental-strip-types scripts/check-fatigue-daywise.ts"
+    "check:fatigue-daywise": "node --experimental-strip-types scripts/check-fatigue-daywise.ts",
+    "check:decision-engine": "node --experimental-strip-types scripts/check-decision-engine.ts",
+    "check:funnel-metrics": "node --experimental-strip-types scripts/check-funnel-metrics.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
