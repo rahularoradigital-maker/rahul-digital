@@ -2,6 +2,7 @@ import { CompetitorInput } from "@/components/app/market/competitor-input";
 import { CompetitorDashboard } from "@/components/app/market/competitor-dashboard";
 import { getCurrentUser } from "@/lib/app/user";
 import { loadCompetitorData } from "@/lib/competitors/data";
+import { getUserMetaSession } from "@/lib/meta-sync";
 
 // Competitor Creative Intelligence, built to the 9-stage pipeline: URL input (manual) ->
 // ScrapeCreators data -> processing -> analytics -> LLM creative analysis -> competitive
@@ -12,6 +13,9 @@ import { loadCompetitorData } from "@/lib/competitors/data";
 
 export async function CompetitorsSection() {
   const user = await getCurrentUser();
+  // The brand's market seeds competitor discovery so suggestions appear with no typing.
+  const session = user ? await getUserMetaSession(user.id) : null;
+  const market = session?.activeAccountName ?? "";
   const data = user ? await loadCompetitorData(user.id) : null;
 
   if (data) {
@@ -21,14 +25,14 @@ export async function CompetitorsSection() {
         <details className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
           <summary className="cursor-pointer text-sm font-medium text-[var(--ink)]">Re-run or add competitors</summary>
           <div className="mt-4">
-            <CompetitorInput />
+            <CompetitorInput market={market} />
           </div>
         </details>
       </div>
     );
   }
 
-  return <CompetitorsIntro />;
+  return <CompetitorsIntro market={market} />;
 }
 
 type Status = "ready" | "scrape" | "gemini";
@@ -49,7 +53,7 @@ const BADGE: Record<Status, { label: string; cls: string }> = {
   gemini: { label: "Needs Gemini", cls: "bg-[var(--accent-soft)] text-[var(--accent)]" },
 };
 
-function CompetitorsIntro() {
+function CompetitorsIntro({ market }: { market: string }) {
   return (
     <div className="space-y-6">
       <div>
@@ -61,7 +65,7 @@ function CompetitorsIntro() {
         </p>
       </div>
 
-      <CompetitorInput />
+      <CompetitorInput market={market} />
 
       <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
         <div className="mb-1 text-base font-semibold">Pipeline</div>

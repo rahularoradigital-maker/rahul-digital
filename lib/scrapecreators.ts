@@ -6,6 +6,7 @@
 import type { MediaCategory, NormalizedAd } from "./competitors/types.ts";
 
 const COMPANY_ADS_URL = "https://api.scrapecreators.com/v1/facebook/adLibrary/company/ads";
+const SEARCH_COMPANIES_URL = "https://api.scrapecreators.com/v1/facebook/adLibrary/search/companies";
 const MAX_PAGES = 3; // ~90 ads/brand: enough to characterise a brand while bounding credits.
 // ponytail: cursor pagination stops at MAX_PAGES; raise it (or a background job) if a brand
 // needs its full history rather than a representative recent slice.
@@ -21,6 +22,49 @@ export function pageIdFromAdLibraryUrl(url: string): string | null {
   const bare = s.match(/^\d{5,}$/);
   return bare ? bare[0] : null;
 }
+
+export type CompanySuggestion = {
+  pageId: string;
+  name: string;
+  category: string | null;
+  imageUri: string | null;
+  likes: number | null;
+};
+
+// Search Meta brand pages by keyword (stage 1 assist: discover competitors instead of
+// pasting Ad Library URLs by hand). Returns the page ids the pull needs. Ranked by the
+// API; we drop deleted pages and cap the list. Throws only on a missing key.
+export async function searchCompanies(query: string, limit = 10): Promise<CompanySuggestion[]> {
+  const key = process.env.SCRAPECREATORS_API_KEY;
+  if (!key) throw new Error("SCRAPECREATORS_API_KEY is not set");
+  const q = query.trim();
+  if (!q) return [];
+  const url = new URL(SEARCH_COMPANIES_URL);
+  url.searchParams.set("query", q);
+  const res = await fetch(url, { headers: { "x-api-key": key } });
+  if (!res.ok) throw new Error(`ScrapeCreators search ${res.status}`);
+  const json = (await res.json()) as { searchResults?: RawCompany[] };
+  const results = Array.isArray(json.searchResults) ? json.searchResults : [];
+  return results
+    .filter((r) => r.page_id && !r.page_is_deleted)
+    .slice(0, limit)
+    .map((r) => ({
+      pageId: String(r.page_id),
+      name: r.name ?? `Page ${r.page_id}`,
+      category: r.category ?? null,
+      imageUri: r.image_uri ?? null,
+      likes: typeof r.likes === "number" ? r.likes : null,
+    }));
+}
+
+type RawCompany = {
+  page_id?: string | number;
+  name?: string;
+  category?: string;
+  image_uri?: string;
+  likes?: number;
+  page_is_deleted?: boolean;
+};
 
 type RawAd = {
   ad_archive_id?: string;

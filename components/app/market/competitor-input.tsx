@@ -26,7 +26,14 @@ function load(): Saved {
 const inputCls =
   "w-full rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] px-3.5 py-2.5 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]";
 
-export function CompetitorInput() {
+type Suggestion = { pageId: string; name: string; category: string | null; imageUri: string | null; likes: number | null };
+
+// A page id becomes an Ad Library URL the pull route already understands.
+function libraryUrl(pageId: string): string {
+  return `https://www.facebook.com/ads/library/?view_all_page_id=${pageId}`;
+}
+
+export function CompetitorInput({ market = "" }: { market?: string }) {
   const router = useRouter();
   const [brandUrl, setBrandUrl] = useState("");
   const [competitors, setCompetitors] = useState<string[]>([""]);
@@ -35,12 +42,57 @@ export function CompetitorInput() {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Competitor discovery: search Meta brand pages and click to add (no URL hunting).
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [searching, setSearching] = useState(false);
+
   useEffect(() => {
     const s = load();
     setBrandUrl(s.brandUrl);
     setCompetitors(s.competitors.length ? s.competitors : [""]);
+    // Seed the search with the brand's market so suggestions appear with zero typing.
+    if (market && !s.brandUrl) setQuery(market);
     setReady(true);
-  }, []);
+  }, [market]);
+
+  // Debounced search as the query changes.
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/competitors/search?q=${encodeURIComponent(q)}`);
+        const data = (await res.json()) as { ok: boolean; results?: Suggestion[] };
+        if (!cancelled) setSuggestions(data.ok ? data.results ?? [] : []);
+      } catch {
+        if (!cancelled) setSuggestions([]);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [query]);
+
+  function pickAsBrand(s: Suggestion) {
+    setBrandUrl(libraryUrl(s.pageId));
+  }
+  function addAsCompetitor(s: Suggestion) {
+    const url = libraryUrl(s.pageId);
+    setCompetitors((prev) => {
+      if (prev.some((c) => c.includes(s.pageId))) return prev;
+      const filled = prev.filter((c) => c.trim());
+      return [...filled, url];
+    });
+  }
 
   function persist(next: Saved) {
     try {
@@ -100,13 +152,58 @@ export function CompetitorInput() {
 
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
-      <div className="mb-1 text-base font-semibold">Ad Library URLs</div>
-      <div className="mb-5 text-[13px] text-[var(--ink-muted)]">
-        The only manual step. Paste your brand&apos;s Facebook Ad Library page and the competitors you want to track.
-        Everything after this runs automatically.
+      <div className="mb-1 text-base font-semibold">Find brands to track</div>
+      <div className="mb-3 text-[13px] text-[var(--ink-muted)]">
+        Search Meta brand pages by name or category, then click to set your brand or add a competitor. No URL hunting.
       </div>
 
-      <label className="mb-1.5 block text-[13px] font-medium">Your brand Ad Library URL</label>
+      {/* Discovery search (reduces the manual step to a click) */}
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={market ? `e.g. ${market}, or a category like "wireless earbuds"` : 'Search a brand or category, e.g. "wireless earbuds"'}
+        className={inputCls}
+        aria-label="Search brands"
+      />
+      {(searching || suggestions.length > 0) && (
+        <div className="mt-2 max-h-72 overflow-y-auto rounded-[10px] border border-[var(--hairline)]">
+          {searching && suggestions.length === 0 && (
+            <div className="px-3 py-2.5 text-[13px] text-[var(--ink-muted)]">Searching Meta pages...</div>
+          )}
+          {suggestions.map((s) => (
+            <div key={s.pageId} className="flex items-center gap-3 border-t border-[var(--surface-alt)] px-3 py-2 first:border-t-0">
+              {s.imageUri ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={s.imageUri} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+              ) : (
+                <div className="h-8 w-8 shrink-0 rounded-full bg-[var(--surface-alt)]" />
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-medium">{s.name}</div>
+                <div className="truncate text-[11px] text-[var(--ink-muted)]">{s.category ?? "Brand page"}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => pickAsBrand(s)}
+                className="shrink-0 rounded-[var(--radius-pill)] border border-[var(--hairline)] px-2.5 py-1 text-[12px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
+              >
+                My brand
+              </button>
+              <button
+                type="button"
+                onClick={() => addAsCompetitor(s)}
+                className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--accent)] px-2.5 py-1 text-[12px] font-semibold text-white transition hover:opacity-90"
+              >
+                + Competitor
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mb-1 mt-6 text-[13px] font-medium text-[var(--ink-muted)]">Or paste Ad Library URLs directly</div>
+
+      <label className="mb-1.5 mt-2 block text-[13px] font-medium">Your brand Ad Library URL</label>
       <input
         value={brandUrl}
         onChange={(e) => setBrandUrl(e.target.value)}
