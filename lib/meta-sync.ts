@@ -149,16 +149,27 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
   }
 }
 
-// A small in-process TTL cache so moving between pages reuses the computed cockpit
-// instead of re-pulling the whole account on every navigation (the "every page is slow"
-// fix). Keyed by (userId, days, campaignId). Busted at once on account switch and
-// Re-scan via bustCockpitCache(). Errors are not cached, so a failed pull retries.
+// Two-level TTL cache so moving between pages reuses the computed cockpit instead of
+// re-pulling the whole account (a ~9s Meta call) on every navigation. L1 is in-process
+// (fast, but per serverless instance); L2 is a Supabase table shared across ALL instances,
+// which is what actually fixes the "every page is slow" problem on serverless. Both are
+// keyed by (userId, days, campaignId). Errors are never cached, so a failed pull retries.
+// The L2 table is optional: every access is guarded, so a missing table just falls back
+// to L1 + a live pull (today's behavior) rather than breaking.
 type CacheEntry = { at: number; value: LiveCockpit };
-const COCKPIT_TTL_MS = 120_000;
+const COCKPIT_TTL_MS = 300_000; // 5 minutes
 const cockpitCache = new Map<string, CacheEntry>();
 
-export function bustCockpitCache(): void {
+/** Clear the cockpit cache. Pass userId to also clear that user's shared L2 rows. */
+export async function bustCockpitCache(userId?: string): Promise<void> {
   cockpitCache.clear();
+  if (!userId) return;
+  try {
+    const admin = createAdminClient();
+    await admin.from("cockpit_cache").delete().eq("user_id", userId);
+  } catch {
+    // L2 unavailable; L1 is already cleared
+  }
 }
 
 export async function fetchLiveCockpit(
@@ -166,11 +177,48 @@ export async function fetchLiveCockpit(
   lookbackDays: number = LOOKBACK_DAYS,
   campaignId?: string,
 ): Promise<LiveCockpit> {
-  const key = `${userId}:${lookbackDays}:${campaignId ?? ""}`;
-  const hit = cockpitCache.get(key);
-  if (hit && Date.now() - hit.at < COCKPIT_TTL_MS) return hit.value;
+  const cacheKey = `${lookbackDays}:${campaignId ?? ""}`;
+  const memKey = `${userId}:${cacheKey}`;
+  const now = Date.now();
+
+  // L1: in-process (same instance)
+  const hit = cockpitCache.get(memKey);
+  if (hit && now - hit.at < COCKPIT_TTL_MS) return hit.value;
+
+  // L2: Supabase, shared across serverless instances
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("cockpit_cache")
+      .select("data, updated_at")
+      .eq("user_id", userId)
+      .eq("cache_key", cacheKey)
+      .maybeSingle();
+    if (data) {
+      const age = now - new Date(data.updated_at as string).getTime();
+      if (age < COCKPIT_TTL_MS) {
+        const value = data.data as LiveCockpit;
+        cockpitCache.set(memKey, { at: now - age, value });
+        return value;
+      }
+    }
+  } catch {
+    // L2 unavailable; fall through to a live pull
+  }
+
+  // Live pull (the ~9s path), then populate both cache levels.
   const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId);
-  if (value.status !== "error") cockpitCache.set(key, { at: Date.now(), value });
+  if (value.status !== "error") {
+    cockpitCache.set(memKey, { at: now, value });
+    try {
+      const admin = createAdminClient();
+      await admin
+        .from("cockpit_cache")
+        .upsert({ user_id: userId, cache_key: cacheKey, data: value, updated_at: new Date().toISOString() }, { onConflict: "user_id,cache_key" });
+    } catch {
+      // L2 write failed; L1 still holds the value for this instance
+    }
+  }
   return value;
 }
 

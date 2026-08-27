@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
   if (error || !acct) return NextResponse.redirect(new URL("/app?connect=error", request.url));
 
   await storeToken(acct.id, session.token);
-  // Bust the cached cockpit so the newly selected account shows immediately.
-  bustCockpitCache();
+  // Bust the cached cockpit (both levels) so the newly selected account shows immediately.
+  await bustCockpitCache(user.id);
   // Clear any campaign filter: campaign ids belong to the previous account and would
   // otherwise filter the new account down to nothing.
   const res = NextResponse.redirect(new URL("/app", request.url));
