@@ -3,8 +3,9 @@
 // Run: node --experimental-strip-types scripts/check-competitors.ts
 import assert from "node:assert/strict";
 import { pageIdFromAdLibraryUrl } from "../lib/scrapecreators.ts";
-import { analyzeBrand, buildReport } from "../lib/competitors/analytics.ts";
-import type { NormalizedAd } from "../lib/competitors/types.ts";
+import { analyzeBrand, buildReport, buildCreativeIntel } from "../lib/competitors/analytics.ts";
+import { mergeAttributes, anyFilled } from "../lib/agents/creative/orchestrator.ts";
+import type { AnalyzedCreative, CreativeAttributes, NormalizedAd } from "../lib/competitors/types.ts";
 
 // --- URL -> page id extraction (the only manual input in the pipeline). ---
 assert.equal(pageIdFromAdLibraryUrl("https://www.facebook.com/ads/library/?view_all_page_id=367152833370567"), "367152833370567");
@@ -17,7 +18,7 @@ function ad(over: Partial<NormalizedAd>): NormalizedAd {
     pageId: "1", adArchiveId: Math.random().toString(36).slice(2), brandLabel: "Brand", isMyBrand: false,
     isActive: true, displayFormat: "IMAGE", media: "image", ctaText: "Shop Now", ctaType: "SHOP_NOW",
     title: "T", body: "Buy our thing", linkUrl: "https://x.com", platforms: ["FACEBOOK"], startDate: 100, endDate: null,
-    cardCount: 0, adUrl: "https://fb.com/ad", ...over,
+    cardCount: 0, adUrl: "https://fb.com/ad", imageUrl: null, videoUrl: null, videoThumbUrl: null, ...over,
   };
 }
 
@@ -53,5 +54,49 @@ assert.deepEqual(report.gaps.ctas.sort(), ["Learn More", "Sign Up"], "CTAs the r
 const noMine = buildReport(rival);
 assert.equal(noMine.myBrand, null);
 assert.deepEqual(noMine.gaps.formats, []);
+
+// --- Stage 7 aggregation: funnel mix per brand + hook/offer/emotion patterns. ---
+function attrs(over: Partial<CreativeAttributes>): CreativeAttributes {
+  const base = Object.fromEntries(
+    ["funnelStage", "hook", "hookType", "firstThreeSeconds", "messaging", "offer", "cta", "productVsHuman",
+     "creatorTraits", "voiceAudio", "visualScene", "colorTypography", "branding", "painPoint", "benefit",
+     "primaryEmotion", "socialProof", "storytelling", "editingPacing", "closing", "conversionIntent", "notes"]
+      .map((k) => [k, null]),
+  ) as CreativeAttributes;
+  return { ...base, ...over };
+}
+function analyzed(pageId: string, isMyBrand: boolean, over: Partial<CreativeAttributes>): AnalyzedCreative {
+  return { adArchiveId: Math.random().toString(36).slice(2), pageId, brandLabel: isMyBrand ? "My Brand" : "Rival", isMyBrand, attributes: attrs(over) };
+}
+const intel = buildCreativeIntel([
+  analyzed("me", true, { funnelStage: "TOF", hookType: "Question", offer: "Free shipping", primaryEmotion: "Curiosity" }),
+  analyzed("me", true, { funnelStage: "BOF", hookType: "Discount", offer: "20% off", primaryEmotion: "Urgency" }),
+  analyzed("rv", false, { funnelStage: "BOF", hookType: "Discount", offer: "20% off", primaryEmotion: "Urgency" }),
+  analyzed("rv", false, { funnelStage: null, hookType: null }),
+]);
+assert.equal(intel.analyzedCount, 4);
+const mineFunnel = intel.funnelByBrand.find((f) => f.isMyBrand)!;
+assert.equal(mineFunnel.tof, 1);
+assert.equal(mineFunnel.bof, 1);
+assert.equal(intel.funnelByBrand[0].isMyBrand, true, "my brand leads the funnel table");
+const rivalFunnel = intel.funnelByBrand.find((f) => !f.isMyBrand)!;
+assert.equal(rivalFunnel.bof, 1);
+assert.equal(rivalFunnel.unknown, 1, "an unclassified creative counts as unknown, not a fake stage");
+assert.equal(intel.hookTypes[0].label, "Discount", "most-used hook type first");
+assert.equal(intel.hookTypes[0].count, 2);
+assert.equal(intel.offers[0].label, "20% off");
+
+// --- Stage 7 orchestration merge: small agents each fill their own slice, no clobbering. ---
+const hookSlice: Partial<CreativeAttributes> = { hook: "Bold claim", hookType: "Bold claim" };
+const offerSlice: Partial<CreativeAttributes> = { offer: "20% off", cta: "Shop Now" };
+const emptySlice: Partial<CreativeAttributes> = { hook: "none", hookType: "" }; // a failed/blank agent
+const funnelSlice: Partial<CreativeAttributes> = { funnelStage: "bof", notes: "hard offer + shop CTA" };
+const merged = mergeAttributes([hookSlice, offerSlice, emptySlice, funnelSlice]);
+assert.equal(merged.hook, "Bold claim", "first non-empty value wins");
+assert.equal(merged.offer, "20% off", "each agent contributes its own slice");
+assert.equal(merged.funnelStage, "BOF", "funnel stage is coerced to the TOF/MOF/BOF enum");
+assert.equal(merged.branding, null, "an attribute no agent filled stays null, never fabricated");
+assert.equal(anyFilled(merged), true);
+assert.equal(anyFilled(mergeAttributes([{ hook: "none" }, {}])), false, "all-empty slices analyze to nothing (caller skips)");
 
 console.log("PASS: competitor analytics + url/normalize checks");

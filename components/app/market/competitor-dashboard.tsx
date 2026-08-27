@@ -1,5 +1,7 @@
 import type { BrandAnalytics, MediaCategory } from "@/lib/competitors/types";
 import type { CompetitorData as Data } from "@/lib/competitors/data";
+import type { CreativeIntel, FunnelMix } from "@/lib/competitors/analytics";
+import { AnalyzeControl } from "@/components/app/market/analyze-control";
 
 // Stages 8-9 (deterministic): the Competitor Creative Intelligence dashboard rendered from
 // stored, real Ad Library data. Comparison table, format mix, CTA/hook patterns, whitespace
@@ -99,10 +101,85 @@ export function CompetitorDashboard({ data }: { data: Data }) {
         </div>
       )}
 
+      {/* Stage 7 trigger + AI creative intelligence */}
+      <AnalyzeControl analyzedCount={report ? (data.creativeIntel?.analyzedCount ?? 0) : 0} />
+      {data.creativeIntel && <CreativeIntelSection intel={data.creativeIntel} />}
+
       {/* Per-brand detail (stages 4-6 + top creatives) */}
       {brands.map((b) => (
         <BrandCard key={b.pageId} brand={b} />
       ))}
+    </div>
+  );
+}
+
+function FunnelBar({ f }: { f: FunnelMix }) {
+  const total = f.tof + f.mof + f.bof + f.unknown || 1;
+  const seg = (n: number, cls: string, label: string) =>
+    n > 0 ? <div className={cls} style={{ width: `${(n / total) * 100}%` }} title={`${label}: ${n}`} /> : null;
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-40 shrink-0 truncate text-[13px]">
+        {f.label}
+        {f.isMyBrand && <span className="ml-1.5 text-[11px] font-semibold text-[var(--accent)]">(You)</span>}
+      </div>
+      <div className="flex h-3 flex-1 overflow-hidden rounded-[var(--radius-pill)] bg-[var(--surface-alt)]">
+        {seg(f.tof, "bg-[var(--accent)]", "TOF")}
+        {seg(f.mof, "bg-[var(--warn-ink)]", "MOF")}
+        {seg(f.bof, "bg-[var(--good-ink)]", "BOF")}
+        {seg(f.unknown, "bg-[var(--hairline)]", "Unclassified")}
+      </div>
+      <div className="w-28 shrink-0 text-right text-xs tabular-nums text-[var(--ink-muted)]">
+        {f.tof}/{f.mof}/{f.bof}
+      </div>
+    </div>
+  );
+}
+
+function Patterns({ title, items }: { title: string; items: { label: string; count: number }[] }) {
+  return (
+    <div>
+      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{title}</div>
+      <div className="space-y-1.5">
+        {items.length === 0 && <div className="text-[13px] text-[var(--ink-muted)]">Not detected yet</div>}
+        {items.slice(0, 6).map((i) => (
+          <div key={i.label} className="flex items-center justify-between gap-2 text-[13px]">
+            <span className="truncate text-[var(--ink)]">{i.label}</span>
+            <span className="tabular-nums text-[var(--ink-muted)]">{i.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CreativeIntelSection({ intel }: { intel: CreativeIntel }) {
+  return (
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <span className="text-base font-semibold">Creative intelligence</span>
+        <span className="rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">
+          Gemini · {intel.analyzedCount} analyzed
+        </span>
+      </div>
+      <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
+        Funnel mix (TOF / MOF / BOF) per brand and the hook, offer, and emotion patterns across analyzed creatives.
+      </div>
+
+      <div className="mb-5 space-y-2">
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+          Funnel mix · TOF / MOF / BOF
+        </div>
+        {intel.funnelByBrand.map((f) => (
+          <FunnelBar key={f.label} f={f} />
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 border-t border-[var(--surface-alt)] pt-4 md:grid-cols-3">
+        <Patterns title="Hook types" items={intel.hookTypes} />
+        <Patterns title="Offers" items={intel.offers} />
+        <Patterns title="Emotions" items={intel.emotions} />
+      </div>
     </div>
   );
 }

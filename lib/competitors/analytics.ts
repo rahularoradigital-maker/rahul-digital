@@ -4,7 +4,7 @@
 // (42-attribute creative analysis, SWOT, written recommendations) are gated on Gemini and
 // are NOT computed here.
 
-import type { BrandAnalytics, CompetitorReport, Counted, MediaCategory, NormalizedAd } from "./types.ts";
+import type { AnalyzedCreative, BrandAnalytics, CompetitorReport, Counted, MediaCategory, NormalizedAd } from "./types.ts";
 
 const EMPTY_MIX: Record<MediaCategory, number> = { video: 0, image: 0, carousel: 0, other: 0 };
 
@@ -94,5 +94,42 @@ export function buildReport(ads: NormalizedAd[]): CompetitorReport {
       formats: myBrand ? [...compFormats].filter((f) => !myFormats.has(f)) : [],
       ctas: myBrand ? [...compCtas].filter((c) => !myCtas.has(c)) : [],
     },
+  };
+}
+
+// Stage 8 over the LLM Creative Intelligence Dataset: funnel (TOF/MOF/BOF) mix per brand,
+// plus the hook-type / offer / emotion patterns across all analyzed creatives. Pure counts
+// over the model's real reads - the written SWOT/recommendations remain a separate layer.
+export type FunnelMix = { label: string; isMyBrand: boolean; tof: number; mof: number; bof: number; unknown: number };
+export type CreativeIntel = {
+  analyzedCount: number;
+  funnelByBrand: FunnelMix[];
+  hookTypes: Counted[];
+  offers: Counted[];
+  emotions: Counted[];
+};
+
+export function buildCreativeIntel(analyzed: AnalyzedCreative[]): CreativeIntel {
+  const byBrand = new Map<string, { label: string; isMyBrand: boolean; tof: number; mof: number; bof: number; unknown: number }>();
+  for (const c of analyzed) {
+    const key = c.pageId;
+    const row = byBrand.get(key) ?? { label: c.brandLabel, isMyBrand: c.isMyBrand, tof: 0, mof: 0, bof: 0, unknown: 0 };
+    const stage = c.attributes.funnelStage;
+    if (stage === "TOF") row.tof += 1;
+    else if (stage === "MOF") row.mof += 1;
+    else if (stage === "BOF") row.bof += 1;
+    else row.unknown += 1;
+    byBrand.set(key, row);
+  }
+  // My brand first, then competitors, each in descending analyzed volume.
+  const funnelByBrand = [...byBrand.values()].sort(
+    (a, b) => Number(b.isMyBrand) - Number(a.isMyBrand) || (b.tof + b.mof + b.bof) - (a.tof + a.mof + a.bof),
+  );
+  return {
+    analyzedCount: analyzed.length,
+    funnelByBrand,
+    hookTypes: tally(analyzed.map((c) => c.attributes.hookType), 8),
+    offers: tally(analyzed.map((c) => c.attributes.offer), 8),
+    emotions: tally(analyzed.map((c) => c.attributes.primaryEmotion), 8),
   };
 }

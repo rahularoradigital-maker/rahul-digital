@@ -38,9 +38,42 @@ type RawAd = {
     title?: string;
     body?: string | { text?: string };
     link_url?: string;
-    cards?: unknown[];
+    cards?: MediaBearing[];
+    images?: MediaBearing[];
+    videos?: MediaBearing[];
   };
 };
+
+// The subset of media fields the Ad Library exposes on images / videos / cards. Used to
+// pick the best still image + video for the LLM to read (stage 7).
+type MediaBearing = {
+  original_image_url?: string;
+  resized_image_url?: string;
+  video_hd_url?: string;
+  video_sd_url?: string;
+  video_preview_image_url?: string;
+};
+
+// Best available image / video / video-thumbnail across the snapshot's images, videos, and
+// carousel cards. Returns nulls when the creative carries no media of that kind (never a
+// fabricated URL). Prefers original/HD over resized/SD.
+function pickMedia(snap: NonNullable<RawAd["snapshot"]>): { imageUrl: string | null; videoUrl: string | null; videoThumbUrl: string | null } {
+  const pools: MediaBearing[] = [
+    ...(Array.isArray(snap.videos) ? snap.videos : []),
+    ...(Array.isArray(snap.images) ? snap.images : []),
+    ...(Array.isArray(snap.cards) ? snap.cards : []),
+  ];
+  let imageUrl: string | null = null;
+  let videoUrl: string | null = null;
+  let videoThumbUrl: string | null = null;
+  for (const m of pools) {
+    if (!videoUrl && (m.video_hd_url || m.video_sd_url)) videoUrl = m.video_hd_url ?? m.video_sd_url ?? null;
+    if (!videoThumbUrl && m.video_preview_image_url) videoThumbUrl = m.video_preview_image_url;
+    if (!imageUrl && (m.original_image_url || m.resized_image_url)) imageUrl = m.original_image_url ?? m.resized_image_url ?? null;
+    if (videoUrl && imageUrl && videoThumbUrl) break;
+  }
+  return { imageUrl, videoUrl, videoThumbUrl };
+}
 
 // Normalize Meta's display_format (+ card count) into a coarse media bucket for the mix.
 // A multi-card creative is a carousel regardless of the format label; then VIDEO / IMAGE;
@@ -65,6 +98,7 @@ function normalize(raw: RawAd, brandLabel: string, isMyBrand: boolean): Normaliz
   const snap = raw.snapshot ?? {};
   const cardCount = Array.isArray(snap.cards) ? snap.cards.length : 0;
   const displayFormat = snap.display_format ?? "";
+  const media = pickMedia(snap);
   return {
     pageId,
     adArchiveId,
@@ -83,6 +117,9 @@ function normalize(raw: RawAd, brandLabel: string, isMyBrand: boolean): Normaliz
     endDate: raw.end_date ?? null,
     cardCount,
     adUrl: raw.url ?? `https://www.facebook.com/ads/library/?id=${adArchiveId}`,
+    imageUrl: media.imageUrl,
+    videoUrl: media.videoUrl,
+    videoThumbUrl: media.videoThumbUrl,
   };
 }
 

@@ -79,6 +79,9 @@ export async function POST(request: NextRequest) {
         end_date: a.endDate,
         card_count: a.cardCount,
         ad_url: a.adUrl,
+        image_url: a.imageUrl,
+        video_url: a.videoUrl,
+        video_thumb_url: a.videoThumbUrl,
       }));
       await admin.from("competitor_ads").upsert(rows, { onConflict: "user_id,page_id,ad_archive_id" });
     }

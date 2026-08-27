@@ -23,6 +23,45 @@ export type NormalizedAd = {
   endDate: number | null;
   cardCount: number; // >1 means a multi-card (carousel) creative
   adUrl: string | null; // permalink into the Ad Library for this ad
+  imageUrl: string | null; // best still image (for the LLM to read + a thumbnail)
+  videoUrl: string | null; // best video file, when the creative is a video
+  videoThumbUrl: string | null; // a video's preview frame
+};
+
+// The LLM Creative Analysis output (diagram stage 7): the 42-attribute set + funnel
+// classification for one creative. Written by the Gemini layer, read by stages 8-9.
+// funnelStage is TOF / MOF / BOF. Every field is the model's read of a REAL creative.
+export type CreativeAttributes = {
+  funnelStage: "TOF" | "MOF" | "BOF" | null;
+  hook: string | null;
+  hookType: string | null;
+  firstThreeSeconds: string | null;
+  messaging: string | null;
+  offer: string | null;
+  cta: string | null;
+  productVsHuman: string | null;
+  creatorTraits: string | null;
+  voiceAudio: string | null;
+  visualScene: string | null;
+  colorTypography: string | null;
+  branding: string | null;
+  painPoint: string | null;
+  benefit: string | null;
+  primaryEmotion: string | null;
+  socialProof: string | null;
+  storytelling: string | null;
+  editingPacing: string | null;
+  closing: string | null;
+  conversionIntent: string | null;
+  notes: string | null;
+};
+
+export type AnalyzedCreative = {
+  adArchiveId: string;
+  pageId: string;
+  brandLabel: string;
+  isMyBrand: boolean;
+  attributes: CreativeAttributes;
 };
 
 export type Counted = { label: string; count: number };
