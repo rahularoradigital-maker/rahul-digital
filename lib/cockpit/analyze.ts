@@ -89,6 +89,19 @@ export type CreativeHalfLife = {
   basis: string;
 };
 
+// One ad's contribution to a money-bleeding total, so a headline rupee figure is always
+// traceable to the exact ads + the calculation behind it (never an unexplained number).
+export type SpendContributor = {
+  adId: string;
+  name: string;
+  adSetId?: string;
+  campaignId?: string;
+  amountRs: number; // the rupees this ad contributes to the total
+  roas: number | null;
+  spendRs: number;
+  fatigueState?: string; // for at-risk rows
+};
+
 export type CockpitView = {
   dataSource: "SAMPLE" | "LIVE";
   totals: { spendRs: number; revenueRs: number; roas: number | null };
@@ -99,6 +112,8 @@ export type CockpitView = {
   leaderboard: CockpitAd[]; // sorted by CreativeScore, best first
   doThis: (CockpitAction & { adId: string; adName: string })[]; // sorted by priority
   waste: ReturnType<typeof wasteRollup>;
+  wasteContributors: SpendContributor[]; // which ads make up the wasted spend + the math
+  atRiskContributors: SpendContributor[]; // which fatiguing/fatigued ads make up the at-risk spend
   concentration: ConcentrationResult;
 };
 
@@ -283,6 +298,20 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
   const totalWastedRs = scored.reduce((acc, a) => acc + a.wastedRs, 0);
 
   const waste = wasteRollup(scored.map((a) => ({ adId: a.id, wastedRs: a.wastedRs })), totalSpendRs);
+
+  // Per-ad drivers behind the waste + at-risk totals, so every rupee is traceable to the exact
+  // ad + its math. Active ads only (a paused ad is not currently bleeding). Top 8 by amount.
+  const wasteContributors: SpendContributor[] = scored
+    .filter((a) => a.active !== false && a.wastedRs > 0)
+    .sort((a, b) => b.wastedRs - a.wastedRs)
+    .slice(0, 8)
+    .map((a) => ({ adId: a.id, name: a.name, adSetId: a.adSetId, campaignId: a.campaignId, amountRs: a.wastedRs, roas: a.roas, spendRs: a.spendRs }));
+  const atRiskContributors: SpendContributor[] = scored
+    .filter((a) => a.active !== false && a.spendRs > 0 && (a.fatigueRead?.state === "fatiguing" || a.fatigueRead?.state === "fatigued"))
+    .sort((a, b) => b.spendRs - a.spendRs)
+    .slice(0, 8)
+    .map((a) => ({ adId: a.id, name: a.name, adSetId: a.adSetId, campaignId: a.campaignId, amountRs: a.spendRs, roas: a.roas, spendRs: a.spendRs, fatigueState: a.fatigueRead?.state }));
+
   const concentration = budgetConcentration(
     scored.map<AdSummary>((a) => ({ adId: a.id, spend: a.spendRs, revenue: a.revenueRs, fatigueIndex: null })),
   );
@@ -296,6 +325,8 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
     leaderboard,
     doThis,
     waste,
+    wasteContributors,
+    atRiskContributors,
     concentration,
   };
 }

@@ -1,6 +1,7 @@
 import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { ConnectState } from "@/components/app/connect-state";
-import { type CockpitView, type Verdict } from "@/lib/cockpit/analyze";
+import { type CockpitView, type Verdict, type SpendContributor } from "@/lib/cockpit/analyze";
+import { AdLink } from "@/components/cockpit/AdLink";
 import { HealthRing } from "@/components/cockpit/HealthRing";
 import { HealthComposition, type CompositionRow } from "@/components/cockpit/HealthComposition";
 import { KpiCard } from "@/components/cockpit/KpiCard";
@@ -70,6 +71,35 @@ const MARGINAL_STYLE: Record<MarginalRead["classification"], { label: string; cl
   SATURATED: { label: "Saturated - diminishing returns", cls: "bg-[var(--bad-bg)] text-[var(--bad-ink)]" },
   UNKNOWN: { label: "Not enough data", cls: "bg-[var(--surface-alt)] text-[var(--ink-muted)]" },
 };
+
+// The exact ads behind a money-bleeding total, with the calculation, so the headline rupee
+// figure is always traceable (never an unexplained number). Each row links to that ad in Ads
+// Manager (campaign -> ad set -> ad selected), so "where exactly" is one click away.
+function ContributorList({ items, accountId, dateParam, kind }: { items: SpendContributor[]; accountId: string; dateParam: string; kind: "waste" | "risk" }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-4 border-t border-[var(--surface-alt)] pt-3.5">
+      <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+        {kind === "waste" ? "Which ads (and the math)" : "Which ads are at risk (and why)"}
+      </div>
+      <div className="space-y-2.5">
+        {items.map((c) => (
+          <div key={c.adId} className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <AdLink accountId={accountId} adId={c.adId} adSetId={c.adSetId} campaignId={c.campaignId} name={c.name} className="block truncate text-[13px] font-medium" dateParam={dateParam} />
+              <div className="mt-0.5 text-[11px] text-[var(--ink-muted)] tabular-nums">
+                {kind === "waste"
+                  ? `${c.roas === null ? "n/a" : `${c.roas.toFixed(2)}x`} ROAS on ${rupees.format(c.spendRs)} spent - below 1x break-even`
+                  : `${c.fatigueState ?? "fatiguing"} · ${c.roas === null ? "n/a" : `${c.roas.toFixed(2)}x`} ROAS · ${rupees.format(c.spendRs)} still spending`}
+              </div>
+            </div>
+            <span className="shrink-0 text-[13px] font-semibold tabular-nums text-[var(--bad-ink)]">{rupees.format(c.amountRs)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function ScalingCard({ marginal }: { marginal: MarginalRead }) {
   const s = MARGINAL_STYLE[marginal.classification];
@@ -210,6 +240,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
               </div>
             </div>
           </div>
+          <ContributorList items={view.wasteContributors} accountId={accountId} dateParam={dateParam} kind="waste" />
         </div>
       )}
 
@@ -234,6 +265,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
               </div>
             ))}
           </div>
+          <ContributorList items={view.atRiskContributors} accountId={accountId} dateParam={dateParam} kind="risk" />
         </div>
       )}
     </div>
