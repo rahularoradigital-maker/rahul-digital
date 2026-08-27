@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
 
 type Camp = { id: string; name: string; objective?: string };
 
@@ -81,11 +82,11 @@ export function CampaignSwitcher() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
+        className={FILTER_TRIGGER}
       >
-        <span className="text-[var(--ink-muted)]">Campaign ·</span>
+        <span className={FILTER_LABEL}>Campaign</span>
         <span className="max-w-[150px] truncate">{label}</span>
-        <span className="text-[var(--ink-muted)]">▾</span>
+        <span className={FILTER_LABEL}>▾</span>
       </button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-80 max-w-[85vw] rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">

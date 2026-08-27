@@ -7,6 +7,7 @@ import { WINDOWS } from "@/lib/app/windows";
 import { AccountSwitcher } from "@/components/app/account-switcher";
 import { CampaignSwitcher } from "@/components/app/campaign-switcher";
 import { ObjectiveSwitcher } from "@/components/app/objective-switcher";
+import { FILTER_TRIGGER, FILTER_LABEL } from "@/components/app/control-styles";
 import { rescanCockpit } from "@/app/app/actions";
 
 // The working topbar. Every control does its job:
@@ -21,67 +22,66 @@ export function Topbar() {
   const [asked, setAsked] = useState(false);
 
   return (
-    <div className="flex flex-col gap-3 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between md:py-3.5">
-      <div className="flex min-w-0 items-center gap-3">
-        <h1 className="truncate text-xl font-semibold tracking-tight">{titleFor(pathname)}</h1>
-        <span className="hidden items-center gap-1.5 text-xs text-[var(--ink-muted)] sm:flex">
-          <span className="h-[7px] w-[7px] animate-pulse rounded-full bg-[var(--good-ink)]" />
-          Agents live
-        </span>
+    <div className="px-4 py-3 sm:px-6">
+      {/* Tier 1 - page identity + the primary action, always on one clean line. */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-xl font-semibold tracking-tight">{titleFor(pathname)}</h1>
+          <span className="hidden items-center gap-1.5 text-xs text-[var(--ink-muted)] sm:inline-flex">
+            <span className="h-[6px] w-[6px] rounded-full bg-[var(--good-ink)]" />
+            Live
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Ask (answer engine pending - honest placeholder) */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setAsked(true);
+            }}
+            className="relative hidden items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-2 text-[var(--ink-muted)] lg:flex"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3-3" />
+            </svg>
+            <input
+              name="q"
+              placeholder="Ask AdBrain"
+              aria-label="Ask AdBrain"
+              onChange={() => setAsked(false)}
+              className="w-36 bg-transparent text-[13px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
+            />
+            {asked ? (
+              <span className="absolute right-0 top-[calc(100%+6px)] z-20 w-72 rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-left text-[12px] text-[var(--ink)] shadow-lg">
+                AI answers arrive with the next update. For now, your ranked plan is in the cockpit below.
+              </span>
+            ) : null}
+          </form>
+
+          <button
+            type="button"
+            onClick={() =>
+              startTransition(async () => {
+                await rescanCockpit();
+                router.refresh();
+              })
+            }
+            disabled={pending}
+            className="rounded-[var(--radius-pill)] bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+          >
+            {pending ? "Scanning..." : "Re-scan"}
+          </button>
+        </div>
       </div>
 
-      {/* Controls wrap onto multiple rows on small screens so every option stays reachable. */}
-      <div className="flex flex-wrap items-center gap-2 text-sm md:gap-3">
-        {/* Ask */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setAsked(true);
-          }}
-          className="relative hidden items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[var(--ink-muted)] lg:flex"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3-3" />
-          </svg>
-          <input
-            name="q"
-            placeholder="Ask AdBrain anything"
-            aria-label="Ask AdBrain"
-            onChange={() => setAsked(false)}
-            className="w-40 bg-transparent text-[13px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
-          />
-          {asked ? (
-            <span className="absolute left-0 top-[calc(100%+6px)] z-20 w-72 rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-left text-[12px] text-[var(--ink)] shadow-lg">
-              AI answers arrive with the next update. For now, your ranked plan is in the cockpit below.
-            </span>
-          ) : null}
-        </form>
-
-        {/* Account switcher (BM -> Account) + campaign filter */}
+      {/* Tier 2 - scope filters, a calm toolbar under a hairline. Wraps cleanly on narrow screens. */}
+      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--hairline)] pt-3">
         <AccountSwitcher />
         <CampaignSwitcher />
-
-        {/* Date window (setup gate): presets + custom range, via the adbrain.window cookie */}
         <DateWindow onChange={() => startTransition(() => router.refresh())} />
-
-        {/* Objective filter (setup gate) */}
         <ObjectiveSwitcher />
-
-        {/* Re-scan */}
-        <button
-          type="button"
-          onClick={() =>
-            startTransition(async () => {
-              await rescanCockpit();
-              router.refresh();
-            })
-          }
-          disabled={pending}
-          className="rounded-[var(--radius-pill)] bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
-        >
-          {pending ? "Scanning..." : "Re-scan signals"}
-        </button>
       </div>
     </div>
   );
@@ -161,11 +161,11 @@ function DateWindow({ onChange }: { onChange: () => void }) {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="true"
         aria-expanded={open}
-        className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
+        className={FILTER_TRIGGER}
       >
-        <span className="text-[var(--ink-muted)]">Meta ·</span>
+        <span className={FILTER_LABEL}>Dates</span>
         <span className="max-w-[170px] truncate">{label}</span>
-        <span className="text-[var(--ink-muted)]">▾</span>
+        <span className={FILTER_LABEL}>▾</span>
       </button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-60 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
