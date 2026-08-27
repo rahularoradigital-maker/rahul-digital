@@ -371,6 +371,35 @@ export async function listAllCampaignObjectives(
   return rows.map((c) => ({ id: c.id, objective: c.objective }));
 }
 
+/**
+ * Current effective_status per ad (batch ?ids= call, 50 per request). effective_status ROLLS UP
+ * the campaign -> ad set -> ad pause state, so "ACTIVE" means all three are live and delivering;
+ * anything else (PAUSED / ADSET_PAUSED / CAMPAIGN_PAUSED / ARCHIVED / WITH_ISSUES / ...) is not
+ * actively spending. Used to hide paused ads from action suggestions - nobody needs to be told to
+ * kill an ad that is already paused. An ad missing from the map = unknown (caller treats as active
+ * so we never hide a real budget leak). Best-effort: a failed batch just leaves those ads unknown.
+ */
+export async function fetchAdStatuses(accountExternalId: string, adIds: string[], token: TokenSet): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (adIds.length === 0) return out;
+  for (let i = 0; i < adIds.length; i += 50) {
+    const batch = adIds.slice(i, i + 50);
+    try {
+      const json = await graphGet<Record<string, { effective_status?: string }>>("", token.accessToken, {
+        ids: batch.join(","),
+        fields: "effective_status",
+      });
+      for (const adId of batch) {
+        const s = json[adId]?.effective_status;
+        if (s) out.set(adId, s);
+      }
+    } catch {
+      // this batch stays unknown; keep going
+    }
+  }
+  return out;
+}
+
 export type ScopeInsights = { spend: number; impressions: number; clicks: number; purchases: number; revenue: number };
 
 /**

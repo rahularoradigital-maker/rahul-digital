@@ -18,6 +18,7 @@ export type RealAd = {
   endsInDays?: number | null; // days until the ad set / campaign end date, if scheduled
   adSetId?: string; // parent ad set id, for the Ads Manager deep link (campaign -> ad set -> ad)
   campaignId?: string; // parent campaign id, for the Ads Manager deep link
+  active?: boolean; // current delivery status: true = ACTIVE, false = paused/archived, undefined = unknown
 };
 
 type Agg = {
@@ -181,6 +182,7 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
       name: ad.name,
       adSetId: ad.adSetId,
       campaignId: ad.campaignId,
+      active: ad.active,
       objective,
       performance,
       trend: trendScore(ad.rows, objective),

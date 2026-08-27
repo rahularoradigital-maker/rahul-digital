@@ -39,6 +39,7 @@ export type CockpitAdInput = VerdictInput & {
   name: string;
   adSetId?: string; // parent ad set / campaign ids, for the Ads Manager deep link hierarchy
   campaignId?: string;
+  active?: boolean; // current delivery status; false = paused/archived (hidden from suggestions)
   objective: Objective;
   spendRs: number;
   revenueRs: number;
@@ -62,6 +63,7 @@ export type CockpitAd = {
   name: string;
   adSetId?: string; // parent ad set / campaign ids, for the Ads Manager deep link hierarchy
   campaignId?: string;
+  active?: boolean; // current delivery status; false = paused/archived (hidden from suggestions)
   objective: Objective;
   spendRs: number;
   revenueRs: number;
@@ -229,6 +231,7 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       name: input.name,
       adSetId: input.adSetId,
       campaignId: input.campaignId,
+      active: input.active,
       objective: input.objective,
       spendRs: input.spendRs,
       revenueRs: input.revenueRs,
@@ -267,7 +270,11 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
 
   const leaderboard = [...scored].sort((a, b) => b.score - a.score);
 
+  // Suggestions are for ACTIVE ads only: nobody needs to be told to kill/refresh an ad that is
+  // already paused (it is not wasting budget). Unknown status (active === undefined) still shows,
+  // so a failed status lookup never hides a real budget leak.
   const doThis = scored
+    .filter((a) => a.active !== false)
     .map((a) => ({ adId: a.id, adName: a.name, ...a.action }))
     .sort((x, y) => PRIORITY_RANK[x.priority] - PRIORITY_RANK[y.priority]);
 

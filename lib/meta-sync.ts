@@ -5,7 +5,7 @@
 import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdStatuses, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
@@ -157,6 +157,9 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // Pull daily metrics for all of these ads in ONE account-level call instead of one
     // request per ad (26 round-trips -> 2). This is the main page-speed fix.
     const top = ads.slice(0, MAX_ADS);
+    // Current delivery status per ad, in flight concurrently with the insights pull (both only
+    // need the ad ids). Used to hide already-paused ads from action suggestions. Best-effort.
+    const statusPromise = fetchAdStatuses(acct.external_id, top.map((a) => a.externalId), token).catch(() => new Map<string, string>());
     const rowsByAd = await fetchAdInsights(acct.external_id, top.map((a) => a.externalId), since, token, until);
     // Ad set end dates cap the fatigue half-life (a creative cannot outlive its ad set).
     const adsetIds = [...new Set([...rowsByAd.values()].map((e) => e.adsetId).filter((x): x is string => Boolean(x)))];
@@ -167,15 +170,22 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       // end dates are optional; a failure here just means no half-life cap
     }
     const nowSec = Math.floor(Date.now() / 1000);
+    const statuses = await statusPromise;
     const realAds: RealAd[] = top.map((ad) => {
       const entry = rowsByAd.get(ad.externalId);
       const endUnix = entry?.adsetId ? adsetEnds.get(entry.adsetId) : undefined;
       const endsInDays = typeof endUnix === "number" ? Math.max(0, Math.round((endUnix - nowSec) / 86_400)) : null;
+      // active: true only when Meta reports effective_status ACTIVE (rolls up campaign/adset/ad).
+      // Unknown status (not returned) stays undefined -> treated as active downstream, so we never
+      // hide a real budget leak just because a status lookup failed.
+      const st = statuses.get(ad.externalId);
+      const active = st === undefined ? undefined : st === "ACTIVE";
       return {
         externalId: ad.externalId,
         name: ad.name ?? ad.externalId,
         rows: entry?.rows ?? [],
         objective: mapMetaObjective(entry?.objective),
+        active,
         endsInDays,
         adSetId: entry?.adsetId,
         campaignId: entry?.campaignId,

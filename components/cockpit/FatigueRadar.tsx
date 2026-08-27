@@ -22,8 +22,10 @@ function halfLifeLabel(days: number | null | undefined): string {
 
 export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: CockpitAd[]; halfLife?: CreativeHalfLife; accountId?: string; dateParam?: string }) {
   // Worst first: highest fatigue index at the top so the ads to act on lead.
+  // Only surface ACTIVE ads: a paused ad is not wasting budget, so it should not appear in the
+  // fatigue action list. Unknown status (active === undefined) still shows.
   const rows = [...ads]
-    .filter((a) => a.fatigueRead)
+    .filter((a) => a.fatigueRead && a.active !== false)
     .sort((a, b) => (b.fatigueRead?.index ?? 0) - (a.fatigueRead?.index ?? 0))
     .slice(0, 6);
 
