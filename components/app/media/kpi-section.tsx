@@ -1,18 +1,15 @@
-import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { KPI_CATALOG } from "@/lib/app/kpi-catalog";
 import { KpiSelector } from "@/components/app/analytics/kpi-selector";
+import type { CockpitData } from "@/lib/app/cockpit-data";
 
-// Every KPI the product tracks, for reference, plus the handful of live values the
-// connected Meta account can actually answer. The catalog is metadata (not account
-// data) so it always renders, connected or not; only the numbers next to each row
-// depend on a real connection, per the app's real-data-only rule.
+// KPIs tab of the consolidated Media page. Logic reused verbatim from the former
+// app/app/analytics/page.tsx: the catalog is metadata (not account data) so it
+// always renders, connected or not; only the numbers next to each row depend on a
+// real connection, per the app's real-data-only rule.
 
 const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
-export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
-  const { days } = await searchParams;
-  const data = await loadCockpit(parseDays(days));
-
+export function KpiSection({ data }: { data: CockpitData }) {
   const liveValues: Record<string, string> = {};
   if (data.connected) {
     const { totals } = data.view;

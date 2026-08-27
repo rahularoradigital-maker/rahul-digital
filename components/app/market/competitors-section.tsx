@@ -4,7 +4,7 @@ import { GatedSection } from "@/components/app/gated-section";
 // Needs a competitor Ad Library ingest we do not have yet, so this is honestly gated:
 // no fabricated gap scores or mix charts until that source is connected.
 
-export default function CompetitorsPage() {
+export function CompetitorsSection() {
   return (
     <GatedSection
       title="Competitor intelligence"

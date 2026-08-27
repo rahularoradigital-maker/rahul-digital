@@ -11,7 +11,9 @@ export async function GET() {
   const url = new URL("https://www.facebook.com/v21.0/dialog/oauth");
   url.searchParams.set("client_id", appId);
   url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("scope", "ads_read");
+  // ads_read: read the account's ads and insights. business_management: enumerate the
+  // agency's other ad accounts (owned + client) so the user can switch between them.
+  url.searchParams.set("scope", "ads_read,business_management");
   url.searchParams.set("response_type", "code");
   return NextResponse.redirect(url.toString());
 }

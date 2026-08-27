@@ -3,7 +3,7 @@ import { GatedSection } from "@/components/app/gated-section";
 // Voice of Customer. Needs a connected reviews or support source we do not have yet,
 // so this is honestly gated: no fabricated motivators or objections until then.
 
-export default function VoiceOfCustomerPage() {
+export function VoiceSection() {
   return (
     <GatedSection
       title="Voice of Customer"

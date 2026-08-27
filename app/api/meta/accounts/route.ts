@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
-import { listMetaAdAccounts } from "@/lib/meta-source";
+import { listAllAccessibleAdAccounts } from "@/lib/meta-source";
 
 // Lists the ad accounts the connected user can access, for the topbar account
 // switcher. Client-fetched (non-blocking) so the layout stays fast. Never leaks the
@@ -17,7 +17,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ connected: false, accounts: [] });
 
   try {
-    const accounts = await listMetaAdAccounts(session.token);
+    const accounts = await listAllAccessibleAdAccounts(session.token);
     return NextResponse.json({ connected: true, activeExternalId: session.activeExternalId, accounts });
   } catch {
     // Fall back to just the active account so the switcher still shows the current one.

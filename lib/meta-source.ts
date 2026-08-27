@@ -129,6 +129,46 @@ export async function listMetaBusinesses(token: TokenSet): Promise<{ id: string;
   return (data.data ?? []).map((b) => ({ id: b.id, name: b.name ?? b.id }));
 }
 
+/**
+ * Every ad account the user can reach: their direct accounts PLUS accounts owned by or
+ * shared into the businesses (Business Managers) they belong to. This is how an agency
+ * user sees all their client accounts, not just the ones directly assigned to them.
+ * Best-effort: the business edges need the business_management permission, so each call
+ * is guarded and the function still returns the direct accounts if those are denied.
+ */
+export async function listAllAccessibleAdAccounts(token: TokenSet): Promise<MetaAccountRef[]> {
+  const byId = new Map<string, MetaAccountRef>();
+  try {
+    for (const a of await listMetaAdAccounts(token)) byId.set(a.externalId, a);
+  } catch {
+    // keep going; business edges may still work
+  }
+  try {
+    const businesses = await listMetaBusinesses(token);
+    for (const b of businesses) {
+      for (const edge of ["owned_ad_accounts", "client_ad_accounts"]) {
+        try {
+          const data = await graphGet<{ data: { account_id: string; name?: string }[] }>(
+            `${b.id}/${edge}`,
+            token.accessToken,
+            { fields: "account_id,name", limit: "200" },
+          );
+          for (const a of data.data ?? []) {
+            if (!byId.has(a.account_id)) {
+              byId.set(a.account_id, { externalId: a.account_id, name: a.name ?? a.account_id, businessId: b.id, businessName: b.name });
+            }
+          }
+        } catch {
+          // this edge is not permitted / empty; skip it
+        }
+      }
+    }
+  } catch {
+    // no business access; direct accounts already collected above
+  }
+  return Array.from(byId.values());
+}
+
 /** Active campaigns in an ad account (numeric id, no act_ prefix), for the campaign filter. */
 export async function listMetaCampaigns(
   accountExternalId: string,

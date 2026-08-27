@@ -1,5 +1,5 @@
-import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { ConnectState } from "@/components/app/connect-state";
+import type { CockpitData } from "@/lib/app/cockpit-data";
 import type { CockpitAd } from "@/lib/cockpit/analyze";
 import { FATIGUE_STATE, PRIORITY_STYLE } from "@/components/cockpit/styles";
 
@@ -12,18 +12,15 @@ import { FATIGUE_STATE, PRIORITY_STYLE } from "@/components/cockpit/styles";
 // not expose. So no timed forecast, date, or percentage is fabricated here - every
 // row says plainly that it needs more delivery history.
 
-export default async function Page({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
-  const { days } = await searchParams;
-  const data = await loadCockpit(parseDays(days));
-
+export function FatigueSection({ data, days }: { data: CockpitData; days: number }) {
   if (!data.connected) {
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <CreativeFatigue ads={data.view.leaderboard} accountName={data.accountName} days={data.days} />;
+  return <FatigueList ads={data.view.leaderboard} accountName={data.accountName} days={days} />;
 }
 
-function CreativeFatigue({ ads, accountName, days }: { ads: CockpitAd[]; accountName: string; days: number }) {
+function FatigueList({ ads, accountName, days }: { ads: CockpitAd[]; accountName: string; days: number }) {
   // Worst first: ascending CreativeScore puts the fatiguing/fatigued ads at the top.
   const sorted = [...ads].sort((a, b) => a.score - b.score);
   const atRisk = ads.filter((a) => a.verdict === "refresh" || a.verdict === "loser").length;

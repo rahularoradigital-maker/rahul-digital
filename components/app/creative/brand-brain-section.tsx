@@ -3,7 +3,7 @@ import { GatedSection } from "@/components/app/gated-section";
 // Brand Brain. Needs the creative decoder (DECODE + FPRINT, rulebook 2.1) that is not
 // built yet, so this is honestly gated: no fabricated hooks, angles, or personas.
 
-export default function BrandBrainPage() {
+export function BrandBrainSection() {
   return (
     <GatedSection
       title="Brand Brain"

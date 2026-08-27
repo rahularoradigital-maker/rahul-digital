@@ -1,16 +1,13 @@
-import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { ConnectState } from "@/components/app/connect-state";
 import { GatedSection } from "@/components/app/gated-section";
+import type { CockpitData } from "@/lib/app/cockpit-data";
 
 // Diversity & White Space (rulebook 5.2 retrieval distinctness). Real portfolio-spread
 // numbers come from the connected cockpit today (active ad count, top-1 spend share);
 // the fingerprint-based distinctness score needs the creative decoder, not built yet,
 // so that half of the page stays honestly gated.
 
-export default async function DiversityPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
-  const { days } = await searchParams;
-  const data = await loadCockpit(parseDays(days));
-
+export function DiversitySection({ data, days }: { data: CockpitData; days: number }) {
   if (!data.connected) {
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }

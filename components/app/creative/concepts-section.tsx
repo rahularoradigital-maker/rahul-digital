@@ -1,8 +1,8 @@
-// Test Plan: shows the concept-recipe FRAMEWORK (rulebook 6.1b), not fake recipes.
+// Concepts: shows the concept-recipe FRAMEWORK (rulebook 6.1b), not fake recipes.
 // A concept here is always a buildable recipe with five named parts, each part
 // picked by weighing the same four sources. Real recipes need two connections we
 // do not have yet (winning-creative decode, competitor Ad Library gaps), so this
-// page shows structure and labels only. Nothing below is an invented pick.
+// section shows structure and labels only. Nothing below is an invented pick.
 
 type SourceTag = "OURS" | "AI" | "COMP" | "WORLD";
 
@@ -28,7 +28,7 @@ const RECIPE_PARTS: { part: string; what: string }[] = [
   { part: "Landing", what: "The landing page, constrained to fix the weakest step in the funnel" },
 ];
 
-export default async function TestPlanPage() {
+export function ConceptsSection() {
   return (
     <div className="space-y-6">
       <div>
