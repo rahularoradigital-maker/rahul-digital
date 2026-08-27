@@ -102,7 +102,7 @@ function Cockpit({ view, accountName, accountId, adsAnalyzed, days }: { view: Co
       {/* This week's plan + Fatigue radar */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
         <ActionList items={view.doThis} ads={view.leaderboard} accountId={accountId} />
-        <FatigueRadar ads={view.leaderboard} accountId={accountId} />
+        <FatigueRadar ads={view.leaderboard} halfLife={view.creativeHalfLife} accountId={accountId} />
       </div>
 
       {/* Creative leaderboard */}

@@ -10,6 +10,7 @@ export type { Verdict } from "../rules/verdict.ts";
 import { wasteRollup, budgetConcentration, type ConcentrationResult, type AdSummary } from "../rules/account.ts";
 import type { DiagnoseResult } from "../causality.ts";
 import type { Objective } from "../rules/comparator.ts";
+import type { FatigueRead } from "../scoring/fatigue.ts";
 
 /** One ad as the cockpit needs it. Sub-scores are 0-100 (produced upstream by the
  *  scoring engines); the raw facts drive verdict, waste, and the action queue. */
@@ -24,6 +25,10 @@ export type CockpitAdInput = VerdictInput & {
   // conversion, CTR-vs-benchmark for click objectives, reach+freshness for awareness.
   // Optional so hand-built fixtures / the sample account fall back to CreativeScore.
   healthScore?: number | null;
+  // Day-wise fatigue read + creative half-life (days to the fatigue floor). Optional so
+  // fixtures without daily rows still type-check.
+  fatigueRead?: FatigueRead;
+  halfLifeDays?: number | null;
 };
 
 export type Priority = "DO_NOW" | "DO_NEXT" | "WATCH";
@@ -43,12 +48,24 @@ export type CockpitAd = {
   why: string[];
   action: CockpitAction;
   wastedRs: number;
+  fatigueRead?: FatigueRead; // day-wise fatigue read (state, trajectory, evidence)
+  halfLifeDays?: number | null; // creative half-life: days to the fatigue floor
+};
+
+// Account creative half-life: the spend-weighted median of the ads' half-lives (days to the
+// fatigue floor). Null when too few ads have a day-wise read to say anything honest.
+export type CreativeHalfLife = {
+  medianDays: number | null;
+  assessedAds: number; // ads with a real day-wise half-life
+  fatiguingAds: number; // ads whose fatigue state is fatiguing or fatigued
+  basis: string;
 };
 
 export type CockpitView = {
   dataSource: "SAMPLE" | "LIVE";
   totals: { spendRs: number; revenueRs: number; roas: number | null };
   accountHealth: { score: number; factLabel: "MODEL_ESTIMATE"; basis: string };
+  creativeHalfLife: CreativeHalfLife;
   leaderboard: CockpitAd[]; // sorted by CreativeScore, best first
   doThis: (CockpitAction & { adId: string; adName: string })[]; // sorted by priority
   waste: ReturnType<typeof wasteRollup>;
@@ -133,6 +150,8 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       why: v.why,
       action: actionFor(v.verdict, input),
       wastedRs: input.wastedRs,
+      fatigueRead: input.fatigueRead,
+      halfLifeDays: input.halfLifeDays,
     };
   });
 
@@ -155,9 +174,38 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
     dataSource,
     totals: { spendRs: totalSpendRs, revenueRs: totalRevenueRs, roas: roasOf(totalSpendRs, totalRevenueRs) },
     accountHealth: accountHealth(scored, ads, totalSpendRs, totalWastedRs),
+    creativeHalfLife: creativeHalfLife(scored),
     leaderboard,
     doThis,
     waste,
     concentration,
+  };
+}
+
+// Account creative half-life: spend-weighted median of the ads that have a real day-wise
+// half-life. Reported only over assessed ads; never invented for ads without enough history.
+function creativeHalfLife(ads: CockpitAd[]): CreativeHalfLife {
+  const assessed = ads.filter((a) => a.fatigueRead?.sufficiency === "ok" && typeof a.halfLifeDays === "number");
+  const fatiguingAds = ads.filter((a) => a.fatigueRead?.state === "fatiguing" || a.fatigueRead?.state === "fatigued").length;
+  if (assessed.length === 0) {
+    return { medianDays: null, assessedAds: 0, fatiguingAds, basis: "Not enough day-wise history yet to estimate a half-life." };
+  }
+  // Spend-weighted median: order by half-life, take the day where cumulative spend crosses 50%.
+  const ordered = [...assessed].sort((a, b) => (a.halfLifeDays as number) - (b.halfLifeDays as number));
+  const totalSpend = ordered.reduce((s, a) => s + a.spendRs, 0) || 1;
+  let cum = 0;
+  let medianDays = ordered[ordered.length - 1].halfLifeDays as number;
+  for (const a of ordered) {
+    cum += a.spendRs;
+    if (cum >= totalSpend / 2) {
+      medianDays = a.halfLifeDays as number;
+      break;
+    }
+  }
+  return {
+    medianDays,
+    assessedAds: assessed.length,
+    fatiguingAds,
+    basis: `Spend-weighted median across ${assessed.length} ad${assessed.length === 1 ? "" : "s"} with day-wise history; ${fatiguingAds} fatiguing.`,
   };
 }

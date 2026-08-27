@@ -8,6 +8,7 @@
 import type { MetricsRow } from "./ad-source.ts";
 import type { CockpitAdInput } from "./cockpit/analyze.ts";
 import type { Objective } from "./rules/comparator.ts";
+import { readFatigue } from "./scoring/fatigue.ts";
 
 export type RealAd = {
   externalId: string;
@@ -111,12 +112,16 @@ function percentile(value: number, all: number[]): number {
   return Math.round((below / (all.length - 1)) * 100);
 }
 
-// Funnel health: click-through (impressions->clicks) and click-to-purchase, each as a
-// percentile within the account, averaged. Higher = the funnel converts. INTERNAL CALCULATION.
-function funnelScore(a: Agg, allCtr: number[], allCvr: number[]): number {
+// Funnel health, objective-aware. For conversion ads it averages click-through and
+// click-to-purchase percentiles. For non-conversion ads there is no purchase step to judge,
+// so the funnel IS click-through: judging engagement/traffic ads on a purchase rate they
+// have none of is what pinned every one of them to "Hold". INTERNAL CALCULATION.
+function funnelScore(a: Agg, allCtr: number[], allCvr: number[], objective: Objective): number {
   const ctr = a.impressions > 0 ? a.clicks / a.impressions : 0;
+  const ctrPct = percentile(ctr, allCtr);
+  if (objective !== "conversion") return ctrPct;
   const cvr = a.clicks > 0 ? a.purchases / a.clicks : 0;
-  return Math.round((percentile(ctr, allCtr) + percentile(cvr, allCvr)) / 2);
+  return Math.round((ctrPct + percentile(cvr, allCvr)) / 2);
 }
 
 // Stability: day-to-day ROAS coefficient of variation. Low variance = stable. calibrate-at-build.
@@ -160,7 +165,10 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
   return ads.map((ad, i) => {
     const a = aggs[i];
     const objective = objectives[i];
-    const fatigue = fatigueScore(a.avgFrequency);
+    // Real day-wise fatigue read; fall back to the absolute frequency proxy only when there
+    // are too few days for a trend. This is what feeds CreativeScore and the fatigue radar.
+    const fatigueRead = readFatigue(ad.rows);
+    const fatigue = fatigueRead.sufficiency === "ok" ? fatigueRead.index : fatigueScore(a.avgFrequency);
     const goodness = goodnessOf(objective, a);
     const performance = goodness === null ? 0 : percentile(goodness, goodnessByObjective.get(objective) ?? []);
     const roomToScale = a.roas !== null && medianRoas !== null && a.roas > medianRoas && fatigue < 60;
@@ -172,12 +180,14 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
       performance,
       trend: trendScore(ad.rows, objective),
       fatigue,
-      funnel: funnelScore(a, ctrList, cvrList),
+      funnel: funnelScore(a, ctrList, cvrList, objective),
       conversions: a.purchases,
       days: a.days,
       stable: isStable(ad.rows),
       roomToScale,
       healthScore: healthScoreOf(objective, a),
+      fatigueRead,
+      halfLifeDays: fatigueRead.daysToFatigue,
       spendRs: Math.round(a.spend),
       revenueRs: Math.round(a.revenue),
       wastedRs: Math.round(wastedRs),
