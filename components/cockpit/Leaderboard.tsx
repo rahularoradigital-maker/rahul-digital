@@ -2,6 +2,7 @@
 // real CockpitAd: verdict chip, confidence bar, spend and ROAS come from the engine.
 import type { CockpitAd, Verdict } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE } from "./styles";
+import { AdLink } from "./AdLink";
 
 function confColor(v: Verdict): string {
   return v === "winner"
@@ -11,7 +12,7 @@ function confColor(v: Verdict): string {
       : "bg-[var(--warn-ink)]";
 }
 
-export function Leaderboard({ ads, rupees }: { ads: CockpitAd[]; rupees: Intl.NumberFormat }) {
+export function Leaderboard({ ads, rupees, accountId }: { ads: CockpitAd[]; rupees: Intl.NumberFormat; accountId?: string }) {
   return (
     <div className="overflow-hidden rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)]">
       <div className="flex items-center justify-between px-[22px] pt-5">
@@ -37,7 +38,7 @@ export function Leaderboard({ ads, rupees }: { ads: CockpitAd[]; rupees: Intl.Nu
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-[15px] font-semibold">{ad.name}</span>
+                  <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate text-[15px] font-semibold" />
                   <span className="shrink-0 rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
                     {ad.objective}
                   </span>

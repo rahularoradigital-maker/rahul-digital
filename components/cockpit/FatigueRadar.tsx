@@ -5,8 +5,9 @@
 // rather than a fabricated percentage.
 import type { CockpitAd } from "@/lib/cockpit/analyze";
 import { FATIGUE_STATE } from "./styles";
+import { AdLink } from "./AdLink";
 
-export function FatigueRadar({ ads }: { ads: CockpitAd[] }) {
+export function FatigueRadar({ ads, accountId }: { ads: CockpitAd[]; accountId?: string }) {
   const rows = ads.slice(0, 5);
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
@@ -29,7 +30,7 @@ export function FatigueRadar({ ads }: { ads: CockpitAd[] }) {
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-medium">{ad.name}</span>
+                  <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate text-sm font-medium" />
                   <span className={`shrink-0 rounded-[70px] px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
                 </div>
                 <div className="mt-1 truncate text-xs text-[var(--ink-muted)]">

@@ -56,7 +56,7 @@ export type AccountMetrics = {
 };
 
 export type LiveCockpit =
-  | { status: "connected"; accountName: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -165,7 +165,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       cpa: sPur > 0 ? sSpend / sPur : null,
     };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, adsAnalyzed: inputs.length, view, metrics };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }

@@ -4,6 +4,7 @@
 // matching the design's ranked test-plan list. No fabricated ordering or metrics.
 import type { CockpitAction, CockpitAd, Verdict } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE } from "./styles";
+import { AdLink } from "./AdLink";
 
 type PlanItem = CockpitAction & { adId: string; adName: string };
 
@@ -11,7 +12,7 @@ function confColor(v: Verdict): string {
   return v === "winner" ? "bg-[var(--good-ink)]" : v === "loser" ? "bg-[var(--bad-ink)]" : "bg-[var(--warn-ink)]";
 }
 
-export function ActionList({ items, ads }: { items: PlanItem[]; ads: CockpitAd[] }) {
+export function ActionList({ items, ads, accountId }: { items: PlanItem[]; ads: CockpitAd[]; accountId?: string }) {
   const byId = new Map(ads.map((a) => [a.id, a]));
 
   if (items.length === 0) {
@@ -47,7 +48,7 @@ export function ActionList({ items, ads }: { items: PlanItem[]; ads: CockpitAd[]
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-medium">{a.adName}</span>
+                  <AdLink accountId={accountId} adId={a.adId} name={a.adName} className="truncate text-sm font-medium" />
                   {ad && (
                     <span className="shrink-0 rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
                       {ad.objective}

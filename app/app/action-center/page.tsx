@@ -2,6 +2,7 @@ import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { ConnectState } from "@/components/app/connect-state";
 import type { CockpitAd, CockpitView, Priority } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE, PRIORITY_STYLE } from "@/components/cockpit/styles";
+import { AdLink } from "@/components/cockpit/AdLink";
 
 // Action Center: the full ranked action queue (rulebook 7.1 Scale/Continue/Stop
 // gates + 5.6 law "every screen ends in a ranked action with a number"). Renders
@@ -21,7 +22,7 @@ export default async function ActionCenterPage({ searchParams }: { searchParams:
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <ActionCenter view={data.view} />;
+  return <ActionCenter view={data.view} accountId={data.accountId} />;
 }
 
 const SECTIONS: { priority: Priority; heading: string }[] = [
@@ -30,7 +31,7 @@ const SECTIONS: { priority: Priority; heading: string }[] = [
   { priority: "WATCH", heading: "Watch" },
 ];
 
-function ActionCenter({ view }: { view: CockpitView }) {
+function ActionCenter({ view, accountId }: { view: CockpitView; accountId?: string }) {
   const byId = new Map(view.leaderboard.map((a) => [a.id, a]));
   const doNow = view.doThis.filter((a) => a.priority === "DO_NOW");
   const doNowSpendRs = doNow.reduce((acc, a) => acc + (byId.get(a.adId)?.spendRs ?? 0), 0);
@@ -60,7 +61,7 @@ function ActionCenter({ view }: { view: CockpitView }) {
       {SECTIONS.map(({ priority, heading }) => {
         const items = view.doThis.filter((a) => a.priority === priority);
         if (items.length === 0) return null;
-        return <ActionSection key={priority} heading={heading} items={items} doThis={view.doThis} byId={byId} />;
+        return <ActionSection key={priority} heading={heading} items={items} doThis={view.doThis} byId={byId} accountId={accountId} />;
       })}
 
       <p className="text-xs text-[var(--ink-muted)]">Nothing is applied automatically. You make each change in your ad account.</p>
@@ -82,11 +83,13 @@ function ActionSection({
   items,
   doThis,
   byId,
+  accountId,
 }: {
   heading: string;
   items: PlanItem[];
   doThis: PlanItem[];
   byId: Map<string, CockpitAd>;
+  accountId?: string;
 }) {
   const style = PRIORITY_STYLE[items[0].priority];
   return (
@@ -112,7 +115,7 @@ function ActionSection({
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-medium">{item.adName}</span>
+                  <AdLink accountId={accountId} adId={item.adId} name={item.adName} className="truncate text-sm font-medium" />
                   <span className="shrink-0 text-sm text-[var(--ink-muted)]">·</span>
                   <span className="shrink-0 truncate text-sm text-[var(--ink)]">{item.label}</span>
                 </div>

@@ -2,6 +2,7 @@ import { ConnectState } from "@/components/app/connect-state";
 import type { CockpitData } from "@/lib/app/cockpit-data";
 import type { CockpitAd } from "@/lib/cockpit/analyze";
 import { FATIGUE_STATE, PRIORITY_STYLE } from "@/components/cockpit/styles";
+import { AdLink } from "@/components/cockpit/AdLink";
 
 // Creative Fatigue (Rulebook 5.1). The fatigue READ for every ad comes straight off
 // the verdict engine's real output (winner/refresh/do_not_kill_yet/loser -> Healthy/
@@ -17,10 +18,10 @@ export function FatigueSection({ data, days }: { data: CockpitData; days: number
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <FatigueList ads={data.view.leaderboard} accountName={data.accountName} days={days} />;
+  return <FatigueList ads={data.view.leaderboard} accountName={data.accountName} accountId={data.accountId} days={days} />;
 }
 
-function FatigueList({ ads, accountName, days }: { ads: CockpitAd[]; accountName: string; days: number }) {
+function FatigueList({ ads, accountName, accountId, days }: { ads: CockpitAd[]; accountName: string; accountId?: string; days: number }) {
   // Worst first: ascending CreativeScore puts the fatiguing/fatigued ads at the top.
   const sorted = [...ads].sort((a, b) => a.score - b.score);
   const atRisk = ads.filter((a) => a.verdict === "refresh" || a.verdict === "loser").length;
@@ -62,7 +63,7 @@ function FatigueList({ ads, accountName, days }: { ads: CockpitAd[]; accountName
                 <div key={ad.id} className="border-t border-[var(--surface-alt)] py-4 first:border-t-0">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className="truncate text-[15px] font-semibold">{ad.name}</span>
+                      <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate text-[15px] font-semibold" />
                       <span className={`shrink-0 rounded-[70px] px-2.5 py-0.5 text-[11px] font-semibold ${fatigue.cls}`}>
                         {fatigue.label}
                       </span>

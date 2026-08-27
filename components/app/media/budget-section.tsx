@@ -1,5 +1,6 @@
 import { ConnectState } from "@/components/app/connect-state";
 import type { CockpitData } from "@/lib/app/cockpit-data";
+import { AdLink } from "@/components/cockpit/AdLink";
 
 // Budget & Scaling tab of the consolidated Media page. Logic reused verbatim from
 // the former app/app/budget-scaling/page.tsx: rulebook 5 (spend on the margin, not
@@ -15,6 +16,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
 
   const view = data.view;
   const accountName = data.accountName;
+  const accountId = data.accountId;
   const conc = view.concentration;
   const waste = view.waste;
   const winners = view.leaderboard.filter((a) => a.verdict === "winner");
@@ -91,7 +93,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
             {winners.map((ad) => (
               <div key={ad.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0">
-                  <div className="truncate text-[15px] font-semibold">{ad.name}</div>
+                  <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="block truncate text-[15px] font-semibold" />
                   <div className="mt-1 text-xs text-[var(--good-ink)]">Scale by 30% at a time, not more.</div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-0.5">
@@ -118,7 +120,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
                 return (
                   <div key={ad.id}>
                     <div className="mb-1 flex items-center justify-between gap-3 text-[13px]">
-                      <span className="truncate font-medium">{ad.name}</span>
+                      <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate font-medium" />
                       <span className="shrink-0 tabular-nums text-[var(--ink-muted)]">
                         {rupees.format(ad.spendRs)} · {Math.round(share * 100)}%
                       </span>
