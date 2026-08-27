@@ -9,7 +9,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/app/user";
 import { fetchLiveCockpit, type AccountMetrics } from "@/lib/meta-sync";
 import type { CockpitView } from "@/lib/cockpit/analyze";
 
@@ -33,10 +33,7 @@ export type CockpitData =
  * Meta connection comes back as `{ connected: false, reason }` for the page to handle.
  */
 export async function loadCockpit(days: number): Promise<CockpitData> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
   const userEmail = user.email ?? undefined;
 

@@ -2,6 +2,7 @@
 // metrics, run the brain, and return a cockpit view of REAL data. Server-only (reads the
 // encrypted token via the service role). No dummy data anywhere in this path.
 
+import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
 import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective } from "./meta-source.ts";
@@ -157,7 +158,12 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
 // The L2 table is optional: every access is guarded, so a missing table just falls back
 // to L1 + a live pull (today's behavior) rather than breaking.
 type CacheEntry = { at: number; value: LiveCockpit };
-const COCKPIT_TTL_MS = 300_000; // 5 minutes
+// FRESH: serve straight from cache. STALE: still serve instantly, but kick off a
+// background refresh so the NEXT load is fresh. Only a truly cold or very old cache
+// blocks on the ~9s live pull. This is what makes navigation feel instant after the
+// first load, on any serverless instance.
+const FRESH_MS = 300_000; // 5 minutes
+const STALE_MS = 3_600_000; // 1 hour
 const cockpitCache = new Map<string, CacheEntry>();
 
 /** Clear the cockpit cache. Pass userId to also clear that user's shared L2 rows. */
@@ -172,6 +178,24 @@ export async function bustCockpitCache(userId?: string): Promise<void> {
   }
 }
 
+// Live pull, then write both cache levels. Returned to callers and also used as the
+// background refresh body.
+async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, cacheKey: string, memKey: string): Promise<LiveCockpit> {
+  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId);
+  if (value.status !== "error") {
+    cockpitCache.set(memKey, { at: Date.now(), value });
+    try {
+      const admin = createAdminClient();
+      await admin
+        .from("cockpit_cache")
+        .upsert({ user_id: userId, cache_key: cacheKey, data: value, updated_at: new Date().toISOString() }, { onConflict: "user_id,cache_key" });
+    } catch {
+      // L2 write failed; L1 still holds the value for this instance
+    }
+  }
+  return value;
+}
+
 export async function fetchLiveCockpit(
   userId: string,
   lookbackDays: number = LOOKBACK_DAYS,
@@ -183,9 +207,10 @@ export async function fetchLiveCockpit(
 
   // L1: in-process (same instance)
   const hit = cockpitCache.get(memKey);
-  if (hit && now - hit.at < COCKPIT_TTL_MS) return hit.value;
+  if (hit && now - hit.at < FRESH_MS) return hit.value;
 
   // L2: Supabase, shared across serverless instances
+  let cached: { value: LiveCockpit; age: number } | null = null;
   try {
     const admin = createAdminClient();
     const { data } = await admin
@@ -195,31 +220,28 @@ export async function fetchLiveCockpit(
       .eq("cache_key", cacheKey)
       .maybeSingle();
     if (data) {
-      const age = now - new Date(data.updated_at as string).getTime();
-      if (age < COCKPIT_TTL_MS) {
-        const value = data.data as LiveCockpit;
-        cockpitCache.set(memKey, { at: now - age, value });
-        return value;
-      }
+      cached = { value: data.data as LiveCockpit, age: now - new Date(data.updated_at as string).getTime() };
     }
   } catch {
     // L2 unavailable; fall through to a live pull
   }
 
-  // Live pull (the ~9s path), then populate both cache levels.
-  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId);
-  if (value.status !== "error") {
-    cockpitCache.set(memKey, { at: now, value });
-    try {
-      const admin = createAdminClient();
-      await admin
-        .from("cockpit_cache")
-        .upsert({ user_id: userId, cache_key: cacheKey, data: value, updated_at: new Date().toISOString() }, { onConflict: "user_id,cache_key" });
-    } catch {
-      // L2 write failed; L1 still holds the value for this instance
+  if (cached) {
+    cockpitCache.set(memKey, { at: now - cached.age, value: cached.value });
+    if (cached.age < FRESH_MS) return cached.value;
+    if (cached.age < STALE_MS) {
+      // Serve stale immediately, refresh in the background so the next load is fresh.
+      try {
+        after(() => pullAndStore(userId, lookbackDays, campaignId, cacheKey, memKey));
+      } catch {
+        // after() unavailable outside a request scope; the stale value is still fine.
+      }
+      return cached.value;
     }
   }
-  return value;
+
+  // Cold or too stale: block on the live pull (skeleton shows while this runs).
+  return pullAndStore(userId, lookbackDays, campaignId, cacheKey, memKey);
 }
 
 function daysAgo(n: number): string {

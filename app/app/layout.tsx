@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/app/user";
 import { signOut } from "@/app/(auth)/actions";
 import { Logo } from "@/components/site-header";
 import { SidebarNav } from "@/components/app/sidebar-nav";
@@ -21,10 +21,7 @@ function initials(email?: string): string {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) redirect("/");
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   return (
     <div className="flex min-h-full flex-1">
