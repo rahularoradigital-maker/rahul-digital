@@ -22,6 +22,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
   const waste = view.waste;
   const winners = view.leaderboard.filter((a) => a.verdict === "winner");
   const totalSpendRs = view.totals.spendRs;
+  const accountRoas = view.totals.roas; // blended account ROAS, the baseline for "ROI vs account"
   const topBySpend = [...view.leaderboard].filter((a) => a.spendRs > 0).sort((a, b) => b.spendRs - a.spendRs).slice(0, 8);
 
   return (
@@ -112,12 +113,23 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
       {/* Spend distribution + Marginal ROAS honest gate */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
         <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
-          <div className="mb-1 text-base font-semibold">Spend distribution</div>
-          <div className="mb-4 text-[13px] text-[var(--ink-muted)]">Top ads by share of total spend, this window.</div>
+          <div className="mb-1 flex items-center gap-1.5">
+            <span className="text-base font-semibold">Spend distribution</span>
+            <span
+              title="Spend share = this ad's spend divided by total account spend this window. Conversions = purchases in the window. ROI vs account = this ad's ROAS compared to the account's blended ROAS - a positive % means the ad returns more per rupee than the account average, negative means less. All from real connected-account data."
+              className="cursor-help text-[13px] text-[var(--ink-muted)]"
+            >
+              &#9432;
+            </span>
+          </div>
+          <div className="mb-4 text-[13px] text-[var(--ink-muted)]">Top ads by share of total spend, with conversions and ROI vs the account.</div>
           {totalSpendRs > 0 && topBySpend.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {topBySpend.map((ad) => {
                 const share = ad.spendRs / totalSpendRs;
+                // ROI vs account: the ad's ROAS relative to the account's blended ROAS. Null when
+                // the account ROAS cannot be formed (no revenue), so we never show a fake number.
+                const roiVsAcct = ad.roas !== null && accountRoas !== null && accountRoas > 0 ? ad.roas / accountRoas - 1 : null;
                 return (
                   <div key={ad.id}>
                     <div className="mb-1 flex items-center justify-between gap-3 text-[13px]">
@@ -128,6 +140,20 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-[70px] bg-[var(--surface-alt)]">
                       <div className="h-full rounded-[70px] bg-[var(--accent)]" style={{ width: `${Math.max(share * 100, 2)}%` }} />
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] tabular-nums text-[var(--ink-muted)]">
+                      <span>{ad.conversions} conv</span>
+                      <span aria-hidden>·</span>
+                      <span>{ad.roas === null ? "n/a ROAS" : `${ad.roas.toFixed(2)}x ROAS`}</span>
+                      {roiVsAcct !== null && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span className={roiVsAcct >= 0 ? "text-[var(--good-ink)]" : "text-[var(--bad-ink)]"}>
+                            {roiVsAcct >= 0 ? "+" : ""}
+                            {Math.round(roiVsAcct * 100)}% vs account ROI
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 );

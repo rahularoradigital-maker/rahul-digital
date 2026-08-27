@@ -66,6 +66,7 @@ export type CockpitAd = {
   spendRs: number;
   revenueRs: number;
   roas: number | null; // null when spend is 0 (never a fabricated ratio)
+  conversions: number; // purchases in the window (real, from the day-wise rows)
   verdict: Verdict;
   score: number;
   confidence: number;
@@ -232,6 +233,7 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       spendRs: input.spendRs,
       revenueRs: input.revenueRs,
       roas,
+      conversions: input.conversions,
       verdict: vVerdict,
       score: v.score,
       confidence,
