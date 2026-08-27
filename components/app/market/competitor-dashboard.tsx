@@ -123,6 +123,9 @@ export function CompetitorDashboard({ data }: { data: Data }) {
       {/* Ad traffic distribution: where each brand sends its ad clicks (landing-page hosts) */}
       {report.trafficByBrand.length > 0 && <TrafficSection traffic={report.trafficByBrand} />}
 
+      {/* Longest-running creatives = proven winners (brands keep what works) */}
+      <LongRunningSection brands={brands} />
+
       {/* Stage 7 trigger + AI creative intelligence */}
       <AnalyzeControl analyzedCount={report ? (data.creativeIntel?.analyzedCount ?? 0) : 0} />
       {data.creativeIntel && <CreativeIntelSection intel={data.creativeIntel} />}
@@ -231,6 +234,50 @@ function TrafficSection({ traffic }: { traffic: BrandTraffic[] }) {
               ))}
             </div>
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function daysRunning(startUnix: number | null): number {
+  if (!startUnix) return 0;
+  return Math.max(0, Math.floor((Date.now() - startUnix * 1000) / 86_400_000));
+}
+
+// Longest-running ACTIVE creatives across all brands: a strong proxy for what works, since a
+// brand does not keep a loser live for months. Deterministic (start date + still active).
+function LongRunningSection({ brands }: { brands: BrandAnalytics[] }) {
+  const ads = brands
+    .flatMap((b) => b.topCreatives.map((ad) => ({ ad, brand: b.label })))
+    .filter((x) => x.ad.isActive && x.ad.startDate)
+    .map((x) => ({ ...x, days: daysRunning(x.ad.startDate) }))
+    .sort((a, b) => b.days - a.days)
+    .slice(0, 8);
+  if (ads.length === 0) return null;
+  return (
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+      <div className="mb-1 text-base font-semibold">Longest-running creatives</div>
+      <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
+        Active ads a brand has kept live the longest - a strong proxy for what is working (brands do not keep losers running).
+      </div>
+      <div className="space-y-2">
+        {ads.map(({ ad, brand, days }) => (
+          <a
+            key={ad.adArchiveId}
+            href={ad.adUrl ?? "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-3 border-t border-[var(--surface-alt)] pt-2 first:border-t-0 first:pt-0"
+          >
+            <div className="min-w-0">
+              <div className="truncate text-[13px] font-medium text-[var(--ink)]">{ad.title || ad.body?.slice(0, 60) || `Ad ${ad.adArchiveId}`}</div>
+              <div className="truncate text-[11px] text-[var(--ink-muted)]">
+                {brand} · {MEDIA_LABEL[ad.media]}
+              </div>
+            </div>
+            <span className="shrink-0 text-xs font-semibold tabular-nums text-[var(--ink)]">{days}d live</span>
+          </a>
         ))}
       </div>
     </div>
