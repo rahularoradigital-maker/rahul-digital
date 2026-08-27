@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Acct = { externalId: string; name: string; businessName?: string };
 
-// Topbar account switcher (BM -> Account). Self-fetches the user's accounts client-side
-// so it never slows the page render; caches in sessionStorage for a few minutes so it
-// does not re-hit Meta on every navigation. Picking an account switches which account
-// the whole dashboard analyses (server-side, via the select-account route).
+// Topbar account switcher (BM -> Account), as a SEARCHABLE dropdown - a token can reach 200+
+// ad accounts, so a plain select is unusable. Self-fetches client-side (never slows render),
+// caches in sessionStorage for a few minutes. Picking an account switches which account the
+// whole dashboard analyses (server-side, via the select-account route).
 export function AccountSwitcher() {
   const [accounts, setAccounts] = useState<Acct[]>([]);
   const [active, setActive] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -53,55 +56,83 @@ export function AccountSwitcher() {
     };
   }, []);
 
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return accounts;
+    return accounts.filter((a) => a.name.toLowerCase().includes(q) || (a.businessName ?? "").toLowerCase().includes(q));
+  }, [accounts, query]);
+
   if (!loaded || accounts.length === 0) return null;
 
-  function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const id = e.target.value;
-    // The reconnect option: re-run Meta login so the user can grant more accounts
-    // (needed when the token only has access to the one account it was created with).
-    if (id === "__connect__") {
-      window.location.href = "/api/connect/meta/authorize";
-      return;
-    }
-    const acct = accounts.find((a) => a.externalId === id);
-    if (!id || !acct) return;
-    // Drop the cached account list so the new active account is reflected on reload.
+  function connect() {
+    window.location.href = "/api/connect/meta/authorize";
+  }
+  function choose(a: Acct) {
     try {
       sessionStorage.removeItem("adbrain.accounts");
     } catch {
       // ignore
     }
-    window.location.href = `/api/connect/meta/select-account?id=${encodeURIComponent(id)}&name=${encodeURIComponent(acct.name)}`;
+    window.location.href = `/api/connect/meta/select-account?id=${encodeURIComponent(a.externalId)}&name=${encodeURIComponent(a.name)}`;
   }
 
-  const groups = new Map<string, Acct[]>();
-  for (const a of accounts) {
-    const g = a.businessName ?? "Other";
-    const list = groups.get(g) ?? [];
-    list.push(a);
-    groups.set(g, list);
-  }
+  const activeName = accounts.find((a) => a.externalId === active)?.name ?? "Select account";
 
   return (
-    <label className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium">
-      <span className="text-[var(--ink-muted)]">Account ·</span>
-      <select
-        value={active}
-        onChange={onChange}
-        aria-label="Ad account"
-        className="max-w-[150px] cursor-pointer truncate bg-transparent font-medium text-[var(--ink)] outline-none"
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
       >
-        {Array.from(groups.entries()).map(([g, accts]) => (
-          <optgroup key={g} label={g}>
-            {accts.map((a) => (
-              <option key={a.externalId} value={a.externalId}>
-                {a.name}
-              </option>
+        <span className="text-[var(--ink-muted)]">Account ·</span>
+        <span className="max-w-[150px] truncate">{activeName}</span>
+        <span className="text-[var(--ink-muted)]">▾</span>
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-80 max-w-[85vw] rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search accounts..."
+            aria-label="Search accounts"
+            className="mb-1.5 w-full rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]"
+          />
+          <div className="max-h-72 overflow-y-auto">
+            {filtered.map((a) => (
+              <button
+                key={a.externalId}
+                type="button"
+                onClick={() => choose(a)}
+                title={a.businessName ? `${a.name} · ${a.businessName}` : a.name}
+                className={`block w-full rounded-lg px-2.5 py-2 text-left transition hover:bg-[var(--surface-alt)] ${a.externalId === active ? "bg-[var(--surface-alt)]" : ""}`}
+              >
+                <div className={`truncate text-[13px] ${a.externalId === active ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}>{a.name}</div>
+                {a.businessName && <div className="truncate text-[11px] text-[var(--ink-muted)]">{a.businessName}</div>}
+              </button>
             ))}
-          </optgroup>
-        ))}
-        <option value="__connect__">+ Connect more accounts</option>
-      </select>
-    </label>
+            {filtered.length === 0 && <div className="px-2.5 py-2 text-[13px] text-[var(--ink-muted)]">No accounts match.</div>}
+          </div>
+          <button
+            type="button"
+            onClick={connect}
+            className="mt-1 w-full border-t border-[var(--surface-alt)] px-2.5 py-2 text-left text-[13px] font-medium text-[var(--accent)] transition hover:bg-[var(--surface-alt)]"
+          >
+            + Connect more accounts
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
