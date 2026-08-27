@@ -9,6 +9,7 @@ import { FatigueRadar } from "@/components/cockpit/FatigueRadar";
 import { Leaderboard } from "@/components/cockpit/Leaderboard";
 import { FunnelCard } from "@/components/cockpit/FunnelCard";
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
+import type { MarginalRead } from "@/lib/scoring/marginal";
 import { WhyDrawer } from "@/components/cockpit/WhyDrawer";
 
 // The Account Cockpit. Real connected-account data only: if nothing real is
@@ -25,7 +26,39 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} days={data.days} />;
+  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} days={data.days} />;
+}
+
+const MARGINAL_STYLE: Record<MarginalRead["classification"], { label: string; cls: string }> = {
+  UNDERFUNDED: { label: "Underfunded - room to scale", cls: "bg-[var(--good-bg)] text-[var(--good-ink)]" },
+  HEALTHY: { label: "Healthy", cls: "bg-[var(--good-bg)] text-[var(--good-ink)]" },
+  APPROACHING_SATURATION: { label: "Approaching saturation", cls: "bg-[var(--warn-bg)] text-[var(--warn-ink)]" },
+  SATURATED: { label: "Saturated - diminishing returns", cls: "bg-[var(--bad-bg)] text-[var(--bad-ink)]" },
+  UNKNOWN: { label: "Not enough data", cls: "bg-[var(--surface-alt)] text-[var(--ink-muted)]" },
+};
+
+function ScalingCard({ marginal }: { marginal: MarginalRead }) {
+  const s = MARGINAL_STYLE[marginal.classification];
+  return (
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <span className="text-base font-semibold">Scaling headroom</span>
+        <span className={`rounded-[var(--radius-pill)] px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
+        <span className="rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
+          {marginal.label} · {Math.round(marginal.confidence * 100)}% conf
+        </span>
+      </div>
+      <div className="text-[13px] text-[var(--ink-muted)]">
+        {marginal.why[0] ?? "Modelled from the day-wise spend-to-revenue relationship."}
+        {marginal.marginalRoas !== null && marginal.currentRoas !== null && (
+          <>
+            {" "}Marginal ROAS on the next increment: <span className="font-medium text-[var(--ink)]">{marginal.marginalRoas.toFixed(2)}x</span> vs{" "}
+            {marginal.currentRoas.toFixed(2)}x current.
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // Share of total spend on each verdict, an honest breakdown of where Account Health
@@ -44,7 +77,7 @@ function compositionRows(view: CockpitView): CompositionRow[] {
   ];
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; days: number }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; days: number }) {
   const health = view.accountHealth;
   const roas = view.totals.roas;
   const conc = view.concentration;
@@ -105,7 +138,8 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
         />
       </div>
 
-      {/* Ad-level funnel metrics */}
+      {/* Scaling headroom (marginal economics) + ad-level funnel metrics */}
+      <ScalingCard marginal={marginal} />
       <FunnelCard funnel={funnel} />
 
       {/* This week's plan + Fatigue radar */}

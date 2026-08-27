@@ -4,6 +4,7 @@
 // weighted median. Ads without enough daily history say so honestly - no fabricated number.
 import type { CockpitAd, CreativeHalfLife } from "@/lib/cockpit/analyze";
 import type { FatigueState } from "@/lib/scoring/fatigue";
+import { forecastFatigue } from "@/lib/scoring/fatigue-forecast";
 import { AdLink } from "./AdLink";
 
 const STATE_STYLE: Record<FatigueState, { label: string; cls: string }> = {
@@ -62,6 +63,16 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
                   {f.sufficiency === "ok" ? halfLifeLabel(ad.halfLifeDays) : "needs history"}
                 </span>
               </div>
+              {f.sufficiency === "ok" &&
+                (() => {
+                  const fc = forecastFatigue(f);
+                  return (
+                    <div className="mt-1 text-[11px] text-[var(--ink-muted)]">
+                      <span className="font-medium text-[var(--ink)]">Forecast</span> · 7d {Math.round(fc.day7.probability * 100)}% · 14d{" "}
+                      {Math.round(fc.day14.probability * 100)}% fatigue risk
+                    </div>
+                  );
+                })()}
               <div className="mt-1 truncate text-xs text-[var(--ink-muted)]" title={f.evidence.join(" ")}>
                 {f.sufficiency === "ok" ? f.evidence[0] : `Only ${f.windowDays} day${f.windowDays === 1 ? "" : "s"} of delivery so far.`}
               </div>
