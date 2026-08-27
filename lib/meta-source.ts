@@ -35,10 +35,20 @@ async function graphGet<T>(path: string, token: string, params: Record<string, s
   return (await res.json()) as T;
 }
 
-const PURCHASE = "offsite_conversion.fct_purchase";
-function sumAction(list: MetaInsightAction[] | undefined, type: string): number {
+// Accounts report purchases under different action types depending on their setup
+// (omni_purchase already combines web + app + onsite, so it is preferred to avoid
+// double counting; then the classic pixel type; then the plain aggregate). We take
+// the first type that has a value, so a boAt-style account is not read as zero
+// just because it does not use the offsite pixel type.
+const PURCHASE_TYPES = ["omni_purchase", "offsite_conversion.fct_purchase", "purchase"];
+
+function purchaseValue(list: MetaInsightAction[] | undefined): number {
   if (!list) return 0;
-  return list.filter((a) => a.action_type === type).reduce((acc, a) => acc + Number(a.value || 0), 0);
+  for (const type of PURCHASE_TYPES) {
+    const v = list.filter((a) => a.action_type === type).reduce((acc, a) => acc + Number(a.value || 0), 0);
+    if (v > 0) return v;
+  }
+  return 0;
 }
 
 export const metaSource: AdSource = {
@@ -82,8 +92,8 @@ export const metaSource: AdSource = {
       impressions: Number(row.impressions || 0),
       clicks: Number(row.clicks || 0),
       frequency: Number(row.frequency || 0),
-      purchases: sumAction(row.actions, PURCHASE),
-      revenue: sumAction(row.action_values, PURCHASE),
+      purchases: purchaseValue(row.actions),
+      revenue: purchaseValue(row.action_values),
     }));
   },
 
