@@ -16,7 +16,7 @@ export async function CompetitorsSection() {
   // The brand's market seeds competitor discovery so suggestions appear with no typing.
   const session = user ? await getUserMetaSession(user.id) : null;
   const market = session?.activeAccountName ?? "";
-  const data = user ? await loadCompetitorData(user.id) : null;
+  const data = user ? await loadCompetitorData(user.id, session?.activeExternalId ?? null) : null;
 
   if (data) {
     return (

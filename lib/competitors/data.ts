@@ -65,21 +65,23 @@ function toNormalized(r: AdRow): NormalizedAd {
   };
 }
 
-export async function loadCompetitorData(userId: string): Promise<CompetitorData | null> {
+export async function loadCompetitorData(userId: string, accountId: string | null): Promise<CompetitorData | null> {
   try {
     const admin = createAdminClient();
-    const { data: ads } = await admin
+    // Scope to the ACTIVE account so each account shows its own competitors (not another
+    // account's). Rows added before this feature have account_external_id = NULL; they only
+    // surface when no account is active, so switching to a real account correctly starts fresh.
+    const adsQuery = admin
       .from("competitor_ads")
       .select(
         "page_id, ad_archive_id, is_my_brand, brand_label, is_active, display_format, media, cta_text, cta_type, title, body, link_url, platforms, start_date, end_date, card_count, ad_url, image_url, video_url, video_thumb_url",
       )
       .eq("user_id", userId);
+    const { data: ads } = await (accountId === null ? adsQuery.is("account_external_id", null) : adsQuery.eq("account_external_id", accountId));
     if (!ads || ads.length === 0) return null;
 
-    const { data: brands } = await admin
-      .from("competitor_brands")
-      .select("updated_at")
-      .eq("user_id", userId)
+    const brandsQuery = admin.from("competitor_brands").select("updated_at").eq("user_id", userId);
+    const { data: brands } = await (accountId === null ? brandsQuery.is("account_external_id", null) : brandsQuery.eq("account_external_id", accountId))
       .order("updated_at", { ascending: false })
       .limit(1);
 
@@ -92,13 +94,18 @@ export async function loadCompetitorData(userId: string): Promise<CompetitorData
       .from("competitor_creative_analysis")
       .select("page_id, ad_archive_id, is_my_brand, brand_label, attributes")
       .eq("user_id", userId);
-    const analyzed: AnalyzedCreative[] = ((analysisRows as AnalysisRow[] | null) ?? []).map((r) => ({
-      adArchiveId: r.ad_archive_id,
-      pageId: r.page_id,
-      brandLabel: r.brand_label ?? "Unknown",
-      isMyBrand: r.is_my_brand,
-      attributes: (r.attributes ?? {}) as CreativeAttributes,
-    }));
+    // Only keep analysis for ads that belong to THIS account's competitor set (the analysis table
+    // is keyed by content/ad_archive_id and shared across accounts; scope it via the account's ads).
+    const accountAdIds = new Set(normalized.map((a) => a.adArchiveId));
+    const analyzed: AnalyzedCreative[] = ((analysisRows as AnalysisRow[] | null) ?? [])
+      .filter((r) => accountAdIds.has(r.ad_archive_id))
+      .map((r) => ({
+        adArchiveId: r.ad_archive_id,
+        pageId: r.page_id,
+        brandLabel: r.brand_label ?? "Unknown",
+        isMyBrand: r.is_my_brand,
+        attributes: (r.attributes ?? {}) as CreativeAttributes,
+      }));
 
     return {
       report,

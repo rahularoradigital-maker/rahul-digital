@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserMetaSession } from "@/lib/meta-sync";
 import { fetchBrandAds, pageIdFromAdLibraryUrl } from "@/lib/scrapecreators";
 import type { NormalizedAd } from "@/lib/competitors/types";
 
@@ -38,6 +39,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Add your brand URL and at least one competitor." }, { status: 400 });
   }
 
+  // Scope this competitor set to the user's ACTIVE ad account, so switching account shows that
+  // account's own competitors (not another account's). null when no account is connected.
+  const session = await getUserMetaSession(user.id);
+  const accountId = session?.activeExternalId ?? null;
+
   const admin = createAdminClient();
   const brands: { label: string; pageId: string; adCount: number; isMyBrand: boolean }[] = [];
   const errors: string[] = [];
@@ -57,11 +63,16 @@ export async function POST(request: NextRequest) {
     }
     const label = ads[0]?.brandLabel ?? (t.isMyBrand ? "My brand" : `Page ${pageId}`);
 
-    // Refresh this brand's ads: clear the old set, then insert the live one.
-    await admin.from("competitor_ads").delete().eq("user_id", user.id).eq("page_id", pageId);
+    // Refresh this brand's ads for THIS account: clear the old set (scoped to the account),
+    // then insert the live one stamped with the account.
+    {
+      const del = admin.from("competitor_ads").delete().eq("user_id", user.id).eq("page_id", pageId);
+      await (accountId === null ? del.is("account_external_id", null) : del.eq("account_external_id", accountId));
+    }
     if (ads.length > 0) {
       const rows = ads.map((a) => ({
         user_id: user.id,
+        account_external_id: accountId,
         page_id: a.pageId,
         ad_archive_id: a.adArchiveId,
         is_my_brand: a.isMyBrand,
@@ -86,7 +97,7 @@ export async function POST(request: NextRequest) {
       await admin.from("competitor_ads").upsert(rows, { onConflict: "user_id,page_id,ad_archive_id" });
     }
     await admin.from("competitor_brands").upsert(
-      { user_id: user.id, page_id: pageId, label, is_my_brand: t.isMyBrand, ad_library_url: t.url, ad_count: ads.length, updated_at: new Date().toISOString() },
+      { user_id: user.id, account_external_id: accountId, page_id: pageId, label, is_my_brand: t.isMyBrand, ad_library_url: t.url, ad_count: ads.length, updated_at: new Date().toISOString() },
       { onConflict: "user_id,page_id" },
     );
     brands.push({ label, pageId, adCount: ads.length, isMyBrand: t.isMyBrand });
