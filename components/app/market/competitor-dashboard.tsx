@@ -60,6 +60,9 @@ export function CompetitorDashboard({ data }: { data: Data }) {
         </div>
       </div>
 
+      {/* Ad Performance Intelligence: headline numbers across you + competitors (real counts) */}
+      <AdPerfIntel brands={brands} />
+
       {/* Comparison table (stage 8) */}
       <div className="overflow-x-auto rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)]">
         <table className="w-full min-w-[680px] border-collapse text-sm">
@@ -238,6 +241,31 @@ function TrafficSection({ traffic }: { traffic: BrandTraffic[] }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Ad Performance Intelligence: the headline numbers Imagive leads with, but only real counts
+// over the ads we actually pulled - Total live ads, active share, creative mix, new this week.
+function AdPerfIntel({ brands }: { brands: BrandAnalytics[] }) {
+  const total = brands.reduce((s, b) => s + b.totalAds, 0);
+  const active = brands.reduce((s, b) => s + b.activeAds, 0);
+  const newThisWeek = brands.reduce((s, b) => s + b.newLast7Days, 0);
+  const mix = { video: 0, image: 0, carousel: 0, other: 0 };
+  for (const b of brands) for (const k of MEDIA_ORDER) mix[k] += b.formatMix[k];
+  const stat = (label: string, value: string, sub: string) => (
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{label}</div>
+      <div className="mt-1 text-[28px] font-semibold tabular-nums leading-none">{value}</div>
+      <div className="mt-1.5 text-[12px] text-[var(--ink-muted)]">{sub}</div>
+    </div>
+  );
+  return (
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {stat("Live ads", String(total), `across you + ${Math.max(0, brands.length - 1)} competitor${brands.length === 2 ? "" : "s"}`)}
+      {stat("Active", String(active), `${pct(active, total)}% of the ads are live now`)}
+      {stat("Creative mix", `${pct(mix.video, total)}% video`, `${pct(mix.image, total)}% image · ${pct(mix.carousel, total)}% carousel`)}
+      {stat("New this week", String(newThisWeek), "ads launched in the last 7 days")}
     </div>
   );
 }
