@@ -26,7 +26,9 @@ function load(): Saved {
 const inputCls =
   "w-full rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] px-3.5 py-2.5 text-sm text-[var(--ink)] outline-none transition focus:border-[var(--accent)]";
 
-type Suggestion = { pageId: string; name: string; category: string | null; imageUri: string | null; likes: number | null };
+type Suggestion = { pageId: string; name: string; category: string | null; imageUri: string | null; likes: number | null; verified: boolean };
+
+const likesFmt = new Intl.NumberFormat("en-IN", { notation: "compact" });
 
 // A page id becomes an Ad Library URL the pull route already understands.
 function libraryUrl(pageId: string): string {
@@ -179,8 +181,19 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
                 <div className="h-8 w-8 shrink-0 rounded-full bg-[var(--surface-alt)]" />
               )}
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] font-medium">{s.name}</div>
-                <div className="truncate text-[11px] text-[var(--ink-muted)]">{s.category ?? "Brand page"}</div>
+                <div className="flex items-center gap-1 truncate text-[13px] font-medium">
+                  <span className="truncate">{s.name}</span>
+                  {s.verified && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--accent)" className="shrink-0" aria-label="Verified">
+                      <path d="M12 2l2.4 1.8 3 .1 1 2.8 2.4 1.8-1 2.8 1 2.8-2.4 1.8-1 2.8-3 .1L12 22l-2.4-1.8-3-.1-1-2.8L3.2 15.5l1-2.8-1-2.8 2.4-1.8 1-2.8 3-.1L12 2z" />
+                      <path d="M10.6 14.6l-2.2-2.2 1-1 1.2 1.2 3-3 1 1-4 4z" fill="#fff" />
+                    </svg>
+                  )}
+                </div>
+                <div className="truncate text-[11px] text-[var(--ink-muted)]">
+                  {s.category ?? "Brand page"}
+                  {typeof s.likes === "number" && s.likes > 0 ? ` · ${likesFmt.format(s.likes)} likes` : ""}
+                </div>
               </div>
               <button
                 type="button"

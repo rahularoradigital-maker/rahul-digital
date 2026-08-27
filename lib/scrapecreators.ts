@@ -29,11 +29,15 @@ export type CompanySuggestion = {
   category: string | null;
   imageUri: string | null;
   likes: number | null;
+  verified: boolean; // the real brand page is almost always verified
 };
 
 // Search Meta brand pages by keyword (stage 1 assist: discover competitors instead of
-// pasting Ad Library URLs by hand). Returns the page ids the pull needs. Ranked by the
-// API; we drop deleted pages and cap the list. Throws only on a missing key.
+// pasting Ad Library URLs by hand). The API returns candidates in relevance order, which for
+// a common brand name surfaces namesakes and fan pages ahead of the real brand. The real
+// brand page is the VERIFIED one with the most likes, so we re-rank on (verified, likes) and
+// expose both signals to the UI - that is how the correct page gets picked, not a namesake.
+// Drops deleted pages; caps the list. Throws only on a missing key.
 export async function searchCompanies(query: string, limit = 10): Promise<CompanySuggestion[]> {
   const key = process.env.SCRAPECREATORS_API_KEY;
   if (!key) throw new Error("SCRAPECREATORS_API_KEY is not set");
@@ -47,14 +51,17 @@ export async function searchCompanies(query: string, limit = 10): Promise<Compan
   const results = Array.isArray(json.searchResults) ? json.searchResults : [];
   return results
     .filter((r) => r.page_id && !r.page_is_deleted)
-    .slice(0, limit)
     .map((r) => ({
       pageId: String(r.page_id),
       name: r.name ?? `Page ${r.page_id}`,
       category: r.category ?? null,
       imageUri: r.image_uri ?? null,
       likes: typeof r.likes === "number" ? r.likes : null,
-    }));
+      verified: Boolean(r.verification && r.verification !== "NOT_VERIFIED"),
+    }))
+    // Verified first, then most-liked: the real brand page rises to the top.
+    .sort((a, b) => Number(b.verified) - Number(a.verified) || (b.likes ?? 0) - (a.likes ?? 0))
+    .slice(0, limit);
 }
 
 type RawCompany = {
@@ -63,6 +70,7 @@ type RawCompany = {
   category?: string;
   image_uri?: string;
   likes?: number;
+  verification?: string;
   page_is_deleted?: boolean;
 };
 
