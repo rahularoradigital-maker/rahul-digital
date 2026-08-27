@@ -25,7 +25,9 @@ async function graphGet<T>(path: string, token: string, params: Record<string, s
   const url = new URL(`${GRAPH}/${path}`);
   url.searchParams.set("access_token", token);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url.toString());
+  // Never cache Meta responses: "Re-scan signals" and the date/account/campaign
+  // switchers must always reflect the live account, not a stale server data cache.
+  const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(`Meta Graph ${res.status} on ${path}: ${detail.slice(0, 300)}`);
