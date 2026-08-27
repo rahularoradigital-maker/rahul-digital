@@ -5,6 +5,7 @@
 
 import type { AdSource, TokenSet, SourceAd, MetricsRow } from "./ad-source.ts";
 import type { Objective } from "./rules/comparator.ts";
+import type { CreativeAsset } from "./creative/fingerprint.ts";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
@@ -225,6 +226,91 @@ export async function listAdSetEnds(accountExternalId: string, adsetIds: string[
   return map;
 }
 
+// Raw Graph creative shape (only the fields we normalize). object_story_spec / asset_feed_spec
+// are where the real copy + CTA + carousel structure live; the top-level image_url/body/title
+// are unreliable, so we read from the spec first and fall back.
+type MetaStorySpec = {
+  link_data?: { message?: string; name?: string; picture?: string; call_to_action?: { type?: string }; child_attachments?: unknown[] };
+  video_data?: { message?: string; title?: string; video_id?: string; call_to_action?: { type?: string } };
+};
+type MetaAssetFeed = {
+  bodies?: { text?: string }[];
+  titles?: { text?: string }[];
+  call_to_action_types?: string[];
+  images?: unknown[];
+  videos?: unknown[];
+};
+type MetaCreative = {
+  id?: string;
+  thumbnail_url?: string;
+  image_url?: string;
+  video_id?: string;
+  body?: string;
+  title?: string;
+  object_story_spec?: MetaStorySpec;
+  asset_feed_spec?: MetaAssetFeed;
+};
+
+const first = <T>(a: T[] | undefined): T | undefined => (a && a.length > 0 ? a[0] : undefined);
+
+function normalizeCreative(adId: string, c: MetaCreative | undefined): CreativeAsset {
+  const spec = c?.object_story_spec;
+  const feed = c?.asset_feed_spec;
+  const link = spec?.link_data;
+  const video = spec?.video_data;
+
+  const videoId = c?.video_id ?? video?.video_id ?? null;
+  const children = link?.child_attachments?.length ?? 0;
+  const feedAssets = (feed?.images?.length ?? 0) + (feed?.videos?.length ?? 0);
+  const assetCount = Math.max(1, children, feedAssets);
+
+  const title = c?.title ?? link?.name ?? video?.title ?? first(feed?.titles)?.text ?? null;
+  const body = c?.body ?? link?.message ?? video?.message ?? first(feed?.bodies)?.text ?? null;
+  const ctaType = link?.call_to_action?.type ?? video?.call_to_action?.type ?? first(feed?.call_to_action_types) ?? null;
+
+  return {
+    adId,
+    creativeId: c?.id ?? null,
+    imageUrl: c?.image_url ?? link?.picture ?? null,
+    videoThumbUrl: c?.thumbnail_url ?? null,
+    videoId,
+    title: title ?? null,
+    body: body ?? null,
+    ctaType: ctaType ?? null,
+    isVideo: Boolean(videoId),
+    isCarousel: children > 1 || feedAssets > 1,
+    assetCount,
+  };
+}
+
+/**
+ * Creative asset per ad, for the own-ad creative fingerprint. Fetched via the batch `?ids=`
+ * endpoint (up to 50 ads per call) so a 100-ad account is 2 round-trips, not 100. A single
+ * ad that errors is simply absent from the map - the caller falls back to no fingerprint for
+ * it rather than failing the whole run. No fabrication: absent creative = absent entry.
+ */
+export async function fetchAdCreatives(accountExternalId: string, adIds: string[], token: TokenSet): Promise<Map<string, CreativeAsset>> {
+  const out = new Map<string, CreativeAsset>();
+  if (adIds.length === 0) return out;
+  const fields = "creative{id,thumbnail_url,image_url,video_id,body,title,object_story_spec,asset_feed_spec}";
+  for (let i = 0; i < adIds.length; i += 50) {
+    const batch = adIds.slice(i, i + 50);
+    try {
+      const json = await graphGet<Record<string, { creative?: MetaCreative }>>("", token.accessToken, {
+        ids: batch.join(","),
+        fields,
+      });
+      for (const adId of batch) {
+        const entry = json[adId];
+        if (entry) out.set(adId, normalizeCreative(adId, entry.creative));
+      }
+    } catch {
+      // A bad batch just means those ads have no fingerprint this run; keep going.
+    }
+  }
+  return out;
+}
+
 /** Active campaigns in an ad account (numeric id, no act_ prefix), for the campaign filter. */
 export async function listMetaCampaigns(
   accountExternalId: string,
@@ -236,6 +322,26 @@ export async function listMetaCampaigns(
     { fields: "id,name,objective", effective_status: '["ACTIVE"]', limit: "100" },
   );
   return (data.data ?? []).map((c) => ({ id: c.id, name: c.name ?? c.id, objective: c.objective }));
+}
+
+/**
+ * Every campaign's objective in the account, ALL statuses, paginated. This is the source of
+ * truth for the objective filter: a campaign that spent in the window but is now paused, in
+ * review, or completed still counts, and an account with more than one page of campaigns is
+ * fully covered. Distinct from listMetaCampaigns (ACTIVE-only, single page) which powers the
+ * campaign PICKER UI - a filter must see paused/old campaigns; a picker should not list them.
+ */
+export async function listAllCampaignObjectives(
+  accountExternalId: string,
+  token: TokenSet,
+): Promise<{ id: string; objective?: string }[]> {
+  const rows = await graphGetAll<{ id: string; objective?: string }>(
+    `act_${accountExternalId}/campaigns`,
+    token.accessToken,
+    { fields: "id,objective", limit: "500" },
+    20,
+  );
+  return rows.map((c) => ({ id: c.id, objective: c.objective }));
 }
 
 /**

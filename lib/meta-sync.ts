@@ -5,7 +5,7 @@
 import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective, listMetaCampaigns, listAdSetEnds } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
@@ -82,7 +82,10 @@ async function resolveCampaignIds(
 ): Promise<string[] | undefined> {
   if (campaignId) return [campaignId];
   if (objectives.length === 0) return undefined;
-  const campaigns = await listMetaCampaigns(accountExternalId, token);
+  // Resolve from ALL campaigns (every status, paginated), not the ACTIVE-only picker list:
+  // a Sales campaign that spent in the window but is now paused / in review / beyond the first
+  // page must still be included, or selecting its objective wrongly shows "no spend".
+  const campaigns = await listAllCampaignObjectives(accountExternalId, token);
   return campaigns.filter((c) => objectives.includes(mapMetaObjective(c.objective))).map((c) => c.id);
 }
 
