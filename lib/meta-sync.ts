@@ -4,7 +4,7 @@
 
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
-import { metaSource, listTopSpendingAds } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights } from "./meta-source.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
@@ -59,7 +59,7 @@ export type LiveCockpit =
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
-export async function fetchLiveCockpit(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string): Promise<LiveCockpit> {
+async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
   let acct: { id: string; external_id: string; name: string | null } | null = null;
@@ -103,21 +103,15 @@ export async function fetchLiveCockpit(userId: string, lookbackDays: number = LO
     if (ads.length === 0) {
       ads = await metaSource.listAds(acct.external_id, token, campaignId);
     }
-    // Fetch every ad's metrics in PARALLEL, not one-after-another. Sequential await made
-    // the page wait on up to 25 back-to-back Meta round-trips (the slowness). allSettled
-    // so one failed/slow ad drops out instead of stalling or failing the whole cockpit.
-    const settled = await Promise.allSettled(
-      ads.slice(0, MAX_ADS).map(
-        async (ad): Promise<RealAd> => ({
-          externalId: ad.externalId,
-          name: ad.name ?? ad.externalId,
-          rows: await metaSource.fetchMetrics(ad.externalId, since, token),
-        }),
-      ),
-    );
-    const realAds: RealAd[] = settled
-      .filter((r): r is PromiseFulfilledResult<RealAd> => r.status === "fulfilled")
-      .map((r) => r.value);
+    // Pull daily metrics for all of these ads in ONE account-level call instead of one
+    // request per ad (26 round-trips -> 2). This is the main page-speed fix.
+    const top = ads.slice(0, MAX_ADS);
+    const rowsByAd = await fetchAdInsights(acct.external_id, top.map((a) => a.externalId), since, token);
+    const realAds: RealAd[] = top.map((ad) => ({
+      externalId: ad.externalId,
+      name: ad.name ?? ad.externalId,
+      rows: rowsByAd.get(ad.externalId) ?? [],
+    }));
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
     const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
     const view = analyzeAccount(inputs, "LIVE");
@@ -149,6 +143,31 @@ export async function fetchLiveCockpit(userId: string, lookbackDays: number = LO
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }
+}
+
+// A small in-process TTL cache so moving between pages reuses the computed cockpit
+// instead of re-pulling the whole account on every navigation (the "every page is slow"
+// fix). Keyed by (userId, days, campaignId). Busted at once on account switch and
+// Re-scan via bustCockpitCache(). Errors are not cached, so a failed pull retries.
+type CacheEntry = { at: number; value: LiveCockpit };
+const COCKPIT_TTL_MS = 120_000;
+const cockpitCache = new Map<string, CacheEntry>();
+
+export function bustCockpitCache(): void {
+  cockpitCache.clear();
+}
+
+export async function fetchLiveCockpit(
+  userId: string,
+  lookbackDays: number = LOOKBACK_DAYS,
+  campaignId?: string,
+): Promise<LiveCockpit> {
+  const key = `${userId}:${lookbackDays}:${campaignId ?? ""}`;
+  const hit = cockpitCache.get(key);
+  if (hit && Date.now() - hit.at < COCKPIT_TTL_MS) return hit.value;
+  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId);
+  if (value.status !== "error") cockpitCache.set(key, { at: Date.now(), value });
+  return value;
 }
 
 function daysAgo(n: number): string {

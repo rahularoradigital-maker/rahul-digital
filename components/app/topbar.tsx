@@ -6,6 +6,7 @@ import { titleFor } from "@/lib/app/nav";
 import { WINDOWS } from "@/lib/app/windows";
 import { AccountSwitcher } from "@/components/app/account-switcher";
 import { CampaignSwitcher } from "@/components/app/campaign-switcher";
+import { rescanCockpit } from "@/app/app/actions";
 
 // The working topbar. Every control does its job:
 //  - date window  -> sets ?days= and re-scopes the whole page (rulebook setup gate)
@@ -97,7 +98,12 @@ export function Topbar() {
         {/* Re-scan */}
         <button
           type="button"
-          onClick={() => startTransition(() => router.refresh())}
+          onClick={() =>
+            startTransition(async () => {
+              await rescanCockpit();
+              router.refresh();
+            })
+          }
           disabled={pending}
           className="rounded-[var(--radius-pill)] bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
         >

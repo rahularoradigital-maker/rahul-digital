@@ -25,9 +25,9 @@ async function graphGet<T>(path: string, token: string, params: Record<string, s
   const url = new URL(`${GRAPH}/${path}`);
   url.searchParams.set("access_token", token);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  // Never cache Meta responses: "Re-scan signals" and the date/account/campaign
-  // switchers must always reflect the live account, not a stale server data cache.
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  // Caching is handled one level up by unstable_cache around the whole cockpit fetch
+  // (revalidated on switch / Re-scan), so the raw call stays a plain uncached request.
+  const res = await fetch(url.toString());
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(`Meta Graph ${res.status} on ${path}: ${detail.slice(0, 300)}`);
@@ -171,6 +171,50 @@ export async function listTopSpendingAds(
     params,
   );
   return (data.data ?? []).map((r) => ({ externalId: r.ad_id, name: r.ad_name ?? r.ad_id }));
+}
+
+/**
+ * Daily metric rows for a set of ads in ONE account-level insights call (level=ad,
+ * time_increment=1, filtered to those ad ids). Replaces N per-ad calls: for 25 ads
+ * this is a single request instead of 25, which is the difference between a snappy
+ * page and a very slow one. Returns rows grouped by ad id.
+ */
+export async function fetchAdInsights(
+  accountExternalId: string,
+  adExternalIds: string[],
+  since: string,
+  token: TokenSet,
+): Promise<Map<string, MetricsRow[]>> {
+  const byAd = new Map<string, MetricsRow[]>();
+  if (adExternalIds.length === 0) return byAd;
+  const params: Record<string, string> = {
+    level: "ad",
+    fields: "ad_id,date_start,spend,impressions,clicks,frequency,actions,action_values",
+    time_range: JSON.stringify({ since, until: today() }),
+    time_increment: "1",
+    limit: "500",
+    filtering: JSON.stringify([{ field: "ad.id", operator: "IN", value: adExternalIds }]),
+  };
+  const data = await graphGet<{ data: (MetaInsightRow & { ad_id: string })[] }>(
+    `act_${accountExternalId}/insights`,
+    token.accessToken,
+    params,
+  );
+  for (const row of data.data ?? []) {
+    const list = byAd.get(row.ad_id) ?? [];
+    list.push({
+      adExternalId: row.ad_id,
+      date: row.date_start,
+      spend: Number(row.spend || 0),
+      impressions: Number(row.impressions || 0),
+      clicks: Number(row.clicks || 0),
+      frequency: Number(row.frequency || 0),
+      purchases: purchaseValue(row.actions),
+      revenue: purchaseValue(row.action_values),
+    });
+    byAd.set(row.ad_id, list);
+  }
+  return byAd;
 }
 
 function today(): string {
