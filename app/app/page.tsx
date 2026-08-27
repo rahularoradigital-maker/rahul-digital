@@ -115,7 +115,10 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
   const health = view.accountHealth;
   // Headline KPIs use the TRUE scope totals (all campaigns/ads of the selected objective),
   // so spend / revenue / ROAS match Ads Manager - not the analyzed-ads subset in view.totals.
-  const roas = scopeTotals.roas;
+  // Fall back to view.totals if scopeTotals is ever absent (old cache shape) so a drift renders
+  // numbers instead of throwing (defense-in-depth behind the cache shape guard).
+  const totals = scopeTotals ?? view.totals;
+  const roas = totals.roas;
   const conc = view.concentration;
 
   return (
@@ -156,7 +159,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           label="Blended ROAS"
           tip="Revenue divided by spend, blended across the account. Source: connected Meta account."
           value={roas === null ? "n/a" : `${roas.toFixed(2)}x`}
-          sub={`${rupees.format(scopeTotals.revenueRs)} on ${rupees.format(scopeTotals.spendRs)}`}
+          sub={`${rupees.format(totals.revenueRs)} on ${rupees.format(totals.spendRs)}`}
         />
         <KpiCard
           label="MER"

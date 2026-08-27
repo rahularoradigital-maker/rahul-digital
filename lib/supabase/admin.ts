@@ -1,3 +1,4 @@
+import "server-only"; // compile-time tripwire: never let the service-role key reach the client bundle
 import { createClient } from "@supabase/supabase-js";
 
 // Service-role Supabase client: SERVER-ONLY, bypasses RLS. Used to write oauth_tokens

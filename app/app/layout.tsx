@@ -22,7 +22,12 @@ function initials(email?: string): string {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) redirect("/");
 
+  // Server-side auth guard: never trust middleware alone (a middleware bypass or build gap
+  // would otherwise render the whole /app shell + Market to unauthenticated requests). The
+  // cockpit data loader already redirects, but the layout and no-data pages (Market) need
+  // their own guard.
   const user = await getCurrentUser();
+  if (!user) redirect("/login");
 
   return (
     <div className="flex min-h-full flex-1">

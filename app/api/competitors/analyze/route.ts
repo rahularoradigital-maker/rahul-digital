@@ -92,14 +92,21 @@ export async function POST(request: NextRequest) {
   async function worker() {
     while (idx < queue.length) {
       const a = queue[idx++];
-      const attrs = await analyzeCreative({
-        imageUrl: a.image_url,
-        videoThumbUrl: a.video_thumb_url,
-        title: a.title,
-        body: a.body,
-        ctaText: a.cta_text,
-        isVideo: Boolean(a.video_url),
-      });
+      let attrs;
+      try {
+        attrs = await analyzeCreative({
+          imageUrl: a.image_url,
+          videoThumbUrl: a.video_thumb_url,
+          title: a.title,
+          body: a.body,
+          ctaText: a.cta_text,
+          isVideo: Boolean(a.video_url),
+        });
+      } catch {
+        // A thrown error (rate limit, network) must count as a failed creative, not reject
+        // Promise.all and 500 the whole request.
+        attrs = null;
+      }
       if (!attrs) {
         failed++;
         continue;

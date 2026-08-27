@@ -320,6 +320,17 @@ async function pullAndStore(userId: string, lookbackDays: number, campaignId: st
   return value;
 }
 
+// Defense-in-depth against cache/schema drift: a cached CONNECTED blob written by older code may
+// lack fields the current render reads unconditionally (scopeTotals/dataQuality/marginal/funnel).
+// Rendering it would crash (the 2026-08-28 500). CACHE_SCHEMA versioning is the primary guard;
+// this validates the actual shape on read so a forgotten version bump degrades to a fresh pull
+// instead of a 500. Non-connected states are never cached, so they pass through.
+function isRenderableShape(v: LiveCockpit): boolean {
+  if (v.status !== "connected") return true;
+  const r = v as unknown as Record<string, unknown>;
+  return r.view != null && r.scopeTotals != null && r.dataQuality != null && r.marginal != null && r.funnel != null && r.metrics != null;
+}
+
 export async function fetchLiveCockpit(
   userId: string,
   lookbackDays: number = LOOKBACK_DAYS,
@@ -339,7 +350,7 @@ export async function fetchLiveCockpit(
 
   // L1: in-process (same instance)
   const hit = cockpitCache.get(memKey);
-  if (hit && now - hit.at < FRESH_MS) return hit.value;
+  if (hit && now - hit.at < FRESH_MS && isRenderableShape(hit.value)) return hit.value;
 
   // L2: Supabase, shared across serverless instances
   let cached: { value: LiveCockpit; age: number } | null = null;
@@ -352,7 +363,11 @@ export async function fetchLiveCockpit(
       .eq("cache_key", cacheKey)
       .maybeSingle();
     if (data) {
-      cached = { value: data.data as LiveCockpit, age: now - new Date(data.updated_at as string).getTime() };
+      const value = data.data as LiveCockpit;
+      // Ignore an old-shape cached blob (would crash the render); fall through to a fresh pull.
+      if (isRenderableShape(value)) {
+        cached = { value, age: now - new Date(data.updated_at as string).getTime() };
+      }
     }
   } catch {
     // L2 unavailable; fall through to a live pull

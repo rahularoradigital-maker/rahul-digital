@@ -21,14 +21,14 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
           <div className="text-[13px] text-[var(--ink-muted)]">Ranked by creative score · best first</div>
         </div>
       </div>
-      <div className="px-[22px] pb-2 pt-2">
+      <div className="overflow-x-auto px-[22px] pb-2 pt-2">
         {ads.map((ad, i) => {
           const v = VERDICT_STYLE[ad.verdict];
           const conf = Math.round(ad.confidence * 100);
           return (
             <div
               key={ad.id}
-              className="grid grid-cols-[26px_1fr_150px_92px] items-center gap-4 border-t border-[var(--surface-alt)] py-4"
+              className="grid min-w-[340px] grid-cols-[26px_1fr_150px_92px] items-center gap-4 border-t border-[var(--surface-alt)] py-4"
             >
               <span className="text-[13px] font-semibold text-[var(--ink-muted)] tabular-nums">
                 {String(i + 1).padStart(2, "0")}

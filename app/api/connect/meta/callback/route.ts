@@ -15,8 +15,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Meta OAuth not configured" }, { status: 501 });
   }
 
-  const code = new URL(request.url).searchParams.get("code");
+  const params = new URL(request.url).searchParams;
+  const code = params.get("code");
   if (!code) return NextResponse.redirect(new URL("/app?connect=error", request.url));
+
+  // CSRF: the `state` Meta echoes back must match the httpOnly cookie set in /authorize.
+  // A missing or mismatched state means this callback was not initiated by this browser -
+  // reject it so an attacker cannot link their Meta account to the victim's AdBrain account.
+  const stateParam = params.get("state");
+  const stateCookie = request.cookies.get("meta_oauth_state")?.value;
+  if (!stateParam || !stateCookie || stateParam !== stateCookie) {
+    return NextResponse.redirect(new URL("/app?connect=error", request.url));
+  }
 
   // Owner of the connection = the logged-in user.
   const supabase = await createClient();
@@ -31,9 +41,15 @@ export async function GET(request: NextRequest) {
   tokenUrl.searchParams.set("client_secret", appSecret);
   tokenUrl.searchParams.set("redirect_uri", redirectUri);
   tokenUrl.searchParams.set("code", code);
-  const res = await fetch(tokenUrl.toString());
-  if (!res.ok) return NextResponse.redirect(new URL("/app?connect=error", request.url));
-  const body = (await res.json()) as { access_token?: string; expires_in?: number };
+  let body: { access_token?: string; expires_in?: number };
+  try {
+    const res = await fetch(tokenUrl.toString());
+    if (!res.ok) return NextResponse.redirect(new URL("/app?connect=error", request.url));
+    body = (await res.json()) as { access_token?: string; expires_in?: number };
+  } catch {
+    // A network error or non-JSON body from Meta must redirect, not 500 the callback.
+    return NextResponse.redirect(new URL("/app?connect=error", request.url));
+  }
   if (!body.access_token) return NextResponse.redirect(new URL("/app?connect=error", request.url));
 
   // Exchange the short-lived token (~1-2h) for a long-lived one (~60 days). Without this the

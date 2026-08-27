@@ -23,18 +23,45 @@ type MetaInsightRow = {
 };
 
 /** GET a Graph API endpoint with the user's token, following one page only (caller paginates if needed). */
+// Retry on transient throttle/overload (429 rate-limit, 500/503) with exponential backoff + jitter,
+// so a Meta rate-limit hiccup does not immediately fail the whole cockpit pull and trigger the
+// user to refresh (which re-hammers the API - a retry storm). A hard error (400/401/403/404) is
+// NOT retried. Every call also has an AbortController timeout so a slow Meta edge cannot hang the
+// serverless invocation until the platform kills it.
+const GRAPH_TIMEOUT_MS = 15_000;
+const GRAPH_MAX_ATTEMPTS = 3;
+
 async function graphGet<T>(path: string, token: string, params: Record<string, string>): Promise<T> {
   const url = new URL(`${GRAPH}/${path}`);
   url.searchParams.set("access_token", token);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  // Caching is handled one level up by unstable_cache around the whole cockpit fetch
-  // (revalidated on switch / Re-scan), so the raw call stays a plain uncached request.
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`Meta Graph ${res.status} on ${path}: ${detail.slice(0, 300)}`);
+  // Caching is handled one level up by the cockpit cache (revalidated on switch / Re-scan).
+  for (let attempt = 0; attempt < GRAPH_MAX_ATTEMPTS; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), GRAPH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url.toString(), { signal: ctrl.signal });
+      if (res.ok) return (await res.json()) as T;
+      const retryable = res.status === 429 || res.status === 500 || res.status === 503;
+      if (retryable && attempt < GRAPH_MAX_ATTEMPTS - 1) {
+        // 0.4s, 1.2s (+ up to 400ms jitter): spreads correlated retries so they do not re-collide.
+        await new Promise((r) => setTimeout(r, 400 * 3 ** attempt + Math.floor(Math.random() * 400)));
+        continue;
+      }
+      const detail = await res.text().catch(() => "");
+      throw new Error(`Meta Graph ${res.status} on ${path}: ${detail.slice(0, 300)}`);
+    } catch (e) {
+      // A network error / timeout is retryable up to the cap; the last attempt rethrows.
+      if (attempt < GRAPH_MAX_ATTEMPTS - 1 && (e instanceof Error && e.name === "AbortError" || e instanceof TypeError)) {
+        await new Promise((r) => setTimeout(r, 400 * 3 ** attempt + Math.floor(Math.random() * 400)));
+        continue;
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
   }
-  return (await res.json()) as T;
+  throw new Error(`Meta Graph ${path}: exhausted retries`);
 }
 
 // GET every page of a Graph list endpoint by following the `after` cursor, up to maxPages

@@ -1,3 +1,4 @@
+import "server-only"; // compile-time tripwire: TOKEN_ENC_KEY code path must never reach the client
 import { randomBytes, createCipheriv, createDecipheriv } from "node:crypto";
 
 // AES-256-GCM envelope encryption for OAuth tokens at rest (see ADR-0002).

@@ -1,3 +1,4 @@
+import "server-only"; // compile-time tripwire: decrypted OAuth tokens must never reach the client
 import { encryptToken, decryptToken } from "./crypto";
 import { createAdminClient } from "./supabase/admin";
 import type { TokenSet } from "./ad-source";
