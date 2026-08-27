@@ -24,15 +24,25 @@ export function CampaignSwitcher() {
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<Camp[]>([]);
   const [sel, setSel] = useState<Set<string>>(new Set());
+  const [objSel, setObjSel] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
 
+  // The objective filter lives in a sibling component; router.refresh() does not remount this
+  // one, so re-read the objectives cookie fresh whenever the dropdown opens - that is how the
+  // campaign list stays in sync with the objective the user just picked.
+  function readObjectives(): Set<string> {
+    const raw = readCookie("adbrain.objectives");
+    return new Set(raw ? raw.split(",").filter(Boolean) : []);
+  }
+
   useEffect(() => {
     const raw = readCookie("adbrain.campaign");
     setSel(new Set(raw ? raw.split(",").filter(Boolean) : []));
+    setObjSel(readObjectives());
     let alive = true;
     fetch("/api/meta/campaigns")
       .then((r) => r.json())
@@ -66,9 +76,13 @@ export function CampaignSwitcher() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return campaigns;
-    return campaigns.filter((c) => c.name.toLowerCase().includes(q));
-  }, [campaigns, query]);
+    return campaigns.filter((c) => {
+      // Only show campaigns matching the selected objective(s); empty = all objectives.
+      if (objSel.size > 0 && !(c.objective && objSel.has(c.objective))) return false;
+      if (q && !c.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [campaigns, query, objSel]);
 
   if (!loaded || campaigns.length === 0) return null;
 
@@ -90,7 +104,16 @@ export function CampaignSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open} className={FILTER_TRIGGER}>
+      <button
+        type="button"
+        onClick={() => {
+          if (!open) setObjSel(readObjectives()); // sync the list to the current objective before showing it
+          setOpen((o) => !o);
+        }}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={FILTER_TRIGGER}
+      >
         <span className={FILTER_LABEL}>Campaign</span>
         <span className="max-w-[150px] truncate">{label}</span>
         <span className={FILTER_LABEL}>▾</span>

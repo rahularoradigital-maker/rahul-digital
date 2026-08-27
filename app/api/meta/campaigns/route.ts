@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
-import { listMetaCampaigns } from "@/lib/meta-source";
+import { listMetaCampaigns, mapMetaObjective } from "@/lib/meta-source";
 
 // Active campaigns in the user's active ad account, for the topbar campaign filter.
 // Client-fetched (non-blocking). Token stays server-side.
@@ -17,7 +17,11 @@ export async function GET() {
 
   try {
     const campaigns = await listMetaCampaigns(session.activeExternalId, session.token);
-    return NextResponse.json({ campaigns });
+    // Return the INTERNAL objective (conversion / traffic / ...) so the campaign switcher can
+    // filter to the objective the user picked (the objective cookie stores internal values, not
+    // Meta's raw OUTCOME_* strings).
+    const mapped = campaigns.map((c) => ({ id: c.id, name: c.name, objective: mapMetaObjective(c.objective) }));
+    return NextResponse.json({ campaigns: mapped });
   } catch {
     return NextResponse.json({ campaigns: [] });
   }
