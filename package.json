@@ -26,7 +26,8 @@
     "check:cockpit": "node --experimental-strip-types scripts/check-cockpit.ts",
     "check:scoring": "node --experimental-strip-types scripts/check-scoring.ts",
     "check:objective": "node --experimental-strip-types scripts/check-objective.ts",
-    "check:competitors": "node --experimental-strip-types scripts/check-competitors.ts"
+    "check:competitors": "node --experimental-strip-types scripts/check-competitors.ts",
+    "check:fatigue-daywise": "node --experimental-strip-types scripts/check-fatigue-daywise.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
