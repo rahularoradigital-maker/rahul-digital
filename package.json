@@ -31,7 +31,8 @@
     "check:decision-engine": "node --experimental-strip-types scripts/check-decision-engine.ts",
     "check:funnel-metrics": "node --experimental-strip-types scripts/check-funnel-metrics.ts",
     "check:decision-triples": "node --experimental-strip-types scripts/check-decision-triples.ts",
-    "check:opportunity": "node --experimental-strip-types scripts/check-opportunity.ts"
+    "check:opportunity": "node --experimental-strip-types scripts/check-opportunity.ts",
+    "check:revenue": "node --experimental-strip-types scripts/check-revenue.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
