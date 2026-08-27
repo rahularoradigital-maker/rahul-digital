@@ -39,7 +39,7 @@ Every request/feedback, newest at the bottom. Status: 🟢 done · 🟠 partial/
 | 20 | Can a static ad image be read? | 🟢 (yes - verified: Gemini describes the image) |
 | 21 | Ad Library link button per brand; show ads as in FB Ad Library | 🟢 |
 | 22 | Incorporate Imagive.ai data/logics/items | 🟠 (spec in docs/imagive-spec.md; building) |
-| 23 | Build on labeled triples; RLEF as the audit baseline | 🟠 (architecture doc; triples table pending) |
+| 23 | Build on labeled triples; RLEF as the audit baseline | 🟢 (decision_triples table + per-run logging live) |
 | 24 | Searchable campaign + objective dropdowns; custom date range | 🟠 (search 🟢; custom date range 🔴) |
 | 25 | This living ledger + mirror shared docs to Google Drive | 🟢 (ledger built; Drive mirror offered) |
 
@@ -98,6 +98,12 @@ Each real document Rahul shared, mirrored into `docs/`, and what it changed in t
 ---
 
 ## 5. Change log (dated)
+- **2026-08-27 (batch 4, autonomous)** Competitor discovery re-ranked (verified + most-liked
+  brand page first, with badges) so the RIGHT Meta page is picked; funnel metrics wired to the
+  cockpit (thumb-stop, hold, CTR/CPM/CPC, LP/ATC/checkout from real actions); Meta pull now
+  PAGINATES and analyzes the top 100 ads (was 25); campaigns/ad-sets/ads processed shown;
+  decision_triples table + deferred per-run logging (RLEF spine); competitor platform
+  distribution; new cookie none. New tables: decision_triples. All 18 checks green.
 - **2026-08-27 (batch 3)** Mobile nav drawer (sidebar was hidden on phones); ad links filter to
   the exact ad + carry the AdBrain date window; Meta data expansion started - the insights pull
   now captures campaign_id/adset_id, and the cockpit shows how many campaigns / ad sets / ads a
