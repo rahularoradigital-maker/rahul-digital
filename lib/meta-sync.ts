@@ -4,7 +4,7 @@
 
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
-import { metaSource } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds } from "./meta-source.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
@@ -90,8 +90,19 @@ export async function fetchLiveCockpit(userId: string, lookbackDays: number = LO
   if (!token) return { status: "not_connected" };
 
   try {
-    const ads = await metaSource.listAds(acct.external_id, token, campaignId);
     const since = daysAgo(lookbackDays);
+    // Prefer the ads that actually SPENT in the window, sorted by spend (the ones that
+    // matter on a big account). Fall back to listing active ads if the insights call
+    // fails or nothing has spent yet, so the cockpit still populates.
+    let ads: { externalId: string; name?: string }[] = [];
+    try {
+      ads = await listTopSpendingAds(acct.external_id, since, token, campaignId, MAX_ADS);
+    } catch {
+      ads = [];
+    }
+    if (ads.length === 0) {
+      ads = await metaSource.listAds(acct.external_id, token, campaignId);
+    }
     // Fetch every ad's metrics in PARALLEL, not one-after-another. Sequential await made
     // the page wait on up to 25 back-to-back Meta round-trips (the slowness). allSettled
     // so one failed/slow ad drops out instead of stalling or failing the whole cockpit.

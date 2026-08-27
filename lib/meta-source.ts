@@ -132,6 +132,37 @@ export async function listMetaCampaigns(
   return (data.data ?? []).map((c) => ({ id: c.id, name: c.name ?? c.id, objective: c.objective }));
 }
 
+/**
+ * Top ads by spend in the window, via account-level insights (level=ad, sorted by
+ * spend). This surfaces the ads that actually matter on a big account, instead of the
+ * arbitrary first-N active ads (which skew to low-spend awareness creative). Returns
+ * only ads that spent in the window, best first. Empty array if none spent.
+ */
+export async function listTopSpendingAds(
+  accountExternalId: string,
+  since: string,
+  token: TokenSet,
+  campaignId?: string,
+  limit = 25,
+): Promise<{ externalId: string; name: string }[]> {
+  const params: Record<string, string> = {
+    level: "ad",
+    fields: "ad_id,ad_name,spend",
+    time_range: JSON.stringify({ since, until: today() }),
+    sort: "spend_descending",
+    limit: String(limit),
+  };
+  if (campaignId) {
+    params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: [campaignId] }]);
+  }
+  const data = await graphGet<{ data: { ad_id: string; ad_name?: string }[] }>(
+    `act_${accountExternalId}/insights`,
+    token.accessToken,
+    params,
+  );
+  return (data.data ?? []).map((r) => ({ externalId: r.ad_id, name: r.ad_name ?? r.ad_id }));
+}
+
 function today(): string {
   // ponytail: date-only string for Graph's time_range. Uses the server clock at call time.
   return new Date().toISOString().slice(0, 10);
