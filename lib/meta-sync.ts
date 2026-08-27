@@ -5,7 +5,7 @@
 import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, mapMetaObjective, listMetaCampaigns } from "./meta-source.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
@@ -60,6 +60,23 @@ export type LiveCockpit =
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
+// Resolve which campaigns to include from the active filters. undefined = no filter;
+// [ids] = only these; [] = a filter that matches nothing (an objective with no active
+// campaigns). The campaign picker wins; otherwise the objective picker maps to the
+// account's campaigns of those objectives, so "show Conversion" selects the top ads from
+// conversion campaigns instead of filtering the top-overall ads after the fact.
+async function resolveCampaignIds(
+  accountExternalId: string,
+  token: TokenSet,
+  campaignId: string | undefined,
+  objectives: string[],
+): Promise<string[] | undefined> {
+  if (campaignId) return [campaignId];
+  if (objectives.length === 0) return undefined;
+  const campaigns = await listMetaCampaigns(accountExternalId, token);
+  return campaigns.filter((c) => objectives.includes(mapMetaObjective(c.objective))).map((c) => c.id);
+}
+
 async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = []): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
@@ -92,17 +109,21 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
 
   try {
     const since = daysAgo(lookbackDays);
+    // Which campaigns to include: the campaign picker, or the objective picker mapped to
+    // the account's campaigns of those objectives. undefined = all; [] = matched nothing.
+    const campaignIds = await resolveCampaignIds(acct.external_id, token, campaignId, objectives);
     // Prefer the ads that actually SPENT in the window, sorted by spend (the ones that
-    // matter on a big account). Fall back to listing active ads if the insights call
-    // fails or nothing has spent yet, so the cockpit still populates.
+    // matter on a big account), scoped to the resolved campaigns.
     let ads: { externalId: string; name?: string }[] = [];
     try {
-      ads = await listTopSpendingAds(acct.external_id, since, token, campaignId, MAX_ADS);
+      ads = await listTopSpendingAds(acct.external_id, since, token, campaignIds, MAX_ADS);
     } catch {
       ads = [];
     }
-    if (ads.length === 0) {
-      ads = await metaSource.listAds(acct.external_id, token, campaignId);
+    // Only fall back to listing active ads when NO filter is active. A filter that matched
+    // nothing (campaignIds === []) must stay empty, not silently show unfiltered ads.
+    if (ads.length === 0 && campaignIds === undefined) {
+      ads = await metaSource.listAds(acct.external_id, token);
     }
     // Pull daily metrics for all of these ads in ONE account-level call instead of one
     // request per ad (26 round-trips -> 2). This is the main page-speed fix.
@@ -117,10 +138,8 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
         objective: mapMetaObjective(entry?.objective),
       };
     });
-    // Optional objective filter (the topbar objective picker): scope to selected objectives.
-    const scoped = objectives.length === 0 ? realAds : realAds.filter((ad) => objectives.includes(ad.objective ?? "conversion"));
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
-    const inputs = toCockpitInputs(scoped).filter((a) => a.spendRs > 0);
+    const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
     const view = analyzeAccount(inputs, "LIVE");
 
     // Sum the raw day-wise rows for account-level metrics (real numbers only).
@@ -128,7 +147,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     let sImpr = 0;
     let sClicks = 0;
     let sPur = 0;
-    for (const ad of scoped) {
+    for (const ad of realAds) {
       for (const r of ad.rows) {
         sSpend += r.spend;
         sImpr += r.impressions;

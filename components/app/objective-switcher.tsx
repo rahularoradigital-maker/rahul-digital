@@ -28,7 +28,7 @@ export function ObjectiveSwitcher() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState<Set<string>>(new Set());
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,7 +69,16 @@ export function ObjectiveSwitcher() {
         aria-expanded={open}
         className="flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
       >
-        <span className="text-[var(--ink-muted)]">Objective:</span> {label}
+        {pending ? (
+          <span className="flex items-center gap-1.5 text-[var(--accent)]">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
+            Updating...
+          </span>
+        ) : (
+          <>
+            <span className="text-[var(--ink-muted)]">Objective:</span> {label}
+          </>
+        )}
         <span className="text-[var(--ink-muted)]">▾</span>
       </button>
       {open ? (

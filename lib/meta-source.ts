@@ -107,18 +107,18 @@ export const metaSource: AdSource = {
 
 export type MetaAccountRef = { externalId: string; name: string; businessId?: string; businessName?: string };
 
-/** List the ad accounts the connected user can access (for the account picker). */
+/**
+ * List the ad accounts the connected user can access (for the account picker). Plain
+ * fields only: the nested business{} expansion could fail on large rosters and drop the
+ * whole list, and /me/adaccounts already returns every account the token can reach (210
+ * on a real agency user). Higher limit so nothing paginates off the end.
+ */
 export async function listMetaAdAccounts(token: TokenSet): Promise<MetaAccountRef[]> {
   const data = await graphGet<{ data: MetaAdAccount[] }>("me/adaccounts", token.accessToken, {
-    fields: "account_id,name,business{id,name}",
-    limit: "200",
+    fields: "account_id,name",
+    limit: "500",
   });
-  return (data.data ?? []).map((a) => ({
-    externalId: a.account_id,
-    name: a.name ?? a.account_id,
-    businessId: a.business?.id,
-    businessName: a.business?.name,
-  }));
+  return (data.data ?? []).map((a) => ({ externalId: a.account_id, name: a.name ?? a.account_id }));
 }
 
 /** Businesses (BMs) the user can access, for grouping the account picker. */
@@ -193,9 +193,13 @@ export async function listTopSpendingAds(
   accountExternalId: string,
   since: string,
   token: TokenSet,
-  campaignId?: string,
+  campaignIds?: string[],
   limit = 25,
 ): Promise<{ externalId: string; name: string }[]> {
+  // campaignIds semantics: undefined = no filter (all campaigns); [] = filter matches
+  // nothing (e.g. an objective with no active campaigns), so return nothing rather than
+  // silently falling back to unfiltered ads.
+  if (campaignIds && campaignIds.length === 0) return [];
   const params: Record<string, string> = {
     level: "ad",
     fields: "ad_id,ad_name,spend",
@@ -203,8 +207,8 @@ export async function listTopSpendingAds(
     sort: "spend_descending",
     limit: String(limit),
   };
-  if (campaignId) {
-    params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: [campaignId] }]);
+  if (campaignIds && campaignIds.length > 0) {
+    params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }]);
   }
   const data = await graphGet<{ data: { ad_id: string; ad_name?: string }[] }>(
     `act_${accountExternalId}/insights`,
