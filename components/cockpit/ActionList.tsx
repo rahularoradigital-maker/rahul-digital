@@ -41,33 +41,36 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
           return (
             <div
               key={`${a.adId}-${i}`}
-              className="grid grid-cols-[24px_1fr_auto] items-center gap-3 border-t border-[var(--surface-alt)] py-3.5"
+              className="grid grid-cols-[22px_1fr] gap-x-3 border-t border-[var(--surface-alt)] py-3.5"
             >
-              <span className="text-[13px] font-semibold text-[var(--ink-muted)] tabular-nums">
+              <span className="pt-0.5 text-[13px] font-semibold text-[var(--ink-muted)] tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <AdLink accountId={accountId} adId={a.adId} adSetId={ad?.adSetId} campaignId={ad?.campaignId} name={a.adName} className="truncate text-sm font-medium" dateParam={dateParam} />
+                {/* Line 1: ad name (truncates) + the verdict badge, always on their own line so they never collide */}
+                <div className="flex items-center justify-between gap-2">
+                  <AdLink accountId={accountId} adId={a.adId} adSetId={ad?.adSetId} campaignId={ad?.campaignId} name={a.adName} className="min-w-0 truncate text-sm font-medium" dateParam={dateParam} />
+                  <span className={`shrink-0 rounded-[70px] px-2.5 py-0.5 text-[11px] font-semibold ${v.cls}`}>{v.label}</span>
+                </div>
+                {/* Line 2: objective + confidence, wraps instead of overlapping */}
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
                   {ad && (
                     <span className="shrink-0 rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
                       {ad.objective}
                     </span>
                   )}
-                </div>
-                <div className="mt-1.5 flex items-center gap-2">
-                  {conf !== null && (
-                    <>
-                      <div className="h-1.5 w-full max-w-[180px] overflow-hidden rounded-[70px] bg-[var(--surface-alt)]">
+                  {conf !== null ? (
+                    <div className="flex min-w-[120px] flex-1 items-center gap-2">
+                      <div className="h-1.5 w-full max-w-[160px] overflow-hidden rounded-[70px] bg-[var(--surface-alt)]">
                         <div className={`h-full rounded-[70px] ${ad ? confColor(ad.verdict) : "bg-[var(--ink-muted)]"}`} style={{ width: `${conf}%` }} />
                       </div>
-                      <span className="shrink-0 text-xs text-[var(--ink-muted)] tabular-nums">{conf}% confidence</span>
-                    </>
+                      <span className="shrink-0 text-xs text-[var(--ink-muted)] tabular-nums">{conf}%</span>
+                    </div>
+                  ) : (
+                    <span className="truncate text-[13px] text-[var(--ink-muted)]">{a.why}</span>
                   )}
-                  {conf === null && <span className="truncate text-[13px] text-[var(--ink-muted)]">{a.why}</span>}
                 </div>
               </div>
-              <span className={`shrink-0 rounded-[70px] px-3 py-1 text-xs font-semibold ${v.cls}`}>{v.label}</span>
             </div>
           );
         })}

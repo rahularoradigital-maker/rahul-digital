@@ -85,7 +85,9 @@ async function resolveCampaignIds(
   campaignId: string | undefined,
   objectives: string[],
 ): Promise<string[] | undefined> {
-  if (campaignId) return [campaignId];
+  // campaignId is now a comma-separated list (multi-select). Split it so several campaigns can
+  // be scoped at once; a single id still works (a one-element list).
+  if (campaignId) return campaignId.split(",").filter(Boolean);
   if (objectives.length === 0) return undefined;
   // Resolve from ALL campaigns (every status, paginated), not the ACTIVE-only picker list:
   // a Sales campaign that spent in the window but is now paused / in review / beyond the first

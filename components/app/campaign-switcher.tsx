@@ -16,14 +16,14 @@ function readCookie(name: string): string {
   return "";
 }
 
-// Campaign filter for the active account, as a SEARCHABLE dropdown (accounts can have 100+
-// campaigns, so a plain select is unusable). Self-fetches; stores the choice in the
-// "adbrain.campaign" cookie which loadCockpit reads server-side, then refreshes so every
-// page re-scopes. "All campaigns" clears the cookie.
+// Campaign filter for the active account, as a SEARCHABLE MULTI-SELECT dropdown (accounts can
+// have 100+ campaigns). Self-fetches; stores the chosen ids as a comma-separated list in the
+// "adbrain.campaign" cookie which loadCockpit reads server-side, then refreshes so every page
+// re-scopes. Empty = all campaigns.
 export function CampaignSwitcher() {
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<Camp[]>([]);
-  const [selected, setSelected] = useState("");
+  const [sel, setSel] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -31,7 +31,8 @@ export function CampaignSwitcher() {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setSelected(readCookie("adbrain.campaign"));
+    const raw = readCookie("adbrain.campaign");
+    setSel(new Set(raw ? raw.split(",").filter(Boolean) : []));
     let alive = true;
     fetch("/api/meta/campaigns")
       .then((r) => r.json())
@@ -52,8 +53,15 @@ export function CampaignSwitcher() {
     function onDoc(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   const filtered = useMemo(() => {
@@ -64,26 +72,25 @@ export function CampaignSwitcher() {
 
   if (!loaded || campaigns.length === 0) return null;
 
-  function choose(id: string) {
-    setSelected(id);
-    setOpen(false);
-    setQuery("");
-    const maxAge = id ? 60 * 60 * 24 * 30 : 0;
-    document.cookie = `adbrain.campaign=${encodeURIComponent(id)}; path=/; max-age=${maxAge}`;
+  function apply(next: Set<string>) {
+    setSel(next);
+    const val = [...next].join(",");
+    document.cookie = `adbrain.campaign=${encodeURIComponent(val)}; path=/; max-age=${val ? 60 * 60 * 24 * 30 : 0}`;
     startTransition(() => router.refresh());
   }
 
-  const label = selected ? campaigns.find((c) => c.id === selected)?.name ?? "1 campaign" : "All campaigns";
+  function toggle(id: string) {
+    const next = new Set(sel);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    apply(next);
+  }
+
+  const label = sel.size === 0 ? "All campaigns" : sel.size === 1 ? campaigns.find((c) => sel.has(c.id))?.name ?? "1 campaign" : `${sel.size} campaigns`;
 
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className={FILTER_TRIGGER}
-      >
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open} className={FILTER_TRIGGER}>
         <span className={FILTER_LABEL}>Campaign</span>
         <span className="max-w-[150px] truncate">{label}</span>
         <span className={FILTER_LABEL}>▾</span>
@@ -101,23 +108,31 @@ export function CampaignSwitcher() {
           <div className="max-h-72 overflow-y-auto">
             <button
               type="button"
-              onClick={() => choose("")}
-              className={`w-full truncate rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${selected === "" ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+              onClick={() => apply(new Set())}
+              className={`w-full truncate rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${sel.size === 0 ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
             >
               All campaigns
             </button>
             {filtered.map((c) => (
-              <button
+              <label
                 key={c.id}
-                type="button"
-                onClick={() => choose(c.id)}
                 title={c.name}
-                className={`w-full truncate rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${selected === c.id ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
               >
-                {c.name}
-              </button>
+                <input type="checkbox" checked={sel.has(c.id)} onChange={() => toggle(c.id)} className="h-4 w-4 shrink-0 accent-[var(--accent)]" />
+                <span className="truncate">{c.name}</span>
+              </label>
             ))}
             {filtered.length === 0 && <div className="px-2.5 py-2 text-[13px] text-[var(--ink-muted)]">No campaigns match.</div>}
+            {sel.size > 0 && (
+              <button
+                type="button"
+                onClick={() => apply(new Set())}
+                className="mt-1 w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--ink-muted)] transition hover:bg-[var(--surface-alt)] hover:text-[var(--ink)]"
+              >
+                Clear (show all)
+              </button>
+            )}
           </div>
         </div>
       ) : null}

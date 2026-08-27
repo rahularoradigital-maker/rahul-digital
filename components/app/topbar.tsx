@@ -79,9 +79,9 @@ export function Topbar() {
       {/* Tier 2 - scope filters, a calm toolbar under a hairline. Wraps cleanly on narrow screens. */}
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--hairline)] pt-3">
         <AccountSwitcher />
-        <CampaignSwitcher />
         <DateWindow onChange={() => startTransition(() => router.refresh())} />
         <ObjectiveSwitcher />
+        <CampaignSwitcher />
       </div>
     </div>
   );
@@ -195,6 +195,7 @@ function DateWindow({ onChange }: { onChange: () => void }) {
                   value={from}
                   max={to || todayISO()}
                   onChange={(e) => setFrom(e.target.value)}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                   aria-label="From date"
                   className="rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1.5 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--accent)]"
                 />
@@ -207,6 +208,7 @@ function DateWindow({ onChange }: { onChange: () => void }) {
                   min={from || undefined}
                   max={todayISO()}
                   onChange={(e) => setTo(e.target.value)}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                   aria-label="To date"
                   className="rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1.5 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--accent)]"
                 />
