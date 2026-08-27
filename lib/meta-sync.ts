@@ -281,6 +281,13 @@ type CacheEntry = { at: number; value: LiveCockpit };
 // background beats making the user watch a 9s spinner after being idle overnight.
 const FRESH_MS = 300_000; // 5 minutes: serve without a background refresh
 const STALE_MS = 86_400_000; // 24 hours: still serve instantly, refresh in the background
+// Cache SCHEMA version: part of the cache key. BUMP THIS whenever the LiveCockpit shape changes
+// (new required field on the connected payload, e.g. scopeTotals / dataQuality / marginal).
+// A cached blob written by older code lacks the new field; the newer render reads it and crashes
+// on the missing property (a production 500). Bumping the version means old-shape blobs live under
+// a different key and are never read again - the next load is a clean fresh pull. This is the
+// permanent fix for cache/schema-mismatch crashes, not a one-off.
+const CACHE_SCHEMA = "v2";
 const cockpitCache = new Map<string, CacheEntry>();
 
 /** Clear the cockpit cache. Pass userId to also clear that user's shared L2 rows. */
@@ -326,7 +333,7 @@ export async function fetchLiveCockpit(
   const activeId = session?.activeExternalId ?? "none";
   // Include the custom range in the key so it never collides with a preset (which has no window).
   const windowKey = window ? `${window.since}_${window.until}` : "";
-  const cacheKey = `${activeId}:${lookbackDays}:${windowKey}:${campaignId ?? ""}:${[...objectives].sort().join(",")}`;
+  const cacheKey = `${CACHE_SCHEMA}:${activeId}:${lookbackDays}:${windowKey}:${campaignId ?? ""}:${[...objectives].sort().join(",")}`;
   const memKey = `${userId}:${cacheKey}`;
   const now = Date.now();
 
