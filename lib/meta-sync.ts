@@ -225,7 +225,11 @@ export async function fetchLiveCockpit(
   campaignId?: string,
   objectives: string[] = [],
 ): Promise<LiveCockpit> {
-  const cacheKey = `${lookbackDays}:${campaignId ?? ""}:${[...objectives].sort().join(",")}`;
+  // Key the cache by the ACTIVE account too: without this, every account shares one
+  // cache entry, so switching account keeps showing the previous account's numbers.
+  const session = await getUserMetaSession(userId);
+  const activeId = session?.activeExternalId ?? "none";
+  const cacheKey = `${activeId}:${lookbackDays}:${campaignId ?? ""}:${[...objectives].sort().join(",")}`;
   const memKey = `${userId}:${cacheKey}`;
   const now = Date.now();
 

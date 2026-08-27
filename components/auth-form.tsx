@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleButton } from "@/components/google-button";
@@ -25,6 +25,17 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+
+  // Remember the last email used, so a returning user does not retype it.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("adbrain.lastEmail");
+      if (saved) setEmail(saved);
+    } catch {
+      // storage unavailable
+    }
+  }, []);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,7 +43,6 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
     setError(null);
     setMessage(null);
     const form = new FormData(e.currentTarget);
-    const email = String(form.get("email") ?? "");
     const password = String(form.get("password") ?? "");
     try {
       const supabase = createClient();
@@ -55,6 +65,11 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
           setPending(false);
           return;
         }
+      }
+      try {
+        localStorage.setItem("adbrain.lastEmail", email);
+      } catch {
+        // storage unavailable
       }
       // Full navigation so the server picks up the fresh session cookie.
       window.location.href = "/app";
@@ -86,7 +101,7 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="text-sm text-[var(--ink-muted)]">Email</label>
-            <input id="email" name="email" type="email" required autoComplete="email" className={inputCls} />
+            <input id="email" name="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <div>
             <label htmlFor="password" className="text-sm text-[var(--ink-muted)]">Password</label>
