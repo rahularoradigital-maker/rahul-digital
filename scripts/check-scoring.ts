@@ -55,4 +55,23 @@ assert.equal(weak.roomToScale, false);
 // Declining ROAS -> trend below flat (50).
 assert.ok(weak.trend < 50, "declining ROAS trends down");
 
+// Waste is objective-aware: identical low-ROAS economics, differing only in objective.
+const objectiveAds: RealAd[] = [
+  {
+    externalId: "aware-low-roas", name: "Aware", objective: "awareness", rows: [
+      row("2026-08-01", 1000, 400, 2, 20000, 130, 1.0),
+    ],
+  },
+  {
+    externalId: "conv-low-roas", name: "Conv", objective: "conversion", rows: [
+      row("2026-08-01", 1000, 400, 2, 20000, 130, 1.0),
+    ],
+  },
+];
+const objectiveInputs = toCockpitInputs(objectiveAds);
+const aware = objectiveInputs.find((i) => i.id === "aware-low-roas")!;
+const conv = objectiveInputs.find((i) => i.id === "conv-low-roas")!;
+assert.equal(aware.wastedRs, 0, "a non-conversion ad is never counted as wasted spend");
+assert.equal(conv.wastedRs, 1000, "a conversion ad with ROAS < 1 is still wasted spend");
+
 console.log("PASS: scoring (real metrics -> brain inputs) checks");

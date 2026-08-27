@@ -87,8 +87,10 @@ function isStable(rows: MetricsRow[]): boolean {
 
 /**
  * Map an account's real ads to the brain's inputs. All scores are relative to THIS account.
- * `wastedRs` uses a conservative, honest rule: spend on an ad returning less than it costs
- * (ROAS < 1) is flagged as waste; everything else is 0. Not a fabricated number.
+ * `wastedRs` uses a conservative, honest rule: for conversion-objective ads only, spend
+ * returning less than it costs (ROAS < 1) is flagged as waste; other objectives (traffic,
+ * engagement, awareness, leads, app_installs) were never optimised to convert, so low ROAS
+ * there is not waste. Not a fabricated number.
  */
 export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
   const aggs = ads.map((ad) => aggregate(ad.rows));
@@ -99,14 +101,15 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
 
   return ads.map((ad, i) => {
     const a = aggs[i];
+    const objective = ad.objective ?? "conversion";
     const fatigue = fatigueScore(a.avgFrequency);
     const performance = a.roas === null ? 0 : percentile(a.roas, roasList);
     const roomToScale = a.roas !== null && medianRoas !== null && a.roas > medianRoas && fatigue < 60;
-    const wastedRs = a.roas !== null && a.roas < 1 ? a.spend : 0;
+    const wastedRs = objective === "conversion" && a.roas !== null && a.roas < 1 ? a.spend : 0;
     return {
       id: ad.externalId,
       name: ad.name,
-      objective: ad.objective ?? "conversion",
+      objective,
       performance,
       trend: trendScore(ad.rows),
       fatigue,
