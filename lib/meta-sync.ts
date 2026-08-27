@@ -315,8 +315,18 @@ async function pullAndStore(userId: string, lookbackDays: number, campaignId: st
       await admin
         .from("cockpit_cache")
         .upsert({ user_id: userId, cache_key: cacheKey, data: value, updated_at: new Date().toISOString() }, { onConflict: "user_id,cache_key" });
+      // Bound table growth: versioning the cache key (CACHE_SCHEMA) orphans old-shape rows, and
+      // each distinct filter/date permutation writes a new row. Drop this user's rows older than
+      // the stale window - they are never served anyway (a >STALE_MS row always triggers a cold
+      // pull), and this also ages out the orphaned old-schema rows. Scoped to this user, runs only
+      // on the (rare) cold-pull path, indexed by the (user_id, cache_key) PK. Best-effort.
+      await admin
+        .from("cockpit_cache")
+        .delete()
+        .eq("user_id", userId)
+        .lt("updated_at", new Date(Date.now() - STALE_MS).toISOString());
     } catch {
-      // L2 write failed; L1 still holds the value for this instance
+      // L2 write/cleanup failed; L1 still holds the value for this instance
     }
   }
   return value;
