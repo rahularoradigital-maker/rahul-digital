@@ -1,4 +1,6 @@
-import "server-only"; // compile-time tripwire: TOKEN_ENC_KEY code path must never reach the client
+// NOTE: no `import "server-only"` here on purpose - it would throw in the node-based
+// check:crypto runner. crypto.ts is imported only by oauth-store.ts, which carries the
+// server-only tripwire, so this module is transitively protected from the client bundle.
 import { randomBytes, createCipheriv, createDecipheriv } from "node:crypto";
 
 // AES-256-GCM envelope encryption for OAuth tokens at rest (see ADR-0002).
