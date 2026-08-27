@@ -78,6 +78,7 @@ export type BrandAnalytics = {
   platformMix: Counted[]; // most-used platform first
   topHooks: Counted[]; // most-repeated opening line first
   topCreatives: NormalizedAd[]; // active first, then most recent, up to 10
+  newLast7Days: number; // ads launched in the last 7 days (launch velocity / testing pace)
 };
 
 // Ad traffic distribution: where a brand sends its ad clicks, bucketed from each ad's

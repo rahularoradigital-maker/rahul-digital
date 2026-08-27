@@ -71,6 +71,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
               <th className="px-4 py-3 text-right font-medium tabular-nums">Video</th>
               <th className="px-4 py-3 text-right font-medium tabular-nums">Image</th>
               <th className="px-4 py-3 text-right font-medium tabular-nums">Carousel</th>
+              <th className="px-4 py-3 text-right font-medium tabular-nums">New 7d</th>
               <th className="px-4 py-3 font-medium">Top CTA</th>
             </tr>
           </thead>
@@ -91,6 +92,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
                 <td className="px-4 py-3 text-right tabular-nums text-[var(--ink-muted)]">{pct(b.formatMix.video, b.totalAds)}%</td>
                 <td className="px-4 py-3 text-right tabular-nums text-[var(--ink-muted)]">{pct(b.formatMix.image, b.totalAds)}%</td>
                 <td className="px-4 py-3 text-right tabular-nums text-[var(--ink-muted)]">{pct(b.formatMix.carousel, b.totalAds)}%</td>
+                <td className="px-4 py-3 text-right tabular-nums">{b.newLast7Days}</td>
                 <td className="px-4 py-3 text-[var(--ink)]">{topCta(b)}</td>
               </tr>
             ))}

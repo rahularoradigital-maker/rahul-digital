@@ -84,7 +84,7 @@ export async function loadCompetitorData(userId: string): Promise<CompetitorData
       .limit(1);
 
     const normalized = (ads as AdRow[]).map(toNormalized);
-    const report = buildReport(normalized);
+    const report = buildReport(normalized, Math.floor(Date.now() / 1000));
     const brandCount = (report.myBrand ? 1 : 0) + report.competitors.length;
 
     // Stage 7 output, if any creatives have been analyzed.

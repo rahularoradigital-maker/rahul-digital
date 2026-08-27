@@ -30,7 +30,11 @@ function hookOf(ad: NormalizedAd): string | null {
   return clipped || null;
 }
 
-export function analyzeBrand(ads: NormalizedAd[]): BrandAnalytics {
+export function analyzeBrand(ads: NormalizedAd[], nowUnix = 0): BrandAnalytics {
+  // Ads launched in the last 7 days (only when a reference "now" is supplied; the check and
+  // the live loader pass it, keeping the function pure/testable).
+  const weekAgo = nowUnix - 7 * 86_400;
+  const newLast7Days = nowUnix > 0 ? ads.filter((a) => a.startDate !== null && a.startDate >= weekAgo).length : 0;
   const label = ads[0]?.brandLabel ?? "Unknown";
   const pageId = ads[0]?.pageId ?? "";
   const isMyBrand = ads[0]?.isMyBrand ?? false;
@@ -57,6 +61,7 @@ export function analyzeBrand(ads: NormalizedAd[]): BrandAnalytics {
     platformMix: tally(ads.flatMap((a) => a.platforms), 6),
     topHooks: tally(ads.map(hookOf), 8),
     topCreatives,
+    newLast7Days,
   };
 }
 
@@ -114,14 +119,14 @@ export function buildTrafficByBrand(ads: NormalizedAd[]): BrandTraffic[] {
 
 // Group the flat ad list by brand (pageId) and analyze each. Insertion order of the first
 // ad per brand is preserved so my brand keeps the position it arrived in.
-export function buildReport(ads: NormalizedAd[]): CompetitorReport {
+export function buildReport(ads: NormalizedAd[], nowUnix = 0): CompetitorReport {
   const byBrand = new Map<string, NormalizedAd[]>();
   for (const ad of ads) {
     const list = byBrand.get(ad.pageId) ?? [];
     list.push(ad);
     byBrand.set(ad.pageId, list);
   }
-  const brands = [...byBrand.values()].map(analyzeBrand);
+  const brands = [...byBrand.values()].map((brandAds) => analyzeBrand(brandAds, nowUnix));
   const myBrand = brands.find((b) => b.isMyBrand) ?? null;
   const competitors = brands.filter((b) => !b.isMyBrand);
 
