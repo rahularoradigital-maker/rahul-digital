@@ -124,7 +124,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
       <div>
         <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
-          {`Live · ${accountName} · ${processed.campaigns} campaign${processed.campaigns === 1 ? "" : "s"} · ${processed.adSets} ad set${processed.adSets === 1 ? "" : "s"} · ${adsAnalyzed} ads · last ${days} days`}
+          {`Connected · ${accountName} · ${processed.campaigns} campaign${processed.campaigns === 1 ? "" : "s"} · ${processed.adSets} ad set${processed.adSets === 1 ? "" : "s"} · ${adsAnalyzed} ads · last ${days} days`}
         </div>
         <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Here&apos;s what to ship this week.</h1>
       </div>

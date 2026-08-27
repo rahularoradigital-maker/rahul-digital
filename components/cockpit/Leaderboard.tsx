@@ -20,9 +20,6 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
           <div className="text-base font-semibold">Creative leaderboard</div>
           <div className="text-[13px] text-[var(--ink-muted)]">Ranked by creative score · best first</div>
         </div>
-        <span className="rounded-[70px] bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
-          Adam · Ranker
-        </span>
       </div>
       <div className="px-[22px] pb-2 pt-2">
         {ads.map((ad, i) => {

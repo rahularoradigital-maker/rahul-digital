@@ -8,7 +8,7 @@
   --surface-alt: #efefef;
   --ink: #252525;
   --ink-muted: #6b6b6b;
-  --accent: #038bf7;
+  --accent: #0a66c2; /* darkened from #038bf7 so accent-as-text passes WCAG 4.5:1 (was ~3.5:1) */
   --accent-soft: #e6f2fe;
   --hairline: #e4e4e4;
 

@@ -23,7 +23,7 @@ export function KpiCard({
       </div>
       {insufficient ? (
         <>
-          <div className="text-[15px] font-medium text-[var(--ink-muted)]">insufficient_data</div>
+          <div className="text-[15px] font-medium text-[var(--ink-muted)]">Not enough data</div>
           <div className="mt-1 text-xs text-[var(--ink-muted)]">{insufficient}</div>
         </>
       ) : (

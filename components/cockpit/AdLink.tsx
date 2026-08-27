@@ -29,7 +29,7 @@ export function AdLink({
       target="_blank"
       rel="noopener noreferrer"
       title="Open this ad in Meta Ads Manager (campaign - ad set - ad selected) to verify"
-      className={`${className ?? ""} underline decoration-[var(--hairline)] decoration-1 underline-offset-2 transition hover:text-[var(--accent)] hover:decoration-[var(--accent)]`}
+      className={`${className ?? ""} rounded-sm underline decoration-[var(--hairline)] decoration-1 underline-offset-2 transition hover:text-[var(--accent)] hover:decoration-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1`}
     >
       {name}
     </a>

@@ -29,7 +29,7 @@ export function Topbar() {
           <h1 className="text-xl font-semibold tracking-tight">{titleFor(pathname)}</h1>
           <span className="hidden items-center gap-1.5 text-xs text-[var(--ink-muted)] sm:inline-flex">
             <span className="h-[6px] w-[6px] rounded-full bg-[var(--good-ink)]" />
-            Live
+            Connected
           </span>
         </div>
 
@@ -40,7 +40,7 @@ export function Topbar() {
               e.preventDefault();
               setAsked(true);
             }}
-            className="relative hidden items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-2 text-[var(--ink-muted)] lg:flex"
+            className="relative hidden items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-2 text-[var(--ink-muted)] transition focus-within:border-[var(--accent)] lg:flex"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -48,10 +48,10 @@ export function Topbar() {
             </svg>
             <input
               name="q"
-              placeholder="Ask AdBrain"
-              aria-label="Ask AdBrain"
+              placeholder="Ask AdBrain (soon)"
+              aria-label="Ask AdBrain (answer engine coming soon)"
               onChange={() => setAsked(false)}
-              className="w-36 bg-transparent text-[13px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
+              className="w-40 bg-transparent text-[13px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
             />
             {asked ? (
               <span className="absolute right-0 top-[calc(100%+6px)] z-20 w-72 rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-left text-[12px] text-[var(--ink)] shadow-lg">
