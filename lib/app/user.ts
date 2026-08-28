@@ -13,7 +13,11 @@ import { createClient } from "@/lib/supabase/server";
 export const getCurrentUser = cache(async (): Promise<{ id: string; email?: string } | null> => {
   try {
     const supabase = await createClient();
+    const t = performance.now();
     const { data } = await supabase.auth.getClaims();
+    // With ADBRAIN_PERF=1 this prints the verify time - local ES256 verify is ~single-digit ms vs
+    // the ~100-300ms network round-trip getUser() used to cost on every /app render.
+    if (process.env.ADBRAIN_PERF === "1") console.log(`[perf] auth:getClaims ${Math.round(performance.now() - t)}ms`);
     const sub = data?.claims?.sub;
     if (!sub) return null;
     return { id: sub, email: typeof data.claims.email === "string" ? data.claims.email : undefined };
