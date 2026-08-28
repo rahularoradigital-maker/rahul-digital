@@ -46,7 +46,11 @@ function walk(dir) {
       const txt = readFileSync(p, "utf8");
       const lines = txt.split("\n").length;
       loc += lines;
-      if (lines > LARGE_FILE_LINES) large.push({ file: p, lines });
+      // A long AUTO-GENERATED data catalog (e.g. the 162-KPI catalog) is NOT a refactor candidate:
+      // its length is records, not logic, so flagging it is a false positive. Only long files that
+      // carry logic are real candidates. (LOC still counts toward the total above.)
+      const generated = /auto-generated|@generated/i.test(txt.slice(0, 400));
+      if (lines > LARGE_FILE_LINES && !generated) large.push({ file: p, lines });
       markers += (txt.match(/\b(TODO|FIXME|HACK|XXX)\b/g) ?? []).length;
     }
   }

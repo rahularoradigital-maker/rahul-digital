@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { getUserMetaSession } from "@/lib/meta-sync";
-import { fetchAccountCurrency, fetchRecentAdNames } from "@/lib/meta-source";
+import { getUserMetaSession, fetchLiveCockpit } from "@/lib/meta-sync";
+import { fetchAccountCurrency } from "@/lib/meta-source";
+import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 import { deriveBrandProfile, loadBrandProfile, saveBrandProfile, type DerivedProfile } from "@/lib/brand/profile";
 
 // Stage 1 of brand understanding: derive a structured brand profile from the account's REAL ad data
@@ -67,12 +69,18 @@ export async function POST(request: NextRequest) {
   }
   // Ad names come from a single lightweight active-ads call (not the full ~9s cockpit pull) - names
   // alone are enough for Gemini to read the category/products, and this keeps the derive fast.
-  const [currency, adNames] = await Promise.all([
+  // Ad names come from the cockpit's leaderboard (the ads that actually SPENT - reliable whether
+  // active or now paused, unlike the ACTIVE-only /ads edge). Reuse the user's CURRENT window so it
+  // hits the warm cache from the cockpit they are viewing, keeping this fast; names alone are enough
+  // for Gemini to read the category/products.
+  const scope = resolveCockpitScope(await cookies(), 14);
+  const [currency, live] = await Promise.all([
     fetchAccountCurrency(acct, session.token),
-    fetchRecentAdNames(acct, session.token, 50),
+    fetchLiveCockpit(user.id, scope.lookbackDays, scope.campaignId, scope.objectives, scope.explicitWindow, scope.weights),
   ]);
+  const adNames = live.status === "connected" ? live.view.leaderboard.map((a) => a.name).filter((n): n is string => Boolean(n)) : [];
   if (adNames.length === 0) {
-    return NextResponse.json({ error: "No ads found to learn from yet. Make sure the account has active ads with spend." }, { status: 400 });
+    return NextResponse.json({ error: "No ads found to learn from yet. Open the Cockpit first so the account's ads load, then try again." }, { status: 400 });
   }
   const derived = await deriveBrandProfile(session.activeAccountName, currency, adNames, []);
   if (!derived) return NextResponse.json({ error: "Could not read the brand right now. Please try again." }, { status: 502 });
