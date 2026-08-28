@@ -6,11 +6,11 @@
 
 const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
-// Text tasks (Ask, Brand Brain, Concepts) use a NON-thinking model: gemini-3.6-flash treats
-// maxOutputTokens as a total budget and fills it with internal reasoning, truncating or emptying the
-// answer, and it rejects thinkingBudget:0. gemini-2.0-flash has no thinking step, so the whole budget
-// goes to the answer - reliable, fast, free tier.
-const TEXT_MODEL = "gemini-2.0-flash";
+// Text tasks (Ask, Brand Brain, Concepts). gemini-2.0-flash was RETIRED by Google (404: "no longer
+// available, use gemini-3.6-flash"), so we use the current gemini-3.6-flash. It has a thinking step
+// that shares the maxOutputTokens budget, so the fix for truncation is a GENEROUS cap (below) - not a
+// dead model. These are short grounded summaries, so the large cap costs nothing when the answer is short.
+const TEXT_MODEL = "gemini-3.6-flash";
 const TEXT_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${TEXT_MODEL}:generateContent`;
 const MAX_IMAGE_BYTES = 8_000_000; // skip inlining a still larger than this; run copy-only
 

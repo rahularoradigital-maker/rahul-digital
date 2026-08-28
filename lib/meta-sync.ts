@@ -365,6 +365,7 @@ type CacheEntry = { at: number; value: LiveCockpit };
 // background beats making the user watch a 9s spinner after being idle overnight.
 const FRESH_MS = 300_000; // 5 minutes: serve without a background refresh
 const STALE_MS = 86_400_000; // 24 hours: still serve instantly, refresh in the background
+const COLD_PULL_TIMEOUT_MS = 8_000; // cap the blocking cold pull so a slow Meta pull can't 504 the page
 // Cache SCHEMA version: part of the cache key. BUMP THIS whenever the LiveCockpit shape changes
 // (new required field on the connected payload, e.g. scopeTotals / dataQuality / marginal).
 // A cached blob written by older code lacks the new field; the newer render reads it and crashes
@@ -378,13 +379,21 @@ const cockpitCache = new Map<string, CacheEntry>();
 
 /** Clear the cockpit cache. Pass userId to also clear that user's shared L2 rows. */
 export async function bustCockpitCache(userId?: string): Promise<void> {
-  cockpitCache.clear();
-  if (!userId) return;
+  // Scope L1 eviction to THIS user (memKey is `${userId}:...`). A blanket .clear() would wipe every
+  // other concurrently-active user's warm cache on one person's Re-scan - a multi-tenant hit at scale.
+  if (!userId) {
+    cockpitCache.clear(); // ops/global clear only (no user given)
+    return;
+  }
+  const prefix = `${userId}:`;
+  for (const key of cockpitCache.keys()) {
+    if (key.startsWith(prefix)) cockpitCache.delete(key);
+  }
   try {
     const admin = createAdminClient();
     await admin.from("cockpit_cache").delete().eq("user_id", userId);
   } catch {
-    // L2 unavailable; L1 is already cleared
+    // L2 unavailable; this user's L1 is already cleared
   }
 }
 
@@ -520,7 +529,15 @@ export async function fetchLiveCockpit(
   // Cold or too stale: block on the live pull (skeleton shows while this runs). deferWrite=true so
   // the L2 cache write happens in the background and the user gets the value as soon as it is ready.
   if (PERF) console.log("[perf] COLD pull (blocking) - no fresh/stale cache for this filter combo");
-  return pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, true);
+  // Cap the blocking wait: a slow cold pull would otherwise exceed Vercel's function timeout and
+  // show the user a raw 504 (not catchable by the React error boundary). On timeout we return the
+  // app's honest "still syncing" error state; the pull keeps running unawaited so its deferred cache
+  // write still lands and the retry a few seconds later is instant.
+  const pull = pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, true);
+  const timeout = new Promise<LiveCockpit>((resolve) =>
+    setTimeout(() => resolve({ status: "error", message: "Still syncing your account - try again in a few seconds." }), COLD_PULL_TIMEOUT_MS),
+  );
+  return Promise.race([pull, timeout]);
 }
 
 function daysAgo(n: number): string {
