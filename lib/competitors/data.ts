@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildReport, buildCreativeIntel, buildRecommendations, type CreativeIntel, type CreativeRecommendation } from "./analytics.ts";
+import { buildReport, buildCreativeIntel, buildRecommendations, buildVoice, type CreativeIntel, type CreativeRecommendation, type VoiceRead } from "./analytics.ts";
 import type { AnalyzedCreative, CompetitorReport, CreativeAttributes, MediaCategory, NormalizedAd } from "./types.ts";
 
 // Reads the stored competitor ads for a user (written by /api/competitors/run) and runs
@@ -15,6 +15,7 @@ export type CompetitorData = {
   updatedAt: string | null;
   creativeIntel: CreativeIntel | null; // null until Gemini stage 7 has analyzed some creatives
   recommendations: CreativeRecommendation[]; // deterministic "next creatives to test" (no LLM)
+  voice: VoiceRead; // how the market talks: competitor CTAs/hooks (always) + emotions/offers (once analyzed)
 };
 
 type AdRow = {
@@ -108,13 +109,15 @@ export async function loadCompetitorData(userId: string, accountId: string | nul
         attributes: (r.attributes ?? {}) as CreativeAttributes,
       }));
 
+    const creativeIntel = analyzed.length > 0 ? buildCreativeIntel(analyzed) : null;
     return {
       report,
       brandCount,
       adCount: normalized.length,
       updatedAt: brands?.[0]?.updated_at ?? null,
-      creativeIntel: analyzed.length > 0 ? buildCreativeIntel(analyzed) : null,
+      creativeIntel,
       recommendations: buildRecommendations(report),
+      voice: buildVoice(report, creativeIntel),
     };
   } catch {
     return null;

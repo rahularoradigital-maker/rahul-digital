@@ -3,7 +3,7 @@
 // Run: node --experimental-strip-types scripts/check-competitors.ts
 import assert from "node:assert/strict";
 import { pageIdFromAdLibraryUrl } from "../lib/scrapecreators.ts";
-import { analyzeBrand, buildReport, buildCreativeIntel, buildTrafficByBrand } from "../lib/competitors/analytics.ts";
+import { analyzeBrand, buildReport, buildCreativeIntel, buildTrafficByBrand, buildVoice } from "../lib/competitors/analytics.ts";
 import { mergeAttributes, anyFilled } from "../lib/agents/creative/orchestrator.ts";
 import type { AnalyzedCreative, CreativeAttributes, NormalizedAd } from "../lib/competitors/types.ts";
 
@@ -54,6 +54,16 @@ assert.deepEqual(report.gaps.ctas.sort(), ["Learn More", "Sign Up"], "CTAs the r
 const noMine = buildReport(rival);
 assert.equal(noMine.myBrand, null);
 assert.deepEqual(noMine.gaps.formats, []);
+
+// --- Competitor Voice: how the market talks, aggregated from real competitor copy. ---
+const voice = buildVoice(report, null);
+assert.equal(voice.competitorAdCount, 2, "counts competitor ads only (not my brand)");
+assert.equal(voice.competitorBrandCount, 1);
+assert.deepEqual(voice.competitorCtas.map((c) => c.label).sort(), ["Learn More", "Sign Up"], "aggregates competitor CTAs");
+assert.deepEqual(voice.yourCtas.map((c) => c.label), ["Shop Now"], "surfaces your own CTAs for contrast");
+assert.deepEqual([...voice.ctaWhitespace].sort(), ["Learn More", "Sign Up"], "whitespace = competitor CTAs you don't run");
+assert.equal(voice.analyzedCount, 0, "emotion/offer layer is gated until creatives are analyzed");
+assert.deepEqual(voice.emotions, []);
 
 // --- Ad traffic distribution: where each brand sends its ad clicks (landing-page host). ---
 const trafficAds: NormalizedAd[] = [

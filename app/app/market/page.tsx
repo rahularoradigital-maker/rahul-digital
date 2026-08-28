@@ -16,7 +16,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
       <Tabs
         tabs={[
           { key: "competitors", label: "Competitors" },
-          { key: "voice", label: "Voice of Customer" },
+          { key: "voice", label: "Competitor Voice" },
         ]}
       />
 

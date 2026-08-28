@@ -201,6 +201,49 @@ export function buildRecommendations(report: CompetitorReport): CreativeRecommen
   return recs.slice(0, 8);
 }
 
+// Competitor Voice: how the market talks, aggregated across the competitor set from their REAL
+// ad copy. CTAs and opening hooks are deterministic counts (always available); the emotion / offer /
+// hook-type layer comes from the Gemini creative analysis and is empty until some creatives are
+// analyzed (analyzedCount === 0). Pure; no fabrication - every item is a count over real ads.
+export type VoiceRead = {
+  competitorAdCount: number;
+  competitorBrandCount: number;
+  competitorCtas: Counted[]; // CTAs the market uses, most-used first
+  competitorHooks: Counted[]; // opening lines competitors lead with
+  yourCtas: Counted[]; // your brand's CTAs, for contrast (empty when your brand is not in the set)
+  ctaWhitespace: string[]; // CTAs competitors use that you do not
+  emotions: Counted[]; // Gemini layer (empty until analyzed)
+  offers: Counted[]; // Gemini layer (empty until analyzed)
+  hookTypes: Counted[]; // Gemini layer (empty until analyzed)
+  analyzedCount: number; // creatives Gemini has analyzed; 0 means the deeper layer is not unlocked yet
+};
+
+// Merge several Counted[] lists by summing counts per label, most-frequent first, keep top `limit`.
+function mergeCounted(lists: Counted[][], limit: number): Counted[] {
+  const m = new Map<string, number>();
+  for (const list of lists) for (const c of list) m.set(c.label, (m.get(c.label) ?? 0) + c.count);
+  return [...m.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, limit);
+}
+
+export function buildVoice(report: CompetitorReport, intel: CreativeIntel | null): VoiceRead {
+  const comps = report.competitors;
+  return {
+    competitorAdCount: comps.reduce((s, c) => s + c.totalAds, 0),
+    competitorBrandCount: comps.length,
+    competitorCtas: mergeCounted(comps.map((c) => c.ctaMix), 8),
+    competitorHooks: mergeCounted(comps.map((c) => c.topHooks), 8),
+    yourCtas: report.myBrand ? report.myBrand.ctaMix : [],
+    ctaWhitespace: report.gaps.ctas,
+    emotions: intel?.emotions ?? [],
+    offers: intel?.offers ?? [],
+    hookTypes: intel?.hookTypes ?? [],
+    analyzedCount: intel?.analyzedCount ?? 0,
+  };
+}
+
 export function buildCreativeIntel(analyzed: AnalyzedCreative[]): CreativeIntel {
   const byBrand = new Map<string, { label: string; isMyBrand: boolean; tof: number; mof: number; bof: number; unknown: number }>();
   for (const c of analyzed) {
