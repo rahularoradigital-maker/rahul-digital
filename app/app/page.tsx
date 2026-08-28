@@ -197,22 +197,21 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           sub={`${rupees.format(totals.revenueRs)} on ${rupees.format(totals.spendRs)}`}
         />
         <KpiCard
-          label="MER"
-          tip="Marketing efficiency ratio = total revenue divided by total ad spend."
-          insufficient="Connect Shopify for store revenue"
-        />
-        <KpiCard
-          label="nCAC"
-          tip="New-customer acquisition cost. Requires Shopify new-vs-returning split."
-          insufficient="Connect more sources"
-        />
-        <KpiCard
           label="Concentration"
           tip="Share of spend on the single top ad. Internal calculation over your account."
           value={conc.status === "ok" ? `${Math.round(conc.top1Share * 100)}%` : undefined}
           insufficient={conc.status === "ok" ? undefined : "Not enough spend to assess"}
           sub={conc.status === "ok" ? "top ad share of spend" : undefined}
         />
+        {/* MER + nCAC need store revenue (Shopify), so they are always insufficient until a revenue
+            source connects. Collapse the two permanently-dead cards into one honest affordance
+            spanning both slots instead of two decoy tiles. Restore as real cards with plan-04. */}
+        <div className="col-span-2 flex flex-col justify-center rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+          <div className="mb-1 text-[13px] font-medium text-[var(--ink-muted)]">Store economics · MER &amp; nCAC</div>
+          <div className="text-[13px] text-[var(--ink)]">
+            Connect Shopify to unlock marketing-efficiency ratio (revenue ÷ spend) and new-customer acquisition cost.
+          </div>
+        </div>
       </div>
 
       {/* Scaling headroom (marginal economics) + ad-level funnel metrics */}
