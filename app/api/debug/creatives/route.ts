@@ -30,11 +30,12 @@ export async function GET() {
   if (ids.length === 0) return NextResponse.json({ note: "no ads listed" });
 
   const fields = "creative{id,thumbnail_url,image_url,video_id,body,title,object_story_spec,asset_feed_spec}";
-  const url = `${GRAPH}/?ids=${encodeURIComponent(ids.join(","))}&fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(session.token.accessToken)}`;
+  // Per-ad request (the non-deprecated replacement for ?ids=). GET /{ad-id}?fields=creative{...}
+  const url = `${GRAPH}/${encodeURIComponent(ids[0])}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(session.token.accessToken)}`;
   try {
     const res = await fetch(url);
     const raw = await res.json();
-    return NextResponse.json({ ids, httpStatus: res.status, raw });
+    return NextResponse.json({ testedId: ids[0], httpStatus: res.status, raw });
   } catch (e) {
     return NextResponse.json({ step: "rawFetch", error: e instanceof Error ? e.message : String(e) }, { status: 500 });
   }
