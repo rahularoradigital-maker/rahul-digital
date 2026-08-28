@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Not signed in" }, { status: 401 });
+  const userId = user.id; // capture for use inside the worker closure (TS narrowing doesn't cross it)
 
   let body: Body;
   try {
@@ -41,37 +42,47 @@ export async function POST(request: NextRequest) {
 
   // Scope this competitor set to the user's ACTIVE ad account, so switching account shows that
   // account's own competitors (not another account's). null when no account is connected.
-  const session = await getUserMetaSession(user.id);
+  const session = await getUserMetaSession(userId);
   const accountId = session?.activeExternalId ?? null;
 
   const admin = createAdminClient();
   const brands: { label: string; pageId: string; adCount: number; isMyBrand: boolean }[] = [];
   const errors: string[] = [];
 
+  // Resolve page ids up front so a bad URL is an error, not a wasted worker slot.
+  const valid: { url: string; isMyBrand: boolean; pageId: string }[] = [];
   for (const t of targets) {
     const pageId = pageIdFromAdLibraryUrl(t.url);
-    if (!pageId) {
-      errors.push(`Not a Facebook Ad Library URL: ${t.url}`);
-      continue;
-    }
-    let ads: NormalizedAd[];
-    try {
-      ads = await fetchBrandAds(pageId, t.isMyBrand ? "My brand" : "Competitor", t.isMyBrand);
-    } catch (e) {
-      errors.push(e instanceof Error ? e.message : `Failed to fetch ${pageId}`);
-      continue;
-    }
-    const label = ads[0]?.brandLabel ?? (t.isMyBrand ? "My brand" : `Page ${pageId}`);
+    if (pageId) valid.push({ ...t, pageId });
+    else errors.push(`Not a Facebook Ad Library URL: ${t.url}`);
+  }
 
-    // Refresh this brand's ads for THIS account: clear the old set (scoped to the account),
-    // then insert the live one stamped with the account.
-    {
-      const del = admin.from("competitor_ads").delete().eq("user_id", user.id).eq("page_id", pageId);
+  // Process brands with a small bounded worker pool instead of one-at-a-time. Each brand is
+  // independent (its own page_id), so the external pulls overlap and the wall time drops roughly
+  // FETCH_CONCURRENCY x. ponytail: the exact ScrapeCreators rate limit is unconfirmed, so keep this
+  // conservative - it matches the competitors/analyze pool; raise it only after confirming the limit
+  // (a too-high value would surface as per-brand 429 fetch errors, not a crash).
+  const FETCH_CONCURRENCY = 2;
+  const queue = [...valid];
+  async function worker() {
+    for (;;) {
+      const t = queue.shift();
+      if (!t) return;
+      let ads: NormalizedAd[];
+      try {
+        ads = await fetchBrandAds(t.pageId, t.isMyBrand ? "My brand" : "Competitor", t.isMyBrand);
+      } catch (e) {
+        errors.push(e instanceof Error ? e.message : `Failed to fetch ${t.pageId}`);
+        continue;
+      }
+      const label = ads[0]?.brandLabel ?? (t.isMyBrand ? "My brand" : `Page ${t.pageId}`);
+
+      // Refresh this brand's ads for THIS account: clear the old set (scoped to the account) first,
+      // then write the live ads + the brand row concurrently (two independent, no-conflict writes).
+      const del = admin.from("competitor_ads").delete().eq("user_id", userId).eq("page_id", t.pageId);
       await (accountId === null ? del.is("account_external_id", null) : del.eq("account_external_id", accountId));
-    }
-    if (ads.length > 0) {
       const rows = ads.map((a) => ({
-        user_id: user.id,
+        user_id: userId,
         account_external_id: accountId,
         page_id: a.pageId,
         ad_archive_id: a.adArchiveId,
@@ -94,14 +105,17 @@ export async function POST(request: NextRequest) {
         video_url: a.videoUrl,
         video_thumb_url: a.videoThumbUrl,
       }));
-      await admin.from("competitor_ads").upsert(rows, { onConflict: "user_id,page_id,ad_archive_id" });
+      await Promise.all([
+        rows.length > 0 ? admin.from("competitor_ads").upsert(rows, { onConflict: "user_id,page_id,ad_archive_id" }) : Promise.resolve(),
+        admin.from("competitor_brands").upsert(
+          { user_id: userId, account_external_id: accountId, page_id: t.pageId, label, is_my_brand: t.isMyBrand, ad_library_url: t.url, ad_count: ads.length, updated_at: new Date().toISOString() },
+          { onConflict: "user_id,page_id" },
+        ),
+      ]);
+      brands.push({ label, pageId: t.pageId, adCount: ads.length, isMyBrand: t.isMyBrand });
     }
-    await admin.from("competitor_brands").upsert(
-      { user_id: user.id, account_external_id: accountId, page_id: pageId, label, is_my_brand: t.isMyBrand, ad_library_url: t.url, ad_count: ads.length, updated_at: new Date().toISOString() },
-      { onConflict: "user_id,page_id" },
-    );
-    brands.push({ label, pageId, adCount: ads.length, isMyBrand: t.isMyBrand });
   }
+  await Promise.all(Array.from({ length: Math.min(FETCH_CONCURRENCY, Math.max(1, queue.length)) }, worker));
 
   const ok = brands.length > 0;
   return NextResponse.json({ ok, brands, errors }, { status: ok ? 200 : 502 });
