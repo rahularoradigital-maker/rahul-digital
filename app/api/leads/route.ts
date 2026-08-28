@@ -1,20 +1,32 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createRateLimiter } from "@/lib/rate-limit";
 
 // Public lead capture for the /book-demo form. No auth (it is a marketing form), so it is
-// deliberately narrow: validate the email, cap every field length, and drop obvious bots via a
-// honeypot. Writes through the service-role admin client into demo_requests (RLS deny-by-default,
-// so the row is never publicly readable).
-// ponytail: no IP rate-limit yet (needs edge/middleware infra); honeypot + length caps are the
-// ceiling. Add per-IP throttling before this sees real spam volume.
+// deliberately narrow: bound the abuse surface (IP rate-limit + body-size cap), validate the email,
+// cap every field length, and drop obvious bots via a honeypot. Writes through the service-role
+// admin client into demo_requests (RLS deny-by-default, so the row is never publicly readable).
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const cap = (v: unknown, n: number): string | null => {
   const s = typeof v === "string" ? v.trim() : "";
   return s ? s.slice(0, n) : null;
 };
+// At most 8 submissions per IP per 10 minutes (a real person submits once). Per-instance ceiling; see
+// lib/rate-limit.ts. Module-scope so it persists across invocations on a warm serverless instance.
+const limiter = createRateLimiter({ windowMs: 600_000, max: 8 });
+const clientIp = (request: NextRequest): string =>
+  (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown";
 
 export async function POST(request: NextRequest) {
+  // Reject an oversized body before parsing it (cheap DoS guard); the form payload is tiny.
+  if (Number(request.headers.get("content-length") ?? 0) > 10_000) {
+    return NextResponse.json({ error: "Request too large." }, { status: 413 });
+  }
+  if (limiter(clientIp(request)).limited) {
+    return NextResponse.json({ error: "Too many requests. Please try again in a few minutes." }, { status: 429 });
+  }
+
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
