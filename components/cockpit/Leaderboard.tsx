@@ -3,6 +3,7 @@
 import type { CockpitAd } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
+import { CollapsibleRows } from "./CollapsibleRows";
 
 export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: CockpitAd[]; rupees: Intl.NumberFormat; accountId?: string; dateParam?: string }) {
   return (
@@ -14,6 +15,7 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
         </div>
       </div>
       <div className="overflow-x-auto px-6 pb-2 pt-2">
+        <CollapsibleRows initial={10} noun="ads">
         {ads.map((ad, i) => {
           const v = VERDICT_STYLE[ad.verdict];
           const conf = Math.round(ad.confidence * 100);
@@ -64,6 +66,7 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
             </div>
           );
         })}
+        </CollapsibleRows>
       </div>
     </div>
   );

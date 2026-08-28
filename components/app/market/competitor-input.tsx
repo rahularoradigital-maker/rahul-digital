@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Stage 1 of the competitor-intelligence pipeline: the only manual step. The user pastes
@@ -38,7 +38,12 @@ function libraryUrl(pageId: string): string {
 export function CompetitorInput({ market = "" }: { market?: string }) {
   const router = useRouter();
   const [brandUrl, setBrandUrl] = useState("");
-  const [competitors, setCompetitors] = useState<string[]>([""]);
+  // Each competitor row carries a stable id so React keys by identity, not index: removing a middle
+  // row no longer reuses the wrong DOM node / moves focus. Persisted format stays string[] (only the
+  // url is saved), so the id is a purely in-memory concern.
+  const idRef = useRef(1);
+  const nextId = () => idRef.current++;
+  const [competitors, setCompetitors] = useState<{ id: number; url: string }[]>([{ id: 0, url: "" }]);
   const [saved, setSaved] = useState(false);
   const [ready, setReady] = useState(false);
   const [running, setRunning] = useState(false);
@@ -52,7 +57,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
   useEffect(() => {
     const s = load();
     setBrandUrl(s.brandUrl);
-    setCompetitors(s.competitors.length ? s.competitors : [""]);
+    setCompetitors((s.competitors.length ? s.competitors : [""]).map((url) => ({ id: nextId(), url })));
     // Seed the search with the brand's market so suggestions appear with zero typing.
     if (market && !s.brandUrl) setQuery(market);
     setReady(true);
@@ -93,9 +98,9 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
     // already containing page id `100`. The negative lookahead stops a prefix from matching.
     const re = new RegExp(`view_all_page_id=${s.pageId}(?![0-9])`);
     setCompetitors((prev) => {
-      if (prev.some((c) => re.test(c))) return prev;
-      const filled = prev.filter((c) => c.trim());
-      return [...filled, url];
+      if (prev.some((c) => re.test(c.url))) return prev;
+      const filled = prev.filter((c) => c.url.trim());
+      return [...filled, { id: nextId(), url }];
     });
   }
 
@@ -110,21 +115,21 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
   }
 
   function setCompetitor(i: number, v: string) {
-    setCompetitors((prev) => prev.map((c, idx) => (idx === i ? v : c)));
+    setCompetitors((prev) => prev.map((c, idx) => (idx === i ? { ...c, url: v } : c)));
   }
   function addCompetitor() {
-    setCompetitors((prev) => [...prev, ""]);
+    setCompetitors((prev) => [...prev, { id: nextId(), url: "" }]);
   }
   function removeCompetitor(i: number) {
     setCompetitors((prev) => (prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev));
   }
   function save() {
-    persist({ brandUrl: brandUrl.trim(), competitors: competitors.map((c) => c.trim()).filter(Boolean) });
+    persist({ brandUrl: brandUrl.trim(), competitors: competitors.map((c) => c.url.trim()).filter(Boolean) });
   }
 
   async function run() {
     const cleanBrand = brandUrl.trim();
-    const cleanCompetitors = competitors.map((c) => c.trim()).filter(Boolean);
+    const cleanCompetitors = competitors.map((c) => c.url.trim()).filter(Boolean);
     persist({ brandUrl: cleanBrand, competitors: cleanCompetitors });
     setRunning(true);
     setError(null);
@@ -150,7 +155,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
     }
   }
 
-  const filledCompetitors = competitors.filter((c) => c.trim()).length;
+  const filledCompetitors = competitors.filter((c) => c.url.trim()).length;
   const canRun = brandUrl.trim().length > 0 && filledCompetitors > 0;
 
   if (!ready) return null;
@@ -230,9 +235,9 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
       <label className="mb-1.5 mt-4 block text-[13px] font-medium">Competitor Ad Library URLs</label>
       <div className="space-y-2">
         {competitors.map((c, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <div key={c.id} className="flex items-center gap-2">
             <input
-              value={c}
+              value={c.url}
               onChange={(e) => setCompetitor(i, e.target.value)}
               placeholder="https://www.facebook.com/ads/library/?view_all_page_id=..."
               className={inputCls}

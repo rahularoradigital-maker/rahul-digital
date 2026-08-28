@@ -5,6 +5,7 @@
 import type { CockpitAction, CockpitAd } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
+import { CollapsibleRows } from "./CollapsibleRows";
 
 type PlanItem = CockpitAction & { adId: string; adName: string };
 
@@ -30,10 +31,14 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
         </span>
       </div>
       <div>
+        <CollapsibleRows initial={8} noun="ads">
         {items.map((a, i) => {
           const ad = byId.get(a.adId);
           const conf = ad ? Math.round(ad.confidence * 100) : null;
           const v = ad ? VERDICT_STYLE[ad.verdict] : VERDICT_STYLE[a.priority === "DO_NOW" ? "loser" : "do_not_kill_yet"];
+          // Every verdict carries its reason: the action's own why, falling back to the engine's
+          // first signal. So even a "Hold" tells the user WHY it is holding, in light text.
+          const reason = a.why || ad?.why?.[0];
           return (
             <div
               key={`${a.adId}-${i}`}
@@ -55,21 +60,22 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
                       {ad.objective}
                     </span>
                   )}
-                  {conf !== null ? (
+                  {conf !== null && (
                     <div className="flex min-w-[120px] flex-1 items-center gap-2">
                       <div className="h-1.5 w-full max-w-[160px] overflow-hidden rounded-full bg-[var(--surface-alt)]">
                         <div className={`h-full rounded-full ${ad ? confColor(ad.verdict) : "bg-[var(--ink-muted)]"}`} style={{ width: `${conf}%` }} />
                       </div>
                       <span className="shrink-0 text-xs text-[var(--ink-muted)] tabular-nums">{conf}%</span>
                     </div>
-                  ) : (
-                    <span className="truncate text-[13px] text-[var(--ink-muted)]">{a.why}</span>
                   )}
                 </div>
+                {/* Line 3: WHY - context for the verdict, always shown in light text so nothing is asserted without a reason */}
+                {reason && <div className="mt-1.5 text-[13px] leading-snug text-[var(--ink-muted)]">&#8627; {reason}</div>}
               </div>
             </div>
           );
         })}
+        </CollapsibleRows>
       </div>
       <p className="mt-3 text-xs text-[var(--ink-muted)]">
         Nothing is applied automatically. You make each change in your ad account.

@@ -57,4 +57,14 @@ assert.ok(byId["ad_reels_demo"].action.label.toLowerCase().includes("auction cpm
 assert.equal(byId["ad_static_offer"].verdict, "refresh", "worn-but-converting static: refresh");
 assert.notEqual(byId["ad_new_angle"].verdict, "winner", "6-purchase ad is not a winner (coin-toss guard)");
 
+// --- Per-account weight override threads all the way into the produced view (not just the pure
+// function). This is the integration proof for the Settings "Verdict weights" panel: the cookie ->
+// fetchLiveCockpit -> analyzeAccount -> verdict -> creativeScore path changes real leaderboard rows.
+const scoreOf = (v: ReturnType<typeof analyzeAccount>) => v.leaderboard[0].why.find((w) => w.startsWith("CreativeScore"));
+const defaultScore = scoreOf(analyzeAccount([winner])); // default weights -> 0.3/0.3/0.2/0.2
+const perfScore = scoreOf(analyzeAccount([winner], "SAMPLE", { performance: 1, trend: 0, fatigue: 0, funnel: 0 }));
+assert.ok(defaultScore?.includes("84.9"), `default weights -> CreativeScore 84.9, got ${defaultScore}`);
+assert.ok(perfScore?.includes("90.0"), `all-performance weight -> CreativeScore = performance (90.0), got ${perfScore}`);
+assert.notEqual(defaultScore, perfScore, "custom weights actually change the CreativeScore in the rendered leaderboard row");
+
 console.log("PASS: cockpit analyze + sample account checks");
