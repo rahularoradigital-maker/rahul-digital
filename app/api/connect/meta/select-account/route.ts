@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession, bustCockpitCache, fetchLiveCockpit } from "@/lib/meta-sync";
+import { listAllAccessibleAdAccounts } from "@/lib/meta-source";
 import { storeToken } from "@/lib/oauth-store";
 
 // Switch the active ad account. One user OAuth token works across all their accounts,
@@ -17,17 +18,29 @@ export async function GET(request: NextRequest) {
 
   const url = new URL(request.url);
   const id = url.searchParams.get("id");
-  const name = url.searchParams.get("name") ?? (id ? `act_${id}` : "");
   if (!id) return NextResponse.redirect(new URL("/app", request.url));
 
   const session = await getUserMetaSession(user.id);
   if (!session) return NextResponse.redirect(new URL("/app?connect=error", request.url));
 
+  // ISSUE 14: never turn a URL-supplied account id into a switch without proving the current token
+  // can actually reach it. Verify against the token's accessible accounts (the same source the picker
+  // is built from) and use the SERVER-resolved name, not a caller-supplied one. Fail closed if the
+  // reachable set can't be fetched - an authorization decision must not proceed on unverifiable state.
+  let accessible;
+  try {
+    accessible = await listAllAccessibleAdAccounts(session.token);
+  } catch {
+    return NextResponse.redirect(new URL("/app?connect=error", request.url));
+  }
+  const match = accessible.find((a) => a.externalId === id);
+  if (!match) return NextResponse.redirect(new URL("/app?connect=denied", request.url));
+
   const admin = createAdminClient();
   const { data: acct, error } = await admin
     .from("ad_accounts")
     .upsert(
-      { user_id: user.id, platform: "meta", external_id: id, name, status: "connected", connected_at: new Date().toISOString() },
+      { user_id: user.id, platform: "meta", external_id: id, name: match.name, status: "connected", connected_at: new Date().toISOString() },
       { onConflict: "user_id,platform,external_id" },
     )
     .select("id")
