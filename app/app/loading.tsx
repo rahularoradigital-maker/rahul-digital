@@ -7,7 +7,7 @@ function Bar({ w, h = 14 }: { w: string; h?: number }) {
 }
 
 function Card({ children }: { children?: React.ReactNode }) {
-  return <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">{children}</div>;
+  return <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">{children}</div>;
 }
 
 export default function DashboardLoading() {

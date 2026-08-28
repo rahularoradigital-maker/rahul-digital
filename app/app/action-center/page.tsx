@@ -96,7 +96,7 @@ function ActionSection({
 }) {
   const style = PRIORITY_STYLE[items[0].priority];
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-2 flex items-center gap-2.5">
         <span className={`h-2 w-2 rounded-full ${style.dot}`} />
         <div className="text-base font-semibold">{heading}</div>

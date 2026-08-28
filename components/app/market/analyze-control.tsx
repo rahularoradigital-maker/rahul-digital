@@ -48,7 +48,7 @@ export function AnalyzeControl({ analyzedCount }: { analyzedCount: number }) {
   }
 
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-base font-semibold">AI creative analysis</div>

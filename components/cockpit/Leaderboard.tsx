@@ -15,13 +15,13 @@ function confColor(v: Verdict): string {
 export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: CockpitAd[]; rupees: Intl.NumberFormat; accountId?: string; dateParam?: string }) {
   return (
     <div className="overflow-hidden rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)]">
-      <div className="flex items-center justify-between px-[22px] pt-5">
+      <div className="flex items-center justify-between px-6 pt-5">
         <div>
           <div className="text-base font-semibold">Creative leaderboard</div>
           <div className="text-[13px] text-[var(--ink-muted)]">Ranked by creative score · best first</div>
         </div>
       </div>
-      <div className="overflow-x-auto px-[22px] pb-2 pt-2">
+      <div className="overflow-x-auto px-6 pb-2 pt-2">
         {ads.map((ad, i) => {
           const v = VERDICT_STYLE[ad.verdict];
           const conf = Math.round(ad.confidence * 100);

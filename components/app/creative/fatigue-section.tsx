@@ -52,9 +52,9 @@ function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: Co
 
       <div className="overflow-hidden rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)]">
         {sorted.length === 0 ? (
-          <div className="p-[22px] text-sm text-[var(--ink-muted)]">No ads assessed yet.</div>
+          <div className="p-6 text-sm text-[var(--ink-muted)]">No ads assessed yet.</div>
         ) : (
-          <div className="px-[22px] pb-2 pt-2">
+          <div className="px-6 pb-2 pt-2">
             {sorted.map((ad) => {
               const fatigue = FATIGUE_STATE[ad.verdict];
               const action = PRIORITY_STYLE[ad.action.priority];

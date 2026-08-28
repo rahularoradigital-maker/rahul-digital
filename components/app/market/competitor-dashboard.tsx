@@ -68,7 +68,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
         <table className="w-full min-w-[680px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-[var(--hairline)] text-left text-[13px] text-[var(--ink-muted)]">
-              <th className="px-[22px] py-3 font-medium">Brand</th>
+              <th className="px-6 py-3 font-medium">Brand</th>
               <th className="px-4 py-3 text-right font-medium tabular-nums">Live ads</th>
               <th className="px-4 py-3 text-right font-medium tabular-nums">Active</th>
               <th className="px-4 py-3 text-right font-medium tabular-nums">Video</th>
@@ -81,7 +81,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
           <tbody>
             {brands.map((b) => (
               <tr key={b.pageId} className="border-b border-[var(--surface-alt)] last:border-b-0">
-                <td className="px-[22px] py-3">
+                <td className="px-6 py-3">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{b.label}</span>
                     {b.isMyBrand && (
@@ -105,7 +105,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
 
       {/* Whitespace / gaps (stage 8, deterministic) */}
       {report.myBrand && (report.gaps.formats.length > 0 || report.gaps.ctas.length > 0) && (
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
           <div className="mb-1 text-base font-semibold">Whitespace vs your brand</div>
           <div className="mb-3 text-[13px] text-[var(--ink-muted)]">
             Formats and CTAs your competitors run that {report.myBrand.label} does not. A factual gap, not advice.
@@ -127,7 +127,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
 
       {/* Next creatives to test (stage 8, deterministic - from real format/CTA/hook gaps) */}
       {data.recommendations.length > 0 && (
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
           <div className="mb-1 text-base font-semibold">Next creatives to test</div>
           <div className="mb-3.5 text-[13px] text-[var(--ink-muted)]">
             Concrete tests drawn from real Ad Library gaps - formats, CTAs and hooks competitors run that you do not. Counts only, no guessing.
@@ -205,7 +205,7 @@ function Patterns({ title, items }: { title: string; items: { label: string; cou
 
 function CreativeIntelSection({ intel }: { intel: CreativeIntel }) {
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <span className="text-base font-semibold">Creative intelligence</span>
         <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">
@@ -236,7 +236,7 @@ function CreativeIntelSection({ intel }: { intel: CreativeIntel }) {
 
 function TrafficSection({ traffic }: { traffic: BrandTraffic[] }) {
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 text-base font-semibold">Where competitors send traffic</div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
         Each brand's ad clicks by landing-page destination - own D2C site vs the big marketplaces and app stores.
@@ -306,7 +306,7 @@ function LongRunningSection({ brands }: { brands: BrandAnalytics[] }) {
     .slice(0, 8);
   if (ads.length === 0) return null;
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 text-base font-semibold">Longest-running creatives</div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
         Active ads a brand has kept live the longest - a strong proxy for what is working (brands do not keep losers running).
@@ -336,7 +336,7 @@ function LongRunningSection({ brands }: { brands: BrandAnalytics[] }) {
 
 function BrandCard({ brand }: { brand: BrandAnalytics }) {
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-base font-semibold">{brand.label}</span>
         {brand.isMyBrand && (

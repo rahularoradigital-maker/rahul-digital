@@ -23,7 +23,7 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
     );
   }
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
           <div className="text-base font-semibold">This week&apos;s ranked plan</div>

@@ -153,7 +153,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
   if (!ready) return null;
 
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 text-base font-semibold">Find brands to track</div>
       <div className="mb-3 text-[13px] text-[var(--ink-muted)]">
         Search Meta brand pages by name or category, then click to set your brand or add a competitor. No URL hunting.

@@ -109,7 +109,7 @@ function ContributorList({ items, accountId, dateParam, kind }: { items: SpendCo
 function ScalingCard({ marginal }: { marginal: MarginalRead }) {
   const s = MARGINAL_STYLE[marginal.classification];
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <span className="text-base font-semibold">Scaling headroom</span>
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
@@ -229,7 +229,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
 
       {/* Wasted spend */}
       {view.waste.status === "ok" && (
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
           <div className="mb-1 text-base font-semibold">Budget waste</div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
             High spend plus poor economics. Small-spend low-ROAS ads are excluded. Insufficient data is not waste.
@@ -250,7 +250,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
 
       {/* Opportunity loss: money actively bleeding (wasted + at-risk / fatiguing spend) */}
       {view.opportunity.totalLossRs > 0 && (
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
           <div className="mb-1 text-base font-semibold">Opportunity loss</div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">{view.opportunity.basis}</div>
           <div className="flex flex-wrap items-end gap-8 border-t border-[var(--surface-alt)] pt-4">
