@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getUserMetaSession } from "@/lib/meta-sync";
 import { analyzeCreative } from "@/lib/agents/creative/orchestrator";
 import { probeGemini, GEMINI_MODEL } from "@/lib/gemini";
 
@@ -12,6 +13,11 @@ import { probeGemini, GEMINI_MODEL } from "@/lib/gemini";
 export const maxDuration = 60;
 
 const REQUEST_CAP = 40; // max creatives analyzed per call (resume by calling again)
+// Per-user DAILY cost cap: each creative fans out to ~6 Gemini vision calls, and the client can
+// re-invoke ("Continue"). Without a ceiling one user could drive an unbounded bill. This caps the
+// creatives one user can analyze in a rolling 24h window; over the cap the route does no Gemini
+// work at all. calibrate-at-build.
+const DAILY_CREATIVE_CAP = 300;
 // Each creative fans out to ~6 specialist agents, so keep the outer concurrency low: 2
 // creatives x 6 agents = 12 concurrent Gemini calls, which stays under typical rate limits.
 const CONCURRENCY = 2;
@@ -69,11 +75,16 @@ export async function POST(request: NextRequest) {
   }
   const perBrand = Math.max(1, Math.min(200, Math.floor(body.perBrand ?? 20)));
 
+  // Scope to the active account's competitor set (matches what the Market page shows), so we do
+  // not analyze another account's ads or count them against this account's daily cap.
+  const session = await getUserMetaSession(userId);
+  const accountId = session?.activeExternalId ?? null;
   const admin = createAdminClient();
-  const { data: adsRaw } = await admin
+  const adsBase = admin
     .from("competitor_ads")
     .select("page_id, ad_archive_id, is_my_brand, brand_label, is_active, start_date, title, body, cta_text, image_url, video_url, video_thumb_url")
     .eq("user_id", userId);
+  const { data: adsRaw } = await (accountId === null ? adsBase.is("account_external_id", null) : adsBase.eq("account_external_id", accountId));
   const ads = (adsRaw as AdRow[] | null) ?? [];
   if (ads.length === 0) return NextResponse.json({ ok: false, error: "No competitor ads yet. Run the pull first." }, { status: 400 });
 
@@ -82,7 +93,28 @@ export async function POST(request: NextRequest) {
   const analyzed = new Set((done ?? []).map((d: { ad_archive_id: string }) => d.ad_archive_id));
 
   const selected = topPerBrand(ads, perBrand).filter((a) => !analyzed.has(a.ad_archive_id));
-  const queue = selected.slice(0, REQUEST_CAP);
+
+  // Enforce the rolling-24h per-user cap BEFORE spending any Gemini tokens. On a count-failure we
+  // treat usage as 0 (REQUEST_CAP still bounds the request), so a DB hiccup never blocks the user.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count: usedToday } = await admin
+    .from("competitor_creative_analysis")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("analyzed_at", since);
+  const dailyRemaining = Math.max(0, DAILY_CREATIVE_CAP - (usedToday ?? 0));
+  if (dailyRemaining === 0) {
+    return NextResponse.json({
+      ok: true,
+      analyzed: 0,
+      failed: 0,
+      remaining: selected.length,
+      dailyCapReached: true,
+      message: `Daily analysis limit (${DAILY_CREATIVE_CAP} creatives) reached for this account. It resets on a rolling 24-hour basis.`,
+    });
+  }
+
+  const queue = selected.slice(0, Math.min(REQUEST_CAP, dailyRemaining));
   const remaining = selected.length - queue.length;
 
   let ok = 0;
