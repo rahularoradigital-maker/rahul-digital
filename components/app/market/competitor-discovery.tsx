@@ -16,13 +16,15 @@ export function CompetitorDiscovery() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [tracked, setTracked] = useState<Tracked[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [suggested, setSuggested] = useState<string[]>([]);
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   async function find() {
     setPhase("searching");
     setError(null);
     try {
       const res = await fetch("/api/brand/discover", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-      const d = (await res.json()) as { ok?: boolean; candidates?: Candidate[]; error?: string };
+      const d = (await res.json()) as { ok?: boolean; candidates?: Candidate[]; error?: string; suggested?: string[]; lookupError?: string };
       if (!res.ok || !d.ok) {
         setError(d.error ?? "Discovery failed. Please try again.");
         setPhase("idle");
@@ -30,6 +32,8 @@ export function CompetitorDiscovery() {
       }
       const cands = d.candidates ?? [];
       setCandidates(cands);
+      setSuggested(d.suggested ?? []);
+      setLookupError(d.lookupError ?? null);
       setSelected(new Set(cands.slice(0, 6).map((c) => c.pageId))); // default-select the top few
       setPhase("review");
     } catch {
@@ -89,7 +93,18 @@ export function CompetitorDiscovery() {
       {(phase === "review" || phase === "tracking") && (
         <div>
           {candidates.length === 0 ? (
-            <p className="text-[13px] text-[var(--ink-muted)]">No candidates found. Try adding more specific sub-categories to the profile and re-confirm.</p>
+            lookupError ? (
+              <div className="space-y-2">
+                <p className="text-[13px] text-[var(--bad-ink)]">{lookupError}</p>
+                {suggested.length > 0 && (
+                  <p className="text-[13px] text-[var(--ink-muted)]">
+                    Competitors identified from your brand: <span className="text-[var(--ink)]">{suggested.join(", ")}</span>. Once the data provider is topped up, tracking will pull their ads.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-[13px] text-[var(--ink-muted)]">No candidates found. Try adding more specific sub-categories to the profile and re-confirm.</p>
+            )
           ) : (
             <>
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">

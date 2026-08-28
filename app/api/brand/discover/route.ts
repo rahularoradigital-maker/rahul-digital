@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
   const all: Candidate[] = [];
   const seen = new Set<string>();
   const nameQueue = [...names];
+  let lookupError: string | null = null; // the provider error, if every lookup is failing
   async function resolver() {
     for (;;) {
       const name = nameQueue.shift();
@@ -100,7 +101,8 @@ export async function POST(request: NextRequest) {
       let results: Candidate[];
       try {
         results = await searchCompanies(name, 3); // ranked best NAME-match first
-      } catch {
+      } catch (e) {
+        lookupError = e instanceof Error ? e.message : "lookup failed";
         continue; // one name failing must not sink discovery
       }
       // Keep the top 1-2 real pages per name; shortlist then dedupes, drops our own brand, ranks.
@@ -109,5 +111,16 @@ export async function POST(request: NextRequest) {
   }
   await Promise.all(Array.from({ length: Math.min(SEARCH_CONCURRENCY, Math.max(1, nameQueue.length)) }, resolver));
   const candidates = shortlistCandidates(all, session.activeAccountName ?? "", 10);
+  // We got competitor NAMES from Gemini but resolved ZERO real pages AND the lookups were erroring:
+  // that is a provider problem (e.g. Ad Library data credits exhausted), not "profile too vague".
+  // Surface it honestly with the names we did find, instead of misleading "add more sub-categories".
+  if (candidates.length === 0 && lookupError) {
+    return NextResponse.json({
+      ok: true,
+      candidates: [],
+      suggested: names,
+      lookupError: `Could not look up these brands in the Ad Library (${lookupError}). The competitor data provider may be out of credits.`,
+    });
+  }
   return NextResponse.json({ ok: true, candidates, suggested: names });
 }
