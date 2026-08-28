@@ -31,6 +31,11 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
                   <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
                     {ad.objective}
                   </span>
+                  {ad.active === false && (
+                    <span className="shrink-0 rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)]">
+                      Paused
+                    </span>
+                  )}
                 </div>
                 {ad.why[0] && <div className="mt-1.5 truncate text-[13px] text-[var(--ink-muted)]">&#8627; {ad.why[0]}</div>}
               </div>
