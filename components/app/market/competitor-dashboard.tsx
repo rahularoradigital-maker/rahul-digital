@@ -426,7 +426,7 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
                 <div className="relative aspect-square w-full overflow-hidden bg-[var(--surface-alt)]">
                   {ad.imageUrl || ad.videoThumbUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={ad.imageUrl ?? ad.videoThumbUrl ?? ""} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    <img src={ad.imageUrl ?? ad.videoThumbUrl ?? ""} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-[11px] text-[var(--ink-muted)]">No preview</div>
                   )}

@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAnthropic, CLAUDE_MODEL } from "@/lib/anthropic";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
+import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 
 // Rolling-24h per-user cap on this PAID Claude call, so a signed-in user (or a script on a valid
 // session) cannot loop it and run up the bill. Mirrors the competitors DAILY_CREATIVE_CAP pattern.
@@ -48,17 +50,21 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const live = await fetchLiveCockpit(user.id, 14);
+  // Answer about the SAME scope the user is viewing (window / campaign / objective / weights), and
+  // reuse the dashboard's already-warm cockpit cache instead of triggering a separate cold pull.
+  const scope = resolveCockpitScope(await cookies(), 14);
+  const live = await fetchLiveCockpit(user.id, scope.lookbackDays, scope.campaignId, scope.objectives, scope.explicitWindow, scope.weights);
   if (live.status !== "connected") {
     return NextResponse.json({ answer: "Connect a Meta ad account first - I can only answer from your real account data." });
   }
+  const windowLabel = scope.explicitWindow ? `${scope.explicitWindow.since} to ${scope.explicitWindow.until}` : `last ${scope.lookbackDays} days`;
 
   const v = live.view;
   // Compact, real-only snapshot the model may reason over. Every value here is a real computed
   // number from the connected account; nothing is invented.
   const context = {
     account: live.accountName,
-    window: "last 14 days",
+    window: windowLabel,
     accountHealth: { score: v.accountHealth.score, basis: v.accountHealth.basis },
     totals: live.scopeTotals,
     concentration: v.concentration,
@@ -70,7 +76,8 @@ export async function POST(request: NextRequest) {
   };
 
   const system =
-    "You are AdBrain's analyst. Answer the user's question using ONLY the DATA JSON below - the user's REAL connected Meta ad account for the last 14 days. Rules: never invent a number or a fact that is not in the DATA; if the DATA does not contain the answer, say so plainly and name what to connect or check; every number you state must appear in the DATA. Be short and direct, plain Indian English, rupees for money, no hype words, no em dashes.";
+    `You are AdBrain's analyst. Answer the user's question using ONLY the DATA JSON below - the user's REAL connected Meta ad account for the ${windowLabel} (the window they are currently viewing). Rules:` +
+    " never invent a number or a fact that is not in the DATA; if the DATA does not contain the answer, say so plainly and name what to connect or check; every number you state must appear in the DATA. Be short and direct, plain Indian English, rupees for money, no hype words, no em dashes.";
 
   try {
     const anthropic = getAnthropic();

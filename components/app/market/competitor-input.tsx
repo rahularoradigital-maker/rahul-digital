@@ -184,7 +184,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
             <div key={s.pageId} className="flex items-center gap-3 border-t border-[var(--surface-alt)] px-3 py-2 first:border-t-0">
               {s.imageUri ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={s.imageUri} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                <img src={s.imageUri} alt="" loading="lazy" decoding="async" className="h-8 w-8 shrink-0 rounded-full object-cover" />
               ) : (
                 <div className="h-8 w-8 shrink-0 rounded-full bg-[var(--surface-alt)]" />
               )}

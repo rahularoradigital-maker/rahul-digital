@@ -46,23 +46,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
   if (!user) redirect("/login");
   const userEmail = user.email ?? undefined;
 
-  // Optional campaign filter set by the topbar campaign picker (a cookie, so it scopes
-  // every page globally without threading a param through each one). Empty = all campaigns.
-  const campaignId = cookieStore.get("adbrain.campaign")?.value || undefined;
-  const objectivesRaw = cookieStore.get("adbrain.objectives")?.value || "";
-  const objectives = objectivesRaw ? objectivesRaw.split(",").filter(Boolean) : [];
-
-  // Optional per-account verdict-weight override from Settings. parseWeights is strict: a missing or
-  // invalid cookie yields null, and fetchLiveCockpit then uses the trusted build default - so scores
-  // are identical to before for anyone who never set a valid override.
-  const weights = parseWeights(cookieStore.get("adbrain.weights")?.value) ?? undefined;
-
-  // Date window set by the topbar (a cookie, so it scopes every page globally). Either a
-  // preset ("days:<n>") or an explicit custom range ("range:<from>:<to>"). Absent = fall
-  // back to the `days` argument the page derived from ?days.
-  const win = parseWindowCookie(cookieStore.get("adbrain.window")?.value);
-  const lookbackDays = win?.kind === "days" ? win.days : win?.kind === "range" ? rangeDays(win.since, win.until) : days;
-  const explicitWindow = win?.kind === "range" ? { since: win.since, until: win.until } : undefined;
+  const { lookbackDays, campaignId, objectives, explicitWindow, weights } = resolveCockpitScope(cookieStore, days);
   const effectiveDays = lookbackDays;
 
   // The exact date window the user is viewing, formatted for the Ads Manager `date` param
@@ -93,6 +77,27 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     return { connected: false, days: effectiveDays, reason: "error", errorNote: live.message, userEmail };
   }
   return { connected: false, days: effectiveDays, reason: "not_connected", userEmail };
+}
+
+// Minimal shape of what we read from the cookie store (works for both next/headers cookies()
+// and a route handler's request cookies), so this helper stays decoupled from Next internals.
+type CookieReader = { get(name: string): { value: string } | undefined };
+
+/**
+ * Resolve the scope filters (window / campaign / objective / weights) the topbar wrote into cookies
+ * into the exact argument tuple fetchLiveCockpit takes. Shared by loadCockpit AND /api/ask so both
+ * compute the SAME cache key - Ask reuses the dashboard's already-warm cockpit instead of triggering
+ * its own separate cold pull, and answers about the window the user is actually viewing.
+ */
+export function resolveCockpitScope(cookieStore: CookieReader, defaultDays: number) {
+  const campaignId = cookieStore.get("adbrain.campaign")?.value || undefined;
+  const objectivesRaw = cookieStore.get("adbrain.objectives")?.value || "";
+  const objectives = objectivesRaw ? objectivesRaw.split(",").filter(Boolean) : [];
+  const weights = parseWeights(cookieStore.get("adbrain.weights")?.value) ?? undefined;
+  const win = parseWindowCookie(cookieStore.get("adbrain.window")?.value);
+  const lookbackDays = win?.kind === "days" ? win.days : win?.kind === "range" ? rangeDays(win.since, win.until) : defaultDays;
+  const explicitWindow = win?.kind === "range" ? { since: win.since, until: win.until } : undefined;
+  return { lookbackDays, campaignId, objectives, explicitWindow, weights };
 }
 
 // Parse the adbrain.window cookie. "days:<n>" -> preset; "range:<from>:<to>" -> custom
