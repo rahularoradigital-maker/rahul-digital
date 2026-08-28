@@ -19,7 +19,9 @@ export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [asked, setAsked] = useState(false);
+  const [ask, setAsk] = useState("");
+  const [answer, setAnswer] = useState<string | null>(null);
+  const [asking, setAsking] = useState(false);
 
   return (
     <div className="px-4 py-3 sm:px-6">
@@ -34,11 +36,23 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Ask (answer engine pending - honest placeholder) */}
+          {/* Ask AdBrain: answers grounded in your real cockpit data (Claude, no fabrication). */}
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              setAsked(true);
+              const q = ask.trim();
+              if (!q || asking) return;
+              setAsking(true);
+              setAnswer(null);
+              try {
+                const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q }) });
+                const d = (await res.json()) as { answer?: string; error?: string };
+                setAnswer(d.answer ?? d.error ?? "No answer.");
+              } catch {
+                setAnswer("Ask failed. Please try again.");
+              } finally {
+                setAsking(false);
+              }
             }}
             className="relative hidden items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-2 text-[var(--ink-muted)] transition focus-within:border-[var(--accent)] lg:flex"
           >
@@ -48,16 +62,20 @@ export function Topbar() {
             </svg>
             <input
               name="q"
-              placeholder="Ask AdBrain (soon)"
-              aria-label="Ask AdBrain (answer engine coming soon)"
-              onChange={() => setAsked(false)}
+              value={ask}
+              placeholder="Ask AdBrain"
+              aria-label="Ask AdBrain"
+              onChange={(e) => {
+                setAsk(e.target.value);
+                if (answer) setAnswer(null);
+              }}
               className="w-40 bg-transparent text-[13px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
             />
-            {asked ? (
-              <span className="absolute right-0 top-[calc(100%+6px)] z-20 w-72 rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-left text-[12px] text-[var(--ink)] shadow-lg">
-                AI answers arrive with the next update. For now, your ranked plan is in the cockpit below.
-              </span>
-            ) : null}
+            {(asking || answer) && (
+              <div className="absolute right-0 top-[calc(100%+6px)] z-20 max-h-64 w-80 overflow-y-auto whitespace-pre-wrap rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-left text-[12px] leading-relaxed text-[var(--ink)] shadow-lg">
+                {asking ? "Thinking..." : answer}
+              </div>
+            )}
           </form>
 
           <button
