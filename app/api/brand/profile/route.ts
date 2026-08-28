@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getUserMetaSession, fetchLiveCockpit } from "@/lib/meta-sync";
-import { fetchAccountCurrency } from "@/lib/meta-source";
+import { getUserMetaSession } from "@/lib/meta-sync";
+import { fetchAccountCurrency, metaSource } from "@/lib/meta-source";
 import { deriveBrandProfile, loadBrandProfile, saveBrandProfile, type DerivedProfile } from "@/lib/brand/profile";
 
 // Stage 1 of brand understanding: derive a structured brand profile from the account's REAL ad data
@@ -65,9 +65,13 @@ export async function POST(request: NextRequest) {
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: "Brand understanding needs GEMINI_API_KEY set in Vercel." }, { status: 400 });
   }
-  const currency = await fetchAccountCurrency(acct, session.token);
-  const live = await fetchLiveCockpit(user.id, 30);
-  const adNames = live.status === "connected" ? live.view.leaderboard.map((a) => a.name).filter((n): n is string => Boolean(n)) : [];
+  // Ad names come from a single lightweight active-ads call (not the full ~9s cockpit pull) - names
+  // alone are enough for Gemini to read the category/products, and this keeps the derive fast.
+  const [currency, ads] = await Promise.all([
+    fetchAccountCurrency(acct, session.token),
+    metaSource.listAds(acct, session.token).catch(() => []),
+  ]);
+  const adNames = ads.map((a) => a.name).filter((n): n is string => Boolean(n));
   if (adNames.length === 0) {
     return NextResponse.json({ error: "No ads found to learn from yet. Make sure the account has active ads with spend." }, { status: 400 });
   }
