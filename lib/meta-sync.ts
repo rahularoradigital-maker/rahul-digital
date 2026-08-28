@@ -98,7 +98,11 @@ export type ProcessedCounts = { campaigns: number; adSets: number; ads: number }
 export type ScopeTotals = { spendRs: number; revenueRs: number; roas: number | null };
 
 export type LiveCockpit =
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null }
+  // syncedAt/stale are freshness metadata (ISSUE 10): syncedAt is when the served numbers were pulled
+  // from Meta; stale=true means a day-old cache is being shown while a background refresh runs. Optional
+  // so the deep pull (fetchLiveCockpitUncached) and non-UI callers need not set them; fetchLiveCockpit
+  // attaches them at the serving boundary where the fresh/stale/cold path is known.
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; syncedAt?: string; stale?: boolean }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -470,6 +474,13 @@ function isRenderableShape(v: LiveCockpit): boolean {
   );
 }
 
+// Attach freshness metadata (ISSUE 10) at the serving boundary: syncedAt = when these numbers were
+// pulled from Meta, stale = a day-old cache shown while a background refresh runs. Non-connected
+// states carry no freshness and pass straight through.
+function withFreshness(v: LiveCockpit, syncedAtMs: number, stale: boolean): LiveCockpit {
+  return v.status === "connected" ? { ...v, syncedAt: new Date(syncedAtMs).toISOString(), stale } : v;
+}
+
 export async function fetchLiveCockpit(
   userId: string,
   lookbackDays: number = LOOKBACK_DAYS,
@@ -497,7 +508,7 @@ export async function fetchLiveCockpit(
   const hit = cockpitCache.get(memKey);
   if (hit && now - hit.at < FRESH_MS && isRenderableShape(hit.value)) {
     perfMark("warm:L1-HIT-total", w0);
-    return hit.value;
+    return withFreshness(hit.value, hit.at, false);
   }
 
   // L2: Supabase, shared across serverless instances
@@ -525,7 +536,7 @@ export async function fetchLiveCockpit(
     cockpitCache.set(memKey, { at: now - cached.age, value: cached.value });
     if (cached.age < FRESH_MS) {
       perfMark("warm:L2-FRESH-total", w0);
-      return cached.value;
+      return withFreshness(cached.value, now - cached.age, false);
     }
     if (cached.age < STALE_MS) {
       // Serve stale immediately, refresh in the background so the next load is fresh.
@@ -535,7 +546,7 @@ export async function fetchLiveCockpit(
         // after() unavailable outside a request scope; the stale value is still fine.
       }
       perfMark("warm:L2-STALE-total (bg refresh queued)", w0);
-      return cached.value;
+      return withFreshness(cached.value, now - cached.age, true);
     }
   }
 
@@ -556,7 +567,8 @@ export async function fetchLiveCockpit(
   const timeout = new Promise<LiveCockpit>((resolve) =>
     setTimeout(() => resolve({ status: "error", message: "Still syncing your account - try again in a few seconds." }), COLD_PULL_TIMEOUT_MS),
   );
-  return Promise.race([pull, timeout]);
+  const result = await Promise.race([pull, timeout]);
+  return withFreshness(result, Date.now(), false); // a cold pull just synced now (error state passes through)
 }
 
 function daysAgo(n: number): string {

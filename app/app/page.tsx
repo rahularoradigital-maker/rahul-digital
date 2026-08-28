@@ -29,7 +29,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} scopeTotals={data.scopeTotals} days={data.days} />;
+  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} scopeTotals={data.scopeTotals} days={data.days} syncedAt={data.syncedAt} stale={data.stale} />;
 }
 
 // Honest confidence de-rating: when the day-wise series has quality problems (thin
@@ -146,7 +146,19 @@ function compositionRows(view: CockpitView): CompositionRow[] {
   ];
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, days }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; days: number }) {
+// "synced Xm ago" for the connected line (ISSUE 10): so a day-old cached view can never look live.
+// Rendered server-side, so it is relative to the moment the page rendered.
+function syncedLabel(iso?: string): string {
+  if (!iso) return "";
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+}
+
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, days, syncedAt, stale }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; days: number; syncedAt?: string; stale?: boolean }) {
   const health = view.accountHealth;
   // Headline KPIs use the TRUE scope totals (all campaigns/ads of the selected objective),
   // so spend / revenue / ROAS match Ads Manager - not the analyzed-ads subset in view.totals.
@@ -162,7 +174,8 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
       <div>
         <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
-          {`Connected · ${accountName} · ${processed.campaigns} campaign${processed.campaigns === 1 ? "" : "s"} · ${processed.adSets} ad set${processed.adSets === 1 ? "" : "s"} · ${adsAnalyzed} ads · last ${days} days`}
+          <span>{`Connected · ${accountName} · ${processed.campaigns} campaign${processed.campaigns === 1 ? "" : "s"} · ${processed.adSets} ad set${processed.adSets === 1 ? "" : "s"} · ${adsAnalyzed} ads · last ${days} days${syncedAt ? ` · synced ${syncedLabel(syncedAt)}` : ""}`}</span>
+          {stale ? <span className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">refreshing…</span> : null}
         </div>
         <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">Here&apos;s what to ship this week.</h1>
       </div>
