@@ -48,12 +48,14 @@ export async function proxy(request: NextRequest) {
       },
     );
 
-    // IMPORTANT: getUser() refreshes the token. Do not run logic between
-    // createServerClient and getUser or sessions can drop intermittently.
-    const {
-      data: { user: fetchedUser },
-    } = await supabase.auth.getUser();
-    user = fetchedUser;
+    // getClaims() verifies the JWT LOCALLY (this project uses asymmetric ES256 signing keys), so
+    // most requests do NOT hit the Auth server - unlike getUser(), which was a network round-trip on
+    // every /app request. It still refreshes the session when the token is near expiry, writing the
+    // new cookies through the setAll callback above, so session refresh is preserved.
+    // IMPORTANT: keep this immediately after createServerClient - do not run logic in between, or
+    // the refresh-on-expiry can drop sessions intermittently.
+    const { data } = await supabase.auth.getClaims();
+    user = data?.claims?.sub ? { id: data.claims.sub } : null;
   } catch {
     user = null;
   }
