@@ -1,0 +1,42 @@
+name: Engineering health
+
+# The recurring, report-only half of the engineering-health system. CI (ci.yml) already runs the
+# correctness gates on every push/PR; this adds the SCHEDULED dimension so silent drift (new
+# dependency vulnerabilities, code/bloat growth) is caught even when nobody pushes. It is Level 0-1
+# only: it type-checks, builds, runs every gate, and publishes a health report as an artifact. It
+# NEVER edits or deletes code - a human reads the report and decides.
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily 06:00 UTC (GitHub runs schedules from the default branch)
+  workflow_dispatch: {} # allow a manual run from the Actions tab
+
+concurrency:
+  group: health-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Build
+        run: npm run build
+      - name: Correctness gates (all)
+        run: npm run check:all
+      - name: Health report
+        run: npm run health
+      - name: Publish health report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engineering-health
+          path: |
+            HEALTH.md
+            docs/audit-state.json

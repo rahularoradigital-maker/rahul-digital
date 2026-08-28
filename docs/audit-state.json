@@ -1,0 +1,37 @@
+{
+  "generated": "2026-08-28",
+  "status": "GREEN",
+  "deps": {
+    "prod": 6,
+    "dev": 8
+  },
+  "correctnessGates": 35,
+  "security": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "source": {
+    "files": 185,
+    "loc": 20983,
+    "largeFiles": 3,
+    "markers": 9
+  },
+  "largest": [
+    {
+      "file": "lib/app/kpi-catalog.ts",
+      "lines": 2443
+    },
+    {
+      "file": "lib/meta-source.ts",
+      "lines": 606
+    },
+    {
+      "file": "lib/meta-sync.ts",
+      "lines": 531
+    }
+  ]
+}
