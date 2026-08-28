@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getUserMetaSession, bustCockpitCache } from "@/lib/meta-sync";
+import { getUserMetaSession, bustCockpitCache, fetchLiveCockpit } from "@/lib/meta-sync";
 import { storeToken } from "@/lib/oauth-store";
 
 // Switch the active ad account. One user OAuth token works across all their accounts,
@@ -36,9 +37,18 @@ export async function GET(request: NextRequest) {
   await storeToken(acct.id, session.token);
   // Bust the cached cockpit (both levels) so the newly selected account shows immediately.
   await bustCockpitCache(user.id);
-  // Clear any campaign filter: campaign ids belong to the previous account and would
-  // otherwise filter the new account down to nothing.
+  // AUTO-PROCESS on account switch: warm the new account's cockpit cache in the BACKGROUND (the
+  // just-upserted account is now the most-recent = active, so this pulls it). By the time the
+  // browser lands on /app the data is usually ready -> instant, not a cold pull. Best-effort.
+  try {
+    after(() => fetchLiveCockpit(user.id, 14).catch(() => {}));
+  } catch {
+    // after() unavailable outside a request scope; the /app load will pull normally.
+  }
+  // Clear campaign + objective filters: both belong to the previous account and would otherwise
+  // scope the new account to nothing / an objective it may not have.
   const res = NextResponse.redirect(new URL("/app", request.url));
   res.cookies.set("adbrain.campaign", "", { path: "/", maxAge: 0 });
+  res.cookies.set("adbrain.objectives", "", { path: "/", maxAge: 0 });
   return res;
 }
