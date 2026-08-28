@@ -4,6 +4,8 @@
 // task and its own schema; this only carries the request. Returns null on any failure so an
 // agent can fail alone without taking down the orchestration.
 
+import { fetchWithTimeout } from "./http.ts";
+
 const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 // Text tasks (Ask, Brand Brain, Concepts). gemini-2.0-flash was RETIRED by Google (404: "no longer
@@ -50,7 +52,7 @@ export async function probeGemini(): Promise<{ ok: boolean; status: number; body
 export async function fetchInlineImage(url: string | null | undefined): Promise<InlineImage | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url, {}, 10_000);
     if (!res.ok) return null;
     const mimeType = res.headers.get("content-type") ?? "image/jpeg";
     if (!mimeType.startsWith("image/")) return null;
@@ -86,11 +88,11 @@ export async function callGemini(
   // which is what makes many creatives fail on a burst; a hard error (400/404) is not retried.
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(key)}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: bodyJson,
-      });
+      const res = await fetchWithTimeout(
+        `${ENDPOINT}?key=${encodeURIComponent(key)}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: bodyJson },
+        20_000,
+      );
       if (!res.ok) {
         if ((res.status === 429 || res.status === 503) && attempt === 0) {
           await new Promise((r) => setTimeout(r, 1200));
@@ -102,8 +104,10 @@ export async function callGemini(
       const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text) return null;
       return JSON.parse(text) as Record<string, unknown>;
-    } catch {
-      if (attempt === 0) {
+    } catch (e) {
+      // Retry a transient blip once, but NOT a timeout abort - retrying would double the wait and can
+      // push the run past the serverless limit. A timed-out creative fails alone to null.
+      if (attempt === 0 && !(e instanceof Error && e.name === "AbortError")) {
         await new Promise((r) => setTimeout(r, 1200));
         continue;
       }
