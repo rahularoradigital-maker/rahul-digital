@@ -38,7 +38,8 @@
     "check:fatigue-forecast": "node --experimental-strip-types scripts/check-fatigue-forecast.ts",
     "check:winner": "node --experimental-strip-types scripts/check-winner.ts",
     "check:fingerprint": "node --experimental-strip-types scripts/check-fingerprint.ts",
-    "check:diversity2": "node --experimental-strip-types scripts/check-diversity2.ts"
+    "check:diversity2": "node --experimental-strip-types scripts/check-diversity2.ts",
+    "check:recommendations": "node --experimental-strip-types scripts/check-recommendations.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

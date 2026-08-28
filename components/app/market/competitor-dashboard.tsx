@@ -125,6 +125,26 @@ export function CompetitorDashboard({ data }: { data: Data }) {
         </div>
       )}
 
+      {/* Next creatives to test (stage 8, deterministic - from real format/CTA/hook gaps) */}
+      {data.recommendations.length > 0 && (
+        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
+          <div className="mb-1 text-base font-semibold">Next creatives to test</div>
+          <div className="mb-3.5 text-[13px] text-[var(--ink-muted)]">
+            Concrete tests drawn from real Ad Library gaps - formats, CTAs and hooks competitors run that you do not. Counts only, no guessing.
+          </div>
+          <div className="space-y-2.5">
+            {data.recommendations.map((r, i) => (
+              <div key={`${r.kind}-${r.value}-${i}`} className="flex items-start gap-2.5">
+                <span className="mt-0.5 shrink-0 rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent)]">
+                  {r.kind}
+                </span>
+                <div className="text-[13px] text-[var(--ink)]">{r.reason}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Ad traffic distribution: where each brand sends its ad clicks (landing-page hosts) */}
       {report.trafficByBrand.length > 0 && <TrafficSection traffic={report.trafficByBrand} />}
 

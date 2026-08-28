@@ -167,6 +167,40 @@ export type CreativeIntel = {
   emotions: Counted[];
 };
 
+// Stage 8: "next creatives to test" - a factual, actionable list derived ONLY from real Ad
+// Library counts (format/CTA gaps competitors run that you don't, plus competitor hooks you do
+// not open with). No LLM, no fabrication: every recommendation names the real gap behind it.
+export type CreativeRecommendation = { kind: "format" | "cta" | "hook"; value: string; reason: string };
+
+export function buildRecommendations(report: CompetitorReport): CreativeRecommendation[] {
+  const recs: CreativeRecommendation[] = [];
+  const my = report.myBrand;
+  if (!my) return recs; // recommendations are relative to YOUR brand; without it there is no gap
+
+  // Format gaps: formats competitors run and you do not.
+  for (const f of report.gaps.formats) {
+    const n = report.competitors.filter((c) => c.formatMix[f] > 0).length;
+    if (n > 0) recs.push({ kind: "format", value: f, reason: `${n} competitor${n === 1 ? "" : "s"} run ${f} ads; you run none. Test a ${f} creative.` });
+  }
+  // CTA gaps: CTAs competitors use and you do not.
+  for (const cta of report.gaps.ctas.slice(0, 4)) {
+    recs.push({ kind: "cta", value: cta, reason: `Competitors use the "${cta}" CTA; you do not. Test it.` });
+  }
+  // Hook opportunities: competitor opening hooks you do not use, ranked by how many ads use them.
+  const myHooks = new Set((my.topHooks ?? []).map((h) => h.label.toLowerCase()));
+  const compHooks = new Map<string, number>();
+  for (const c of report.competitors) {
+    for (const h of c.topHooks) {
+      const key = h.label.toLowerCase();
+      if (!myHooks.has(key)) compHooks.set(h.label, (compHooks.get(h.label) ?? 0) + h.count);
+    }
+  }
+  for (const [hook, count] of [...compHooks.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4)) {
+    recs.push({ kind: "hook", value: hook, reason: `Competitors open with "${hook}" (${count} ad${count === 1 ? "" : "s"}); you do not. Test that angle.` });
+  }
+  return recs.slice(0, 8);
+}
+
 export function buildCreativeIntel(analyzed: AnalyzedCreative[]): CreativeIntel {
   const byBrand = new Map<string, { label: string; isMyBrand: boolean; tof: number; mof: number; bof: number; unknown: number }>();
   for (const c of analyzed) {
