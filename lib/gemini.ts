@@ -106,3 +106,44 @@ export async function callGemini(
   }
   return null;
 }
+
+/**
+ * Text-only variant of callGemini: a plain prompt in, a plain string out (no JSON schema). Used by
+ * Ask AdBrain to answer a question in prose. Same 429/503 retry. Returns null on any failure so the
+ * caller degrades gracefully; throws only when the key is missing (a real config error).
+ */
+export async function callGeminiText(prompt: string): Promise<string | null> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("GEMINI_API_KEY is not set");
+
+  const bodyJson = JSON.stringify({
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.2, maxOutputTokens: 500 },
+  });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(key)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: bodyJson,
+      });
+      if (!res.ok) {
+        if ((res.status === 429 || res.status === 503) && attempt === 0) {
+          await new Promise((r) => setTimeout(r, 1200));
+          continue;
+        }
+        return null;
+      }
+      const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+      const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+      return text?.trim() ?? null;
+    } catch {
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 1200));
+        continue;
+      }
+      return null;
+    }
+  }
+  return null;
+}

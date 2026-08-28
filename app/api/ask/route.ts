@@ -2,18 +2,19 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAnthropic, CLAUDE_MODEL } from "@/lib/anthropic";
+import { callGeminiText } from "@/lib/gemini";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 
-// Rolling-24h per-user cap on this PAID Claude call, so a signed-in user (or a script on a valid
-// session) cannot loop it and run up the bill. Mirrors the competitors DAILY_CREATIVE_CAP pattern.
+// Rolling-24h per-user cap so a signed-in user (or a script on a valid session) cannot loop the AI
+// call and hit rate limits / quota. Mirrors the competitors DAILY_CREATIVE_CAP pattern.
 const ASK_DAILY_CAP = 50;
 
 // "Ask AdBrain": answer a question grounded ONLY in the user's REAL cockpit data. The model is
 // handed a compact snapshot of the connected account and told to never invent a number - so an
-// answer either cites the real data or says it does not have it. Auth-gated (it makes a paid
-// Claude call). Server-only; the key never reaches the browser.
+// answer either cites the real data or says it does not have it. Uses Gemini (the same free-tier
+// provider already wired for creative analysis), so Ask costs nothing to run. Auth-gated;
+// server-only - the key never reaches the browser.
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
@@ -22,8 +23,8 @@ export async function POST(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: "Ask is not configured yet (ANTHROPIC_API_KEY missing)." }, { status: 400 });
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: "Ask is not configured yet (GEMINI_API_KEY missing)." }, { status: 400 });
   }
 
   let question = "";
@@ -80,21 +81,13 @@ export async function POST(request: NextRequest) {
     " never invent a number or a fact that is not in the DATA; if the DATA does not contain the answer, say so plainly and name what to connect or check; every number you state must appear in the DATA. Be short and direct, plain Indian English, rupees for money, no hype words, no em dashes.";
 
   try {
-    const anthropic = getAnthropic();
-    const msg = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 400,
-      system,
-      messages: [{ role: "user", content: `DATA:\n${JSON.stringify(context)}\n\nQUESTION: ${question}` }],
-    });
-    const answer = msg.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b as { text: string }).text)
-      .join("")
-      .trim();
-    // Record the spend for the cap (best-effort; a failed log must not fail the answer).
+    // Gemini takes a single prompt (no separate system role), so fold the rules + data + question
+    // into one grounded prompt.
+    const answer = await callGeminiText(`${system}\n\nDATA:\n${JSON.stringify(context)}\n\nQUESTION: ${question}`);
+    if (!answer) return NextResponse.json({ answer: "I could not form an answer from your data right now. Please try again." });
+    // Record the usage for the cap (best-effort; a failed log must not fail the answer).
     await admin.from("ask_log").insert({ user_id: user.id }).then(undefined, () => {});
-    return NextResponse.json({ answer: answer || "I could not form an answer from your data." });
+    return NextResponse.json({ answer });
   } catch {
     return NextResponse.json({ error: "Ask failed. Please try again." }, { status: 500 });
   }
