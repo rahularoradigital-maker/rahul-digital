@@ -4,7 +4,9 @@
 // not return is null, never invented.
 
 import type { MediaCategory, NormalizedAd } from "./competitors/types.ts";
+import { fetchWithTimeout } from "./http.ts";
 
+const SC_TIMEOUT_MS = 20_000; // a slow Ad Library edge must not hang the competitor pull
 const COMPANY_ADS_URL = "https://api.scrapecreators.com/v1/facebook/adLibrary/company/ads";
 const SEARCH_COMPANIES_URL = "https://api.scrapecreators.com/v1/facebook/adLibrary/search/companies";
 const MAX_PAGES = 3; // ~90 ads/brand: enough to characterise a brand while bounding credits.
@@ -45,7 +47,7 @@ export async function searchCompanies(query: string, limit = 10): Promise<Compan
   if (!q) return [];
   const url = new URL(SEARCH_COMPANIES_URL);
   url.searchParams.set("query", q);
-  const res = await fetch(url, { headers: { "x-api-key": key } });
+  const res = await fetchWithTimeout(url, { headers: { "x-api-key": key } }, SC_TIMEOUT_MS);
   if (!res.ok) throw new Error(`ScrapeCreators search ${res.status}`);
   const json = (await res.json()) as { searchResults?: RawCompany[] };
   const results = Array.isArray(json.searchResults) ? json.searchResults : [];
@@ -212,7 +214,7 @@ export async function fetchBrandAds(
     if (opts.country) url.searchParams.set("country", opts.country);
     if (cursor) url.searchParams.set("cursor", cursor);
 
-    const res = await fetch(url, { headers: { "x-api-key": key } });
+    const res = await fetchWithTimeout(url, { headers: { "x-api-key": key } }, SC_TIMEOUT_MS);
     if (!res.ok) throw new Error(`ScrapeCreators ${res.status} for page ${pageId}`);
     const json = (await res.json()) as { results?: RawAd[]; cursor?: string };
     const results = Array.isArray(json.results) ? json.results : [];
