@@ -390,27 +390,43 @@ export async function bustCockpitCache(userId?: string): Promise<void> {
 
 // Live pull, then write both cache levels. Returned to callers and also used as the
 // background refresh body.
-async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS): Promise<LiveCockpit> {
+// Write the freshly-pulled value to the shared L2 cache + age out stale rows. Best-effort.
+async function writeCockpitL2(userId: string, cacheKey: string, value: LiveCockpit): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    await admin
+      .from("cockpit_cache")
+      .upsert({ user_id: userId, cache_key: cacheKey, data: value, updated_at: new Date().toISOString() }, { onConflict: "user_id,cache_key" });
+    // Bound table growth: versioning the cache key (CACHE_SCHEMA) orphans old-shape rows, and each
+    // distinct filter/date permutation writes a new row. Drop this user's rows older than the stale
+    // window - they are never served anyway (a >STALE_MS row always triggers a cold pull), and this
+    // also ages out the orphaned old-schema rows. Scoped to this user, indexed by the PK. Best-effort.
+    await admin
+      .from("cockpit_cache")
+      .delete()
+      .eq("user_id", userId)
+      .lt("updated_at", new Date(Date.now() - STALE_MS).toISOString());
+  } catch {
+    // L2 write/cleanup failed; L1 still holds the value for this instance
+  }
+}
+
+// deferWrite=true (the cold, user-facing path): return the value immediately and persist to L2 in
+// the background via after(), so the user does not wait on two extra DB round-trips AFTER the ~9s
+// pull already completed. The background-refresh caller leaves it false (nothing is awaiting it).
+async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, deferWrite = false): Promise<LiveCockpit> {
   const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives, window, weights);
   if (value.status !== "error") {
     cockpitCache.set(memKey, { at: Date.now(), value });
-    try {
-      const admin = createAdminClient();
-      await admin
-        .from("cockpit_cache")
-        .upsert({ user_id: userId, cache_key: cacheKey, data: value, updated_at: new Date().toISOString() }, { onConflict: "user_id,cache_key" });
-      // Bound table growth: versioning the cache key (CACHE_SCHEMA) orphans old-shape rows, and
-      // each distinct filter/date permutation writes a new row. Drop this user's rows older than
-      // the stale window - they are never served anyway (a >STALE_MS row always triggers a cold
-      // pull), and this also ages out the orphaned old-schema rows. Scoped to this user, runs only
-      // on the (rare) cold-pull path, indexed by the (user_id, cache_key) PK. Best-effort.
-      await admin
-        .from("cockpit_cache")
-        .delete()
-        .eq("user_id", userId)
-        .lt("updated_at", new Date(Date.now() - STALE_MS).toISOString());
-    } catch {
-      // L2 write/cleanup failed; L1 still holds the value for this instance
+    if (deferWrite) {
+      try {
+        after(() => writeCockpitL2(userId, cacheKey, value));
+      } catch {
+        // after() unavailable outside a request scope: fall back to awaiting the write.
+        await writeCockpitL2(userId, cacheKey, value);
+      }
+    } else {
+      await writeCockpitL2(userId, cacheKey, value);
     }
   }
   return value;
@@ -501,9 +517,10 @@ export async function fetchLiveCockpit(
     }
   }
 
-  // Cold or too stale: block on the live pull (skeleton shows while this runs).
+  // Cold or too stale: block on the live pull (skeleton shows while this runs). deferWrite=true so
+  // the L2 cache write happens in the background and the user gets the value as soon as it is ready.
   if (PERF) console.log("[perf] COLD pull (blocking) - no fresh/stale cache for this filter combo");
-  return pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights);
+  return pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, true);
 }
 
 function daysAgo(n: number): string {

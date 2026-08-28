@@ -40,13 +40,14 @@ export type CockpitData =
  * Meta connection comes back as `{ connected: false, reason }` for the page to handle.
  */
 export async function loadCockpit(days: number): Promise<CockpitData> {
-  const user = await getCurrentUser();
+  // Independent: the user (React-cached, deduped with the layout's call) and the cookie store have
+  // no dependency, so resolve them together instead of one after the other.
+  const [user, cookieStore] = await Promise.all([getCurrentUser(), cookies()]);
   if (!user) redirect("/login");
   const userEmail = user.email ?? undefined;
 
   // Optional campaign filter set by the topbar campaign picker (a cookie, so it scopes
   // every page globally without threading a param through each one). Empty = all campaigns.
-  const cookieStore = await cookies();
   const campaignId = cookieStore.get("adbrain.campaign")?.value || undefined;
   const objectivesRaw = cookieStore.get("adbrain.objectives")?.value || "";
   const objectives = objectivesRaw ? objectivesRaw.split(",").filter(Boolean) : [];

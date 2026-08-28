@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
 
+# Cancel superseded runs on the same ref (avoids the old push+PR double-run and stale in-flight runs).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-check:
     runs-on: ubuntu-latest
@@ -20,59 +25,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Persist Next/Turbopack's incremental build cache across runs (cold builds are slow).
+      - name: Cache .next/cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.[jt]s', '**/*.[jt]sx') }}
+          restore-keys: |
+            nextjs-${{ hashFiles('**/package-lock.json') }}-
+
       - name: Build
         run: npm run build
 
-      - name: Check Claude
-        run: npm run check:claude
-
-      - name: Check crypto
-        run: npm run check:crypto
-
-      - name: Check rules engine
-        run: npm run check:rules
-
-      - name: Check validator
-        run: npm run check:validator
-
-      - name: Check backtest harness
-        run: npm run check:backtest
-
-      - name: Check cache seam
-        run: npm run check:cache
-
-      - name: Check rule library + decision engine
-        run: npm run check:decision
-
-      - name: Check fatigue v2 + forecasts
-        run: npm run check:fatigue2
-
-      - name: Check fingerprint + diversity
-        run: npm run check:diversity
-
-      - name: Check account + production intelligence
-        run: npm run check:account
-
-      - name: Check confidence + data quality
-        run: npm run check:quality
-
-      - name: Check trust gates + spend floor
-        run: npm run check:gates
-
-      - name: Check causality ladder
-        run: npm run check:causality
-
-      - name: Check change-log attribution
-        run: npm run check:changelog
-
-      - name: Check same-objective comparator
-        run: npm run check:comparator
-
-      - name: Check verdict engine
-        run: npm run check:verdict
-
-      - name: Check cockpit integration
-        run: npm run check:cockpit
-
-      - name: Check scoring (real metrics -> brain)
-        run: npm run check:scoring
+      # One step runs ALL 33 correctness gates, so a new check script can never silently miss CI.
+      - name: Run all checks
+        run: npm run check:all

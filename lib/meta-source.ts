@@ -320,19 +320,21 @@ export async function fetchAdCreatives(accountExternalId: string, adIds: string[
   const out = new Map<string, CreativeAsset>();
   if (adIds.length === 0) return out;
   const fields = "creative{id,thumbnail_url,image_url,video_id,body,title,object_story_spec,asset_feed_spec}";
-  for (let i = 0; i < adIds.length; i += 50) {
-    const batch = adIds.slice(i, i + 50);
-    try {
-      const json = await graphGet<Record<string, { creative?: MetaCreative }>>("", token.accessToken, {
-        ids: batch.join(","),
-        fields,
-      });
-      for (const adId of batch) {
-        const entry = json[adId];
-        if (entry) out.set(adId, normalizeCreative(adId, entry.creative));
-      }
-    } catch {
-      // A bad batch just means those ads have no fingerprint this run; keep going.
+  // Independent 50-id batches: fetch them concurrently, not one-after-another (100 ads = 2 round
+  // trips in parallel instead of in series). A bad batch resolves empty and never sinks the others.
+  const chunks: string[][] = [];
+  for (let i = 0; i < adIds.length; i += 50) chunks.push(adIds.slice(i, i + 50));
+  const results = await Promise.all(
+    chunks.map((batch) =>
+      graphGet<Record<string, { creative?: MetaCreative }>>("", token.accessToken, { ids: batch.join(","), fields })
+        .then((json) => ({ batch, json }))
+        .catch(() => ({ batch, json: {} as Record<string, { creative?: MetaCreative }> })),
+    ),
+  );
+  for (const { batch, json } of results) {
+    for (const adId of batch) {
+      const entry = json[adId];
+      if (entry) out.set(adId, normalizeCreative(adId, entry.creative));
     }
   }
   return out;
@@ -384,20 +386,21 @@ export type AdMeta = { status?: string; adsetName?: string; campaignName?: strin
 export async function fetchAdMeta(accountExternalId: string, adIds: string[], token: TokenSet): Promise<Map<string, AdMeta>> {
   const out = new Map<string, AdMeta>();
   if (adIds.length === 0) return out;
-  for (let i = 0; i < adIds.length; i += 50) {
-    const batch = adIds.slice(i, i + 50);
-    try {
-      const json = await graphGet<Record<string, { effective_status?: string; adset?: { name?: string }; campaign?: { name?: string } }>>(
-        "",
-        token.accessToken,
-        { ids: batch.join(","), fields: "effective_status,adset{name},campaign{name}" },
-      );
-      for (const adId of batch) {
-        const e = json[adId];
-        if (e) out.set(adId, { status: e.effective_status, adsetName: e.adset?.name, campaignName: e.campaign?.name });
-      }
-    } catch {
-      // this batch stays unknown; keep going
+  // Independent 50-id batches run concurrently (see fetchAdCreatives); a failed batch resolves empty.
+  type MetaJson = Record<string, { effective_status?: string; adset?: { name?: string }; campaign?: { name?: string } }>;
+  const chunks: string[][] = [];
+  for (let i = 0; i < adIds.length; i += 50) chunks.push(adIds.slice(i, i + 50));
+  const results = await Promise.all(
+    chunks.map((batch) =>
+      graphGet<MetaJson>("", token.accessToken, { ids: batch.join(","), fields: "effective_status,adset{name},campaign{name}" })
+        .then((json) => ({ batch, json }))
+        .catch(() => ({ batch, json: {} as MetaJson })),
+    ),
+  );
+  for (const { batch, json } of results) {
+    for (const adId of batch) {
+      const e = json[adId];
+      if (e) out.set(adId, { status: e.effective_status, adsetName: e.adset?.name, campaignName: e.campaign?.name });
     }
   }
   return out;
@@ -526,6 +529,12 @@ export async function fetchAdInsights(
     limit: "500",
     filtering: JSON.stringify([{ field: "ad.id", operator: "IN", value: adExternalIds }]),
   };
+  // day-wise rows = ads x days. The default 12-page cap (6000 rows) SILENTLY TRUNCATES a real
+  // account on 60-90 day windows (100 ads x 90d = 9000 rows), under-counting spend/ROAS with no
+  // error. Size the cap to the actual volume needed (+buffer), so nothing is dropped; hard-capped
+  // so a bad range can never loop forever.
+  const spanDays = Math.max(1, Math.round((new Date(until ?? today()).getTime() - new Date(since).getTime()) / 86_400_000) + 1);
+  const maxPages = Math.min(60, Math.ceil((adExternalIds.length * spanDays) / 500) + 2);
   const rows = await graphGetAll<
     MetaInsightRow & {
       ad_id: string;
@@ -536,7 +545,7 @@ export async function fetchAdInsights(
       video_thruplay_watched_actions?: MetaInsightAction[];
       outbound_clicks?: MetaInsightAction[];
     }
-  >(`act_${accountExternalId}/insights`, token.accessToken, params);
+  >(`act_${accountExternalId}/insights`, token.accessToken, params, maxPages);
   for (const row of rows) {
     const entry = byAd.get(row.ad_id) ?? { rows: [], objective: undefined };
     if (!entry.campaignId && row.campaign_id) entry.campaignId = row.campaign_id;

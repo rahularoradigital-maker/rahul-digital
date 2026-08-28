@@ -1,13 +1,19 @@
-import { loadCockpit } from "@/lib/app/cockpit-data";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/app/user";
+import { getUserMetaSession } from "@/lib/meta-sync";
 import { SettingsPanel } from "@/components/app/settings-panel";
 
-// Settings: connected account, an honest per-source status list (no fake
-// connections), and the editable CreativeScore verdict weights (rulebook 5B.1 /
-// 5E). loadCockpit(30) is only used here for connection state and account name,
-// not for a data window, so 30 is an arbitrary but harmless default.
+// Settings: connected account, an honest per-source status list (no fake connections), and the
+// editable CreativeScore verdict weights. This page only needs connection state + account name, so
+// it does a single ad_accounts read (getUserMetaSession) instead of the full ~9s cockpit Meta pull
+// loadCockpit would trigger - Settings now loads instantly, especially right after an account
+// switch (which busts the cockpit cache and would otherwise force a cold pull here).
 
 export default async function SettingsPage() {
-  const data = await loadCockpit(30);
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const session = await getUserMetaSession(user.id);
+  const data = { connected: !!session, accountName: session?.activeAccountName };
 
   return (
     <div className="space-y-6">

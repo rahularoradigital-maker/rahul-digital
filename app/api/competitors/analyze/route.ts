@@ -91,21 +91,17 @@ export async function POST(request: NextRequest) {
   const ads = (adsRaw as AdRow[] | null) ?? [];
   if (ads.length === 0) return NextResponse.json({ ok: false, error: "No competitor ads yet. Run the pull first." }, { status: 400 });
 
-  // Skip ads already analyzed (resume-friendly caching).
-  const { data: done } = await admin.from("competitor_creative_analysis").select("ad_archive_id").eq("user_id", userId);
-  const analyzed = new Set((done ?? []).map((d: { ad_archive_id: string }) => d.ad_archive_id));
-
-  const selected = topPerBrand(ads, perBrand).filter((a) => !analyzed.has(a.ad_archive_id));
-
-  // Enforce the rolling-24h per-user cap BEFORE spending any Gemini tokens. On a count-failure we
-  // treat usage as 0 (REQUEST_CAP still bounds the request), so a DB hiccup never blocks the user.
+  // Two independent reads (already-analyzed set + rolling-24h usage count), both keyed on userId
+  // only, so run them concurrently instead of in series. The cap is enforced BEFORE spending any
+  // Gemini tokens; on a count-failure we treat usage as 0 (REQUEST_CAP still bounds the request).
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count: usedToday } = await admin
-    .from("competitor_creative_analysis")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .gte("analyzed_at", since);
-  const dailyRemaining = Math.max(0, DAILY_CREATIVE_CAP - (usedToday ?? 0));
+  const [doneRes, usedRes] = await Promise.all([
+    admin.from("competitor_creative_analysis").select("ad_archive_id").eq("user_id", userId),
+    admin.from("competitor_creative_analysis").select("*", { count: "exact", head: true }).eq("user_id", userId).gte("analyzed_at", since),
+  ]);
+  const analyzed = new Set((doneRes.data ?? []).map((d: { ad_archive_id: string }) => d.ad_archive_id));
+  const selected = topPerBrand(ads, perBrand).filter((a) => !analyzed.has(a.ad_archive_id));
+  const dailyRemaining = Math.max(0, DAILY_CREATIVE_CAP - (usedRes.count ?? 0));
   if (dailyRemaining === 0) {
     return NextResponse.json({
       ok: true,
