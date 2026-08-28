@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { analyzeCreative } from "@/lib/agents/creative/orchestrator";
 import { probeGemini, GEMINI_MODEL } from "@/lib/gemini";
+import type { CreativeAttributes } from "@/lib/competitors/types";
 
 // Stage 7 (LLM Creative Analysis): pick the top N creatives per brand and have Gemini read
 // each one, writing the 42-attribute set + TOF/MOF/BOF into competitor_creative_analysis.
@@ -117,27 +118,49 @@ export async function POST(request: NextRequest) {
   const queue = selected.slice(0, Math.min(REQUEST_CAP, dailyRemaining));
   const remaining = selected.length - queue.length;
 
+  // GLOBAL REUSE: an ad_archive_id is a stable global id for that exact creative, so if ANY user
+  // has already analyzed it we copy that result instead of paying Gemini again. This collapses the
+  // per-user cost when many users track the same popular competitors (the audit's #1 cost lever).
+  const queueIds = queue.map((a) => a.ad_archive_id);
+  const globalCache = new Map<string, CreativeAttributes>();
+  if (queueIds.length > 0) {
+    const { data: globalRows } = await admin
+      .from("competitor_creative_analysis")
+      .select("ad_archive_id, attributes")
+      .in("ad_archive_id", queueIds);
+    for (const r of (globalRows ?? []) as { ad_archive_id: string; attributes: CreativeAttributes | null }[]) {
+      if (r.attributes && !globalCache.has(r.ad_archive_id)) globalCache.set(r.ad_archive_id, r.attributes);
+    }
+  }
+
   let ok = 0;
   let failed = 0;
+  let reused = 0;
   // Bounded concurrency: CONCURRENCY workers draining a shared index.
   let idx = 0;
   async function worker() {
     while (idx < queue.length) {
       const a = queue[idx++];
-      let attrs;
-      try {
-        attrs = await analyzeCreative({
-          imageUrl: a.image_url,
-          videoThumbUrl: a.video_thumb_url,
-          title: a.title,
-          body: a.body,
-          ctaText: a.cta_text,
-          isVideo: Boolean(a.video_url),
-        });
-      } catch {
-        // A thrown error (rate limit, network) must count as a failed creative, not reject
-        // Promise.all and 500 the whole request.
-        attrs = null;
+      // Reuse a global result if one exists for this exact creative; only call Gemini otherwise.
+      const cached = globalCache.get(a.ad_archive_id);
+      let attrs: CreativeAttributes | null;
+      if (cached) {
+        attrs = cached;
+      } else {
+        try {
+          attrs = await analyzeCreative({
+            imageUrl: a.image_url,
+            videoThumbUrl: a.video_thumb_url,
+            title: a.title,
+            body: a.body,
+            ctaText: a.cta_text,
+            isVideo: Boolean(a.video_url),
+          });
+        } catch {
+          // A thrown error (rate limit, network) must count as a failed creative, not reject
+          // Promise.all and 500 the whole request.
+          attrs = null;
+        }
       }
       if (!attrs) {
         failed++;
@@ -162,6 +185,7 @@ export async function POST(request: NextRequest) {
         { onConflict: "user_id,ad_archive_id" },
       );
       if (error) failed++;
+      else if (cached) reused++; // copied from a global result, no Gemini spend
       else ok++;
     }
   }
@@ -171,5 +195,6 @@ export async function POST(request: NextRequest) {
   // silent "0 analyzed", so the cause is confirmed, not guessed.
   const diag = ok === 0 && failed > 0 ? await probeGemini() : undefined;
 
-  return NextResponse.json({ ok: true, analyzed: ok, failed, remaining, diag });
+  // analyzed = newly Gemini-analyzed; reused = copied from a global result (no spend).
+  return NextResponse.json({ ok: true, analyzed: ok, reused, failed, remaining, diag });
 }
