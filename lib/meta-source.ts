@@ -325,10 +325,13 @@ export async function fetchAdCreatives(accountExternalId: string, adIds: string[
   const chunks: string[][] = [];
   for (let i = 0; i < adIds.length; i += 50) chunks.push(adIds.slice(i, i + 50));
   const results = await Promise.all(
-    chunks.map((batch) =>
+    chunks.map((batch, ci) =>
       graphGet<Record<string, { creative?: MetaCreative }>>("", token.accessToken, { ids: batch.join(","), fields })
         .then((json) => ({ batch, json }))
-        .catch(() => ({ batch, json: {} as Record<string, { creative?: MetaCreative }> })),
+        .catch((e) => {
+          console.log("[diag:fetchAdCreatives] batch " + ci + " FAILED: " + (e instanceof Error ? e.message : String(e)));
+          return { batch, json: {} as Record<string, { creative?: MetaCreative }> };
+        }),
     ),
   );
   for (const { batch, json } of results) {
@@ -337,6 +340,9 @@ export async function fetchAdCreatives(accountExternalId: string, adIds: string[
       if (entry) out.set(adId, normalizeCreative(adId, entry.creative));
     }
   }
+  // TEMP DIAGNOSTIC (remove after fix): what did Meta return for the first ad's creative?
+  const firstId = adIds[0];
+  console.log("[diag:fetchAdCreatives] out.size=" + out.size + " for " + adIds.length + " ads; firstRaw=" + JSON.stringify(results[0]?.json?.[firstId] ?? null).slice(0, 500));
   return out;
 }
 
