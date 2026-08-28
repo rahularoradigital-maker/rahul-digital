@@ -302,7 +302,9 @@ const STALE_MS = 86_400_000; // 24 hours: still serve instantly, refresh in the 
 // on the missing property (a production 500). Bumping the version means old-shape blobs live under
 // a different key and are never read again - the next load is a clean fresh pull. This is the
 // permanent fix for cache/schema-mismatch crashes, not a one-off.
-const CACHE_SCHEMA = "v2";
+// v3: added view.wasteContributors / atRiskContributors + per-ad conversions/active/names to the
+// cached shape. BUMP THIS on ANY LiveCockpit/view shape change so old-shape blobs are never read.
+const CACHE_SCHEMA = "v3";
 const cockpitCache = new Map<string, CacheEntry>();
 
 /** Clear the cockpit cache. Pass userId to also clear that user's shared L2 rows. */
@@ -353,7 +355,12 @@ async function pullAndStore(userId: string, lookbackDays: number, campaignId: st
 function isRenderableShape(v: LiveCockpit): boolean {
   if (v.status !== "connected") return true;
   const r = v as unknown as Record<string, unknown>;
-  return r.view != null && r.scopeTotals != null && r.dataQuality != null && r.marginal != null && r.funnel != null && r.metrics != null;
+  const view = r.view as Record<string, unknown> | undefined;
+  return (
+    view != null && r.scopeTotals != null && r.dataQuality != null && r.marginal != null && r.funnel != null && r.metrics != null &&
+    // nested view fields the render maps over unconditionally (a missing one crashes the page)
+    Array.isArray(view.wasteContributors) && Array.isArray(view.atRiskContributors) && Array.isArray(view.leaderboard) && Array.isArray(view.doThis)
+  );
 }
 
 export async function fetchLiveCockpit(

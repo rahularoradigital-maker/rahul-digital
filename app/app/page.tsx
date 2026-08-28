@@ -76,7 +76,7 @@ const MARGINAL_STYLE: Record<MarginalRead["classification"], { label: string; cl
 // figure is always traceable (never an unexplained number). Each row links to that ad in Ads
 // Manager (campaign -> ad set -> ad selected), so "where exactly" is one click away.
 function ContributorList({ items, accountId, dateParam, kind }: { items: SpendContributor[]; accountId: string; dateParam: string; kind: "waste" | "risk" }) {
-  if (items.length === 0) return null;
+  if (!items || items.length === 0) return null; // guard undefined (old cache shape) so it never throws
   return (
     <div className="mt-4 border-t border-[var(--surface-alt)] pt-3.5">
       <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
