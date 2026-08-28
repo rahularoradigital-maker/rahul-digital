@@ -8,13 +8,12 @@ import { fetchWithTimeout } from "./http.ts";
 
 const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
-// Text tasks (Ask, Brand Brain, Concepts) run on a DIFFERENT model from the vision pipeline above so
-// they draw on a SEPARATE free-tier quota bucket: the 75-call/run vision pipeline exhausts
-// gemini-3.6-flash's daily quota (verified live: 429 "exceeded your quota"), which was starving these
-// low-volume user-facing calls (Concepts failed with "the model was slow"). gemini-flash-latest has its
-// own quota and returns reliably (verified live: 200 in ~3s warm). gemini-2.0/2.5-flash are 404 for this
-// project. When the pipeline moves to fingerprint-once (10x fewer calls) or a paid tier, revisit.
-const TEXT_MODEL = "gemini-flash-latest";
+// Text tasks (Ask, Brand Brain, Concepts) run on the LITE model, on purpose. Verified live across the
+// free tier: gemini-3.6-flash is quota-exhausted by the 75-call/run vision pipeline (429 "exceeded your
+// quota"); gemini-flash-latest is intermittently overloaded (503 "high demand", 8-25s); gemini-2.x are
+// 404 for this project. gemini-flash-lite-latest returns FAST and complete (verified: 200, ~1.7s, full
+// answer) and lite has the highest free quota - so it is both the most reliable and the cheapest here.
+const TEXT_MODEL = "gemini-flash-lite-latest";
 const TEXT_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${TEXT_MODEL}:generateContent`;
 const MAX_IMAGE_BYTES = 8_000_000; // skip inlining a still larger than this; run copy-only
 
