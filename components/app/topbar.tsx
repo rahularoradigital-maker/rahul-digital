@@ -15,6 +15,15 @@ import { rescanCockpit } from "@/app/app/actions";
 //  - Re-scan      -> router.refresh() re-pulls live Meta data on the server
 //  - Switch acct  -> re-runs Meta OAuth so the user can connect/switch account
 //  - Ask          -> honest: acknowledges until the AI answer engine is wired
+// Starter questions shown when the Ask box is focused and empty, so a first-time user knows what
+// it can answer. Each maps to something real the grounded snapshot can answer from.
+const ASK_SUGGESTIONS = [
+  "Which ad is wasting the most budget?",
+  "What should I scale this week?",
+  "Which creatives are fatiguing?",
+  "How is my account health and why?",
+];
+
 export function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -22,6 +31,26 @@ export function Topbar() {
   const [ask, setAsk] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
+  const [focused, setFocused] = useState(false);
+
+  // Shared by the form submit AND the suggestion chips, so both go through one grounded call.
+  async function runAsk(raw: string) {
+    const q = raw.trim();
+    if (!q || asking) return;
+    setAsk(q);
+    setFocused(false);
+    setAsking(true);
+    setAnswer(null);
+    try {
+      const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q }) });
+      const d = (await res.json()) as { answer?: string; error?: string };
+      setAnswer(d.answer ?? d.error ?? "No answer.");
+    } catch {
+      setAnswer("Ask failed. Please try again.");
+    } finally {
+      setAsking(false);
+    }
+  }
 
   return (
     <div className="px-4 py-3 sm:px-6">
@@ -32,23 +61,11 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Ask AdBrain: answers grounded in your real cockpit data (Claude, no fabrication). */}
+          {/* Ask AdBrain: answers grounded in your real cockpit data (Gemini, no fabrication). */}
           <form
-            onSubmit={async (e) => {
+            onSubmit={(e) => {
               e.preventDefault();
-              const q = ask.trim();
-              if (!q || asking) return;
-              setAsking(true);
-              setAnswer(null);
-              try {
-                const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q }) });
-                const d = (await res.json()) as { answer?: string; error?: string };
-                setAnswer(d.answer ?? d.error ?? "No answer.");
-              } catch {
-                setAnswer("Ask failed. Please try again.");
-              } finally {
-                setAsking(false);
-              }
+              runAsk(ask);
             }}
             className="relative hidden items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-2 text-[var(--ink-muted)] transition focus-within:border-[var(--accent)] lg:flex"
           >
@@ -61,14 +78,35 @@ export function Topbar() {
               value={ask}
               placeholder="Ask AdBrain"
               aria-label="Ask AdBrain"
+              onFocus={() => setFocused(true)}
+              onBlur={() => setTimeout(() => setFocused(false), 150)}
               onChange={(e) => {
                 setAsk(e.target.value);
                 if (answer) setAnswer(null);
               }}
-              className="w-40 bg-transparent text-[13px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
+              className="w-44 bg-transparent text-[13px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
             />
+            {/* Starter questions: shown only when focused, empty, and not mid-answer. */}
+            {focused && !ask.trim() && !answer && !asking && (
+              <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-96 rounded-lg border border-[var(--hairline)] bg-[var(--surface)] p-2 text-left shadow-lg">
+                <div className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Try asking</div>
+                {ASK_SUGGESTIONS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // fire before the input's onBlur hides this panel
+                      runAsk(s);
+                    }}
+                    className="block w-full rounded-md px-2 py-2 text-left text-[13px] text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
             {(asking || answer) && (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-20 max-h-64 w-80 overflow-y-auto whitespace-pre-wrap rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-left text-[11px] leading-relaxed text-[var(--ink)] shadow-lg">
+              <div className="absolute right-0 top-[calc(100%+6px)] z-20 max-h-96 w-96 overflow-y-auto whitespace-pre-wrap rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-3 text-left text-[13px] leading-relaxed text-[var(--ink)] shadow-lg">
                 {asking ? "Thinking..." : answer}
               </div>
             )}
