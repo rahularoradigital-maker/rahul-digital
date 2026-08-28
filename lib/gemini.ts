@@ -128,14 +128,16 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
 
   const bodyJson = JSON.stringify({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    // Thinking model shares this budget between reasoning and the answer, so it must be generous or
-    // the answer truncates/empties. 8192 leaves ample room; a short summary still returns quickly.
-    generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
+    // thinkingBudget:0 DISABLES the flash model's thinking step. Without this, a longer generation
+    // (e.g. Concepts' 4 recipes) spent its whole token budget / the 15s window on hidden reasoning and
+    // returned empty or timed out ("the model was slow"). Disabling thinking makes every text task fast
+    // and puts the full 8192 budget into the actual answer. Short tasks (Ask) get faster too.
+    generationConfig: { temperature: 0.2, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } },
   });
   // Cap each attempt so a slow free-tier response can NEVER hang past the serverless limit (which
   // shows the user a hard failure instead of a graceful message). On abort/timeout we return null and
   // the caller says "could not generate, try again".
-  const TIMEOUT_MS = 15_000;
+  const TIMEOUT_MS = 22_000; // fits the routes' maxDuration=30; thinking is off so this is headroom, not the norm
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
