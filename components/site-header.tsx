@@ -19,7 +19,7 @@ export function SiteHeader() {
           </Link>
           <Link
             href="/signup"
-            className="inline-flex items-center rounded-[var(--radius-pill)] bg-[var(--ink)] px-5 py-3 font-medium text-white transition hover:opacity-90"
+            className="inline-flex items-center rounded-full bg-[var(--ink)] px-5 py-3 font-medium text-white transition hover:opacity-90"
           >
             Sign up
           </Link>

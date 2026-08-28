@@ -84,7 +84,7 @@ function CompetitorsIntro({ market }: { market: string }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold">{s.title}</span>
-                    <span className={`rounded-[var(--radius-pill)] px-2 py-0.5 text-[11px] font-medium ${badge.cls}`}>{badge.label}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${badge.cls}`}>{badge.label}</span>
                   </div>
                   <div className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{s.detail}</div>
                 </div>

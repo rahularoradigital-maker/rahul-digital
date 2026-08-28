@@ -28,7 +28,7 @@ export function FunnelCard({ funnel }: { funnel: FunnelMetrics }) {
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
       <div className="mb-1 flex items-center justify-between gap-3">
         <div className="text-base font-semibold">Funnel metrics</div>
-        <span className="shrink-0 rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
+        <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
           Ad-level, this window
         </span>
       </div>

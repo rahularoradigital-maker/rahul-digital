@@ -22,7 +22,7 @@ export function DemoForm() {
           </p>
           <Link
             href="/"
-            className="inline-block rounded-[var(--radius-pill)] bg-[var(--ink)] px-6 py-3 font-medium text-white transition hover:opacity-90"
+            className="inline-block rounded-full bg-[var(--ink)] px-6 py-3 font-medium text-white transition hover:opacity-90"
           >
             Back to home
           </Link>
@@ -47,7 +47,7 @@ export function DemoForm() {
             <input
               required
               placeholder="Jordan"
-              className="w-full rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
+              className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
             />
           </div>
           <div>
@@ -55,7 +55,7 @@ export function DemoForm() {
             <input
               required
               placeholder="Rivera"
-              className="w-full rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
+              className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
             />
           </div>
         </div>
@@ -66,7 +66,7 @@ export function DemoForm() {
             required
             type="email"
             placeholder="you@brand.com"
-            className="w-full rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
           />
         </div>
 
@@ -74,7 +74,7 @@ export function DemoForm() {
           <label className="mb-1.5 block text-[13px] font-medium">Brand or agency</label>
           <input
             placeholder="Acme Co."
-            className="w-full rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
           />
         </div>
 
@@ -87,7 +87,7 @@ export function DemoForm() {
                 type="button"
                 onClick={() => setSpend(i)}
                 className={
-                  "cursor-pointer rounded-[var(--radius-pill)] border px-3.5 py-2 text-[13px] font-medium transition " +
+                  "cursor-pointer rounded-full border px-3.5 py-2 text-[13px] font-medium transition " +
                   (spend === i
                     ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink-muted)] hover:text-[var(--ink)]")
@@ -110,7 +110,7 @@ export function DemoForm() {
 
         <button
           type="submit"
-          className="w-full cursor-pointer rounded-[var(--radius-pill)] bg-[var(--ink)] px-4 py-3.5 font-medium text-white transition hover:opacity-90"
+          className="w-full cursor-pointer rounded-full bg-[var(--ink)] px-4 py-3.5 font-medium text-white transition hover:opacity-90"
         >
           Request demo
         </button>

@@ -23,7 +23,7 @@ export default function BookDemoPage() {
         <section className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-14 px-6 py-16 lg:grid-cols-2">
           {/* Left column */}
           <div className="lg:sticky lg:top-28">
-            <span className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-1.5 text-sm text-[var(--ink-muted)]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-1.5 text-sm text-[var(--ink-muted)]">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
               Talk to the founders
             </span>

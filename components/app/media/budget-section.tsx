@@ -138,8 +138,8 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
                         {rupees.format(ad.spendRs)} · {Math.round(share * 100)}%
                       </span>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-[70px] bg-[var(--surface-alt)]">
-                      <div className="h-full rounded-[70px] bg-[var(--accent)]" style={{ width: `${Math.max(share * 100, 2)}%` }} />
+                    <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-alt)]">
+                      <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${Math.max(share * 100, 2)}%` }} />
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] tabular-nums text-[var(--ink-muted)]">
                       <span>{ad.conversions} conv</span>

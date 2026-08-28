@@ -53,7 +53,7 @@ export function UseCases() {
             <button
               key={g.name}
               onClick={() => setGroup(i)}
-              className={`rounded-[var(--radius-pill)] px-5 py-2.5 text-[15px] font-medium transition ${
+              className={`rounded-full px-5 py-2.5 text-[15px] font-medium transition ${
                 group === i
                   ? "bg-[var(--ink)] text-white"
                   : "border border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
@@ -78,7 +78,7 @@ export function UseCases() {
           <div className="grid place-items-center rounded-[var(--radius-card)] bg-[var(--accent-soft)] p-6">
             <Link
               href="/product"
-              className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-5 py-2.5 text-[15px] font-medium text-[var(--ink)] transition hover:opacity-90"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-5 py-2.5 text-[15px] font-medium text-[var(--ink)] transition hover:opacity-90"
             >
               Discover more &rarr;
             </Link>

@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* Skip-link: lets keyboard users jump past the sidebar nav straight to the content. */}
       <a
         href="#main-content"
-        className="sr-only rounded-[var(--radius-pill)] bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50"
+        className="sr-only rounded-full bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50"
       >
         Skip to content
       </a>

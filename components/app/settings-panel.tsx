@@ -84,7 +84,7 @@ export function SettingsPanel() {
         <button
           type="button"
           onClick={reset}
-          className="rounded-[70px] border border-[var(--hairline)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
+          className="rounded-full border border-[var(--hairline)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
         >
           Reset to defaults
         </button>
@@ -116,7 +116,7 @@ export function SettingsPanel() {
           Sum <span className="font-semibold tabular-nums text-[var(--ink)]">{sum.toFixed(2)}</span>
         </span>
         {!balanced && (
-          <span className="rounded-[70px] bg-[var(--warn-bg)] px-3 py-1 text-xs font-semibold text-[var(--warn-ink)]">
+          <span className="rounded-full bg-[var(--warn-bg)] px-3 py-1 text-xs font-semibold text-[var(--warn-ink)]">
             Weights do not add to 1.00
           </span>
         )}

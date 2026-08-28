@@ -40,7 +40,7 @@ export function Topbar() {
               e.preventDefault();
               setAsked(true);
             }}
-            className="relative hidden items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-2 text-[var(--ink-muted)] transition focus-within:border-[var(--accent)] lg:flex"
+            className="relative hidden items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-2 text-[var(--ink-muted)] transition focus-within:border-[var(--accent)] lg:flex"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -69,7 +69,7 @@ export function Topbar() {
               })
             }
             disabled={pending}
-            className="rounded-[var(--radius-pill)] bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            className="rounded-full bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
           >
             {pending ? "Scanning..." : "Re-scan"}
           </button>
@@ -224,7 +224,7 @@ function DateWindow({ onChange }: { onChange: () => void }) {
                 type="button"
                 onClick={applyRange}
                 disabled={!from || !to || from > to}
-                className="rounded-[var(--radius-pill)] bg-[var(--ink)] px-3 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+                className="rounded-full bg-[var(--ink)] px-3 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-50"
               >
                 Apply range
               </button>

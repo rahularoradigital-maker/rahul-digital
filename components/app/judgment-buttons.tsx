@@ -36,7 +36,7 @@ export function JudgmentButtons({ adId, timeWindow }: { adId: string; timeWindow
         type="button"
         onClick={() => send("approve")}
         disabled={state === "sending"}
-        className="rounded-[var(--radius-pill)] border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)] transition hover:border-[var(--good-ink)] hover:text-[var(--good-ink)] disabled:opacity-50"
+        className="rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)] transition hover:border-[var(--good-ink)] hover:text-[var(--good-ink)] disabled:opacity-50"
       >
         Approve
       </button>
@@ -44,7 +44,7 @@ export function JudgmentButtons({ adId, timeWindow }: { adId: string; timeWindow
         type="button"
         onClick={() => send("dismiss")}
         disabled={state === "sending"}
-        className="rounded-[var(--radius-pill)] border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--bad-ink)] hover:text-[var(--bad-ink)] disabled:opacity-50"
+        className="rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--bad-ink)] hover:text-[var(--bad-ink)] disabled:opacity-50"
       >
         Dismiss
       </button>

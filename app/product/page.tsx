@@ -92,7 +92,7 @@ export default function ProductPage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="mx-auto max-w-4xl px-6 pt-20 pb-12 text-center">
-          <span className="inline-flex items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-1.5 text-sm text-[var(--ink-muted)]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-1.5 text-sm text-[var(--ink-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
             The AdBrain AI platform
           </span>
@@ -106,7 +106,7 @@ export default function ProductPage() {
           <div className="mt-9">
             <Link
               href="/book-demo"
-              className="inline-block rounded-[var(--radius-pill)] bg-[var(--ink)] px-7 py-3 font-medium text-white transition hover:opacity-90"
+              className="inline-block rounded-full bg-[var(--ink)] px-7 py-3 font-medium text-white transition hover:opacity-90"
             >
               Book a demo
             </Link>
@@ -160,7 +160,7 @@ export default function ProductPage() {
                               <span className="text-sm text-[var(--ink-muted)]">{r.k}</span>
                               <span
                                 className={
-                                  "rounded-[var(--radius-pill)] px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase " +
+                                  "rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase " +
                                   VERDICT_STYLES[r.verdict]
                                 }
                               >
@@ -188,7 +188,7 @@ export default function ProductPage() {
             </p>
             <Link
               href="/book-demo"
-              className="mt-9 inline-block rounded-[var(--radius-pill)] bg-white px-7 py-3 font-medium text-[var(--ink)] transition hover:opacity-90"
+              className="mt-9 inline-block rounded-full bg-white px-7 py-3 font-medium text-[var(--ink)] transition hover:opacity-90"
             >
               Talk to founders
             </Link>

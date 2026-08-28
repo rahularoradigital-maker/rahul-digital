@@ -59,7 +59,7 @@ export function AnalyzeControl({ analyzedCount }: { analyzedCount: number }) {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[13px] text-[var(--ink-muted)]">Per brand:</span>
-          <div className="flex overflow-hidden rounded-[var(--radius-pill)] border border-[var(--hairline)]">
+          <div className="flex overflow-hidden rounded-full border border-[var(--hairline)]">
             {OPTIONS.map((o) => (
               <button
                 key={o}
@@ -77,7 +77,7 @@ export function AnalyzeControl({ analyzedCount }: { analyzedCount: number }) {
             type="button"
             onClick={run}
             disabled={running}
-            className="rounded-[var(--radius-pill)] bg-[var(--accent)] px-4 py-1.5 text-[13px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+            className="rounded-full bg-[var(--accent)] px-4 py-1.5 text-[13px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
             {running ? "Analyzing..." : remaining && remaining > 0 ? "Continue" : "Run AI analysis"}
           </button>

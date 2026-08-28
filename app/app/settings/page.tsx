@@ -27,7 +27,7 @@ export default async function SettingsPage() {
             </div>
             <a
               href="/api/connect/meta/authorize"
-              className="rounded-[var(--radius-pill)] border border-[var(--hairline)] px-4 py-2 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
+              className="rounded-full border border-[var(--hairline)] px-4 py-2 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
             >
               Switch account
             </a>
@@ -40,7 +40,7 @@ export default async function SettingsPage() {
             </div>
             <a
               href="/api/connect/meta/authorize"
-              className="rounded-[var(--radius-pill)] bg-[var(--ink)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+              className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
             >
               Connect Meta
             </a>

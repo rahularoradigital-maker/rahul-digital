@@ -150,11 +150,11 @@ export function KpiSelector({ catalog, liveValues }: { catalog: Kpi[]; liveValue
                         <span className="text-xs text-[var(--ink-muted)]">{kpi.code}</span>
                         <span className="text-xs text-[var(--ink-muted)]">{kpi.unit}</span>
                         {kpi.metaOnly ? (
-                          <span className="rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--good-ink)]">
+                          <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--good-ink)]">
                             Meta
                           </span>
                         ) : (
-                          <span className="rounded-[var(--radius-pill)] border border-[var(--hairline)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
+                          <span className="rounded-full border border-[var(--hairline)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
                             Needs {sourceLabel(kpi.source)}
                           </span>
                         )}

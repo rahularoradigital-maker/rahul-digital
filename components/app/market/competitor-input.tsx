@@ -198,14 +198,14 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
               <button
                 type="button"
                 onClick={() => pickAsBrand(s)}
-                className="shrink-0 rounded-[var(--radius-pill)] border border-[var(--hairline)] px-2.5 py-1 text-[12px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
+                className="shrink-0 rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[12px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
               >
                 My brand
               </button>
               <button
                 type="button"
                 onClick={() => addAsCompetitor(s)}
-                className="shrink-0 rounded-[var(--radius-pill)] bg-[var(--accent)] px-2.5 py-1 text-[12px] font-semibold text-white transition hover:opacity-90"
+                className="shrink-0 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[12px] font-semibold text-white transition hover:opacity-90"
               >
                 + Competitor
               </button>
@@ -258,7 +258,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
         <button
           type="button"
           onClick={save}
-          className="rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-5 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
+          className="rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-5 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
         >
           {saved ? "Saved" : "Save URLs"}
         </button>
@@ -266,7 +266,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
           type="button"
           onClick={run}
           disabled={!canRun || running}
-          className="rounded-[var(--radius-pill)] bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+          className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
         >
           {running ? "Pulling live ads..." : "Run analysis"}
         </button>

@@ -40,7 +40,7 @@ export function FundingCard() {
           </div>
           <Link
             href="/signup"
-            className="rounded-[var(--radius-pill)] bg-white px-5 py-2.5 text-[15px] font-medium text-[var(--ink)] transition hover:opacity-90"
+            className="rounded-full bg-white px-5 py-2.5 text-[15px] font-medium text-[var(--ink)] transition hover:opacity-90"
           >
             Read Now
           </Link>
@@ -102,7 +102,7 @@ export function Security() {
             {BADGES.map((b) => (
               <span
                 key={b}
-                className="rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium"
+                className="rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium"
               >
                 {b}
               </span>
@@ -146,7 +146,7 @@ export function Testimonials() {
     <section id="stories" className="border-y border-[var(--hairline)] bg-[var(--surface)] py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center">
-          <span className="mb-4 inline-block rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--bg)] px-4 py-1.5 text-[13px] font-medium text-[var(--ink-muted)]">
+          <span className="mb-4 inline-block rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-4 py-1.5 text-[13px] font-medium text-[var(--ink-muted)]">
             Customer Stories
           </span>
           <h2 className="text-[40px] leading-[1.08]">Loved by leading teams</h2>
@@ -193,7 +193,7 @@ export function CaseStudy() {
             </p>
             <Link
               href="/signup"
-              className="mt-6 inline-flex rounded-[var(--radius-pill)] bg-[var(--ink)] px-5 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90"
+              className="mt-6 inline-flex rounded-full bg-[var(--ink)] px-5 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90"
             >
               View Case Study
             </Link>

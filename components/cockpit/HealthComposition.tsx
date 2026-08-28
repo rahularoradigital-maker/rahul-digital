@@ -14,8 +14,8 @@ export function HealthComposition({ rows }: { rows: CompositionRow[] }) {
               <span className="text-[var(--ink-muted)]">{r.label}</span>
               <span className="font-semibold tabular-nums">{pct}%</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-[70px] bg-[var(--surface-alt)]">
-              <div className={`h-full rounded-[70px] ${r.bar}`} style={{ width: `${pct}%` }} />
+            <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-alt)]">
+              <div className={`h-full rounded-full ${r.bar}`} style={{ width: `${pct}%` }} />
             </div>
           </div>
         );

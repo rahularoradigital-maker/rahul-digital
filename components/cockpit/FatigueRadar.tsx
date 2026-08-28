@@ -33,7 +33,7 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
       <div className="mb-1 flex items-center justify-between gap-3">
         <div className="text-base font-semibold">Creative half-life &amp; fatigue</div>
-        <span className="shrink-0 rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
+        <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
           Day-wise
         </span>
       </div>
@@ -59,7 +59,7 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                   <AdLink accountId={accountId} adId={ad.id} adSetId={ad.adSetId} campaignId={ad.campaignId} name={ad.name} className="truncate text-sm font-medium" dateParam={dateParam} />
-                  <span className={`shrink-0 rounded-[70px] px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
                 </div>
                 <span className="shrink-0 text-xs font-medium text-[var(--ink-muted)] tabular-nums">
                   {f.sufficiency === "ok" ? halfLifeLabel(ad.halfLifeDays) : "needs history"}

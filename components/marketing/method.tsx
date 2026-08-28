@@ -40,7 +40,7 @@ export function Method() {
     >
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center">
-          <span className="mb-4 inline-block rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--bg)] px-4 py-1.5 text-[13px] font-medium text-[var(--ink-muted)]">
+          <span className="mb-4 inline-block rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-4 py-1.5 text-[13px] font-medium text-[var(--ink-muted)]">
             How it works
           </span>
           <h2 className="mx-auto max-w-2xl text-[40px] leading-[1.08]">

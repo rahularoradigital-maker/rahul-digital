@@ -56,7 +56,7 @@ each pick = argmax over candidates of:
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {SOURCE_MEANING.map((s) => (
             <div key={s.tag} className="rounded-lg border border-[var(--hairline)] p-3">
-              <span className={`rounded-[70px] px-2.5 py-0.5 text-xs font-semibold ${SOURCE_STYLE[s.tag].cls}`}>
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${SOURCE_STYLE[s.tag].cls}`}>
                 {SOURCE_STYLE[s.tag].label}
               </span>
               <div className="mt-2 text-xs text-[var(--ink-muted)]">{s.meaning}</div>
@@ -89,7 +89,7 @@ each pick = argmax over candidates of:
                   <td className="py-3">
                     <div className="flex flex-wrap gap-1.5">
                       {(Object.keys(SOURCE_STYLE) as SourceTag[]).map((tag) => (
-                        <span key={tag} className={`rounded-[70px] px-2.5 py-0.5 text-xs font-semibold ${SOURCE_STYLE[tag].cls}`}>
+                        <span key={tag} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${SOURCE_STYLE[tag].cls}`}>
                           {SOURCE_STYLE[tag].label}
                         </span>
                       ))}

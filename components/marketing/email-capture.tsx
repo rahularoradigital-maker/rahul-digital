@@ -19,7 +19,7 @@ export function EmailCapture() {
   return (
     <form
       onSubmit={submit}
-      className="flex max-w-[460px] items-center gap-2 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] p-1.5"
+      className="flex max-w-[460px] items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--surface)] p-1.5"
     >
       <input
         type="email"
@@ -31,7 +31,7 @@ export function EmailCapture() {
       />
       <button
         type="submit"
-        className="inline-flex shrink-0 items-center rounded-[var(--radius-pill)] bg-[var(--ink)] px-5 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90"
+        className="inline-flex shrink-0 items-center rounded-full bg-[var(--ink)] px-5 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90"
       >
         Book a demo
       </button>

@@ -92,7 +92,7 @@ export function ProductDemo() {
             <button
               key={label}
               onClick={() => setTab(i)}
-              className={`rounded-[var(--radius-pill)] px-5 py-2.5 text-[15px] font-medium transition ${
+              className={`rounded-full px-5 py-2.5 text-[15px] font-medium transition ${
                 tab === i
                   ? "border border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink)] shadow-sm"
                   : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
@@ -144,7 +144,7 @@ export function ProductDemo() {
                 <div className="mb-3 text-[13px] text-[var(--ink-muted)]">{active.desc}</div>
                 <button
                   onClick={() => setGenerated(true)}
-                  className="rounded-[var(--radius-pill)] bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+                  className="rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
                 >
                   {generated ? "Plan ready" : "Build my test plan"}
                 </button>
@@ -154,7 +154,7 @@ export function ProductDemo() {
                       <div key={p.label} className="flex items-center justify-between">
                         <span className="text-[13px]">{p.label}</span>
                         <span
-                          className={`rounded-[var(--radius-pill)] px-2.5 py-0.5 text-[11px] font-semibold ${VERDICT_STYLE[p.verdict]}`}
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${VERDICT_STYLE[p.verdict]}`}
                         >
                           {p.verdict}
                         </span>

@@ -64,7 +64,7 @@ function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: Co
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
                       <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate text-[15px] font-semibold" dateParam={dateParam} />
-                      <span className={`shrink-0 rounded-[70px] px-2.5 py-0.5 text-[11px] font-semibold ${fatigue.cls}`}>
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${fatigue.cls}`}>
                         {fatigue.label}
                       </span>
                     </div>
@@ -86,7 +86,7 @@ function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: Co
 
                   <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
                     <span className="text-xs text-[var(--ink-muted)]">Needs more delivery history for a timed forecast</span>
-                    <span className={`shrink-0 rounded-[70px] px-3 py-1 text-xs font-semibold ${action.cls}`}>
+                    <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${action.cls}`}>
                       {ad.action.label}
                     </span>
                   </div>

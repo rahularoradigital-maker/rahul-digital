@@ -51,7 +51,7 @@ export function ConnectState({
         ) : null}
         <a
           href="/api/connect/meta/authorize"
-          className="mt-6 inline-block rounded-[var(--radius-pill)] bg-[var(--ink)] px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+          className="mt-6 inline-block rounded-full bg-[var(--ink)] px-6 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
         >
           {reason === "not_connected" ? "Connect Meta" : "Reconnect / switch account"}
         </a>

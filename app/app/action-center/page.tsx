@@ -100,7 +100,7 @@ function ActionSection({
       <div className="mb-2 flex items-center gap-2.5">
         <span className={`h-2 w-2 rounded-full ${style.dot}`} />
         <div className="text-base font-semibold">{heading}</div>
-        <span className="rounded-[70px] bg-[var(--surface-alt)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
+        <span className="rounded-full bg-[var(--surface-alt)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
           {items.length}
         </span>
       </div>
@@ -130,7 +130,7 @@ function ActionSection({
                 )}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1.5">
-                {ad && <span className={`rounded-[70px] px-3 py-1 text-xs font-semibold ${VERDICT_STYLE[ad.verdict].cls}`}>{VERDICT_STYLE[ad.verdict].label}</span>}
+                {ad && <span className={`rounded-full px-3 py-1 text-xs font-semibold ${VERDICT_STYLE[ad.verdict].cls}`}>{VERDICT_STYLE[ad.verdict].label}</span>}
                 <span className="text-xs text-[var(--ink-muted)] tabular-nums">
                   {ad ? rupees.format(ad.spendRs) : "n/a"} · {ad?.roas == null ? "n/a" : `${ad.roas.toFixed(1)}x`}
                 </span>

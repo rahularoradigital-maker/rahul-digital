@@ -49,13 +49,13 @@ function ConfidenceBanner({ dq }: { dq: DataQuality }) {
     <div className={`rounded-[10px] border ${border} bg-[var(--surface)] p-4`}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="text-[13px] font-semibold">{dq.reliable ? "Read with some caution" : "Low-confidence data"}</span>
-        <span className="rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
+        <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
           confidence de-rated {Math.round(dq.confidencePenalty * 100)}% · {dq.days} days
         </span>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {dq.flags.map((f) => (
-          <span key={f.code} className={`rounded-[var(--radius-pill)] px-2.5 py-0.5 text-[11px] font-medium ${DQ_SEVERITY_STYLE[f.severity]}`}>
+          <span key={f.code} className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${DQ_SEVERITY_STYLE[f.severity]}`}>
             {f.label}
           </span>
         ))}
@@ -112,8 +112,8 @@ function ScalingCard({ marginal }: { marginal: MarginalRead }) {
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <span className="text-base font-semibold">Scaling headroom</span>
-        <span className={`rounded-[var(--radius-pill)] px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
-        <span className="rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
+        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
+        <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
           {marginal.label} · {Math.round(marginal.confidence * 100)}% conf
         </span>
       </div>
@@ -179,7 +179,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
               <div className="text-base font-semibold">Account Health</div>
               <WhyDrawer explanation={view.accountHealth.explain} />
             </div>
-            <span className="rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
+            <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
               Internal calculation · {health.factLabel}
             </span>
           </div>

@@ -114,7 +114,7 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-[var(--radius-pill)] bg-[var(--ink)] px-4 py-2.5 font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+            className="w-full rounded-full bg-[var(--ink)] px-4 py-2.5 font-medium text-white transition hover:opacity-90 disabled:opacity-60"
           >
             {pending ? "Please wait..." : cta}
           </button>

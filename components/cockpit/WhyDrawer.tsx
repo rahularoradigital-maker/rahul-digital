@@ -37,7 +37,7 @@ export function WhyDrawer({ explanation }: { explanation: Explanation }) {
         aria-label="Why this score?"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 rounded-[var(--radius-pill)] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
+        className="inline-flex items-center gap-1 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
       >
         <span
           aria-hidden="true"
@@ -122,7 +122,7 @@ export function WhyDrawer({ explanation }: { explanation: Explanation }) {
                           {c.name}
                         </td>
                         <td className="px-2 py-1">
-                          <span className="rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-1.5 py-0.5 text-[var(--accent)]">
+                          <span className="rounded-full bg-[var(--accent-soft)] px-1.5 py-0.5 text-[var(--accent)]">
                             {c.tag}
                           </span>
                         </td>

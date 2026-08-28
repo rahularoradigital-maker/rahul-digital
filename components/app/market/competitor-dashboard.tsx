@@ -23,7 +23,7 @@ function LibraryLink({ pageId }: { pageId: string }) {
       href={adLibraryUrl(pageId)}
       target="_blank"
       rel="noopener noreferrer"
-      className="shrink-0 rounded-[var(--radius-pill)] border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+      className="shrink-0 rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink-muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
     >
       Ad Library ↗
     </a>
@@ -85,7 +85,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{b.label}</span>
                     {b.isMyBrand && (
-                      <span className="rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">You</span>
+                      <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">You</span>
                     )}
                     <LibraryLink pageId={b.pageId} />
                   </div>
@@ -112,12 +112,12 @@ export function CompetitorDashboard({ data }: { data: Data }) {
           </div>
           <div className="flex flex-wrap gap-2">
             {report.gaps.formats.map((f) => (
-              <span key={f} className="rounded-[var(--radius-pill)] bg-[var(--warn-bg)] px-3 py-1 text-xs font-medium text-[var(--warn-ink)]">
+              <span key={f} className="rounded-full bg-[var(--warn-bg)] px-3 py-1 text-xs font-medium text-[var(--warn-ink)]">
                 {MEDIA_LABEL[f]} format
               </span>
             ))}
             {report.gaps.ctas.map((c) => (
-              <span key={c} className="rounded-[var(--radius-pill)] bg-[var(--surface-alt)] px-3 py-1 text-xs font-medium text-[var(--ink)]">
+              <span key={c} className="rounded-full bg-[var(--surface-alt)] px-3 py-1 text-xs font-medium text-[var(--ink)]">
                 {c} CTA
               </span>
             ))}
@@ -135,7 +135,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
           <div className="space-y-2.5">
             {data.recommendations.map((r, i) => (
               <div key={`${r.kind}-${r.value}-${i}`} className="flex items-start gap-2.5">
-                <span className="mt-0.5 shrink-0 rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent)]">
+                <span className="mt-0.5 shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent)]">
                   {r.kind}
                 </span>
                 <div className="text-[13px] text-[var(--ink)]">{r.reason}</div>
@@ -173,7 +173,7 @@ function FunnelBar({ f }: { f: FunnelMix }) {
         {f.label}
         {f.isMyBrand && <span className="ml-1.5 text-[11px] font-semibold text-[var(--accent)]">(You)</span>}
       </div>
-      <div className="flex h-3 flex-1 overflow-hidden rounded-[var(--radius-pill)] bg-[var(--surface-alt)]">
+      <div className="flex h-3 flex-1 overflow-hidden rounded-full bg-[var(--surface-alt)]">
         {seg(f.tof, "bg-[var(--accent)]", "TOF")}
         {seg(f.mof, "bg-[var(--warn-ink)]", "MOF")}
         {seg(f.bof, "bg-[var(--good-ink)]", "BOF")}
@@ -208,7 +208,7 @@ function CreativeIntelSection({ intel }: { intel: CreativeIntel }) {
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-[22px]">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <span className="text-base font-semibold">Creative intelligence</span>
-        <span className="rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">
+        <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">
           Gemini · {intel.analyzedCount} analyzed
         </span>
       </div>
@@ -340,7 +340,7 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-base font-semibold">{brand.label}</span>
         {brand.isMyBrand && (
-          <span className="rounded-[var(--radius-pill)] bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">You</span>
+          <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">You</span>
         )}
         <span className="text-[13px] text-[var(--ink-muted)]">
           {brand.activeAds} active · {brand.inactiveAds} inactive
@@ -431,9 +431,9 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
                     <div className="flex h-full items-center justify-center text-[11px] text-[var(--ink-muted)]">No preview</div>
                   )}
                   <div className="absolute left-2 top-2 flex gap-1">
-                    <span className="rounded-[var(--radius-pill)] bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">{MEDIA_LABEL[ad.media]}</span>
+                    <span className="rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">{MEDIA_LABEL[ad.media]}</span>
                     {ad.isActive && (
-                      <span className="rounded-[var(--radius-pill)] bg-[var(--good-ink)] px-2 py-0.5 text-[10px] font-semibold text-white">Active</span>
+                      <span className="rounded-full bg-[var(--good-ink)] px-2 py-0.5 text-[10px] font-semibold text-white">Active</span>
                     )}
                   </div>
                 </div>
@@ -442,7 +442,7 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
                     {ad.title || ad.body?.slice(0, 80) || `Ad ${ad.adArchiveId}`}
                   </div>
                   {ad.ctaText && (
-                    <span className="mt-1.5 inline-block rounded-[var(--radius-pill)] bg-[var(--surface-alt)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">
+                    <span className="mt-1.5 inline-block rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">
                       {ad.ctaText}
                     </span>
                   )}

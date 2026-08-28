@@ -36,22 +36,22 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <AdLink accountId={accountId} adId={ad.id} adSetId={ad.adSetId} campaignId={ad.campaignId} name={ad.name} className="truncate text-[15px] font-semibold" dateParam={dateParam} />
-                  <span className="shrink-0 rounded-[70px] border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
+                  <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
                     {ad.objective}
                   </span>
                 </div>
                 {ad.why[0] && <div className="mt-1.5 truncate text-[13px] text-[var(--ink-muted)]">&#8627; {ad.why[0]}</div>}
               </div>
               <div>
-                <div className="h-1.5 overflow-hidden rounded-[70px] bg-[var(--surface-alt)]">
-                  <div className={`h-full rounded-[70px] ${confColor(ad.verdict)}`} style={{ width: `${conf}%` }} />
+                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-alt)]">
+                  <div className={`h-full rounded-full ${confColor(ad.verdict)}`} style={{ width: `${conf}%` }} />
                 </div>
                 <div className="mt-1.5 text-xs text-[var(--ink-muted)] tabular-nums">
                   {conf}% conf · {rupees.format(ad.spendRs)}
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1.5">
-                <span className={`rounded-[70px] px-3 py-1 text-xs font-semibold ${v.cls}`}>{v.label}</span>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${v.cls}`}>{v.label}</span>
                 <span className="text-xs text-[var(--ink-muted)] tabular-nums">
                   {ad.roas === null ? "n/a" : `${ad.roas.toFixed(1)}x`}
                 </span>
