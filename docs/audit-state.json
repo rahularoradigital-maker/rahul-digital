@@ -16,15 +16,11 @@
   },
   "source": {
     "files": 185,
-    "loc": 20983,
-    "largeFiles": 3,
+    "loc": 20995,
+    "largeFiles": 2,
     "markers": 9
   },
   "largest": [
-    {
-      "file": "lib/app/kpi-catalog.ts",
-      "lines": 2443
-    },
     {
       "file": "lib/meta-source.ts",
       "lines": 606
