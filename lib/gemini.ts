@@ -146,11 +146,13 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
           await new Promise((r) => setTimeout(r, 1200));
           continue;
         }
-        return null;
+        const body = await res.text().catch(() => "");
+        return `DIAG gemini ${res.status}: ${body.slice(0, 400)}`;
       }
-      const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+      const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[] };
       const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-      return text?.trim() ?? null;
+      if (!text) return `DIAG no-text finishReason=${json.candidates?.[0]?.finishReason ?? "?"} raw=${JSON.stringify(json).slice(0, 400)}`;
+      return text.trim();
     } catch (e) {
       // Retry a transient network blip once, but NOT a timeout abort (retrying would double the wait
       // and risk the 30s serverless limit). A timed-out call fails gracefully to null.

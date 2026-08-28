@@ -341,6 +341,21 @@ export async function fetchAdCreatives(accountExternalId: string, adIds: string[
   return out;
 }
 
+/** Recent ad names in an account, ANY status (active or paused), for brand understanding - one cheap
+ * call (names only, no insights). Unlike listAds this does NOT filter to ACTIVE, so an account whose
+ * ads recently spent but are now paused still yields names to learn from. [] on any failure. */
+export async function fetchRecentAdNames(accountExternalId: string, token: TokenSet, limit = 50): Promise<string[]> {
+  try {
+    const data = await graphGet<{ data: { name?: string }[] }>(`act_${accountExternalId}/ads`, token.accessToken, {
+      fields: "name",
+      limit: String(limit),
+    });
+    return (data.data ?? []).map((a) => a.name).filter((n): n is string => Boolean(n));
+  } catch {
+    return [];
+  }
+}
+
 /** The ad account's ISO currency (act_<id>?fields=currency), for brand understanding. null on any failure. */
 export async function fetchAccountCurrency(accountExternalId: string, token: TokenSet): Promise<string | null> {
   try {
