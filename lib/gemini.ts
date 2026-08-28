@@ -8,11 +8,13 @@ import { fetchWithTimeout } from "./http.ts";
 
 const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
-// Text tasks (Ask, Brand Brain, Concepts). gemini-2.0-flash was RETIRED by Google (404: "no longer
-// available, use gemini-3.6-flash"), so we use the current gemini-3.6-flash. It has a thinking step
-// that shares the maxOutputTokens budget, so the fix for truncation is a GENEROUS cap (below) - not a
-// dead model. These are short grounded summaries, so the large cap costs nothing when the answer is short.
-const TEXT_MODEL = "gemini-3.6-flash";
+// Text tasks (Ask, Brand Brain, Concepts) run on a DIFFERENT model from the vision pipeline above so
+// they draw on a SEPARATE free-tier quota bucket: the 75-call/run vision pipeline exhausts
+// gemini-3.6-flash's daily quota (verified live: 429 "exceeded your quota"), which was starving these
+// low-volume user-facing calls (Concepts failed with "the model was slow"). gemini-flash-latest has its
+// own quota and returns reliably (verified live: 200 in ~3s warm). gemini-2.0/2.5-flash are 404 for this
+// project. When the pipeline moves to fingerprint-once (10x fewer calls) or a paid tier, revisit.
+const TEXT_MODEL = "gemini-flash-latest";
 const TEXT_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${TEXT_MODEL}:generateContent`;
 const MAX_IMAGE_BYTES = 8_000_000; // skip inlining a still larger than this; run copy-only
 
