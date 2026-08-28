@@ -531,9 +531,15 @@ export async function fetchLiveCockpit(
   if (PERF) console.log("[perf] COLD pull (blocking) - no fresh/stale cache for this filter combo");
   // Cap the blocking wait: a slow cold pull would otherwise exceed Vercel's function timeout and
   // show the user a raw 504 (not catchable by the React error boundary). On timeout we return the
-  // app's honest "still syncing" error state; the pull keeps running unawaited so its deferred cache
-  // write still lands and the retry a few seconds later is instant.
+  // app's honest "still syncing" state. after(pull) keeps the serverless container alive until the
+  // pull actually finishes even after we respond, so it still warms L1 + L2 - without it the floating
+  // pull is frozen on response flush and every retry is another cold timeout (an endless spinner).
   const pull = pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, true);
+  try {
+    after(pull); // survive past the response; no-op-safe if the pull rejects (Next logs it)
+  } catch {
+    // after() unavailable (non-request scope, e.g. cron): the caller already awaits us, so skip.
+  }
   const timeout = new Promise<LiveCockpit>((resolve) =>
     setTimeout(() => resolve({ status: "error", message: "Still syncing your account - try again in a few seconds." }), COLD_PULL_TIMEOUT_MS),
   );
