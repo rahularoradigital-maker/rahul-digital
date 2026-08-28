@@ -6,6 +6,12 @@
 
 const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+// Text tasks (Ask, Brand Brain, Concepts) use a NON-thinking model: gemini-3.6-flash treats
+// maxOutputTokens as a total budget and fills it with internal reasoning, truncating or emptying the
+// answer, and it rejects thinkingBudget:0. gemini-2.0-flash has no thinking step, so the whole budget
+// goes to the answer - reliable, fast, free tier.
+const TEXT_MODEL = "gemini-2.0-flash";
+const TEXT_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${TEXT_MODEL}:generateContent`;
 const MAX_IMAGE_BYTES = 8_000_000; // skip inlining a still larger than this; run copy-only
 
 export const GEMINI_MODEL = MODEL;
@@ -118,20 +124,18 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
 
   const bodyJson = JSON.stringify({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    // gemini-3.6-flash is a THINKING model that spends output budget on internal reasoning first, so
-    // a low cap truncated the real answer mid-sentence. It does NOT allow disabling thinking, so give
-    // a generous cap instead - enough for the reasoning AND a full answer.
-    generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+    // Non-thinking model, so maxOutputTokens is pure answer budget - 2048 is a full multi-section reply.
+    generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
   });
   // Cap each attempt so a slow free-tier response can NEVER hang past the serverless limit (which
-  // shows the user a hard "Ask failed" instead of a graceful message). On abort/timeout we return
-  // null and the caller says "could not form an answer, try again".
-  const TIMEOUT_MS = 20_000; // a thinking model with a 4096 cap can take a while; one long try beats two short ones
+  // shows the user a hard failure instead of a graceful message). On abort/timeout we return null and
+  // the caller says "could not generate, try again".
+  const TIMEOUT_MS = 15_000;
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
-      const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(key)}`, {
+      const res = await fetch(`${TEXT_ENDPOINT}?key=${encodeURIComponent(key)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: bodyJson,
