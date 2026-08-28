@@ -1,13 +1,14 @@
 import { Tabs } from "@/components/app/tabs";
+import { BrandSection } from "@/components/app/market/brand-section";
 import { CompetitorsSection } from "@/components/app/market/competitors-section";
 import { VoiceSection } from "@/components/app/market/voice-section";
 
-// Market: Competitors + Voice of Customer, consolidated into one tabbed page.
-// Both are honest gates (no account data needed), so no loadCockpit here.
+// Market: Brand understanding (the context that will drive discovery) + Competitors + Competitor
+// Voice, consolidated into one tabbed page.
 
 export default async function MarketPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const sp = await searchParams;
-  const tab = sp.tab ?? "competitors";
+  const tab = sp.tab ?? "brand";
 
   return (
     <div className="space-y-6">
@@ -15,12 +16,13 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
 
       <Tabs
         tabs={[
+          { key: "brand", label: "Brand" },
           { key: "competitors", label: "Competitors" },
           { key: "voice", label: "Competitor Voice" },
         ]}
       />
 
-      {tab === "competitors" ? <CompetitorsSection /> : <VoiceSection />}
+      {tab === "brand" ? <BrandSection /> : tab === "competitors" ? <CompetitorsSection /> : <VoiceSection />}
     </div>
   );
 }

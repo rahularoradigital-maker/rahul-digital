@@ -118,16 +118,15 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
 
   const bodyJson = JSON.stringify({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    // gemini-3.6-flash is a THINKING model: with a low token cap it spends the budget on internal
-    // reasoning and truncates the real answer mid-sentence. These are grounded extraction/summary
-    // tasks that need no chain-of-thought, so disable thinking (thinkingBudget 0 -> all tokens to the
-    // answer, and faster) and give a generous output cap.
-    generationConfig: { temperature: 0.2, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } },
+    // gemini-3.6-flash is a THINKING model that spends output budget on internal reasoning first, so
+    // a low cap truncated the real answer mid-sentence. It does NOT allow disabling thinking, so give
+    // a generous cap instead - enough for the reasoning AND a full answer.
+    generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
   });
   // Cap each attempt so a slow free-tier response can NEVER hang past the serverless limit (which
   // shows the user a hard "Ask failed" instead of a graceful message). On abort/timeout we return
   // null and the caller says "could not form an answer, try again".
-  const TIMEOUT_MS = 12_000;
+  const TIMEOUT_MS = 20_000; // a thinking model with a 4096 cap can take a while; one long try beats two short ones
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -148,8 +147,10 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
       const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
       const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
       return text?.trim() ?? null;
-    } catch {
-      if (attempt === 0) {
+    } catch (e) {
+      // Retry a transient network blip once, but NOT a timeout abort (retrying would double the wait
+      // and risk the 30s serverless limit). A timed-out call fails gracefully to null.
+      if (attempt === 0 && !(e instanceof Error && e.name === "AbortError")) {
         await new Promise((r) => setTimeout(r, 1200));
         continue;
       }

@@ -346,6 +346,16 @@ export async function fetchAdCreatives(accountExternalId: string, adIds: string[
   return out;
 }
 
+/** The ad account's ISO currency (act_<id>?fields=currency), for brand understanding. null on any failure. */
+export async function fetchAccountCurrency(accountExternalId: string, token: TokenSet): Promise<string | null> {
+  try {
+    const json = await graphGet<{ currency?: string }>(`act_${accountExternalId}`, token.accessToken, { fields: "currency" });
+    return json.currency ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Active campaigns in an ad account (numeric id, no act_ prefix), for the campaign filter. */
 export async function listMetaCampaigns(
   accountExternalId: string,
