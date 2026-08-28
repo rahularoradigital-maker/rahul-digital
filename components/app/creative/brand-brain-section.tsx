@@ -1,19 +1,19 @@
-import { GatedSection } from "@/components/app/gated-section";
+import { GenerateInsight } from "./generate-insight";
 
-// Brand Brain. Needs the creative decoder (DECODE + FPRINT, rulebook 2.1) that is not
-// built yet, so this is honestly gated: no fabricated hooks, angles, or personas.
-
-export function BrandBrainSection() {
+// Brand Brain: a grounded read of what wins for this brand, written from the account's REAL ads
+// (names + performance) by Gemini. No fabricated hooks/angles - see /api/creative/analyze.
+export function BrandBrainSection({ initialContent }: { initialContent: string | null }) {
   return (
-    <GatedSection
-      title="Brand Brain"
-      what="A living memory of what wins for your brand: the hooks, angles, personas, formats and offers your best ads share, learned by decoding every creative."
-      delivers={[
-        "Your winning hooks and angles, ranked",
-        "Which formats hold up longest before fatigue",
-        "Personas and offers that repeat across winners",
-      ]}
-      needs="the creative decoder (Google Vision plus video frames and transcripts), coming next"
-    />
+    <div className="space-y-6">
+      <div>
+        <div className="text-[13px] text-[var(--ink-muted)]">Brand Brain</div>
+        <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">What wins for your brand.</h1>
+        <p className="mt-2 max-w-2xl text-sm text-[var(--ink-muted)]">
+          A read of your live ads: what you sell, the angles, formats and offers that win, what is fading, and your
+          positioning. Built from your real ad names and performance, not invented.
+        </p>
+      </div>
+      <GenerateInsight type="brand" initial={initialContent} emptyCta="Generate Brand Brain" />
+    </div>
   );
 }

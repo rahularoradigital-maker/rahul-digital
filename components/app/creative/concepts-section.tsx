@@ -1,8 +1,7 @@
-// Concepts: shows the concept-recipe FRAMEWORK (rulebook 6.1b), not fake recipes.
-// A concept here is always a buildable recipe with five named parts, each part
-// picked by weighing the same four sources. Real recipes need two connections we
-// do not have yet (winning-creative decode, competitor Ad Library gaps), so this
-// section shows structure and labels only. Nothing below is an invented pick.
+// Concepts: the concept-recipe FRAMEWORK (rulebook 6.1b) PLUS real generated recipes. The framework
+// (formula + five parts) is shown for transparency; the actual recipes are generated from the
+// account's own winning + fatiguing ads via /api/creative/analyze (grounded, not invented).
+import { GenerateInsight } from "./generate-insight";
 
 type SourceTag = "OURS" | "AI" | "COMP" | "WORLD";
 
@@ -28,7 +27,7 @@ const RECIPE_PARTS: { part: string; what: string }[] = [
   { part: "Landing", what: "The landing page, constrained to fix the weakest step in the funnel" },
 ];
 
-export function ConceptsSection() {
+export function ConceptsSection({ initialContent }: { initialContent: string | null }) {
   return (
     <div className="space-y-6">
       <div>
@@ -102,20 +101,10 @@ each pick = argmax over candidates of:
         </div>
       </div>
 
-      {/* Honest gate: no recipe is invented without the two real connections it needs */}
-      <div className="grid min-h-[30vh] place-items-center">
-        <div className="w-full max-w-md rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-8 text-center">
-          <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-normal text-[var(--ink)]">No recipes yet, and none are invented here</h2>
-          <p className="mt-1.5 text-sm text-[var(--ink-muted)]">
-            Generating real test recipes needs your winning-creative decode (what works for you) and competitor Ad
-            Library gaps (what is open), both connect next. No recipes are invented here.
-          </p>
-        </div>
+      {/* Real recipes, generated from the account's own winners + fatiguing ads (grounded). */}
+      <div>
+        <div className="mb-2 text-base font-normal">Recipes to test this week</div>
+        <GenerateInsight type="concepts" initial={initialContent} emptyCta="Generate 4 concepts to test" />
       </div>
     </div>
   );

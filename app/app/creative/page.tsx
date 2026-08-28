@@ -1,4 +1,6 @@
 import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
+import { getCurrentUser } from "@/lib/app/user";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Tabs } from "@/components/app/tabs";
 import { FatigueSection } from "@/components/app/creative/fatigue-section";
 import { DiversitySection } from "@/components/app/creative/diversity-section";
@@ -16,10 +18,28 @@ const TABS = [
   { key: "concepts", label: "Concepts" },
 ];
 
+// Read the cached Brand Brain / Concepts output for this account (if generated before), so a reload
+// shows the last result without re-paying. Best-effort - a miss just means the Generate button shows.
+async function loadInsights(userId: string, accountId: string): Promise<Record<string, string>> {
+  try {
+    const { data } = await createAdminClient()
+      .from("creative_insights")
+      .select("type, content")
+      .eq("user_id", userId)
+      .eq("account_external_id", accountId);
+    const out: Record<string, string> = {};
+    for (const row of (data ?? []) as { type: string; content: string }[]) out[row.type] = row.content;
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 export default async function CreativePage({ searchParams }: { searchParams: Promise<{ days?: string; tab?: string }> }) {
   const sp = await searchParams;
   const tab = sp.tab ?? "fatigue";
-  const data = await loadCockpit(parseDays(sp.days));
+  const [data, user] = await Promise.all([loadCockpit(parseDays(sp.days)), getCurrentUser()]);
+  const insights = data.connected && user ? await loadInsights(user.id, data.accountId) : {};
 
   return (
     <div className="space-y-6">
@@ -31,8 +51,8 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
 
       {tab === "fatigue" && <FatigueSection data={data} days={data.days} />}
       {tab === "diversity" && <DiversitySection data={data} days={data.days} />}
-      {tab === "brand" && <BrandBrainSection />}
-      {tab === "concepts" && <ConceptsSection />}
+      {tab === "brand" && <BrandBrainSection initialContent={insights.brand ?? null} />}
+      {tab === "concepts" && <ConceptsSection initialContent={insights.concepts ?? null} />}
     </div>
   );
 }
