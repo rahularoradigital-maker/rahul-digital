@@ -1,30 +1,36 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// TEMPORARY diagnostic (remove after use). Ground-truths two things the UI can't show:
-// 1) which commit is actually deployed (VERCEL_GIT_COMMIT_SHA), and
-// 2) whether the flash model accepts thinkingConfig:{thinkingBudget:0} - the fix for Concepts.
-// Gated by ?k=<CRON_SECRET or GDIAG_OK> so it isn't openly callable. No user data touched.
+// TEMPORARY diagnostic (remove after use). Probes which FREE Gemini models are actually reachable
+// and unthrottled RIGHT NOW, so text tasks (Ask/Concepts/Brand) can move to a model with its own
+// quota bucket, separate from the 75-call vision pipeline. Gated by ?k=. No user data touched.
 export const maxDuration = 30;
 
-const LONG_PROMPT =
-  "You are a creative strategist. Propose exactly 4 NEW creatives to test for a D2C ethnic-wear brand, " +
-  "each as a recipe with five named parts on their own lines: SKU, Format, Concept, Offer, Landing - then one line 'Why'. " +
-  "Ground each in typical winning ad patterns. Number them 1 to 4. Plain Indian English, rupees, no hype words, no em dashes.";
+const MODELS = [
+  "gemini-3.6-flash",
+  "gemini-2.0-flash",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-flash-latest",
+  "gemini-2.0-flash-lite",
+];
 
-async function tryCall(model: string, maxOutputTokens: number, key: string) {
+async function probe(model: string, key: string) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
   const t = Date.now();
   try {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: LONG_PROMPT }] }], generationConfig: { temperature: 0.2, maxOutputTokens } }),
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: "Reply with exactly: OK" }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 256 },
+      }),
     });
-    const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[] };
+    const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[]; error?: { message?: string } };
     const text = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    return { ok: res.ok, status: res.status, ms: Date.now() - t, finishReason: json.candidates?.[0]?.finishReason ?? "?", textLen: text.length, textHead: text.slice(0, 80) };
+    return { model, status: res.status, ms: Date.now() - t, textLen: text.length, err: json.error?.message?.slice(0, 90) ?? null };
   } catch (e) {
-    return { ok: false, status: 0, ms: Date.now() - t, finishReason: "throw", textLen: 0, textHead: e instanceof Error ? `${e.name}: ${e.message}` : "err" };
+    return { model, status: 0, ms: Date.now() - t, textLen: 0, err: e instanceof Error ? `${e.name}: ${e.message}` : "err" };
   }
 }
 
@@ -34,12 +40,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "no" }, { status: 403 });
   }
   const key = process.env.GEMINI_API_KEY;
-  const model = "gemini-3.6-flash";
-  return NextResponse.json({
-    deployedSha: process.env.VERCEL_GIT_COMMIT_SHA ?? "unknown",
-    hasKey: Boolean(key),
-    model,
-    long_8192: key ? await tryCall(model, 8192, key) : null,
-    long_24576: key ? await tryCall(model, 24576, key) : null,
-  });
+  if (!key) return NextResponse.json({ error: "no key" });
+  // Sequential so we don't self-inflict a 429 burst; each model is its own quota bucket.
+  const results = [];
+  for (const m of MODELS) results.push(await probe(m, key));
+  return NextResponse.json({ deployedSha: process.env.VERCEL_GIT_COMMIT_SHA ?? "unknown", results });
 }
