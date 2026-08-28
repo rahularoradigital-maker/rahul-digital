@@ -118,7 +118,11 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
 
   const bodyJson = JSON.stringify({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.2, maxOutputTokens: 500 },
+    // gemini-3.6-flash is a THINKING model: with a low token cap it spends the budget on internal
+    // reasoning and truncates the real answer mid-sentence. These are grounded extraction/summary
+    // tasks that need no chain-of-thought, so disable thinking (thinkingBudget 0 -> all tokens to the
+    // answer, and faster) and give a generous output cap.
+    generationConfig: { temperature: 0.2, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } },
   });
   // Cap each attempt so a slow free-tier response can NEVER hang past the serverless limit (which
   // shows the user a hard "Ask failed" instead of a graceful message). On abort/timeout we return
