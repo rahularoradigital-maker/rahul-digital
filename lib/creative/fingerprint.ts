@@ -20,10 +20,11 @@ export type CreativeAsset = {
   ctaType: string | null; // call_to_action_type, e.g. SHOP_NOW
   isVideo: boolean;
   isCarousel: boolean;
+  isCatalog: boolean; // Meta catalog / dynamic product ad (creative carries a product_set_id)
   assetCount: number; // # of cards/images (1 for a single image/video)
 };
 
-export type CreativeFormat = "video" | "carousel" | "image" | "unknown";
+export type CreativeFormat = "video" | "carousel" | "image" | "catalog" | "unknown";
 
 export type DeterministicFingerprint = {
   contentHash: string; // stable identity for fingerprint-once caching
@@ -76,6 +77,9 @@ export function contentHash(asset: CreativeAsset): string {
 }
 
 function formatOf(asset: CreativeAsset): CreativeFormat {
+  // Catalog first: a dynamic product ad has no fixed media (it pulls from a product set), so it
+  // would otherwise fall through to "unknown". product_set_id is Meta's authoritative catalog marker.
+  if (asset.isCatalog) return "catalog";
   if (asset.isCarousel || asset.assetCount > 1) return "carousel";
   if (asset.isVideo || asset.videoId) return "video";
   if (asset.imageUrl) return "image";

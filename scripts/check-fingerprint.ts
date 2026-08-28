@@ -15,6 +15,7 @@ function asset(over: Partial<CreativeAsset> = {}): CreativeAsset {
     ctaType: "SHOP_NOW",
     isVideo: false,
     isCarousel: false,
+    isCatalog: false,
     assetCount: 1,
     ...over,
   };
@@ -46,6 +47,18 @@ assert.equal(
   deterministicFingerprint(asset({ imageUrl: null, videoThumbUrl: null, videoId: null, isVideo: false })).format,
   "unknown",
   "no media = unknown",
+);
+// Catalog / dynamic product ad: product_set_id -> isCatalog. Wins even with no fixed media (which
+// would otherwise read as "unknown") AND over carousel, since it is the ad's true type.
+assert.equal(
+  deterministicFingerprint(asset({ imageUrl: null, videoThumbUrl: null, videoId: null, isCatalog: true })).format,
+  "catalog",
+  "product_set_id with no fixed media = catalog (not unknown)",
+);
+assert.equal(
+  deterministicFingerprint(asset({ isCatalog: true, assetCount: 4 })).format,
+  "catalog",
+  "catalog wins over carousel",
 );
 
 // Deterministic facts: copy length, cta presence, hasVideo.

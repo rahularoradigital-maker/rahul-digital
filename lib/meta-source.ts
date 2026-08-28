@@ -274,6 +274,7 @@ type MetaCreative = {
   video_id?: string;
   body?: string;
   title?: string;
+  product_set_id?: string; // present iff this is a catalog / dynamic product ad
   object_story_spec?: MetaStorySpec;
   asset_feed_spec?: MetaAssetFeed;
 };
@@ -306,6 +307,7 @@ function normalizeCreative(adId: string, c: MetaCreative | undefined): CreativeA
     ctaType: ctaType ?? null,
     isVideo: Boolean(videoId),
     isCarousel: children > 1 || feedAssets > 1,
+    isCatalog: Boolean(c?.product_set_id),
     assetCount,
   };
 }
@@ -319,7 +321,7 @@ function normalizeCreative(adId: string, c: MetaCreative | undefined): CreativeA
 export async function fetchAdCreatives(accountExternalId: string, adIds: string[], token: TokenSet): Promise<Map<string, CreativeAsset>> {
   const out = new Map<string, CreativeAsset>();
   if (adIds.length === 0) return out;
-  const fields = "creative{id,thumbnail_url,image_url,video_id,body,title,object_story_spec,asset_feed_spec}";
+  const fields = "creative{id,thumbnail_url,image_url,video_id,body,title,product_set_id,object_story_spec,asset_feed_spec}";
   // Per-AD requests, not the ?ids= batch param: Meta deprecated ?ids= (code 100, "deprecated in
   // v26.0+") so the batch call returns a hard error and every ad reads as "unknown" format. A bounded
   // worker pool keeps 100 ads fast without a request storm; one ad's failure is isolated.
