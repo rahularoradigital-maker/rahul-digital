@@ -120,12 +120,19 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.2, maxOutputTokens: 500 },
   });
+  // Cap each attempt so a slow free-tier response can NEVER hang past the serverless limit (which
+  // shows the user a hard "Ask failed" instead of a graceful message). On abort/timeout we return
+  // null and the caller says "could not form an answer, try again".
+  const TIMEOUT_MS = 12_000;
   for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
       const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(key)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: bodyJson,
+        signal: controller.signal,
       });
       if (!res.ok) {
         if ((res.status === 429 || res.status === 503) && attempt === 0) {
@@ -143,6 +150,8 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
         continue;
       }
       return null;
+    } finally {
+      clearTimeout(timer);
     }
   }
   return null;
