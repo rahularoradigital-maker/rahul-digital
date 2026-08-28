@@ -1,12 +1,16 @@
 import type { NextConfig } from "next";
 
-// Content-Security-Policy in REPORT-ONLY mode: it never blocks anything (zero risk of breaking the
-// app), it only reports what an enforced policy would catch. This is the correct launch step -
-// validate against real traffic first, then flip to enforced later. Origins the browser legitimately
+// Content-Security-Policy, ENFORCED (ISSUE 16). It ran in report-only mode first and collected zero
+// violations across the public and signed-in pages, so enforcing the SAME directives cannot break a
+// legitimate flow while it makes the protections real: connect-src pins network calls to self +
+// Supabase (blocks exfil to other origins), object-src 'none' / base-uri / form-action / frame-
+// ancestors close clickjacking + form-hijack + base-tag vectors. Origins the browser legitimately
 // uses: Next inline hydration scripts/styles, Google Fonts, Supabase auth/realtime, and ad-thumbnail
 // images from various CDNs (https:). Server-side calls (Meta/Gemini) don't go through the browser, so
-// they are not in connect-src.
-const csp = [
+// they are not in connect-src. ponytail: script-src still carries 'unsafe-inline' because Next's
+// hydration bootstrap is inline; removing it needs a nonce/hash strategy - a tracked follow-up, not a
+// blocker for enforcing the rest.
+export const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -28,7 +32,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  { key: "Content-Security-Policy-Report-Only", value: csp },
+  { key: "Content-Security-Policy", value: csp },
 ];
 
 const nextConfig: NextConfig = {
