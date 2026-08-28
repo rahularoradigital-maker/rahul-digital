@@ -124,8 +124,9 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
 
   const bodyJson = JSON.stringify({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    // Non-thinking model, so maxOutputTokens is pure answer budget - 2048 is a full multi-section reply.
-    generationConfig: { temperature: 0.2, maxOutputTokens: 2048 },
+    // Thinking model shares this budget between reasoning and the answer, so it must be generous or
+    // the answer truncates/empties. 8192 leaves ample room; a short summary still returns quickly.
+    generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
   });
   // Cap each attempt so a slow free-tier response can NEVER hang past the serverless limit (which
   // shows the user a hard failure instead of a graceful message). On abort/timeout we return null and
@@ -147,11 +148,15 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
           continue;
         }
         const body = await res.text().catch(() => "");
-        return `DIAG gemini ${res.status}: ${body.slice(0, 400)}`;
+        console.error(`[gemini] text ${res.status}: ${body.slice(0, 300)}`); // diagnostics -> server logs, not the UI
+        return null;
       }
       const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[] };
       const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) return `DIAG no-text finishReason=${json.candidates?.[0]?.finishReason ?? "?"} raw=${JSON.stringify(json).slice(0, 400)}`;
+      if (!text) {
+        console.error(`[gemini] text empty, finishReason=${json.candidates?.[0]?.finishReason ?? "?"}`);
+        return null;
+      }
       return text.trim();
     } catch (e) {
       // Retry a transient network blip once, but NOT a timeout abort (retrying would double the wait
