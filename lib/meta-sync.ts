@@ -2,6 +2,7 @@
 // metrics, run the brain, and return a cockpit view of REAL data. Server-only (reads the
 // encrypted token via the service role). No dummy data anywhere in this path.
 
+import { cache } from "react";
 import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
@@ -20,6 +21,28 @@ import { assessDataQuality, type DataQuality, type QualityRow } from "./scoring/
 // One user OAuth token works across all their ad accounts, so the account picker and
 // the account-switch route both read the session here. Returns null (never throws) if
 // nothing is connected or the service role / DB is unavailable.
+// WARM-PATH helper: the active account's external id ONLY, for building the cockpit cache key.
+// Unlike getUserMetaSession it does NOT read or AES-decrypt the OAuth token (the cold pull reads
+// its own token when it actually needs it), so every cached page navigation skips a DB round-trip
+// plus a decrypt. React-cached so repeated calls in one render collapse to a single query.
+export const getActiveAccountExternalId = cache(async (userId: string): Promise<string | null> => {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("ad_accounts")
+      .select("external_id")
+      .eq("user_id", userId)
+      .eq("platform", "meta")
+      .eq("status", "connected")
+      .order("connected_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data?.external_id ?? null;
+  } catch {
+    return null;
+  }
+});
+
 export async function getUserMetaSession(
   userId: string,
 ): Promise<{ token: TokenSet; activeExternalId: string; activeAccountName: string } | null> {
@@ -102,6 +125,15 @@ async function resolveCampaignIds(
 // An explicit {since, until} custom range (YYYY-MM-DD) overrides lookbackDays for the pull.
 export type ExplicitWindow = { since: string; until: string };
 
+// Opt-in perf tracing: set ADBRAIN_PERF=1 (e.g. in Vercel) to log how long each phase of a cold
+// Meta pull actually takes, so the real bottleneck is measured, not guessed. Off by default (zero
+// cost, no log noise). Each call returns "now" so phases chain: t = perfMark("x", t).
+const PERF = process.env.ADBRAIN_PERF === "1";
+function perfMark(label: string, sinceMs: number): number {
+  if (PERF) console.log(`[perf] ${label}: ${Math.round(performance.now() - sinceMs)}ms`);
+  return performance.now();
+}
+
 async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = [], window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
@@ -133,12 +165,15 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
   if (!token) return { status: "not_connected" };
 
   try {
+    const t0 = performance.now();
+    let tp = t0;
     // A custom range wins over lookbackDays; otherwise since = daysAgo, until = today.
     const since = window ? window.since : daysAgo(lookbackDays);
     const until = window ? window.until : undefined;
     // Which campaigns to include: the campaign picker, or the objective picker mapped to
     // the account's campaigns of those objectives. undefined = all; [] = matched nothing.
     const campaignIds = await resolveCampaignIds(acct.external_id, token, campaignId, objectives);
+    tp = perfMark("resolveCampaignIds", tp);
     // PERF: the scope totals (true spend/revenue for the whole objective) only depend on
     // campaignIds, NOT on the per-ad pipeline below. Kick it off NOW so it runs concurrently
     // with listTopSpendingAds -> fetchAdInsights -> listAdSetEnds instead of after them; we
@@ -157,6 +192,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     if (ads.length === 0 && campaignIds === undefined) {
       ads = await metaSource.listAds(acct.external_id, token);
     }
+    tp = perfMark("listTopSpendingAds", tp);
     // Pull daily metrics for all of these ads in ONE account-level call instead of one
     // request per ad (26 round-trips -> 2). This is the main page-speed fix.
     const top = ads.slice(0, MAX_ADS);
@@ -168,6 +204,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // the Gemini decoder). In flight concurrently - it only needs the ad ids. Best-effort.
     const creativesPromise = fetchAdCreatives(acct.external_id, top.map((a) => a.externalId), token).catch(() => new Map<string, CreativeAsset>());
     const rowsByAd = await fetchAdInsights(acct.external_id, top.map((a) => a.externalId), since, token, until);
+    tp = perfMark("fetchAdInsights", tp);
     // Ad set end dates cap the fatigue half-life (a creative cannot outlive its ad set).
     const adsetIds = [...new Set([...rowsByAd.values()].map((e) => e.adsetId).filter((x): x is string => Boolean(x)))];
     let adsetEnds = new Map<string, number>();
@@ -176,8 +213,10 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     } catch {
       // end dates are optional; a failure here just means no half-life cap
     }
+    tp = perfMark("listAdSetEnds", tp);
     const nowSec = Math.floor(Date.now() / 1000);
     const adMeta = await metaPromise;
+    tp = perfMark("awaitAdMeta", tp);
     const realAds: RealAd[] = top.map((ad) => {
       const entry = rowsByAd.get(ad.externalId);
       const endUnix = entry?.adsetId ? adsetEnds.get(entry.adsetId) : undefined;
@@ -203,6 +242,8 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
     const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
     const view = analyzeAccount(inputs, "LIVE", weights);
+    tp = perfMark("analyzeAccount", tp);
+    perfMark("COLD-PULL-TOTAL", t0);
 
     // Own-ad creative diversity (DETERMINISTIC layer only: real creative FORMAT per ad; the
     // semantic dimensions - hook/angle/persona - stay null until the Gemini decoder runs, so
@@ -399,10 +440,12 @@ export async function fetchLiveCockpit(
   window?: ExplicitWindow,
   weights: ScoreWeights = VERDICT_WEIGHTS,
 ): Promise<LiveCockpit> {
+  const w0 = performance.now();
   // Key the cache by the ACTIVE account too: without this, every account shares one
   // cache entry, so switching account keeps showing the previous account's numbers.
-  const session = await getUserMetaSession(userId);
-  const activeId = session?.activeExternalId ?? "none";
+  // Only the external id is needed here (not the token), so use the light, token-free read.
+  const activeId = (await getActiveAccountExternalId(userId)) ?? "none";
+  perfMark("warm:activeId", w0);
   // Include the custom range in the key so it never collides with a preset (which has no window).
   const windowKey = window ? `${window.since}_${window.until}` : "";
   // Only a non-default weight override changes the key (identity check on the default param), so the
@@ -414,7 +457,10 @@ export async function fetchLiveCockpit(
 
   // L1: in-process (same instance)
   const hit = cockpitCache.get(memKey);
-  if (hit && now - hit.at < FRESH_MS && isRenderableShape(hit.value)) return hit.value;
+  if (hit && now - hit.at < FRESH_MS && isRenderableShape(hit.value)) {
+    perfMark("warm:L1-HIT-total", w0);
+    return hit.value;
+  }
 
   // L2: Supabase, shared across serverless instances
   let cached: { value: LiveCockpit; age: number } | null = null;
@@ -439,7 +485,10 @@ export async function fetchLiveCockpit(
 
   if (cached) {
     cockpitCache.set(memKey, { at: now - cached.age, value: cached.value });
-    if (cached.age < FRESH_MS) return cached.value;
+    if (cached.age < FRESH_MS) {
+      perfMark("warm:L2-FRESH-total", w0);
+      return cached.value;
+    }
     if (cached.age < STALE_MS) {
       // Serve stale immediately, refresh in the background so the next load is fresh.
       try {
@@ -447,11 +496,13 @@ export async function fetchLiveCockpit(
       } catch {
         // after() unavailable outside a request scope; the stale value is still fine.
       }
+      perfMark("warm:L2-STALE-total (bg refresh queued)", w0);
       return cached.value;
     }
   }
 
   // Cold or too stale: block on the live pull (skeleton shows while this runs).
+  if (PERF) console.log("[perf] COLD pull (blocking) - no fresh/stale cache for this filter combo");
   return pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights);
 }
 
