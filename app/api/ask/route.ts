@@ -80,13 +80,20 @@ export async function POST(request: NextRequest) {
     `You are AdBrain's analyst. Answer the user's question using ONLY the DATA JSON below - the user's REAL connected Meta ad account for the ${windowLabel} (the window they are currently viewing). Rules:` +
     " never invent a number or a fact that is not in the DATA; if the DATA does not contain the answer, say so plainly and name what to connect or check; every number you state must appear in the DATA. Be short and direct, plain Indian English, rupees for money, no hype words, no em dashes.";
 
+  // Count the usage BEFORE the model call. The cap check above only read a count, so logging AFTER a
+  // successful answer let N concurrent asks each slip through during Gemini's multi-second latency and
+  // blow past the daily cap. Awaiting the insert first shrinks that race to one fast DB round-trip.
+  // Same pass ages out this user's rows older than the rolling window, so ask_log stays bounded at
+  // ~cap rows/user at 1000 users instead of growing forever. Both are best-effort: a log failure must
+  // never fail the answer.
+  await admin.from("ask_log").insert({ user_id: user.id }).then(undefined, () => {});
+  await admin.from("ask_log").delete().eq("user_id", user.id).lt("created_at", since).then(undefined, () => {});
+
   try {
     // Gemini takes a single prompt (no separate system role), so fold the rules + data + question
     // into one grounded prompt.
     const answer = await callGeminiText(`${system}\n\nDATA:\n${JSON.stringify(context)}\n\nQUESTION: ${question}`);
     if (!answer) return NextResponse.json({ answer: "I could not form an answer from your data right now. Please try again." });
-    // Record the usage for the cap (best-effort; a failed log must not fail the answer).
-    await admin.from("ask_log").insert({ user_id: user.id }).then(undefined, () => {});
     return NextResponse.json({ answer });
   } catch {
     return NextResponse.json({ error: "Ask failed. Please try again." }, { status: 500 });

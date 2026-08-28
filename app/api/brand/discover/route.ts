@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { searchCompanies, fetchBrandAds } from "@/lib/scrapecreators";
-import { loadBrandProfile } from "@/lib/brand/profile";
-import { buildSearchQueries, shortlistCandidates, type Candidate } from "@/lib/brand/discover";
+import { loadBrandProfile, suggestCompetitorNames } from "@/lib/brand/profile";
+import { shortlistCandidates, type Candidate } from "@/lib/brand/discover";
 import type { NormalizedAd } from "@/lib/competitors/types";
 
 // Stage 2: auto competitor discovery from the CONFIRMED brand profile.
@@ -13,6 +13,7 @@ import type { NormalizedAd } from "@/lib/competitors/types";
 // Auth-gated; grounded (real Ad Library data only). Requires SCRAPECREATORS_API_KEY.
 export const maxDuration = 60;
 const PULL_CONCURRENCY = 2; // gentle on the provider's rate limit (matches competitors/run)
+const SEARCH_CONCURRENCY = 4; // resolving suggested names is a cheap GET, so a bit more parallelism
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -82,22 +83,31 @@ export async function POST(request: NextRequest) {
   }
 
   // --- SEARCH: find candidate competitors from the profile. ---
-  const queries = buildSearchQueries(profile.category, profile.subcategories, profile.keyProducts);
-  if (queries.length === 0) {
-    return NextResponse.json({ error: "The brand profile has no category or products to search from. Add some and confirm again." }, { status: 400 });
+  // The Ad Library search matches by brand NAME, not product keywords, so we can't search "kurta sets".
+  // Instead ask Gemini for real same-market, same-price-band competitor NAMES, then resolve each to a
+  // REAL Ad Library page. A wrong/invented name just resolves to nothing and drops out (grounded).
+  const names = await suggestCompetitorNames(profile);
+  if (names.length === 0) {
+    return NextResponse.json({ error: "Could not suggest competitors from this profile. Add category / products and confirm again." }, { status: 400 });
   }
   const all: Candidate[] = [];
   const seen = new Set<string>();
-  await Promise.all(
-    queries.map(async (q) => {
+  const nameQueue = [...names];
+  async function resolver() {
+    for (;;) {
+      const name = nameQueue.shift();
+      if (!name) return;
+      let results: Candidate[];
       try {
-        const results = await searchCompanies(q, 8);
-        for (const r of results) if (!seen.has(r.pageId)) { seen.add(r.pageId); all.push(r); }
+        results = await searchCompanies(name, 3); // ranked best NAME-match first
       } catch {
-        // one query failing must not sink discovery
+        continue; // one name failing must not sink discovery
       }
-    }),
-  );
-  const candidates = shortlistCandidates(all, session.activeAccountName, 10);
-  return NextResponse.json({ ok: true, candidates, queries });
+      // Keep the top 1-2 real pages per name; shortlist then dedupes, drops our own brand, ranks.
+      for (const r of results.slice(0, 2)) if (r.pageId && !seen.has(r.pageId)) { seen.add(r.pageId); all.push(r); }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(SEARCH_CONCURRENCY, Math.max(1, nameQueue.length)) }, resolver));
+  const candidates = shortlistCandidates(all, session.activeAccountName ?? "", 10);
+  return NextResponse.json({ ok: true, candidates, suggested: names });
 }

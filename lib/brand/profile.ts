@@ -68,6 +68,45 @@ export async function deriveBrandProfile(
   return raw ? parseDerived(raw) : null;
 }
 
+// Discovery brain: propose real competitor BRAND NAMES for this brand. The Ad Library search endpoint
+// matches by brand NAME (not product keywords), so we ask Gemini - which knows the market - for
+// same-country, same-price-band rivals, then the route resolves each NAME to a REAL Ad Library page.
+// Fabricated or wrong names simply resolve to nothing and are dropped, so nothing unreal is surfaced.
+export async function suggestCompetitorNames(p: BrandProfile): Promise<string[]> {
+  const prompt = [
+    "You are a competitive-intelligence analyst. Name the real, well-known competitor BRANDS of the brand below.",
+    p.accountName ? `Brand: ${p.accountName}` : "",
+    p.summary ? `What it sells: ${p.summary}` : "",
+    p.category ? `Category: ${p.category}` : "",
+    p.subcategories.length ? `Sub-categories: ${p.subcategories.join(", ")}` : "",
+    p.keyProducts.length ? `Key products: ${p.keyProducts.join(", ")}` : "",
+    p.pricePositioning ? `Price positioning: ${p.pricePositioning}` : "",
+    p.targetMarket ? `Primary market / country: ${p.targetMarket}` : "",
+    "",
+    "Rules:",
+    "- List up to 12 REAL brands a shopper would consider direct alternatives to this brand.",
+    "- Same country / market and roughly the same price tier (same price band, not a super-luxury or bargain outlier).",
+    "- Brands that actively advertise (likely to have a Facebook / Meta page). Exclude the brand itself and generic marketplaces (Amazon, Myntra, Flipkart) unless one is truly the direct competitor.",
+    "- Return ONLY the brand names, comma-separated. No numbering, no notes, no explanations.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+  const raw = await callGemini(prompt, stringObjectSchema(["competitors"]));
+  const list = String((raw as { competitors?: unknown } | null)?.competitors ?? "");
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of list.split(/[,;\n]/)) {
+    const t = part.trim();
+    const k = t.toLowerCase();
+    if (t.length >= 2 && t.length <= 40 && !seen.has(k)) {
+      seen.add(k);
+      out.push(t);
+      if (out.length >= 12) break;
+    }
+  }
+  return out;
+}
+
 // --- Storage (service-role) ---
 
 type Row = {
