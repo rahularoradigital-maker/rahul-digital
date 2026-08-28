@@ -6,6 +6,7 @@ import { cache } from "react";
 import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
+import { LruMap } from "./lru.ts";
 import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { deterministicFingerprint, type CreativeAsset } from "./creative/fingerprint.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
@@ -375,7 +376,11 @@ const COLD_PULL_TIMEOUT_MS = 8_000; // cap the blocking cold pull so a slow Meta
 // v3: added view.wasteContributors / atRiskContributors + per-ad conversions/active/names to the
 // cached shape. BUMP THIS on ANY LiveCockpit/view shape change so old-shape blobs are never read.
 const CACHE_SCHEMA = "v4"; // v4: added ownDiversity
-const cockpitCache = new Map<string, CacheEntry>();
+// Bounded so a long-lived instance can't accumulate unbounded (user x account x window x filter x
+// weights) permutations (ISSUE 09). 500 hot entries is far more than one instance serves between
+// evictions; least-recently-used falls out first.
+const COCKPIT_CACHE_MAX = 500;
+const cockpitCache = new LruMap<string, CacheEntry>(COCKPIT_CACHE_MAX);
 
 /** Clear the cockpit cache. Pass userId to also clear that user's shared L2 rows. */
 export async function bustCockpitCache(userId?: string): Promise<void> {
