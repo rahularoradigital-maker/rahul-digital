@@ -15,6 +15,7 @@ import { fetchLiveCockpit, type AccountMetrics, type ProcessedCounts, type Scope
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import type { MarginalRead } from "@/lib/scoring/marginal";
 import type { DataQuality } from "@/lib/scoring/data-quality";
+import type { DiversityRead } from "@/lib/creative/diversity";
 import type { CockpitView } from "@/lib/cockpit/analyze";
 import { recordDecisionTriples } from "@/lib/audit/record";
 
@@ -29,7 +30,7 @@ export type ConnectReason = "not_connected" | "error" | "no_data";
 // Discriminated on `connected`: a page either has real data to render, or it does
 // not and must render the Connect/empty state. There is deliberately no sample view.
 export type CockpitData =
-  | { connected: true; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: ProcessedCounts; days: number; userEmail?: string }
+  | { connected: true; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: ProcessedCounts; days: number; userEmail?: string }
   | { connected: false; days: number; reason: ConnectReason; accountName?: string; errorNote?: string; userEmail?: string };
 
 /**
@@ -73,7 +74,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     } catch {
       // after() unavailable outside a request scope; skip logging rather than fail the load.
     }
-    return { connected: true, view: live.view, metrics: live.metrics, scopeTotals: live.scopeTotals, funnel: live.funnel, marginal: live.marginal, dataQuality: live.dataQuality, accountName: live.accountName, accountId: live.accountExternalId, dateParam, adsAnalyzed: live.adsAnalyzed, processed: live.processed, days: effectiveDays, userEmail };
+    return { connected: true, view: live.view, metrics: live.metrics, scopeTotals: live.scopeTotals, funnel: live.funnel, marginal: live.marginal, dataQuality: live.dataQuality, ownDiversity: live.ownDiversity, accountName: live.accountName, accountId: live.accountExternalId, dateParam, adsAnalyzed: live.adsAnalyzed, processed: live.processed, days: effectiveDays, userEmail };
   }
 
   // Connected but nothing spent in the window is a real, honest "no data yet" state,

@@ -5,7 +5,9 @@
 import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
+import { deterministicFingerprint, type CreativeAsset } from "./creative/fingerprint.ts";
+import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import type { TokenSet } from "./ad-source.ts";
@@ -70,7 +72,7 @@ export type ProcessedCounts = { campaigns: number; adSets: number; ads: number }
 export type ScopeTotals = { spendRs: number; revenueRs: number; roas: number | null };
 
 export type LiveCockpit =
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -161,6 +163,9 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // only need the ad ids). Status hides paused ads from suggestions; the names make every money
     // figure traceable to a readable campaign / ad set. Best-effort.
     const metaPromise = fetchAdMeta(acct.external_id, top.map((a) => a.externalId), token).catch(() => new Map<string, AdMeta>());
+    // Own-ad creative assets (for the DETERMINISTIC format-diversity read; the semantic layer needs
+    // the Gemini decoder). In flight concurrently - it only needs the ad ids. Best-effort.
+    const creativesPromise = fetchAdCreatives(acct.external_id, top.map((a) => a.externalId), token).catch(() => new Map<string, CreativeAsset>());
     const rowsByAd = await fetchAdInsights(acct.external_id, top.map((a) => a.externalId), since, token, until);
     // Ad set end dates cap the fatigue half-life (a creative cannot outlive its ad set).
     const adsetIds = [...new Set([...rowsByAd.values()].map((e) => e.adsetId).filter((x): x is string => Boolean(x)))];
@@ -197,6 +202,28 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
     const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
     const view = analyzeAccount(inputs, "LIVE");
+
+    // Own-ad creative diversity (DETERMINISTIC layer only: real creative FORMAT per ad; the
+    // semantic dimensions - hook/angle/persona - stay null until the Gemini decoder runs, so
+    // `coverage` honestly reports 0 there). Best-effort; null if the creative pull failed.
+    let ownDiversity: DiversityRead | null = null;
+    try {
+      const assets = await creativesPromise;
+      const records: CreativeRecord[] = view.leaderboard.map((ad) => ({
+        adId: ad.id,
+        adName: ad.name,
+        spendRs: ad.spendRs,
+        winner: ad.winner?.overall ?? 0,
+        format: assets.has(ad.id) ? deterministicFingerprint(assets.get(ad.id)!).format : "unknown",
+        funnelStage: null,
+        hookType: null,
+        emotion: null,
+        subject: null,
+      }));
+      ownDiversity = records.length > 0 ? assessDiversity(records) : null;
+    } catch {
+      ownDiversity = null;
+    }
 
     // Coverage of this run: distinct campaigns / ad sets across the ads we actually analyzed.
     const analyzedIds = new Set(inputs.map((a) => a.id));
@@ -274,7 +301,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // separate from view.totals, which is the analyzed-ads subset the leaderboard breaks down.
     const scopeTotals = { spendRs: Math.round(sSpend), revenueRs: Math.round(sRev), roas: sSpend > 0 ? sRev / sSpend : null };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality, ownDiversity };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }
@@ -304,7 +331,7 @@ const STALE_MS = 86_400_000; // 24 hours: still serve instantly, refresh in the 
 // permanent fix for cache/schema-mismatch crashes, not a one-off.
 // v3: added view.wasteContributors / atRiskContributors + per-ad conversions/active/names to the
 // cached shape. BUMP THIS on ANY LiveCockpit/view shape change so old-shape blobs are never read.
-const CACHE_SCHEMA = "v3";
+const CACHE_SCHEMA = "v4"; // v4: added ownDiversity
 const cockpitCache = new Map<string, CacheEntry>();
 
 /** Clear the cockpit cache. Pass userId to also clear that user's shared L2 rows. */
