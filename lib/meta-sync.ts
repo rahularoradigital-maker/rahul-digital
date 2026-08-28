@@ -262,14 +262,6 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
         emotion: null,
         subject: null,
       }));
-      // TEMP DIAGNOSTIC (remove after fixing format-diversity "Unknown"): what did Meta return?
-      {
-        const first = view.leaderboard[0];
-        const a0 = first ? assets.get(first.id) : undefined;
-        const fmtCounts: Record<string, number> = {};
-        for (const r of records) fmtCounts[r.format] = (fmtCounts[r.format] ?? 0) + 1;
-        console.log("[diag:creatives] assets.size=" + assets.size + " leaderboard=" + view.leaderboard.length + " formats=" + JSON.stringify(fmtCounts) + " sample=" + (first ? JSON.stringify({ id: first.id, hasAsset: assets.has(first.id), imageUrl: a0?.imageUrl ?? null, videoId: a0?.videoId ?? null, isVideo: a0?.isVideo ?? null, isCarousel: a0?.isCarousel ?? null, assetCount: a0?.assetCount ?? null }) : "none"));
-      }
       ownDiversity = records.length > 0 ? assessDiversity(records) : null;
     } catch {
       ownDiversity = null;

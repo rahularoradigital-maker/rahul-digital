@@ -1,6 +1,9 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { callGemini, stringObjectSchema } from "@/lib/gemini";
+import { parseDerived, type DerivedProfile } from "./parse";
+
+export { parseDerived, type DerivedProfile } from "./parse";
 
 // The "brand learning folder" seed: a structured understanding of the brand we run ads for,
 // derived from its REAL ad data (account name + ad names + a sample of ad copy + account currency)
@@ -23,45 +26,6 @@ export type BrandProfile = {
   derivedAt: string;
   confirmedAt: string | null;
 };
-
-// The fields Gemini derives (the editable/reviewable part), separate from the stored metadata.
-export type DerivedProfile = {
-  category: string | null;
-  subcategories: string[];
-  keyProducts: string[];
-  pricePositioning: string | null;
-  targetMarket: string | null;
-  brandVoice: string | null;
-  summary: string | null;
-  website: string | null;
-};
-
-// Pure parse of Gemini's flat string object into a DerivedProfile. "unknown"/empty -> null; the
-// list fields are comma/semicolon separated. Exported so a check can exercise it without the model.
-export function parseDerived(raw: Record<string, unknown>): DerivedProfile {
-  const s = (k: string): string | null => {
-    const v = raw[k];
-    if (typeof v !== "string") return null;
-    const t = v.trim();
-    return t && t.toLowerCase() !== "unknown" && t.toLowerCase() !== "n/a" ? t : null;
-  };
-  const list = (k: string): string[] =>
-    (s(k) ?? "")
-      .split(/[,;]/)
-      .map((x) => x.trim())
-      .filter(Boolean)
-      .slice(0, 12);
-  return {
-    category: s("category"),
-    subcategories: list("subcategories"),
-    keyProducts: list("key_products"),
-    pricePositioning: s("price_positioning"),
-    targetMarket: s("target_market"),
-    brandVoice: s("brand_voice"),
-    summary: s("summary"),
-    website: s("website"),
-  };
-}
 
 const SCHEMA = stringObjectSchema([
   "category",

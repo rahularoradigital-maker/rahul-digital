@@ -320,29 +320,24 @@ export async function fetchAdCreatives(accountExternalId: string, adIds: string[
   const out = new Map<string, CreativeAsset>();
   if (adIds.length === 0) return out;
   const fields = "creative{id,thumbnail_url,image_url,video_id,body,title,object_story_spec,asset_feed_spec}";
-  // Independent 50-id batches: fetch them concurrently, not one-after-another (100 ads = 2 round
-  // trips in parallel instead of in series). A bad batch resolves empty and never sinks the others.
-  const chunks: string[][] = [];
-  for (let i = 0; i < adIds.length; i += 50) chunks.push(adIds.slice(i, i + 50));
-  const results = await Promise.all(
-    chunks.map((batch, ci) =>
-      graphGet<Record<string, { creative?: MetaCreative }>>("", token.accessToken, { ids: batch.join(","), fields })
-        .then((json) => ({ batch, json }))
-        .catch((e) => {
-          console.log("[diag:fetchAdCreatives] batch " + ci + " FAILED: " + (e instanceof Error ? e.message : String(e)));
-          return { batch, json: {} as Record<string, { creative?: MetaCreative }> };
-        }),
-    ),
-  );
-  for (const { batch, json } of results) {
-    for (const adId of batch) {
-      const entry = json[adId];
-      if (entry) out.set(adId, normalizeCreative(adId, entry.creative));
+  // Per-AD requests, not the ?ids= batch param: Meta deprecated ?ids= (code 100, "deprecated in
+  // v26.0+") so the batch call returns a hard error and every ad reads as "unknown" format. A bounded
+  // worker pool keeps 100 ads fast without a request storm; one ad's failure is isolated.
+  const CONCURRENCY = 12;
+  const queue = [...adIds];
+  async function worker() {
+    for (;;) {
+      const id = queue.shift();
+      if (!id) return;
+      try {
+        const json = await graphGet<{ creative?: MetaCreative }>(id, token.accessToken, { fields });
+        if (json?.creative) out.set(id, normalizeCreative(id, json.creative));
+      } catch {
+        // this ad has no fingerprint this run; keep going
+      }
     }
   }
-  // TEMP DIAGNOSTIC (remove after fix): what did Meta return for the first ad's creative?
-  const firstId = adIds[0];
-  console.log("[diag:fetchAdCreatives] out.size=" + out.size + " for " + adIds.length + " ads; firstRaw=" + JSON.stringify(results[0]?.json?.[firstId] ?? null).slice(0, 500));
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, adIds.length) }, worker));
   return out;
 }
 
@@ -402,23 +397,24 @@ export type AdMeta = { status?: string; adsetName?: string; campaignName?: strin
 export async function fetchAdMeta(accountExternalId: string, adIds: string[], token: TokenSet): Promise<Map<string, AdMeta>> {
   const out = new Map<string, AdMeta>();
   if (adIds.length === 0) return out;
-  // Independent 50-id batches run concurrently (see fetchAdCreatives); a failed batch resolves empty.
-  type MetaJson = Record<string, { effective_status?: string; adset?: { name?: string }; campaign?: { name?: string } }>;
-  const chunks: string[][] = [];
-  for (let i = 0; i < adIds.length; i += 50) chunks.push(adIds.slice(i, i + 50));
-  const results = await Promise.all(
-    chunks.map((batch) =>
-      graphGet<MetaJson>("", token.accessToken, { ids: batch.join(","), fields: "effective_status,adset{name},campaign{name}" })
-        .then((json) => ({ batch, json }))
-        .catch(() => ({ batch, json: {} as MetaJson })),
-    ),
-  );
-  for (const { batch, json } of results) {
-    for (const adId of batch) {
-      const e = json[adId];
-      if (e) out.set(adId, { status: e.effective_status, adsetName: e.adset?.name, campaignName: e.campaign?.name });
+  // Per-AD requests, not the deprecated ?ids= batch param (see fetchAdCreatives). Without this the
+  // status/name lookup fails silently: no paused ads get hidden and no ad-set/campaign names show.
+  type MetaAdMetaJson = { effective_status?: string; adset?: { name?: string }; campaign?: { name?: string } };
+  const CONCURRENCY = 12;
+  const queue = [...adIds];
+  async function worker() {
+    for (;;) {
+      const id = queue.shift();
+      if (!id) return;
+      try {
+        const e = await graphGet<MetaAdMetaJson>(id, token.accessToken, { fields: "effective_status,adset{name},campaign{name}" });
+        if (e) out.set(id, { status: e.effective_status, adsetName: e.adset?.name, campaignName: e.campaign?.name });
+      } catch {
+        // this ad stays unknown; keep going
+      }
     }
   }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, adIds.length) }, worker));
   return out;
 }
 
