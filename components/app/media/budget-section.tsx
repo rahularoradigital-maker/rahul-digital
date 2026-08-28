@@ -1,13 +1,13 @@
 import { ConnectState } from "@/components/app/connect-state";
 import type { CockpitData } from "@/lib/app/cockpit-data";
 import { AdLink } from "@/components/cockpit/AdLink";
+import { rupees } from "@/lib/format";
 
 // Budget & Scaling tab of the consolidated Media page. Logic reused verbatim from
 // the former app/app/budget-scaling/page.tsx: rulebook 5 (spend on the margin, not
 // the average) and 7.1 (scale by 30% at a time, never doubled overnight). Real
 // connected-account data only, straight from data.view; no sample numbers.
 
-const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
 export function BudgetSection({ data, days }: { data: CockpitData; days: number }) {
   if (!data.connected) {

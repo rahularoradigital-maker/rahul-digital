@@ -1,9 +1,9 @@
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
+import { rupees } from "@/lib/format";
 
 // Ad-level funnel metrics a 1% D2C media buyer watches, computed from the real day-wise rows
 // (lib/metrics/funnel-metrics). Every ratio is null when its denominator is 0 (no video, no
 // add-to-cart, etc.); we show "n/a" then, never a fabricated number.
-const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
 function pctText(v: number | null): string {
   return v === null ? "n/a" : `${v.toFixed(2)}%`;

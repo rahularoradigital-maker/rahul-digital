@@ -4,6 +4,7 @@ import type { CockpitAd, CockpitView, Priority } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE, PRIORITY_STYLE } from "@/components/cockpit/styles";
 import { AdLink } from "@/components/cockpit/AdLink";
 import { JudgmentButtons } from "@/components/app/judgment-buttons";
+import { rupees } from "@/lib/format";
 
 // Action Center: the full ranked action queue (rulebook 7.1 Scale/Continue/Stop
 // gates + 5.6 law "every screen ends in a ranked action with a number"). Renders
@@ -11,7 +12,6 @@ import { JudgmentButtons } from "@/components/app/judgment-buttons";
 // the verdict chip, spend and ROAS. Nothing here is fabricated: an empty group is
 // simply not shown, and an empty queue gets an honest empty state, not an error.
 
-const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
 type PlanItem = CockpitView["doThis"][number];
 

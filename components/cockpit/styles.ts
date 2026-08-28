@@ -11,6 +11,12 @@ export const VERDICT_STYLE: Record<Verdict, { label: string; cls: string }> = {
   loser: { label: "Kill", cls: "bg-[var(--bad-bg)] text-[var(--bad-ink)]" },
 };
 
+// Confidence-bar fill color from a verdict (winner green, loser red, else amber). Shared by the
+// action list + leaderboard so the two can never drift apart.
+export function confColor(v: Verdict): string {
+  return v === "winner" ? "bg-[var(--good-ink)]" : v === "loser" ? "bg-[var(--bad-ink)]" : "bg-[var(--warn-ink)]";
+}
+
 export const PRIORITY_STYLE: Record<Priority, { label: string; cls: string; dot: string }> = {
   DO_NOW: { label: "Do now", cls: "bg-[var(--bad-bg)] text-[var(--bad-ink)]", dot: "bg-[var(--bad-ink)]" },
   DO_NEXT: { label: "Do next", cls: "bg-[var(--warn-bg)] text-[var(--warn-ink)]", dot: "bg-[var(--warn-ink)]" },

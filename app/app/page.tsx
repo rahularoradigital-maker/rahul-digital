@@ -14,12 +14,12 @@ import type { MarginalRead } from "@/lib/scoring/marginal";
 import type { DataQuality } from "@/lib/scoring/data-quality";
 import type { ScopeTotals } from "@/lib/meta-sync";
 import { WhyDrawer } from "@/components/cockpit/WhyDrawer";
+import { rupees } from "@/lib/format";
 
 // The Account Cockpit. Real connected-account data only: if nothing real is
 // available, loadCockpit returns connected:false and we render the Connect state.
 // No sample or placeholder numbers ever reach this screen.
 
-const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   const { days } = await searchParams;

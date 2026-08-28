@@ -1,16 +1,8 @@
 // Creative leaderboard, styled as the telli ranked "test plan" list. Every row is a
 // real CockpitAd: verdict chip, confidence bar, spend and ROAS come from the engine.
-import type { CockpitAd, Verdict } from "@/lib/cockpit/analyze";
-import { VERDICT_STYLE } from "./styles";
+import type { CockpitAd } from "@/lib/cockpit/analyze";
+import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
-
-function confColor(v: Verdict): string {
-  return v === "winner"
-    ? "bg-[var(--good-ink)]"
-    : v === "loser"
-      ? "bg-[var(--bad-ink)]"
-      : "bg-[var(--warn-ink)]";
-}
 
 export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: CockpitAd[]; rupees: Intl.NumberFormat; accountId?: string; dateParam?: string }) {
   return (

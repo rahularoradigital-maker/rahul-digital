@@ -2,15 +2,11 @@
 // sorted by priority upstream). Each row is joined to its real CockpitAd so the row
 // carries a real confidence bar and the engine's Scale / Iterate / Kill verdict chip,
 // matching the design's ranked test-plan list. No fabricated ordering or metrics.
-import type { CockpitAction, CockpitAd, Verdict } from "@/lib/cockpit/analyze";
-import { VERDICT_STYLE } from "./styles";
+import type { CockpitAction, CockpitAd } from "@/lib/cockpit/analyze";
+import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
 
 type PlanItem = CockpitAction & { adId: string; adName: string };
-
-function confColor(v: Verdict): string {
-  return v === "winner" ? "bg-[var(--good-ink)]" : v === "loser" ? "bg-[var(--bad-ink)]" : "bg-[var(--warn-ink)]";
-}
 
 export function ActionList({ items, ads, accountId, dateParam }: { items: PlanItem[]; ads: CockpitAd[]; accountId?: string; dateParam?: string }) {
   const byId = new Map(ads.map((a) => [a.id, a]));
