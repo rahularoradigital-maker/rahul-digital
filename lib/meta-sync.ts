@@ -7,6 +7,7 @@ import { after } from "next/server";
 import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
 import { LruMap } from "./lru.ts";
+import { createSingleFlight } from "./single-flight.ts";
 import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { deterministicFingerprint, type CreativeAsset } from "./creative/fingerprint.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
@@ -446,6 +447,13 @@ async function pullAndStore(userId: string, lookbackDays: number, campaignId: st
   return value;
 }
 
+// Single-flight the pull per cache key (ISSUE 07): concurrent cold misses and repeated stale-refresh
+// triggers for the same key collapse into ONE Meta pull instead of a thundering herd.
+const cockpitInflight = createSingleFlight<LiveCockpit>();
+function pullAndStoreSingleFlight(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, deferWrite = false): Promise<LiveCockpit> {
+  return cockpitInflight(memKey, () => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, deferWrite));
+}
+
 // Defense-in-depth against cache/schema drift: a cached CONNECTED blob written by older code may
 // lack fields the current render reads unconditionally (scopeTotals/dataQuality/marginal/funnel).
 // Rendering it would crash (the 2026-08-28 500). CACHE_SCHEMA versioning is the primary guard;
@@ -522,7 +530,7 @@ export async function fetchLiveCockpit(
     if (cached.age < STALE_MS) {
       // Serve stale immediately, refresh in the background so the next load is fresh.
       try {
-        after(() => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights));
+        after(() => pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights));
       } catch {
         // after() unavailable outside a request scope; the stale value is still fine.
       }
@@ -539,7 +547,7 @@ export async function fetchLiveCockpit(
   // app's honest "still syncing" state. after(pull) keeps the serverless container alive until the
   // pull actually finishes even after we respond, so it still warms L1 + L2 - without it the floating
   // pull is frozen on response flush and every retry is another cold timeout (an endless spinner).
-  const pull = pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, true);
+  const pull = pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, true);
   try {
     after(pull); // survive past the response; no-op-safe if the pull rejects (Next logs it)
   } catch {
