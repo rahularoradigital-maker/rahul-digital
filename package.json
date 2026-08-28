@@ -8,7 +8,6 @@
     "start": "next start",
     "lint": "eslint",
     "health": "node scripts/health-check.mjs",
-    "check:claude": "node scripts/check-claude.mjs",
     "check:crypto": "node --experimental-strip-types scripts/check-crypto.ts",
     "check:rules": "node --experimental-strip-types scripts/check-rules.ts",
     "check:validator": "node --experimental-strip-types scripts/check-validator.ts",
@@ -42,10 +41,9 @@
     "check:diversity2": "node --experimental-strip-types scripts/check-diversity2.ts",
     "check:recommendations": "node --experimental-strip-types scripts/check-recommendations.ts",
     "check:brand": "node --experimental-strip-types scripts/check-brand.ts",
-    "check:all": "npm run check:claude && npm run check:crypto && npm run check:rules && npm run check:validator && npm run check:backtest && npm run check:cache && npm run check:decision && npm run check:fatigue2 && npm run check:diversity && npm run check:account && npm run check:quality && npm run check:gates && npm run check:causality && npm run check:changelog && npm run check:comparator && npm run check:verdict && npm run check:cockpit && npm run check:scoring && npm run check:objective && npm run check:competitors && npm run check:fatigue-daywise && npm run check:decision-engine && npm run check:funnel-metrics && npm run check:decision-triples && npm run check:opportunity && npm run check:revenue && npm run check:marginal && npm run check:data-quality && npm run check:fatigue-forecast && npm run check:winner && npm run check:fingerprint && npm run check:diversity2 && npm run check:recommendations && npm run check:brand"
+    "check:all": "npm run check:crypto && npm run check:rules && npm run check:validator && npm run check:backtest && npm run check:cache && npm run check:decision && npm run check:fatigue2 && npm run check:diversity && npm run check:account && npm run check:quality && npm run check:gates && npm run check:causality && npm run check:changelog && npm run check:comparator && npm run check:verdict && npm run check:cockpit && npm run check:scoring && npm run check:objective && npm run check:competitors && npm run check:fatigue-daywise && npm run check:decision-engine && npm run check:funnel-metrics && npm run check:decision-triples && npm run check:opportunity && npm run check:revenue && npm run check:marginal && npm run check:data-quality && npm run check:fatigue-forecast && npm run check:winner && npm run check:fingerprint && npm run check:diversity2 && npm run check:recommendations && npm run check:brand"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.120.0",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
     "next": "16.3.2",
