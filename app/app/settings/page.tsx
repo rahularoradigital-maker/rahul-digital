@@ -13,12 +13,12 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       <div>
         <div className="text-[13px] text-[var(--ink-muted)]">Account and data sources</div>
-        <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Settings</h1>
+        <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">Settings</h1>
       </div>
 
       {/* Connected account */}
       <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-        <div className="mb-1 text-base font-semibold">Connected account</div>
+        <div className="mb-1 text-base font-normal">Connected account</div>
         {data.connected ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-sm">
@@ -50,7 +50,7 @@ export default async function SettingsPage() {
 
       {/* Data sources: honest status, no fake connections */}
       <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-        <div className="mb-1 text-base font-semibold">Data sources</div>
+        <div className="mb-1 text-base font-normal">Data sources</div>
         <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
           Only what is actually connected shows as connected. Nothing here is simulated.
         </div>

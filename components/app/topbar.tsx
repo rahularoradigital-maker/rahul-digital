@@ -72,7 +72,7 @@ export function Topbar() {
               className="w-40 bg-transparent text-[13px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
             />
             {(asking || answer) && (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-20 max-h-64 w-80 overflow-y-auto whitespace-pre-wrap rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-left text-[12px] leading-relaxed text-[var(--ink)] shadow-lg">
+              <div className="absolute right-0 top-[calc(100%+6px)] z-20 max-h-64 w-80 overflow-y-auto whitespace-pre-wrap rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-left text-[11px] leading-relaxed text-[var(--ink)] shadow-lg">
                 {asking ? "Thinking..." : answer}
               </div>
             )}
@@ -213,7 +213,7 @@ function DateWindow({ onChange }: { onChange: () => void }) {
           </button>
           {showCustom ? (
             <div className="mt-1 flex flex-col gap-2 border-t border-[var(--hairline)] px-1 pt-2">
-              <label className="flex flex-col gap-1 text-[12px] text-[var(--ink-muted)]">
+              <label className="flex flex-col gap-1 text-[11px] text-[var(--ink-muted)]">
                 From
                 <input
                   type="date"
@@ -225,7 +225,7 @@ function DateWindow({ onChange }: { onChange: () => void }) {
                   className="rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1.5 text-[13px] text-[var(--ink)] outline-none focus:border-[var(--accent)]"
                 />
               </label>
-              <label className="flex flex-col gap-1 text-[12px] text-[var(--ink-muted)]">
+              <label className="flex flex-col gap-1 text-[11px] text-[var(--ink-muted)]">
                 To
                 <input
                   type="date"

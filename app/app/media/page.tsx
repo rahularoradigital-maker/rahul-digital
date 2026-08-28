@@ -14,7 +14,7 @@ export default async function MediaPage({ searchParams }: { searchParams: Promis
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[26px] font-semibold tracking-tight text-[var(--ink)]">Media</h1>
+        <h1 className="text-[26px] font-normal tracking-tight text-[var(--ink)]">Media</h1>
       </div>
 
       <Tabs

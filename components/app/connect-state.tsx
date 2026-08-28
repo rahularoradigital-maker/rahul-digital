@@ -39,7 +39,7 @@ export function ConnectState({
             <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" />
           </svg>
         </div>
-        <h2 className="text-lg font-semibold text-[var(--ink)]">{copy.title}</h2>
+        <h2 className="text-lg font-normal text-[var(--ink)]">{copy.title}</h2>
         <p className="mt-1.5 text-sm text-[var(--ink-muted)]">{copy.body}</p>
         {reason === "no_data" && accountName ? (
           <p className="mt-2 text-xs text-[var(--ink-muted)]">
@@ -47,7 +47,7 @@ export function ConnectState({
           </p>
         ) : null}
         {reason === "error" && errorNote ? (
-          <p className="mt-3 rounded-lg bg-[var(--bg)] px-3 py-2 text-left text-xs text-[var(--ink-muted)]">{errorNote}</p>
+          <p className="mt-3 rounded-[10px] bg-[var(--bg)] px-3 py-2 text-left text-xs text-[var(--ink-muted)]">{errorNote}</p>
         ) : null}
         <a
           href="/api/connect/meta/authorize"

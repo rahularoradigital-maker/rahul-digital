@@ -51,7 +51,7 @@ export function AnalyzeControl({ analyzedCount }: { analyzedCount: number }) {
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="text-base font-semibold">AI creative analysis</div>
+          <div className="text-base font-normal">AI creative analysis</div>
           <div className="text-[13px] text-[var(--ink-muted)]">
             Gemini reads each creative for 42 attributes + funnel stage.
             {analyzedCount > 0 ? ` ${analyzedCount} analyzed so far.` : ""}

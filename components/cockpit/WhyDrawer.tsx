@@ -41,7 +41,7 @@ export function WhyDrawer({ explanation }: { explanation: Explanation }) {
       >
         <span
           aria-hidden="true"
-          className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] leading-none"
+          className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[11px] leading-none"
         >
           i
         </span>
@@ -55,7 +55,7 @@ export function WhyDrawer({ explanation }: { explanation: Explanation }) {
           className="absolute right-0 z-50 mt-2 w-[320px] max-w-[calc(100vw-2rem)] rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-4 text-[13px] text-[var(--ink)] shadow-lg motion-safe:transition-opacity"
         >
           {/* Headline: the one-line plain-English reason. */}
-          <div className="mb-3 font-semibold leading-snug">{explanation.headline}</div>
+          <div className="mb-3 font-normal leading-snug">{explanation.headline}</div>
 
           {/* The rubric itself: the question this score answers + its formula. */}
           {r && (

@@ -27,7 +27,7 @@ export function FunnelCard({ funnel }: { funnel: FunnelMetrics }) {
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 flex items-center justify-between gap-3">
-        <div className="text-base font-semibold">Funnel metrics</div>
+        <div className="text-base font-normal">Funnel metrics</div>
         <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
           Ad-level, this window
         </span>
@@ -39,7 +39,7 @@ export function FunnelCard({ funnel }: { funnel: FunnelMetrics }) {
         {stats.map((s) => (
           <div key={s.label}>
             <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{s.label}</div>
-            <div className="mt-1 text-[20px] font-semibold tabular-nums">{s.value}</div>
+            <div className="mt-1 text-[22px] font-semibold tabular-nums">{s.value}</div>
             <div className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{s.hint}</div>
           </div>
         ))}

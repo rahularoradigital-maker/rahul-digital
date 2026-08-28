@@ -14,7 +14,7 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
             <path d="M12 9v4" /><path d="M12 17h.01" /><circle cx="12" cy="12" r="9" />
           </svg>
         </div>
-        <h1 className="mb-1.5 text-lg font-semibold">This screen hit a snag</h1>
+        <h1 className="mb-1.5 text-lg font-normal">This screen hit a snag</h1>
         <p className="mb-5 text-[13px] text-[var(--ink-muted)]">
           Something went wrong loading your cockpit. Your data is safe. Try again, and if it keeps
           happening use Re-scan or switch account.

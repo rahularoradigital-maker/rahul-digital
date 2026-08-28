@@ -26,7 +26,7 @@ export function GatedSection({
             <path d="M12 16h.01" />
           </svg>
         </div>
-        <h2 className="text-lg font-semibold text-[var(--ink)]">{title}</h2>
+        <h2 className="text-lg font-normal text-[var(--ink)]">{title}</h2>
         <p className="mt-1.5 text-sm text-[var(--ink-muted)]">{what}</p>
 
         <div className="mt-5 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] p-4 text-left">

@@ -22,7 +22,7 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
-          <div className="text-base font-semibold">This week&apos;s ranked plan</div>
+          <div className="text-base font-normal">This week&apos;s ranked plan</div>
           <div className="text-[13px] text-[var(--ink-muted)]">Ranked by priority · what to ship first</div>
         </div>
         <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">

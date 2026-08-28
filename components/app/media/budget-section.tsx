@@ -32,13 +32,13 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
           {`Live · ${accountName} · last ${days} days`}
         </div>
-        <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Protect the account, spend on the margin.</h1>
+        <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">Protect the account, spend on the margin.</h1>
       </div>
 
       {/* Concentration + Waste */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-          <div className="mb-1 text-base font-semibold">Budget concentration</div>
+          <div className="mb-1 text-base font-normal">Budget concentration</div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
             Share of spend riding on a single ad. Internal calculation over your account.
           </div>
@@ -49,7 +49,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
               </div>
               <div className="mt-1.5 text-[13px] text-[var(--ink-muted)]">of spend on your single top ad</div>
               {conc.top1Share > 0.4 && (
-                <div className="mt-3 rounded-lg bg-[var(--bg)] px-3 py-2 text-xs text-[var(--warn-ink)]">
+                <div className="mt-3 rounded-[10px] bg-[var(--bg)] px-3 py-2 text-xs text-[var(--warn-ink)]">
                   High concentration. Protect the account like capital, spread spend before it rides on one creative.
                 </div>
               )}
@@ -64,7 +64,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
 
         {waste.status === "ok" && (
           <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-            <div className="mb-1 text-base font-semibold">Budget waste</div>
+            <div className="mb-1 text-base font-normal">Budget waste</div>
             <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
               High spend plus poor economics. Small-spend low-ROAS ads are excluded. Insufficient data is not waste.
             </div>
@@ -84,7 +84,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
 
       {/* Scaling candidates */}
       <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-        <div className="mb-1 text-base font-semibold">Scaling candidates</div>
+        <div className="mb-1 text-base font-normal">Scaling candidates</div>
         <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
           Ads that clear the winner gate this window. Scale by 30% at a time, not more, to avoid a learning reset.
         </div>
@@ -114,7 +114,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
         <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
           <div className="mb-1 flex items-center gap-1.5">
-            <span className="text-base font-semibold">Spend distribution</span>
+            <span className="text-base font-normal">Spend distribution</span>
             <span
               title="Spend share = this ad's spend divided by total account spend this window. Conversions = purchases in the window. ROI vs account = this ad's ROAS compared to the account's blended ROAS - a positive % means the ad returns more per rupee than the account average, negative means less. All from real connected-account data."
               className="cursor-help text-[13px] text-[var(--ink-muted)]"

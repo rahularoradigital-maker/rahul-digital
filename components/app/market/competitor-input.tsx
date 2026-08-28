@@ -154,7 +154,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
 
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-      <div className="mb-1 text-base font-semibold">Find brands to track</div>
+      <div className="mb-1 text-base font-normal">Find brands to track</div>
       <div className="mb-3 text-[13px] text-[var(--ink-muted)]">
         Search Meta brand pages by name or category, then click to set your brand or add a competitor. No URL hunting.
       </div>
@@ -198,14 +198,14 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
               <button
                 type="button"
                 onClick={() => pickAsBrand(s)}
-                className="shrink-0 rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[12px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
+                className="shrink-0 rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
               >
                 My brand
               </button>
               <button
                 type="button"
                 onClick={() => addAsCompetitor(s)}
-                className="shrink-0 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[12px] font-semibold text-white transition hover:opacity-90"
+                className="shrink-0 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:opacity-90"
               >
                 + Competitor
               </button>
@@ -239,7 +239,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
               onClick={() => removeCompetitor(i)}
               disabled={competitors.length === 1}
               aria-label="Remove competitor"
-              className="shrink-0 rounded-lg border border-[var(--hairline)] px-3 py-2 text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)] disabled:opacity-40"
+              className="shrink-0 rounded-[10px] border border-[var(--hairline)] px-3 py-2 text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)] disabled:opacity-40"
             >
               &minus;
             </button>

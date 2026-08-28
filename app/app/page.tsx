@@ -48,7 +48,7 @@ function ConfidenceBanner({ dq }: { dq: DataQuality }) {
   return (
     <div className={`rounded-[10px] border ${border} bg-[var(--surface)] p-4`}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <span className="text-[13px] font-semibold">{dq.reliable ? "Read with some caution" : "Low-confidence data"}</span>
+        <span className="text-[13px] font-normal">{dq.reliable ? "Read with some caution" : "Low-confidence data"}</span>
         <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
           confidence de-rated {Math.round(dq.confidencePenalty * 100)}% · {dq.days} days
         </span>
@@ -111,7 +111,7 @@ function ScalingCard({ marginal }: { marginal: MarginalRead }) {
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 flex flex-wrap items-center gap-2">
-        <span className="text-base font-semibold">Scaling headroom</span>
+        <span className="text-base font-normal">Scaling headroom</span>
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
         <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
           {marginal.label} · {Math.round(marginal.confidence * 100)}% conf
@@ -164,7 +164,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
           {`Connected · ${accountName} · ${processed.campaigns} campaign${processed.campaigns === 1 ? "" : "s"} · ${processed.adSets} ad set${processed.adSets === 1 ? "" : "s"} · ${adsAnalyzed} ads · last ${days} days`}
         </div>
-        <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Here&apos;s what to ship this week.</h1>
+        <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">Here&apos;s what to ship this week.</h1>
       </div>
 
       {/* Data-quality de-rating: honest confidence note when the series is thin or broken */}
@@ -176,7 +176,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
         <div>
           <div className="mb-3.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <div className="text-base font-semibold">Account Health</div>
+              <div className="text-base font-normal">Account Health</div>
               <WhyDrawer explanation={view.accountHealth.explain} />
             </div>
             <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
@@ -230,7 +230,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
       {/* Wasted spend */}
       {view.waste.status === "ok" && (
         <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-          <div className="mb-1 text-base font-semibold">Budget waste</div>
+          <div className="mb-1 text-base font-normal">Budget waste</div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
             High spend plus poor economics. Small-spend low-ROAS ads are excluded. Insufficient data is not waste.
           </div>
@@ -251,7 +251,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
       {/* Opportunity loss: money actively bleeding (wasted + at-risk / fatiguing spend) */}
       {view.opportunity.totalLossRs > 0 && (
         <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-          <div className="mb-1 text-base font-semibold">Opportunity loss</div>
+          <div className="mb-1 text-base font-normal">Opportunity loss</div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">{view.opportunity.basis}</div>
           <div className="flex flex-wrap items-end gap-8 border-t border-[var(--surface-alt)] pt-4">
             <div>

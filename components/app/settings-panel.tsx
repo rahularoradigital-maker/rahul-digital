@@ -80,7 +80,7 @@ export function SettingsPanel() {
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 flex items-center justify-between gap-3">
-        <div className="text-base font-semibold">Verdict weights</div>
+        <div className="text-base font-normal">Verdict weights</div>
         <button
           type="button"
           onClick={reset}
@@ -104,7 +104,7 @@ export function SettingsPanel() {
               max={1}
               value={weights[f.key]}
               onChange={(e) => setField(f.key, e.target.value)}
-              className="w-full rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-3 py-2 text-sm tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none"
+              className="w-full rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] px-3 py-2 text-sm tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none"
             />
             <span className="mt-1 block text-xs text-[var(--ink-muted)]">{f.hint}</span>
           </label>

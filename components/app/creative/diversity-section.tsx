@@ -18,7 +18,7 @@ export function DiversitySection({ data, days }: { data: CockpitData; days: numb
   return (
     <div className="space-y-6">
       <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-        <div className="mb-1 text-base font-semibold">Portfolio spread</div>
+        <div className="mb-1 text-base font-normal">Portfolio spread</div>
         <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
           Real numbers from your connected account. Not diversity yet, just how many ads are live and how concentrated
           spend is across them.
@@ -63,7 +63,7 @@ export function DiversitySection({ data, days }: { data: CockpitData; days: numb
         return (
           <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
             <div className="mb-1 flex items-center justify-between gap-3">
-              <div className="text-base font-semibold">Creative format diversity</div>
+              <div className="text-base font-normal">Creative format diversity</div>
               <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">Real assets</span>
             </div>
             <div className="mb-4 text-[13px] text-[var(--ink-muted)]">

@@ -74,7 +74,7 @@ function Header() {
   return (
     <div>
       <div className="text-[13px] text-[var(--ink-muted)]">Ranked by priority · what to ship first</div>
-      <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">Action Center</h1>
+      <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">Action Center</h1>
     </div>
   );
 }
@@ -99,7 +99,7 @@ function ActionSection({
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-2 flex items-center gap-2.5">
         <span className={`h-2 w-2 rounded-full ${style.dot}`} />
-        <div className="text-base font-semibold">{heading}</div>
+        <div className="text-base font-normal">{heading}</div>
         <span className="rounded-full bg-[var(--surface-alt)] px-2.5 py-0.5 text-xs font-semibold text-[var(--ink-muted)]">
           {items.length}
         </span>

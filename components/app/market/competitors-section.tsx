@@ -57,7 +57,7 @@ function CompetitorsIntro({ market }: { market: string }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-[22px] font-semibold tracking-tight">Competitor Creative Intelligence</h2>
+        <h2 className="text-[22px] font-normal tracking-tight">Competitor Creative Intelligence</h2>
         <p className="mt-1.5 max-w-2xl text-sm text-[var(--ink-muted)]">
           Decode every rival&apos;s live ads from the Facebook Ad Library to find the messages and formats they own and the
           whitespace they leave open. Paste the URLs below; everything after that runs automatically once the data and
@@ -68,7 +68,7 @@ function CompetitorsIntro({ market }: { market: string }) {
       <CompetitorInput market={market} />
 
       <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-        <div className="mb-1 text-base font-semibold">Pipeline</div>
+        <div className="mb-1 text-base font-normal">Pipeline</div>
         <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
           Stage 1 is live. The automated stages light up as the ScrapeCreators data layer and the Gemini creative-analysis
           key are connected. No competitor numbers are shown until real Ad Library data flows.
@@ -83,7 +83,7 @@ function CompetitorsIntro({ market }: { market: string }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold">{s.title}</span>
+                    <span className="text-sm font-normal">{s.title}</span>
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${badge.cls}`}>{badge.label}</span>
                   </div>
                   <div className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{s.detail}</div>

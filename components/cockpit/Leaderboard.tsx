@@ -9,7 +9,7 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
     <div className="overflow-hidden rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)]">
       <div className="flex items-center justify-between px-6 pt-5">
         <div>
-          <div className="text-base font-semibold">Creative leaderboard</div>
+          <div className="text-base font-normal">Creative leaderboard</div>
           <div className="text-[13px] text-[var(--ink-muted)]">Ranked by creative score · best first</div>
         </div>
       </div>

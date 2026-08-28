@@ -50,7 +50,7 @@ export function KpiSection({ data }: { data: CockpitData }) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[26px] font-semibold tracking-tight text-[var(--ink)]">KPIs tracked per account</h1>
+        <h1 className="text-[26px] font-normal tracking-tight text-[var(--ink)]">KPIs tracked per account</h1>
         <p className="mt-1.5 max-w-2xl text-sm text-[var(--ink-muted)]">
           Every metric this product tracks, {KPI_CATALOG.length} in all. This is reference metadata, not fabricated account
           data, so it always renders. Values light up next to a KPI as its data source connects, starting with your live

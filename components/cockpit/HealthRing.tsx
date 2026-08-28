@@ -38,7 +38,7 @@ export function HealthRing({ score }: { score: number }) {
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[38px] font-semibold tracking-tight tabular-nums leading-none">{clamped}</span>
+          <span className="text-[30px] font-semibold tracking-tight tabular-nums leading-none">{clamped}</span>
           <span className="mt-1 text-xs text-[var(--ink-muted)]">/ 100 · {band(clamped)}</span>
         </div>
       </div>

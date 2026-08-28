@@ -11,7 +11,7 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-6">
-      <h1 className="text-[26px] font-semibold tracking-tight">Market</h1>
+      <h1 className="text-[26px] font-normal tracking-tight">Market</h1>
 
       <Tabs
         tabs={[

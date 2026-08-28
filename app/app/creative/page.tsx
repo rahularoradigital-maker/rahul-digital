@@ -24,7 +24,7 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-[26px] font-semibold tracking-tight">Creative</h1>
+        <h1 className="text-[26px] font-normal tracking-tight">Creative</h1>
       </div>
 
       <Tabs tabs={TABS} />

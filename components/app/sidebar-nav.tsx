@@ -11,7 +11,7 @@ export function SidebarNav() {
     <nav aria-label="Primary" className="mt-1 flex-1 text-sm">
       {NAV_GROUPS.map((section) => (
         <div key={section.group}>
-          <div className="px-2.5 pb-1.5 pt-3.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+          <div className="px-2.5 pb-1.5 pt-3.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
             {section.group}
           </div>
           <ul className="space-y-0.5">

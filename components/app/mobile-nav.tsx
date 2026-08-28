@@ -58,7 +58,7 @@ export function MobileNav({ userEmail }: { userEmail?: string }) {
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} aria-hidden="true" />
           <aside className="absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto bg-[var(--surface)] px-3.5 py-4 shadow-xl">
             <div className="flex items-center justify-between">
-              <Link href="/app" className="flex items-center gap-2.5 px-2 py-1.5 text-[19px] font-semibold">
+              <Link href="/app" className="flex items-center gap-2.5 px-2 py-1.5 text-[17px] font-semibold">
                 <Logo />
                 AdBrain AI
               </Link>

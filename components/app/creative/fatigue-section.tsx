@@ -33,7 +33,7 @@ function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: Co
           <span className={`h-1.5 w-1.5 rounded-full ${atRisk > 0 ? "bg-[var(--warn-ink)]" : "bg-[var(--good-ink)]"}`} />
           {`${accountName} · ${ads.length} ads assessed · last ${days} days`}
         </div>
-        <h1 className="mt-1.5 text-[26px] font-semibold tracking-tight">
+        <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">
           {ads.length === 0
             ? "No ads assessed yet."
             : atRisk === 0

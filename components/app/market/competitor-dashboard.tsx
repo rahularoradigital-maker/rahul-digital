@@ -52,7 +52,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-[22px] font-semibold tracking-tight">Competitor Creative Intelligence</h2>
+          <h2 className="text-[22px] font-normal tracking-tight">Competitor Creative Intelligence</h2>
           <p className="mt-1 text-[13px] text-[var(--ink-muted)]">
             {data.brandCount} brand{data.brandCount === 1 ? "" : "s"} · {data.adCount} live ads from the Facebook Ad Library
             {data.updatedAt ? ` · updated ${fmtDate(Math.floor(new Date(data.updatedAt).getTime() / 1000))}` : ""}
@@ -106,7 +106,7 @@ export function CompetitorDashboard({ data }: { data: Data }) {
       {/* Whitespace / gaps (stage 8, deterministic) */}
       {report.myBrand && (report.gaps.formats.length > 0 || report.gaps.ctas.length > 0) && (
         <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-          <div className="mb-1 text-base font-semibold">Whitespace vs your brand</div>
+          <div className="mb-1 text-base font-normal">Whitespace vs your brand</div>
           <div className="mb-3 text-[13px] text-[var(--ink-muted)]">
             Formats and CTAs your competitors run that {report.myBrand.label} does not. A factual gap, not advice.
           </div>
@@ -128,14 +128,14 @@ export function CompetitorDashboard({ data }: { data: Data }) {
       {/* Next creatives to test (stage 8, deterministic - from real format/CTA/hook gaps) */}
       {data.recommendations.length > 0 && (
         <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-          <div className="mb-1 text-base font-semibold">Next creatives to test</div>
+          <div className="mb-1 text-base font-normal">Next creatives to test</div>
           <div className="mb-3.5 text-[13px] text-[var(--ink-muted)]">
             Concrete tests drawn from real Ad Library gaps - formats, CTAs and hooks competitors run that you do not. Counts only, no guessing.
           </div>
           <div className="space-y-2.5">
             {data.recommendations.map((r, i) => (
               <div key={`${r.kind}-${r.value}-${i}`} className="flex items-start gap-2.5">
-                <span className="mt-0.5 shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent)]">
+                <span className="mt-0.5 shrink-0 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--accent)]">
                   {r.kind}
                 </span>
                 <div className="text-[13px] text-[var(--ink)]">{r.reason}</div>
@@ -207,7 +207,7 @@ function CreativeIntelSection({ intel }: { intel: CreativeIntel }) {
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 flex flex-wrap items-center gap-2">
-        <span className="text-base font-semibold">Creative intelligence</span>
+        <span className="text-base font-normal">Creative intelligence</span>
         <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">
           Gemini · {intel.analyzedCount} analyzed
         </span>
@@ -237,7 +237,7 @@ function CreativeIntelSection({ intel }: { intel: CreativeIntel }) {
 function TrafficSection({ traffic }: { traffic: BrandTraffic[] }) {
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-      <div className="mb-1 text-base font-semibold">Where competitors send traffic</div>
+      <div className="mb-1 text-base font-normal">Where competitors send traffic</div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
         Each brand's ad clicks by landing-page destination - own D2C site vs the big marketplaces and app stores.
       </div>
@@ -276,8 +276,8 @@ function AdPerfIntel({ brands }: { brands: BrandAnalytics[] }) {
   const stat = (label: string, value: string, sub: string) => (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{label}</div>
-      <div className="mt-1 text-[28px] font-semibold tabular-nums leading-none">{value}</div>
-      <div className="mt-1.5 text-[12px] text-[var(--ink-muted)]">{sub}</div>
+      <div className="mt-1 text-[30px] font-semibold tabular-nums leading-none">{value}</div>
+      <div className="mt-1.5 text-[11px] text-[var(--ink-muted)]">{sub}</div>
     </div>
   );
   return (
@@ -307,7 +307,7 @@ function LongRunningSection({ brands }: { brands: BrandAnalytics[] }) {
   if (ads.length === 0) return null;
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-      <div className="mb-1 text-base font-semibold">Longest-running creatives</div>
+      <div className="mb-1 text-base font-normal">Longest-running creatives</div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
         Active ads a brand has kept live the longest - a strong proxy for what is working (brands do not keep losers running).
       </div>
@@ -338,7 +338,7 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="text-base font-semibold">{brand.label}</span>
+        <span className="text-base font-normal">{brand.label}</span>
         {brand.isMyBrand && (
           <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)]">You</span>
         )}
@@ -431,18 +431,18 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
                     <div className="flex h-full items-center justify-center text-[11px] text-[var(--ink-muted)]">No preview</div>
                   )}
                   <div className="absolute left-2 top-2 flex gap-1">
-                    <span className="rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">{MEDIA_LABEL[ad.media]}</span>
+                    <span className="rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">{MEDIA_LABEL[ad.media]}</span>
                     {ad.isActive && (
-                      <span className="rounded-full bg-[var(--good-ink)] px-2 py-0.5 text-[10px] font-semibold text-white">Active</span>
+                      <span className="rounded-full bg-[var(--good-ink)] px-2 py-0.5 text-[11px] font-semibold text-white">Active</span>
                     )}
                   </div>
                 </div>
                 <div className="p-2.5">
-                  <div className="line-clamp-2 text-[12px] font-medium text-[var(--ink)]">
+                  <div className="line-clamp-2 text-[11px] font-medium text-[var(--ink)]">
                     {ad.title || ad.body?.slice(0, 80) || `Ad ${ad.adArchiveId}`}
                   </div>
                   {ad.ctaText && (
-                    <span className="mt-1.5 inline-block rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">
+                    <span className="mt-1.5 inline-block rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)]">
                       {ad.ctaText}
                     </span>
                   )}
