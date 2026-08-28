@@ -5,9 +5,50 @@ import { useState } from "react";
 
 const SPEND_OPTIONS = ["< $10k", "$10k-50k", "$50k-200k", "$200k+"];
 
-export function DemoForm() {
+export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
   const [submitted, setSubmitted] = useState(false);
   const [spend, setSpend] = useState(1);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState(initialEmail);
+  const [brand, setBrand] = useState("");
+  const [notes, setNotes] = useState("");
+  const [honeypot, setHoneypot] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (sending) return;
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          brand,
+          spend_bucket: SPEND_OPTIONS[spend],
+          notes,
+          source: "book-demo",
+          company_website: honeypot,
+        }),
+      });
+      const d = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !d.ok) {
+        setError(d.error ?? "Could not send. Please try again.");
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setError("Could not send. Please check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
+  }
 
   if (submitted) {
     return (
@@ -33,19 +74,28 @@ export function DemoForm() {
 
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-9 shadow-sm">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          setSubmitted(true);
-        }}
-      >
+      <form onSubmit={submit}>
         <h2 className="mb-6 text-xl">Request your demo</h2>
+
+        {/* Honeypot: hidden from real users, bots fill it and get silently dropped. */}
+        <input
+          type="text"
+          name="company_website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+          className="absolute left-[-9999px] h-0 w-0 opacity-0"
+          aria-hidden="true"
+        />
 
         <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-[13px] font-medium">First name</label>
             <input
               required
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               placeholder="Jordan"
               className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
             />
@@ -54,6 +104,8 @@ export function DemoForm() {
             <label className="mb-1.5 block text-[13px] font-medium">Last name</label>
             <input
               required
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
               placeholder="Rivera"
               className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
             />
@@ -65,6 +117,8 @@ export function DemoForm() {
           <input
             required
             type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="you@brand.com"
             className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
           />
@@ -73,6 +127,8 @@ export function DemoForm() {
         <div className="mb-3.5">
           <label className="mb-1.5 block text-[13px] font-medium">Brand or agency</label>
           <input
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
             placeholder="Acme Co."
             className="w-full rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
           />
@@ -103,16 +159,25 @@ export function DemoForm() {
           <label className="mb-1.5 block text-[13px] font-medium">What do you want to fix?</label>
           <textarea
             rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
             placeholder="e.g. we keep retesting angles that do not work"
             className="w-full resize-y rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-[15px] outline-none focus:border-[var(--accent)]"
           />
         </div>
 
+        {error && (
+          <p className="mb-3 rounded-[10px] border border-[var(--bad-ink)]/30 bg-[var(--bad-bg)] px-3.5 py-2.5 text-[13px] text-[var(--bad-ink)]">
+            {error}
+          </p>
+        )}
+
         <button
           type="submit"
-          className="w-full cursor-pointer rounded-full bg-[var(--ink)] px-4 py-3.5 font-medium text-white transition hover:opacity-90"
+          disabled={sending}
+          className="w-full cursor-pointer rounded-full bg-[var(--ink)] px-4 py-3.5 font-medium text-white transition hover:opacity-90 disabled:opacity-60"
         >
-          Request demo
+          {sending ? "Sending..." : "Request demo"}
         </button>
         <p className="mt-3 text-xs leading-relaxed text-[var(--ink-muted)]">
           By requesting a demo you agree to be contacted for marketing purposes.

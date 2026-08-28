@@ -1,14 +1,16 @@
 "use client";
 
-// Editable CreativeScore verdict weights (rulebook 5B.1 / 5E). The Measurement
-// Canon is the canonical source of truth; what is edited here is a per-account
-// override, saved locally so a reload keeps the buyer's own numbers. Storage is
-// wrapped in try/catch since localStorage can be unavailable (private mode,
-// disabled storage) and a settings screen must never crash over that.
+// Editable CreativeScore verdict weights (rulebook 5B.1 / 5E). What is edited here is a
+// per-account override that actually drives server-side scoring: Apply writes the adbrain.weights
+// cookie, which lib/app/cockpit-data.ts reads and threads into the verdict engine, then refreshes.
+// The cookie is the store (readable here, sent to the server); it is only ever written when the
+// weights are valid and sum to 1, so an unbalanced set can never reach scoring.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
-const STORAGE_KEY = "adbrain.weights";
+const COOKIE = "adbrain.weights";
+const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 const DEFAULT_WEIGHTS = {
   performance: 0.3,
@@ -28,53 +30,56 @@ const FIELDS: { key: WeightKey; label: string; hint: string }[] = [
   { key: "funnel", label: "Funnel", hint: "Whether LPV to ATC to checkout to purchase is improving or breaking" },
 ];
 
-function loadWeights(): Weights {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_WEIGHTS;
-    const parsed = JSON.parse(raw);
-    return {
-      performance: Number(parsed.performance) || 0,
-      trend: Number(parsed.trend) || 0,
-      fatigue: Number(parsed.fatigue) || 0,
-      funnel: Number(parsed.funnel) || 0,
-    };
-  } catch {
-    return DEFAULT_WEIGHTS;
+function readCookieWeights(): Weights {
+  if (typeof document === "undefined") return DEFAULT_WEIGHTS;
+  for (const part of document.cookie.split("; ")) {
+    const i = part.indexOf("=");
+    if (i > -1 && part.slice(0, i) === COOKIE) {
+      try {
+        const p = JSON.parse(decodeURIComponent(part.slice(i + 1)));
+        return {
+          performance: Number(p.performance) || 0,
+          trend: Number(p.trend) || 0,
+          fatigue: Number(p.fatigue) || 0,
+          funnel: Number(p.funnel) || 0,
+        };
+      } catch {
+        return DEFAULT_WEIGHTS;
+      }
+    }
   }
-}
-
-function saveWeights(weights: Weights) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(weights));
-  } catch {
-    // Storage unavailable, nothing to do, the values still hold for this session.
-  }
+  return DEFAULT_WEIGHTS;
 }
 
 export function SettingsPanel() {
-  const [weights, setWeights] = useState<Weights>(DEFAULT_WEIGHTS);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setWeights(loadWeights());
-    setLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (loaded) saveWeights(weights);
-  }, [weights, loaded]);
+  const router = useRouter();
+  // Seed from the cookie so the panel shows the override the server is actually using.
+  const [weights, setWeights] = useState<Weights>(readCookieWeights);
+  const [applied, setApplied] = useState(false);
 
   const sum = FIELDS.reduce((acc, f) => acc + (weights[f.key] || 0), 0);
   const balanced = Math.abs(sum - 1) < 0.005;
 
   function setField(key: WeightKey, value: string) {
     const n = Number(value);
-    setWeights((prev) => ({ ...prev, [key]: Number.isFinite(n) ? n : 0 }));
+    // Clamp to [0,1] so an out-of-range typo can never be saved.
+    const clamped = Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0;
+    setWeights((prev) => ({ ...prev, [key]: clamped }));
+    setApplied(false);
+  }
+
+  function apply() {
+    if (!balanced) return;
+    document.cookie = `${COOKIE}=${encodeURIComponent(JSON.stringify(weights))}; path=/; max-age=${MAX_AGE}`;
+    setApplied(true);
+    router.refresh();
   }
 
   function reset() {
     setWeights(DEFAULT_WEIGHTS);
+    document.cookie = `${COOKIE}=; path=/; max-age=0`;
+    setApplied(false);
+    router.refresh();
   }
 
   return (
@@ -111,15 +116,27 @@ export function SettingsPanel() {
         ))}
       </div>
 
-      <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--surface-alt)] pt-4">
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--surface-alt)] pt-4">
         <span className="text-sm text-[var(--ink-muted)]">
           Sum <span className="font-semibold tabular-nums text-[var(--ink)]">{sum.toFixed(2)}</span>
         </span>
-        {!balanced && (
-          <span className="rounded-full bg-[var(--warn-bg)] px-3 py-1 text-xs font-semibold text-[var(--warn-ink)]">
-            Weights do not add to 1.00
-          </span>
-        )}
+        <div className="flex items-center gap-3">
+          {!balanced ? (
+            <span className="rounded-full bg-[var(--warn-bg)] px-3 py-1 text-xs font-semibold text-[var(--warn-ink)]">
+              Weights must add to 1.00 to apply
+            </span>
+          ) : applied ? (
+            <span className="text-xs font-semibold text-[var(--good-ink)]">Applied — scores updated</span>
+          ) : null}
+          <button
+            type="button"
+            onClick={apply}
+            disabled={!balanced}
+            className="rounded-full bg-[var(--ink)] px-4 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
+          >
+            Apply to scoring
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -89,8 +89,11 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
   }
   function addAsCompetitor(s: Suggestion) {
     const url = libraryUrl(s.pageId);
+    // Match the exact page id, not a substring: `view_all_page_id=1002` must NOT be treated as
+    // already containing page id `100`. The negative lookahead stops a prefix from matching.
+    const re = new RegExp(`view_all_page_id=${s.pageId}(?![0-9])`);
     setCompetitors((prev) => {
-      if (prev.some((c) => c.includes(s.pageId))) return prev;
+      if (prev.some((c) => re.test(c))) return prev;
       const filled = prev.filter((c) => c.trim());
       return [...filled, url];
     });

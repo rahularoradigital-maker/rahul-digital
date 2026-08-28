@@ -17,6 +17,7 @@ import type { MarginalRead } from "@/lib/scoring/marginal";
 import type { DataQuality } from "@/lib/scoring/data-quality";
 import type { DiversityRead } from "@/lib/creative/diversity";
 import type { CockpitView } from "@/lib/cockpit/analyze";
+import { parseWeights } from "@/lib/rules/verdict";
 import { recordDecisionTriples } from "@/lib/audit/record";
 
 export type { AccountMetrics } from "@/lib/meta-sync";
@@ -50,6 +51,11 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
   const objectivesRaw = cookieStore.get("adbrain.objectives")?.value || "";
   const objectives = objectivesRaw ? objectivesRaw.split(",").filter(Boolean) : [];
 
+  // Optional per-account verdict-weight override from Settings. parseWeights is strict: a missing or
+  // invalid cookie yields null, and fetchLiveCockpit then uses the trusted build default - so scores
+  // are identical to before for anyone who never set a valid override.
+  const weights = parseWeights(cookieStore.get("adbrain.weights")?.value) ?? undefined;
+
   // Date window set by the topbar (a cookie, so it scopes every page globally). Either a
   // preset ("days:<n>") or an explicit custom range ("range:<from>:<to>"). Absent = fall
   // back to the `days` argument the page derived from ?days.
@@ -65,7 +71,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     ? `${explicitWindow.since}_${explicitWindow.until}`
     : `${new Date(Date.now() - effectiveDays * 86_400_000).toISOString().slice(0, 10)}_${new Date().toISOString().slice(0, 10)}`;
 
-  const live = await fetchLiveCockpit(user.id, lookbackDays, campaignId, objectives, explicitWindow);
+  const live = await fetchLiveCockpit(user.id, lookbackDays, campaignId, objectives, explicitWindow, weights);
 
   if (live.status === "connected" && live.adsAnalyzed > 0) {
     // Log the run's recommendations as labeled triples (deferred, deduped per day). Best-effort.

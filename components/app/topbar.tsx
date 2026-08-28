@@ -29,10 +29,6 @@ export function Topbar() {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <h1 className="text-xl font-semibold tracking-tight">{titleFor(pathname)}</h1>
-          <span className="hidden items-center gap-1.5 text-xs text-[var(--ink-muted)] sm:inline-flex">
-            <span className="h-[6px] w-[6px] rounded-full bg-[var(--good-ink)]" />
-            Connected
-          </span>
         </div>
 
         <div className="flex items-center gap-2">

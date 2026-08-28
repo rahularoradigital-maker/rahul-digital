@@ -98,9 +98,15 @@ export async function GET(request: NextRequest) {
     .single();
   if (acctErr || !acct) return NextResponse.redirect(new URL("/app?connect=error", request.url));
 
-  await storeToken(acct.id, {
-    accessToken,
-    expiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined,
-  });
+  try {
+    await storeToken(acct.id, {
+      accessToken,
+      expiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined,
+    });
+  } catch {
+    // storeToken throws on a DB/encryption failure; degrade to the same graceful error redirect the
+    // rest of this route uses instead of an unhandled 500 that leaves the OAuth flow in limbo.
+    return NextResponse.redirect(new URL("/app?connect=error", request.url));
+  }
   return NextResponse.redirect(new URL("/app?connect=ok", request.url));
 }

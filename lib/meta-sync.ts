@@ -10,6 +10,7 @@ import { deterministicFingerprint, type CreativeAsset } from "./creative/fingerp
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
+import { VERDICT_WEIGHTS, type ScoreWeights } from "./rules/verdict.ts";
 import type { TokenSet } from "./ad-source.ts";
 import { windowFunnel, type FunnelMetrics, type ExtendedMetricsRow } from "./metrics/funnel-metrics.ts";
 import { marginalScaling, type MarginalRead } from "./scoring/marginal.ts";
@@ -101,7 +102,7 @@ async function resolveCampaignIds(
 // An explicit {since, until} custom range (YYYY-MM-DD) overrides lookbackDays for the pull.
 export type ExplicitWindow = { since: string; until: string };
 
-async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = [], window?: ExplicitWindow): Promise<LiveCockpit> {
+async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = [], window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
   let acct: { id: string; external_id: string; name: string | null } | null = null;
@@ -201,7 +202,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     });
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
     const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
-    const view = analyzeAccount(inputs, "LIVE");
+    const view = analyzeAccount(inputs, "LIVE", weights);
 
     // Own-ad creative diversity (DETERMINISTIC layer only: real creative FORMAT per ad; the
     // semantic dimensions - hook/angle/persona - stay null until the Gemini decoder runs, so
@@ -348,8 +349,8 @@ export async function bustCockpitCache(userId?: string): Promise<void> {
 
 // Live pull, then write both cache levels. Returned to callers and also used as the
 // background refresh body.
-async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow): Promise<LiveCockpit> {
-  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives, window);
+async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS): Promise<LiveCockpit> {
+  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives, window, weights);
   if (value.status !== "error") {
     cockpitCache.set(memKey, { at: Date.now(), value });
     try {
@@ -396,6 +397,7 @@ export async function fetchLiveCockpit(
   campaignId?: string,
   objectives: string[] = [],
   window?: ExplicitWindow,
+  weights: ScoreWeights = VERDICT_WEIGHTS,
 ): Promise<LiveCockpit> {
   // Key the cache by the ACTIVE account too: without this, every account shares one
   // cache entry, so switching account keeps showing the previous account's numbers.
@@ -403,7 +405,10 @@ export async function fetchLiveCockpit(
   const activeId = session?.activeExternalId ?? "none";
   // Include the custom range in the key so it never collides with a preset (which has no window).
   const windowKey = window ? `${window.since}_${window.until}` : "";
-  const cacheKey = `${CACHE_SCHEMA}:${activeId}:${lookbackDays}:${windowKey}:${campaignId ?? ""}:${[...objectives].sort().join(",")}`;
+  // Only a non-default weight override changes the key (identity check on the default param), so the
+  // vast majority of users keep the exact same cache entries as before this override existed.
+  const weightKey = weights === VERDICT_WEIGHTS ? "" : `${weights.performance}-${weights.trend}-${weights.fatigue}-${weights.funnel}`;
+  const cacheKey = `${CACHE_SCHEMA}:${activeId}:${lookbackDays}:${windowKey}:${campaignId ?? ""}:${[...objectives].sort().join(",")}:${weightKey}`;
   const memKey = `${userId}:${cacheKey}`;
   const now = Date.now();
 
@@ -438,7 +443,7 @@ export async function fetchLiveCockpit(
     if (cached.age < STALE_MS) {
       // Serve stale immediately, refresh in the background so the next load is fresh.
       try {
-        after(() => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window));
+        after(() => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights));
       } catch {
         // after() unavailable outside a request scope; the stale value is still fine.
       }
@@ -447,7 +452,7 @@ export async function fetchLiveCockpit(
   }
 
   // Cold or too stale: block on the live pull (skeleton shows while this runs).
-  return pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window);
+  return pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights);
 }
 
 function daysAgo(n: number): string {

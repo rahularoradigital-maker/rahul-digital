@@ -315,7 +315,7 @@ function LongRunningSection({ brands }: { brands: BrandAnalytics[] }) {
         {ads.map(({ ad, brand, days }) => (
           <a
             key={ad.adArchiveId}
-            href={ad.adUrl ?? "#"}
+            href={ad.adUrl ?? undefined}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-between gap-3 border-t border-[var(--surface-alt)] pt-2 first:border-t-0 first:pt-0"
@@ -418,7 +418,7 @@ function BrandCard({ brand }: { brand: BrandAnalytics }) {
             {brand.topCreatives.slice(0, 6).map((ad) => (
               <a
                 key={ad.adArchiveId}
-                href={ad.adUrl ?? "#"}
+                href={ad.adUrl ?? undefined}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block overflow-hidden rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] transition hover:border-[var(--accent)]"

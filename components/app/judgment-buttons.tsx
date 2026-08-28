@@ -5,7 +5,7 @@ import { useState } from "react";
 // Approve / dismiss a recommendation. The click posts the operator's judgment (the RLEF
 // preference label) and confirms inline. Non-blocking: a failure just re-enables the buttons.
 export function JudgmentButtons({ adId, timeWindow }: { adId: string; timeWindow: string }) {
-  const [state, setState] = useState<"idle" | "sending" | "approve" | "dismiss">("idle");
+  const [state, setState] = useState<"idle" | "sending" | "approve" | "dismiss" | "error">("idle");
 
   async function send(judgment: "approve" | "dismiss") {
     setState("sending");
@@ -16,9 +16,11 @@ export function JudgmentButtons({ adId, timeWindow }: { adId: string; timeWindow
         body: JSON.stringify({ adId, timeWindow, judgment }),
       });
       const data = (await res.json()) as { ok: boolean };
-      setState(data.ok ? judgment : "idle");
+      // A failed save must not look like a silent no-op: show an error state so the operator knows
+      // their judgment was NOT recorded and can retry.
+      setState(data.ok ? judgment : "error");
     } catch {
-      setState("idle");
+      setState("error");
     }
   }
 
@@ -32,6 +34,9 @@ export function JudgmentButtons({ adId, timeWindow }: { adId: string; timeWindow
 
   return (
     <span className="flex items-center gap-1.5">
+      {state === "error" && (
+        <span className="text-[11px] font-semibold text-[var(--bad-ink)]">Not saved, retry</span>
+      )}
       <button
         type="button"
         onClick={() => send("approve")}

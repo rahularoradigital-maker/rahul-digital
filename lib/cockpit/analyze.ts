@@ -5,7 +5,7 @@
 // the UI. Every surfaced number carries a fact label or comes straight from a
 // tested engine. AI narrates, engines compute.
 
-import { verdict, type Verdict, type VerdictInput } from "../rules/verdict.ts";
+import { verdict, VERDICT_WEIGHTS, type Verdict, type VerdictInput, type ScoreWeights } from "../rules/verdict.ts";
 export type { Verdict } from "../rules/verdict.ts";
 import { wasteRollup, budgetConcentration, type ConcentrationResult, type AdSummary } from "../rules/account.ts";
 import type { DiagnoseResult } from "../causality.ts";
@@ -216,9 +216,9 @@ function accountHealth(ads: CockpitAd[], inputs: CockpitAdInput[], totalSpendRs:
   };
 }
 
-export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LIVE" = "SAMPLE"): CockpitView {
+export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LIVE" = "SAMPLE", weights: ScoreWeights = VERDICT_WEIGHTS): CockpitView {
   const scored: CockpitAd[] = ads.map((input) => {
-    const v = verdict(input);
+    const v = verdict(input, weights);
     const roas = roasOf(input.spendRs, input.revenueRs);
     // Conversion ads keep the rigorous verdict engine (ROAS + causality ladder). Non-conversion
     // ads (engagement/traffic/awareness/leads/installs) have no ROAS or purchase gate, so the

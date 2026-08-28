@@ -27,10 +27,18 @@ export function AnalyzeControl({ analyzedCount }: { analyzedCount: number }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ perBrand }),
       });
-      const data = (await res.json()) as { ok: boolean; error?: string; analyzed?: number; failed?: number; remaining?: number };
+      const data = (await res.json()) as { ok: boolean; error?: string; analyzed?: number; failed?: number; remaining?: number; dailyCapReached?: boolean; message?: string };
       if (!data.ok) {
         setMsg(data.error ?? "AI analysis failed.");
         setRunning(false);
+        return;
+      }
+      // Daily cap hit: surface the real cap message and stop offering "Continue" (there is nothing
+      // more to run today), so the button does not look stuck repeating the same "run again" line.
+      if (data.dailyCapReached) {
+        setRemaining(0);
+        setMsg(data.message ?? "Daily analysis limit reached. It resets on a rolling 24-hour basis.");
+        router.refresh();
         return;
       }
       setRemaining(data.remaining ?? 0);

@@ -14,13 +14,45 @@ import type { DiagnoseResult } from "../causality.ts";
 
 export type Verdict = "winner" | "refresh" | "do_not_kill_yet" | "loser";
 
-/** J10 score weights: editable and persisted. INTERNAL CALIBRATION (calibrate-at-build). */
+/** J10 score weights: the build-time calibration default. A per-account override can replace it. */
 export const VERDICT_WEIGHTS = {
   performance: 0.3,
   trend: 0.3,
   fatigue: 0.2, // applied to (100 - fatigue): fresher scores higher
   funnel: 0.2,
 } as const;
+
+/** Runtime-editable weight set (the four J10 dimensions, each 0-1, summing to ~1). */
+export type ScoreWeights = { performance: number; trend: number; fatigue: number; funnel: number };
+
+/**
+ * Parse a per-account weights override (the adbrain.weights cookie value). STRICT on purpose: it
+ * returns the override only when all four dimensions are finite, in [0,1], and sum to 1 within a
+ * small tolerance. Anything else returns null so the caller keeps the trusted default - so a user
+ * who never touches Settings, or sets nonsense, gets byte-identical scoring to the build default.
+ */
+export function parseWeights(raw: string | undefined | null): ScoreWeights | null {
+  if (!raw) return null;
+  let o: unknown;
+  try {
+    o = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof o !== "object" || o === null) return null;
+  const r = o as Record<string, unknown>;
+  const keys = ["performance", "trend", "fatigue", "funnel"] as const;
+  const out = {} as ScoreWeights;
+  let sum = 0;
+  for (const k of keys) {
+    const n = r[k];
+    if (typeof n !== "number" || !Number.isFinite(n) || n < 0 || n > 1) return null;
+    out[k] = n;
+    sum += n;
+  }
+  if (Math.abs(sum - 1) > 0.01) return null;
+  return out;
+}
 
 /** Verdict cut points on the 0-100 CreativeScore + "healthy/high" bands. calibrate-at-build. */
 export const VERDICT_CONFIG = {
@@ -59,7 +91,7 @@ export type VerdictResult = {
 };
 
 /** CreativeScore per J10. Weights default to VERDICT_WEIGHTS but are overridable. */
-export function creativeScore(s: ScoreInputs, weights = VERDICT_WEIGHTS): number {
+export function creativeScore(s: ScoreInputs, weights: ScoreWeights = VERDICT_WEIGHTS): number {
   return (
     weights.performance * s.performance +
     weights.trend * s.trend +
@@ -68,9 +100,9 @@ export function creativeScore(s: ScoreInputs, weights = VERDICT_WEIGHTS): number
   );
 }
 
-export function verdict(input: VerdictInput): VerdictResult {
+export function verdict(input: VerdictInput, weights: ScoreWeights = VERDICT_WEIGHTS): VerdictResult {
   const why: string[] = [];
-  const score = creativeScore(input);
+  const score = creativeScore(input, weights);
   why.push(`CreativeScore ${score.toFixed(1)}/100`);
 
   // --- Winner gate: ALL must hold. ---

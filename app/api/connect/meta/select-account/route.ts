@@ -34,7 +34,13 @@ export async function GET(request: NextRequest) {
     .single();
   if (error || !acct) return NextResponse.redirect(new URL("/app?connect=error", request.url));
 
-  await storeToken(acct.id, session.token);
+  try {
+    await storeToken(acct.id, session.token);
+  } catch {
+    // storeToken throws on a DB/encryption failure; degrade to a graceful error redirect rather than
+    // an unhandled 500 mid-switch.
+    return NextResponse.redirect(new URL("/app?connect=error", request.url));
+  }
   // Bust the cached cockpit (both levels) so the newly selected account shows immediately.
   await bustCockpitCache(user.id);
   // AUTO-PROCESS on account switch: warm the new account's cockpit cache in the BACKGROUND (the

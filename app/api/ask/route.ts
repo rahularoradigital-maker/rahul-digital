@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getAnthropic, CLAUDE_MODEL } from "@/lib/anthropic";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
+
+// Rolling-24h per-user cap on this PAID Claude call, so a signed-in user (or a script on a valid
+// session) cannot loop it and run up the bill. Mirrors the competitors DAILY_CREATIVE_CAP pattern.
+const ASK_DAILY_CAP = 50;
 
 // "Ask AdBrain": answer a question grounded ONLY in the user's REAL cockpit data. The model is
 // handed a compact snapshot of the connected account and told to never invent a number - so an
@@ -27,6 +32,21 @@ export async function POST(request: NextRequest) {
   }
   if (!question) return NextResponse.json({ error: "Ask a question." }, { status: 400 });
   if (question.length > 500) question = question.slice(0, 500);
+
+  // Enforce the rolling-24h cap BEFORE spending any tokens. On a count-failure we fail open (allow)
+  // so a DB hiccup never blocks a paying user; the cap is a cost backstop, not a security control.
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count: usedToday } = await admin
+    .from("ask_log")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .gte("created_at", since);
+  if ((usedToday ?? 0) >= ASK_DAILY_CAP) {
+    return NextResponse.json({
+      answer: `You have reached today's limit of ${ASK_DAILY_CAP} questions. It resets on a rolling 24-hour basis.`,
+    });
+  }
 
   const live = await fetchLiveCockpit(user.id, 14);
   if (live.status !== "connected") {
@@ -65,6 +85,8 @@ export async function POST(request: NextRequest) {
       .map((b) => (b as { text: string }).text)
       .join("")
       .trim();
+    // Record the spend for the cap (best-effort; a failed log must not fail the answer).
+    await admin.from("ask_log").insert({ user_id: user.id }).then(undefined, () => {});
     return NextResponse.json({ answer: answer || "I could not form an answer from your data." });
   } catch {
     return NextResponse.json({ error: "Ask failed. Please try again." }, { status: 500 });

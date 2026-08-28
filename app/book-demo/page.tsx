@@ -10,7 +10,8 @@ const PERKS = [
 
 const LOGOS = ["Pilgrim", "Ghar Soaps", "Hair Originals", "NexTen"];
 
-export default function BookDemoPage() {
+export default async function BookDemoPage({ searchParams }: { searchParams: Promise<{ email?: string }> }) {
+  const { email } = await searchParams;
   return (
     <>
       {/* Announcement bar */}
@@ -64,7 +65,7 @@ export default function BookDemoPage() {
           </div>
 
           {/* Right column: form */}
-          <DemoForm />
+          <DemoForm initialEmail={typeof email === "string" ? email : ""} />
         </section>
       </main>
       <SiteFooter />

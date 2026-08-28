@@ -1,7 +1,7 @@
 // Runnable check for lib/rules/verdict.ts (J10). Run:
 // node --experimental-strip-types scripts/check-verdict.ts
 import assert from "node:assert/strict";
-import { verdict, creativeScore, VERDICT_CONFIG } from "../lib/rules/verdict.ts";
+import { verdict, creativeScore, parseWeights, VERDICT_CONFIG, VERDICT_WEIGHTS } from "../lib/rules/verdict.ts";
 import type { DiagnoseResult } from "../lib/causality.ts";
 
 // CreativeScore formula: 0.30*perf + 0.30*trend + 0.20*(100-fatigue) + 0.20*funnel.
@@ -87,5 +87,28 @@ const holdNoDx = verdict({
   conversions: 120, days: 20, stable: false, roomToScale: false,
 });
 assert.equal(holdNoDx.verdict, "do_not_kill_yet", "no diagnosis -> cannot be loser");
+
+// --- Per-account weight override (parseWeights + weighted scoring) ---
+const s = { performance: 80, trend: 60, fatigue: 40, funnel: 20 };
+
+// Default path is byte-identical whether weights are omitted or passed explicitly (no regression).
+assert.equal(creativeScore(s), creativeScore(s, VERDICT_WEIGHTS), "omitted weights == default weights");
+
+// Custom weights actually change the score: all mass on performance -> score equals performance.
+assert.equal(creativeScore(s, { performance: 1, trend: 0, fatigue: 0, funnel: 0 }), 80, "all-performance weight");
+// All mass on fatigue -> score equals (100 - fatigue).
+assert.equal(creativeScore(s, { performance: 0, trend: 0, fatigue: 1, funnel: 0 }), 60, "all-fatigue weight = 100-fatigue");
+// verdict() threads the same weights into its score.
+assert.equal(verdict({ ...s, conversions: 1, days: 1, stable: false, roomToScale: false }, { performance: 1, trend: 0, fatigue: 0, funnel: 0 }).score, 80, "verdict uses custom weights");
+
+// parseWeights is strict: only a valid, in-range, sum-to-1 set survives; everything else is null.
+assert.equal(parseWeights(null), null, "null cookie -> null");
+assert.equal(parseWeights(""), null, "empty cookie -> null");
+assert.equal(parseWeights("not json"), null, "garbage -> null");
+assert.deepEqual(parseWeights(JSON.stringify({ performance: 0.4, trend: 0.3, fatigue: 0.2, funnel: 0.1 })), { performance: 0.4, trend: 0.3, fatigue: 0.2, funnel: 0.1 }, "valid balanced -> parsed");
+assert.equal(parseWeights(JSON.stringify({ performance: 1.5, trend: 0, fatigue: 0, funnel: 0 })), null, "out-of-range -> null");
+assert.equal(parseWeights(JSON.stringify({ performance: -0.1, trend: 0.4, fatigue: 0.4, funnel: 0.3 })), null, "negative -> null");
+assert.equal(parseWeights(JSON.stringify({ performance: 0.5, trend: 0.5, fatigue: 0.5, funnel: 0.5 })), null, "sum != 1 -> null");
+assert.equal(parseWeights(JSON.stringify({ performance: 0.3, trend: 0.3, fatigue: 0.2 })), null, "missing dimension -> null");
 
 console.log("PASS: verdict engine checks");

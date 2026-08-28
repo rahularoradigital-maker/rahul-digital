@@ -76,8 +76,10 @@ export async function POST(request: NextRequest) {
   }
   const perBrand = Math.max(1, Math.min(200, Math.floor(body.perBrand ?? 20)));
 
-  // Scope to the active account's competitor set (matches what the Market page shows), so we do
-  // not analyze another account's ads or count them against this account's daily cap.
+  // Scope WHICH ads we analyze to the active account's competitor set (matches what the Market page
+  // shows), so we never analyze another account's ads. The daily cap itself is per-USER and shared
+  // across all of that user's accounts on purpose - it is a cost control, so one user cannot multiply
+  // Gemini spend by switching accounts.
   const session = await getUserMetaSession(userId);
   const accountId = session?.activeExternalId ?? null;
   const admin = createAdminClient();
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest) {
       failed: 0,
       remaining: selected.length,
       dailyCapReached: true,
-      message: `Daily analysis limit (${DAILY_CREATIVE_CAP} creatives) reached for this account. It resets on a rolling 24-hour basis.`,
+      message: `Daily analysis limit (${DAILY_CREATIVE_CAP} creatives across your accounts) reached. It resets on a rolling 24-hour basis.`,
     });
   }
 

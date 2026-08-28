@@ -29,14 +29,20 @@ export async function POST(request: NextRequest) {
   try {
     const admin = createAdminClient();
     const today = new Date().toISOString().slice(0, 10);
-    const { error } = await admin
+    const { data, error } = await admin
       .from("decision_triples")
       .update({ judgment })
       .eq("user_id", user.id)
       .eq("ad_id", adId)
       .eq("time_window", timeWindow)
-      .eq("snapshot_day", today);
+      .eq("snapshot_day", today)
+      .select("id");
     if (error) return NextResponse.json({ ok: false, error: "Could not save" }, { status: 500 });
+    // A filter chain matching zero rows returns error:null with an empty array. Without this check
+    // the button would flip to "Approved" even though nothing was recorded.
+    if (!data || data.length === 0) {
+      return NextResponse.json({ ok: false, error: "Nothing to record against yet" }, { status: 404 });
+    }
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });
