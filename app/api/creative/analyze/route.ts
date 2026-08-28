@@ -10,7 +10,7 @@ import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 // cockpit view (ad names encode product/offer/format/influencer, plus real verdicts and ROAS) and
 // answer using ONLY that data. Result is cached per account in creative_insights so it persists and
 // is not re-paid on reload. Uses the free Gemini tier (same provider as Ask + competitor analysis).
-export const maxDuration = 30;
+export const maxDuration = 60; // gemini-flash-latest can cold-start ~25s; a longer generation needs the headroom (result is cached after)
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();

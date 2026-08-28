@@ -139,7 +139,7 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
   // Cap each attempt so a slow free-tier response can NEVER hang past the serverless limit (which
   // shows the user a hard failure instead of a graceful message). On abort/timeout we return null and
   // the caller says "could not generate, try again". 25s fits the routes' maxDuration=30 with margin.
-  const TIMEOUT_MS = 25_000;
+  const TIMEOUT_MS = 45_000; // flash-latest cold start + a longer generation; single attempt fits the routes' 60s maxDuration
   for (let attempt = 0; attempt < 2; attempt++) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);

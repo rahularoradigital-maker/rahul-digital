@@ -15,7 +15,7 @@ const ASK_DAILY_CAP = 50;
 // answer either cites the real data or says it does not have it. Uses Gemini (the same free-tier
 // provider already wired for creative analysis), so Ask costs nothing to run. Auth-gated;
 // server-only - the key never reaches the browser.
-export const maxDuration = 30;
+export const maxDuration = 60; // headroom for a gemini-flash-latest cold start
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
