@@ -8,7 +8,7 @@ import { NAV_GROUPS } from "@/lib/app/nav";
 export function SidebarNav() {
   const pathname = usePathname();
   return (
-    <nav className="mt-1 flex-1 text-sm">
+    <nav aria-label="Primary" className="mt-1 flex-1 text-sm">
       {NAV_GROUPS.map((section) => (
         <div key={section.group}>
           <div className="px-2.5 pb-1.5 pt-3.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
