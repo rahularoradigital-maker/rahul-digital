@@ -136,28 +136,3 @@ export function resolveCockpitScope(cookieStore: CookieReader, _defaultDays: num
     catalog,
   };
 }
-
-// Parse the adbrain.window cookie. "days:<n>" -> preset; "range:<from>:<to>" -> custom
-// range (validated YYYY-MM-DD, from <= to). Anything malformed returns null (caller falls
-// back to the ?days-derived default), so a bad cookie never breaks the load.
-type ParsedWindow = { kind: "days"; days: number } | { kind: "range"; since: string; until: string };
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-function parseWindowCookie(raw?: string): ParsedWindow | null {
-  if (!raw) return null;
-  if (raw.startsWith("days:")) {
-    const n = Number(raw.slice(5));
-    return Number.isFinite(n) && n > 0 ? { kind: "days", days: n } : null;
-  }
-  if (raw.startsWith("range:")) {
-    const [since, until] = raw.slice(6).split(":");
-    if (ISO_DATE.test(since) && ISO_DATE.test(until) && since <= until) return { kind: "range", since, until };
-  }
-  return null;
-}
-
-// Inclusive day span of a range, so the "Last N days" label stays a sensible number.
-function rangeDays(since: string, until: string): number {
-  const ms = new Date(until).getTime() - new Date(since).getTime();
-  return Math.max(1, Math.round(ms / 86_400_000) + 1);
-}
