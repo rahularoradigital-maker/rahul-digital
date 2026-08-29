@@ -4,7 +4,7 @@
 // weighted median. Ads without enough daily history say so honestly - no fabricated number.
 import type { CockpitAd, CreativeHalfLife } from "@/lib/cockpit/analyze";
 import type { FatigueState } from "@/lib/scoring/fatigue";
-import { forecastFatigue } from "@/lib/scoring/fatigue-forecast";
+import { forecastFatigue, frameFatigue } from "@/lib/scoring/fatigue-forecast";
 import { AdLink } from "./AdLink";
 
 const STATE_STYLE: Record<FatigueState, { label: string; cls: string }> = {
@@ -13,12 +13,6 @@ const STATE_STYLE: Record<FatigueState, { label: string; cls: string }> = {
   fatiguing: { label: "Fatiguing", cls: "bg-[var(--warn-bg)] text-[var(--warn-ink)]" },
   fatigued: { label: "Fatigued", cls: "bg-[var(--bad-bg)] text-[var(--bad-ink)]" },
 };
-
-function halfLifeLabel(days: number | null | undefined): string {
-  if (days === null || days === undefined) return "assessing";
-  if (days === 0) return "past floor";
-  return `~${days}d left`;
-}
 
 export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: CockpitAd[]; halfLife?: CreativeHalfLife; accountId?: string; dateParam?: string }) {
   // Worst first: highest fatigue index at the top so the ads to act on lead.
@@ -54,6 +48,11 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
         {rows.map((ad) => {
           const f = ad.fatigueRead!;
           const s = STATE_STYLE[f.state];
+          // Reframe each ad as named-ad + countdown + mechanism + cost impact (Yamin canon), not a
+          // bare score. countdown + mechanism come from the framed read; the cost-impact numbers are
+          // the engine's real observed decline (evidence[0]); the % is the forward-looking risk.
+          const frame = frameFatigue(f);
+          const fc = frame.hasSignal ? forecastFatigue(f) : null;
           return (
             <div key={ad.id} className="border-t border-[var(--surface-alt)] py-3 first:border-t-0">
               <div className="flex items-center justify-between gap-3">
@@ -61,23 +60,24 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
                   <AdLink accountId={accountId} adId={ad.id} adSetId={ad.adSetId} campaignId={ad.campaignId} name={ad.name} className="truncate text-sm font-medium" dateParam={dateParam} />
                   <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
                 </div>
-                <span className="shrink-0 text-xs font-medium text-[var(--ink-muted)] tabular-nums">
-                  {f.sufficiency === "ok" ? halfLifeLabel(ad.halfLifeDays) : "needs history"}
-                </span>
+                <span className="shrink-0 text-xs font-medium text-[var(--ink-muted)] tabular-nums">{frame.countdown}</span>
               </div>
-              {f.sufficiency === "ok" &&
-                (() => {
-                  const fc = forecastFatigue(f);
-                  return (
-                    <div className="mt-1 text-[11px] text-[var(--ink-muted)]">
+              {/* Framed sentence: countdown + mechanism, in plain English. */}
+              <div className="mt-1 text-xs text-[var(--ink)]">{frame.headline}</div>
+              {frame.hasSignal ? (
+                <>
+                  {/* Cost impact: the real observed decline the countdown is extrapolated from. */}
+                  <div className="mt-1 truncate text-[11px] text-[var(--ink-muted)]" title={f.evidence.join(" ")}>{f.evidence[0]}</div>
+                  {fc && (
+                    <div className="mt-0.5 text-[11px] text-[var(--ink-muted)]">
                       <span className="font-medium text-[var(--ink)]">Forecast</span> · 7d {Math.round(fc.day7.probability * 100)}% · 14d{" "}
                       {Math.round(fc.day14.probability * 100)}% fatigue risk
                     </div>
-                  );
-                })()}
-              <div className="mt-1 truncate text-xs text-[var(--ink-muted)]" title={f.evidence.join(" ")}>
-                {f.sufficiency === "ok" ? f.evidence[0] : `Only ${f.windowDays} day${f.windowDays === 1 ? "" : "s"} of delivery so far.`}
-              </div>
+                  )}
+                </>
+              ) : (
+                <div className="mt-1 text-[11px] text-[var(--ink-muted)]">Only {f.windowDays} day{f.windowDays === 1 ? "" : "s"} of delivery so far.</div>
+              )}
             </div>
           );
         })}

@@ -6,7 +6,7 @@
 // Prints "PASS: fatigue forecast checks" on success, throws on the first broken expectation.
 
 import type { FatigueRead } from "../lib/scoring/fatigue.ts";
-import { forecastFatigue } from "../lib/scoring/fatigue-forecast.ts";
+import { forecastFatigue, frameFatigue } from "../lib/scoring/fatigue-forecast.ts";
 
 function assert(cond: boolean, msg: string): void {
   if (!cond) throw new Error("FAIL: " + msg);
@@ -82,5 +82,41 @@ assert(fF.day7.band === "low" && fF.day14.band === "low", "fresh: both bands sho
 assert(fI.confidence < 0.25, "insufficient: confidence should be low (<0.25)");
 assert(fI.confidence < fW.confidence, "insufficient: confidence should be below a sufficient read");
 assert(fI.day7.band === "low" && fI.day14.band === "low", "insufficient: both bands should be low");
+
+// --- Framing (frameFatigue): named-ad + countdown + mechanism + cost impact, no fabrication. ---
+
+// Worsening read has a real days-to-line (5) and frequency-dominant signals: dated countdown,
+// exposure-saturation mechanism, sentence names both.
+const frW = frameFatigue(worsening);
+assert(frW.hasSignal, "worsening: should have signal");
+assert(frW.dated && frW.countdown === "~5 days", "worsening: countdown should be the real ~5 days");
+assert(frW.mechanism.includes("exposure"), "worsening: frequency-dominant mechanism should name exposure saturating");
+assert(frW.headline.includes("~5 days") && frW.headline.includes("because"), "worsening: headline frames countdown + mechanism");
+
+// A ctrDecay-dominant read (efficiency, not exposure) names the earning-per-impression mechanism.
+const decayRead: FatigueRead = { ...worsening, signals: { frequency: 20, ctrDecay: 80, cpmRise: 10 }, daysToFatigue: 3 };
+const frD = frameFatigue(decayRead);
+assert(frD.countdown === "~3 days" && frD.mechanism.includes("per impression"), "decay-dominant: ~3 days + earning-less-per-impression mechanism");
+
+// daysToFatigue === 0 reads as already past the line, not a fabricated number.
+const atFloor: FatigueRead = { ...worsening, daysToFatigue: 0 };
+const frFloor = frameFatigue(atFloor);
+assert(!frFloor.dated && frFloor.countdown === "now" && frFloor.headline.includes("Already past"), "at-floor: reads as already past the line");
+
+// Dated countdown but NO moving driver (ad-set end caps the half-life): must NOT claim a fatigue
+// crossing - report it as the effective half-life instead. Guards an honesty edge.
+const endCapped: FatigueRead = { ...fresh, daysToFatigue: 3, signals: { frequency: 5, ctrDecay: 3, cpmRise: 2 } };
+const frEnd = frameFatigue(endCapped);
+assert(frEnd.dated && frEnd.countdown === "~3 days", "end-capped: real dated countdown");
+assert(!frEnd.headline.includes("fatigue line") && frEnd.headline.includes("Effective half-life"), "end-capped: no fabricated fatigue crossing");
+
+// Fresh read has no dated crossing: honest "no dated crossing yet", never an invented countdown.
+const frF = frameFatigue(fresh);
+assert(frF.hasSignal && !frF.dated && frF.countdown === "no dated crossing yet", "fresh: no fabricated countdown");
+
+// Insufficient data: no signal, no fake number, says so plainly.
+const frI = frameFatigue(insufficient);
+assert(!frI.hasSignal && frI.countdown === "not enough signal yet", "insufficient: not enough signal, no fake number");
+assert(frI.headline.includes("Not enough signal"), "insufficient: headline is honest");
 
 console.log("PASS: fatigue forecast checks");

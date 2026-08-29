@@ -124,3 +124,71 @@ export function forecastFatigue(read: FatigueRead): FatigueForecast {
 
   return { day7, day14, drivers, confidence, label: "PREDICTED", note };
 }
+
+// FATIGUE FRAMING: re-express the structured fatigue read as a "named-ad + countdown + mechanism +
+// cost impact" line (Yamin canon framing rule), instead of a bare score. This adds NO new math: it
+// only names fields the engine already computed - the real days-to-line (read.daysToFatigue), the
+// dominant driver (read.signals + trajectory), and defers the concrete cost numbers to
+// read.evidence[0] ("<metric> X -> Y over N days (-Z%/day)"). It NEVER fabricates a future
+// ROAS/CPA: the forecast projects a fatigue INDEX and a probability, not a predicted cost figure.
+
+export type FatigueFrame = {
+  hasSignal: boolean; // false when the read is insufficient_data -> show "not enough signal", never a fake number
+  dated: boolean; // true only when there is a real numeric days-to-line to count down
+  countdown: string; // "~5 days" | "now" | "no dated crossing yet" | "not enough signal yet"
+  mechanism: string; // the dominant driver the engine computed, in plain English
+  headline: string; // the full framed sentence
+};
+
+// Mirrors fatigue.ts WEIGHTS so the NAMED mechanism matches the index math (frequency/decay 0.4, cpm 0.2).
+const MECH_WEIGHTS = { frequency: 0.4, ctrDecay: 0.4, cpmRise: 0.2 } as const;
+const MECH_FLAT = 4; // below this weighted contribution no single driver is named (all signals ~flat)
+
+// The dominant fatigue driver, in plain English. Canon-honest: frequency is framed as EXPOSURE
+// saturating (Meta's published decay curve on exposure_n), never as a frequency ceiling. `named`
+// is false when no signal is really moving (all flat) - a dated countdown then reflects the ad
+// set's scheduled end, not a fatigue crossing, so the caller must not claim one.
+function dominantMechanism(read: FatigueRead): { text: string; named: boolean } {
+  const contribution = {
+    frequency: MECH_WEIGHTS.frequency * read.signals.frequency,
+    ctrDecay: MECH_WEIGHTS.ctrDecay * read.signals.ctrDecay,
+    cpmRise: MECH_WEIGHTS.cpmRise * read.signals.cpmRise,
+  };
+  const top = Math.max(contribution.frequency, contribution.ctrDecay, contribution.cpmRise);
+  if (top < MECH_FLAT) {
+    return read.trajectory === "worsening"
+      ? { text: "efficiency is slipping across the board", named: true }
+      : { text: "no dominant fatigue driver yet", named: false };
+  }
+  if (contribution.frequency === top) return { text: "the same audience keeps seeing it (exposure saturating)", named: true };
+  if (contribution.ctrDecay === top) return { text: "it is earning less per impression", named: true };
+  return { text: "the auction is charging more to deliver it (relevance slipping)", named: true };
+}
+
+export function frameFatigue(read: FatigueRead): FatigueFrame {
+  if (read.sufficiency === "insufficient_data") {
+    const days = `${read.windowDays} day${read.windowDays === 1 ? "" : "s"}`;
+    return {
+      hasSignal: false,
+      dated: false,
+      countdown: "not enough signal yet",
+      mechanism: `only ${days} of delivery`,
+      headline: `Not enough signal yet: only ${days} of delivery, too few to forecast fatigue.`,
+    };
+  }
+  const mech = dominantMechanism(read);
+  const mechanism = mech.text;
+  const d = read.daysToFatigue;
+  if (d === 0) {
+    return { hasSignal: true, dated: false, countdown: "now", mechanism, headline: `Already past the fatigue line because ${mechanism}.` };
+  }
+  if (d !== null && d > 0) {
+    const n = `~${d} day${d === 1 ? "" : "s"}`;
+    // A dated countdown with a real driver IS a fatigue crossing. With no moving driver, the date is
+    // the ad set's scheduled end - report it as the effective half-life, never as a fatigue crossing.
+    const headline = mech.named ? `Hits the fatigue line in ${n} because ${mechanism}.` : `Effective half-life ${n} (${mechanism}).`;
+    return { hasSignal: true, dated: true, countdown: n, mechanism, headline };
+  }
+  // Sufficient read but no dated crossing: the primary metric is not declining toward the floor.
+  return { hasSignal: true, dated: false, countdown: "no dated crossing yet", mechanism, headline: `Holding for now; ${mechanism}.` };
+}
