@@ -916,19 +916,19 @@ export async function listAllSpendingAdIds(
   until?: string,
   campaignIds?: string[],
   maxPages = 60,
-): Promise<string[]> {
+): Promise<{ adId: string; name: string }[]> {
   if (campaignIds && campaignIds.length === 0) return [];
   const params: Record<string, string> = {
     level: "ad",
-    fields: "ad_id,spend",
+    fields: "ad_id,ad_name,spend",
     time_range: JSON.stringify({ since, until: until ?? today() }),
     limit: "500",
   };
   if (campaignIds) params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }]);
-  const rows = await graphGetAll<{ ad_id?: string; spend?: string }>(`act_${accountExternalId}/insights`, token.accessToken, params, maxPages);
-  const ids = new Set<string>();
-  for (const r of rows) if (r.ad_id && Number(r.spend || 0) > 0) ids.add(r.ad_id);
-  return [...ids];
+  const rows = await graphGetAll<{ ad_id?: string; ad_name?: string; spend?: string }>(`act_${accountExternalId}/insights`, token.accessToken, params, maxPages);
+  const byId = new Map<string, string>();
+  for (const r of rows) if (r.ad_id && Number(r.spend || 0) > 0 && !byId.has(r.ad_id)) byId.set(r.ad_id, r.ad_name ?? r.ad_id);
+  return [...byId.entries()].map(([adId, name]) => ({ adId, name }));
 }
 
 type DayWiseRaw = MetaInsightRow & {

@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { streamAccountDayWiseRows, listAllSpendingAdIds, type AdMetricRow } from "@/lib/meta-source";
+import { streamAccountDayWiseRows, listAllSpendingAdIds, fetchAdMeta, fetchAdCreatives, listAdSetEnds, type AdMetricRow } from "@/lib/meta-source";
+import { thumbUrlOf } from "@/lib/creative/fingerprint";
 import type { TokenSet } from "@/lib/ad-source";
 
 // Ingestion pipeline (roadmap #1): pull EVERY ad's day-wise metrics for an account into the ad_metrics
@@ -84,14 +85,22 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
     active.forEach((r) => seenAds.add(r.adId));
     totalRows += active.length;
   };
+  // Capture each ad's parent ids as we stream, so the metadata sync can attach campaign/ad-set + end dates.
+  const idMap = new Map<string, { campaignId: string | null; adsetId: string | null }>();
+  const persistAndTrack = async (batch: AdMetricRow[]) => {
+    for (const r of batch) if (!idMap.has(r.adId)) idMap.set(r.adId, { campaignId: r.campaignId, adsetId: r.adsetId });
+    await persist(batch);
+  };
+
+  let ads: { adId: string; name: string }[] = [];
   try {
     // Enumerate EVERY spending ad (complete, no cap), then pull day-wise in fast filtered chunks - the
     // whole-account day-wise query is too heavy for Meta to page within the timeout, but ~40 ids at a time
     // pages quickly. Each page is upserted immediately, so a run cut short still persists what it pulled.
-    const adIds = await listAllSpendingAdIds(accountExternalId, since, token);
-    for (let i = 0; i < adIds.length; i += AD_CHUNK) {
-      const chunk = adIds.slice(i, i + AD_CHUNK);
-      await streamAccountDayWiseRows(accountExternalId, since, token, persist, undefined, chunk);
+    ads = await listAllSpendingAdIds(accountExternalId, since, token);
+    for (let i = 0; i < ads.length; i += AD_CHUNK) {
+      const chunk = ads.slice(i, i + AD_CHUNK).map((a) => a.adId);
+      await streamAccountDayWiseRows(accountExternalId, since, token, persistAndTrack, undefined, chunk);
     }
   } catch (e) {
     const error = e instanceof Error ? e.message : "sync failed";
@@ -99,6 +108,63 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
     return { adsSeen: seenAds.size, rows: totalRows, since, ok: false, error };
   }
 
+  // Metadata (name, status, parent names, creative, end date) for every ad, so the app can render + rank
+  // entirely from the DB. Best-effort: a metadata hiccup must not lose the metrics we just stored.
+  try {
+    await syncAdMeta(userId, accountExternalId, token, ads, idMap);
+  } catch (e) {
+    console.error("[ingest] ad_meta sync failed (metrics still stored)", e);
+  }
+
   await writeState({ last_ok: true, last_error: null, last_synced_date: isoDaysAgo(0), ads_seen: seenAds.size, last_rows: totalRows });
   return { adsSeen: seenAds.size, rows: totalRows, since, ok: true };
+}
+
+// Sync per-ad METADATA (name, status, parent names, creative thumb + catalog flag, ad-set end date) into
+// ad_meta for every ad, so the app renders + ranks from the DB. idMap carries campaign/ad-set ids captured
+// during the metrics stream (Meta's day-wise rows have them; the metadata edges do not). Best-effort per
+// source: a missing status/creative just leaves that column null, never blocks the rest.
+async function syncAdMeta(
+  userId: string,
+  accountExternalId: string,
+  token: TokenSet,
+  ads: { adId: string; name: string }[],
+  idMap: Map<string, { campaignId: string | null; adsetId: string | null }>,
+): Promise<void> {
+  if (ads.length === 0) return;
+  const admin = createAdminClient();
+  const adIds = ads.map((a) => a.adId);
+  const nameById = new Map(ads.map((a) => [a.adId, a.name]));
+  const [meta, creatives] = await Promise.all([
+    fetchAdMeta(accountExternalId, adIds, token).catch(() => new Map()),
+    fetchAdCreatives(accountExternalId, adIds, token).catch(() => new Map()),
+  ]);
+  const adsetIds = [...new Set([...idMap.values()].map((v) => v.adsetId).filter((x): x is string => Boolean(x)))];
+  const ends = await listAdSetEnds(accountExternalId, adsetIds, token).catch(() => new Map<string, number>());
+
+  const rows = adIds.map((adId) => {
+    const ids = idMap.get(adId);
+    const m = meta.get(adId);
+    const c = creatives.get(adId);
+    return {
+      user_id: userId,
+      account_external_id: accountExternalId,
+      ad_id: adId,
+      name: nameById.get(adId) ?? adId,
+      effective_status: m?.status ?? null,
+      campaign_id: ids?.campaignId ?? null,
+      campaign_name: m?.campaignName ?? null,
+      adset_id: ids?.adsetId ?? null,
+      adset_name: m?.adsetName ?? null,
+      thumb_url: c ? thumbUrlOf(c) : null,
+      is_catalog: c?.isCatalog ?? false,
+      adset_end_unix: ids?.adsetId ? (ends.get(ids.adsetId) ?? null) : null,
+      updated_at: new Date().toISOString(),
+    };
+  });
+  for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
+    const batch = rows.slice(i, i + UPSERT_BATCH);
+    const { error } = await admin.from("ad_meta").upsert(batch, { onConflict: "user_id,account_external_id,ad_id" });
+    if (error) throw new Error(`ad_meta upsert: ${error.message}`);
+  }
 }
