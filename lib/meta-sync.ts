@@ -81,7 +81,12 @@ export async function getUserMetaSession(
 // 100 now that the insights pull paginates - a big account's meaningful spend sits well beyond
 // the top 25. The SWR cache serves instantly after the first load, so the deeper pull is paid
 // once per window. ponytail: a background sync job replaces this per-request fetch at scale (ADR-0004).
-const MAX_ADS = 100;
+// Ranking baseline = the account's top ads by spend over the 90-day window. Capped so the day-wise pull
+// (ads x 90 days of rows) stays light enough to finish on demand: 90 days is ~3x the day-wise data of the
+// old 30-day window, so 100 ads x 90 days overran the function budget / hit Meta throttling and the cache
+// never warmed. 50 top-spending ads over 90 days is a strong self-baseline (the top spenders dominate the
+// account) and roughly matches the old, reliably-fast 30-day pull's row volume.
+const MAX_ADS = 50;
 const LOOKBACK_DAYS = 90; // the fixed app-wide comparison/ranking window (see COMPARISON_DAYS)
 
 // Account-level raw metrics summed from the real day-wise rows, for KPIs the Meta
