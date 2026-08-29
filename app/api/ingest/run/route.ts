@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
@@ -10,7 +10,7 @@ import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
 // in ad_sync_state (last_ok / last_error / ads_seen) so a caller that gives up early can still see it land.
 export const maxDuration = 300;
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
@@ -18,7 +18,11 @@ export async function POST() {
   const session = await getUserMetaSession(user.id);
   if (!session) return NextResponse.json({ error: "Connect a Meta ad account first." }, { status: 400 });
 
-  const res = await syncAdMetrics(user.id, session.activeExternalId, session.token);
+  // Optional ?days=N (1..90) to sync a shorter window - lets a quick backfill finish fast; the cron uses
+  // the full 90-day default. Bounded so it can never ask for more than the comparison window.
+  const daysParamRaw = Number(request.nextUrl.searchParams.get("days"));
+  const backfillDays = Number.isFinite(daysParamRaw) && daysParamRaw > 0 ? Math.min(90, Math.floor(daysParamRaw)) : 90;
+  const res = await syncAdMetrics(user.id, session.activeExternalId, session.token, backfillDays);
   if (!res.ok) return NextResponse.json({ ok: false, error: res.error ?? "Sync failed." }, { status: 502 });
   return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since });
 }

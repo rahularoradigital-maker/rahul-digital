@@ -27,7 +27,7 @@ export type SyncResult = { adsSeen: number; rows: number; since: string; ok: boo
  * Sync one account's day-wise ad metrics into the ad_metrics store. Complete coverage: no top-N cap.
  * Returns counts for observability. Never throws - returns { ok:false, error } so a cron loop continues.
  */
-export async function syncAdMetrics(userId: string, accountExternalId: string, token: TokenSet): Promise<SyncResult> {
+export async function syncAdMetrics(userId: string, accountExternalId: string, token: TokenSet, backfillDays: number = BACKFILL_DAYS): Promise<SyncResult> {
   const admin = createAdminClient();
 
   // Always record the run outcome (ok/error/rows) so a background run is observable without server logs.
@@ -38,7 +38,7 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
       .then(undefined, () => {});
 
   // Incremental window: first run backfills BACKFILL_DAYS; later runs re-pull only the recent tail + new days.
-  let since = isoDaysAgo(BACKFILL_DAYS);
+  let since = isoDaysAgo(backfillDays);
   try {
     const { data } = await admin
       .from("ad_sync_state")
@@ -53,7 +53,7 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
       // backfill horizon - so we always cover the attributing tail + any gap since the last run.
       const lastMinusTail = new Date(new Date(last).getTime() - RESYNC_TAIL_DAYS * 86_400_000).toISOString().slice(0, 10);
       since = [lastMinusTail, tail].sort()[0]; // earlier date
-      const floor = isoDaysAgo(BACKFILL_DAYS);
+      const floor = isoDaysAgo(backfillDays);
       if (since < floor) since = floor;
     }
   } catch {
