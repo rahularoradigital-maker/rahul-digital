@@ -27,11 +27,12 @@ export type { AccountMetrics } from "@/lib/meta-sync";
 export { WINDOWS, parseDays } from "./windows";
 
 export type ConnectReason = "not_connected" | "error" | "no_data";
+export type PerfBreakdown = { authMs: number; scopeMs: number; cockpitMs: number; totalMs: number; freshness: string };
 
 // Discriminated on `connected`: a page either has real data to render, or it does
 // not and must render the Connect/empty state. There is deliberately no sample view.
 export type CockpitData =
-  | { connected: true; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: ProcessedCounts; days: number; syncedAt?: string; stale?: boolean; userEmail?: string }
+  | { connected: true; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: ProcessedCounts; days: number; syncedAt?: string; stale?: boolean; perf?: PerfBreakdown; userEmail?: string }
   | { connected: false; days: number; reason: ConnectReason; accountName?: string; errorNote?: string; userEmail?: string };
 
 /**
@@ -40,11 +41,15 @@ export type CockpitData =
  * Meta connection comes back as `{ connected: false, reason }` for the page to handle.
  */
 export async function loadCockpit(days: number): Promise<CockpitData> {
+  // Stage timing (ISSUE: speed baseline) - negligible overhead, surfaced on the page via ?perf=1 so
+  // the warm-path breakdown (auth vs scope vs cockpit read/compute) is measurable, not guessed.
+  const tStart = performance.now();
   // Independent: the user (React-cached, deduped with the layout's call) and the cookie store have
   // no dependency, so resolve them together instead of one after the other.
   const [user, cookieStore] = await Promise.all([getCurrentUser(), cookies()]);
   if (!user) redirect("/login");
   const userEmail = user.email ?? undefined;
+  const tAuth = performance.now();
 
   const { lookbackDays, campaignId, objectives, explicitWindow, weights } = resolveCockpitScope(cookieStore, days);
   const effectiveDays = lookbackDays;
@@ -56,7 +61,16 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     ? `${explicitWindow.since}_${explicitWindow.until}`
     : `${new Date(Date.now() - effectiveDays * 86_400_000).toISOString().slice(0, 10)}_${new Date().toISOString().slice(0, 10)}`;
 
+  const tScope = performance.now();
   const live = await fetchLiveCockpit(user.id, lookbackDays, campaignId, objectives, explicitWindow, weights);
+  const tCockpit = performance.now();
+  const perf = {
+    authMs: Math.round(tAuth - tStart),
+    scopeMs: Math.round(tScope - tAuth),
+    cockpitMs: Math.round(tCockpit - tScope),
+    totalMs: Math.round(tCockpit - tStart),
+    freshness: live.status === "connected" ? (live.stale ? "stale" : "fresh") : live.status,
+  };
 
   if (live.status === "connected" && live.adsAnalyzed > 0) {
     // Log the run's recommendations as labeled triples (deferred, deduped per day). Best-effort.
@@ -65,7 +79,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     } catch {
       // after() unavailable outside a request scope; skip logging rather than fail the load.
     }
-    return { connected: true, view: live.view, metrics: live.metrics, scopeTotals: live.scopeTotals, funnel: live.funnel, marginal: live.marginal, dataQuality: live.dataQuality, ownDiversity: live.ownDiversity, accountName: live.accountName, accountId: live.accountExternalId, dateParam, adsAnalyzed: live.adsAnalyzed, processed: live.processed, days: effectiveDays, syncedAt: live.syncedAt, stale: live.stale, userEmail };
+    return { connected: true, view: live.view, metrics: live.metrics, scopeTotals: live.scopeTotals, funnel: live.funnel, marginal: live.marginal, dataQuality: live.dataQuality, ownDiversity: live.ownDiversity, accountName: live.accountName, accountId: live.accountExternalId, dateParam, adsAnalyzed: live.adsAnalyzed, processed: live.processed, days: effectiveDays, syncedAt: live.syncedAt, stale: live.stale, perf, userEmail };
   }
 
   // Connected but nothing spent in the window is a real, honest "no data yet" state,

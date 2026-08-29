@@ -21,15 +21,26 @@ import { rupees } from "@/lib/format";
 // No sample or placeholder numbers ever reach this screen.
 
 
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
-  const { days } = await searchParams;
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ days?: string; perf?: string }> }) {
+  const { days, perf } = await searchParams;
   const data = await loadCockpit(parseDays(days));
 
   if (!data.connected) {
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
 
-  return <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} scopeTotals={data.scopeTotals} days={data.days} syncedAt={data.syncedAt} stale={data.stale} />;
+  // ?perf=1 surfaces the server-side warm-path breakdown so it can be read in the browser (measure
+  // before optimizing). Rendered as machine-readable text; harmless and invisible-ish for normal use.
+  const perfEl = perf === "1" && data.perf ? (
+    <pre id="perf-data" data-perf={JSON.stringify(data.perf)} className="fixed bottom-1 right-1 z-50 rounded bg-black/80 px-2 py-1 text-[10px] text-white">{JSON.stringify(data.perf)}</pre>
+  ) : null;
+
+  return (
+    <>
+      {perfEl}
+      <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} scopeTotals={data.scopeTotals} days={data.days} syncedAt={data.syncedAt} stale={data.stale} />
+    </>
+  );
 }
 
 // Honest confidence de-rating: when the day-wise series has quality problems (thin
