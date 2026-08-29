@@ -46,6 +46,7 @@
     "check:daily-series": "node --experimental-strip-types scripts/check-daily-series.ts",
     "check:catalog": "node --experimental-strip-types scripts/check-catalog.ts",
     "check:level-metrics": "node --experimental-strip-types scripts/check-level-metrics.ts",
+    "check:level-funnel": "node --experimental-strip-types scripts/check-level-funnel.ts",
     "check:rate-limit": "node --experimental-strip-types scripts/check-rate-limit.ts",
     "check:csp": "node --experimental-strip-types scripts/check-csp.ts",
     "check:thumb": "node --experimental-strip-types scripts/check-thumb.ts",

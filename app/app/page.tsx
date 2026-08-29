@@ -11,6 +11,7 @@ import { Leaderboard } from "@/components/cockpit/Leaderboard";
 import { FunnelCard } from "@/components/cockpit/FunnelCard";
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import type { DailyPoint } from "@/lib/cockpit/daily-series";
+import type { LevelFunnels } from "@/lib/cockpit/level-funnel";
 import type { MarginalRead } from "@/lib/scoring/marginal";
 import type { DataQuality } from "@/lib/scoring/data-quality";
 import type { ScopeTotals } from "@/lib/meta-sync";
@@ -39,7 +40,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   return (
     <>
       {perfEl}
-      <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} scopeTotals={data.scopeTotals} dailySeries={data.dailySeries} days={data.days} syncedAt={data.syncedAt} stale={data.stale} />
+      <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} scopeTotals={data.scopeTotals} dailySeries={data.dailySeries} funnelLevels={data.funnelLevels} days={data.days} syncedAt={data.syncedAt} stale={data.stale} />
     </>
   );
 }
@@ -170,7 +171,7 @@ function syncedLabel(iso?: string): string {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, days, syncedAt, stale }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; days: number; syncedAt?: string; stale?: boolean }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, funnelLevels, days, syncedAt, stale }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; days: number; syncedAt?: string; stale?: boolean }) {
   const health = view.accountHealth;
   // Headline KPIs use the TRUE scope totals (all campaigns/ads of the selected objective),
   // so spend / revenue / ROAS match Ads Manager - not the analyzed-ads subset in view.totals.
@@ -241,7 +242,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
 
       {/* Scaling headroom (marginal economics) + ad-level funnel metrics */}
       <ScalingCard marginal={marginal} />
-      <FunnelCard funnel={funnel} dailySeries={dailySeries} />
+      <FunnelCard funnel={funnel} dailySeries={dailySeries} funnelLevels={funnelLevels} />
 
       {/* This week's plan + Fatigue radar */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">

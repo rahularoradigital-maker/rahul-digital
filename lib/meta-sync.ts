@@ -20,6 +20,7 @@ import type { TokenSet } from "./ad-source.ts";
 import { windowFunnel, type FunnelMetrics, type ExtendedMetricsRow } from "./metrics/funnel-metrics.ts";
 import { marginalScaling, type MarginalRead } from "./scoring/marginal.ts";
 import { buildDailySeries, type DailyInputRow, type DailyPoint } from "./cockpit/daily-series.ts";
+import { levelFunnels, type LevelFunnels } from "./cockpit/level-funnel.ts";
 import { assessDataQuality, type DataQuality, type QualityRow } from "./scoring/data-quality.ts";
 
 // The user's currently-active Meta account (most-recently connected) and its token.
@@ -110,7 +111,7 @@ export type LiveCockpit =
   // from Meta; stale=true means a day-old cache is being shown while a background refresh runs. Optional
   // so the deep pull (fetchLiveCockpitUncached) and non-UI callers need not set them; fetchLiveCockpit
   // attaches them at the serving boundary where the fresh/stale/cold path is known.
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; dailySeries: DailyPoint[]; syncedAt?: string; stale?: boolean }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; syncedAt?: string; stale?: boolean }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -353,6 +354,25 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     );
     const funnel = windowFunnel(extRows);
 
+    // Per-level funnel (top ad sets + campaigns by spend), so the funnel card can switch Ad / Ad set /
+    // Campaign. Reuses the same ExtendedMetricsRow shape, grouped per ad's parent ids. OPTIONAL on the
+    // payload: older cached blobs omit it and the card falls back to the ad-level view, so no
+    // CACHE_SCHEMA bump and no forced cold pull.
+    const funnelLevels = levelFunnels(
+      realAds.map((ad) => ({
+        adSetId: ad.adSetId,
+        adsetName: ad.adsetName,
+        campaignId: ad.campaignId,
+        campaignName: ad.campaignName,
+        rows: ad.rows.map((r) => ({
+          date: r.date, spend: r.spend, impressions: r.impressions, clicks: r.clicks,
+          outboundClicks: r.outboundClicks ?? 0, video3sViews: r.video3sViews ?? 0, videoThruplays: r.videoThruplays ?? 0,
+          landingPageViews: r.landingPageViews ?? 0, addToCarts: r.addToCarts ?? 0, initiateCheckouts: r.initiateCheckouts ?? 0,
+          purchases: r.purchases,
+        })),
+      })),
+    );
+
     // ONE per-day aggregation feeds three things: marginal scaling, data quality, AND the day-wise
     // trend chart. DailyInputRow is a superset of QualityRow (adds the funnel fields the chart's KPIs
     // need - video/LP/ATC/checkout), so we sum every chartable field once instead of looping twice.
@@ -412,7 +432,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // separate from view.totals, which is the analyzed-ads subset the leaderboard breaks down.
     const scopeTotals = { spendRs: Math.round(sSpend), revenueRs: Math.round(sRev), roas: sSpend > 0 ? sRev / sSpend : null };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality, ownDiversity, dailySeries };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality, ownDiversity, dailySeries, funnelLevels };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }
