@@ -2,19 +2,20 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession } from "@/lib/meta-sync";
-import { searchCompanies, fetchBrandAds } from "@/lib/scrapecreators";
-import { loadBrandProfile, suggestCompetitorNames } from "@/lib/brand/profile";
-import { shortlistCandidates, type Candidate } from "@/lib/brand/discover";
+import { searchAdLibraryPages, fetchAdLibraryAds, iso2FromMarket } from "@/lib/meta-source";
+import { loadBrandProfile } from "@/lib/brand/profile";
+import { buildSearchQueries, shortlistCandidates } from "@/lib/brand/discover";
 import { storeCompetitorBrandAds } from "@/lib/competitors/store";
 import type { NormalizedAd } from "@/lib/competitors/types";
 
-// Stage 2: auto competitor discovery from the CONFIRMED brand profile.
-//  POST {}            -> search the Ad Library from the profile's category/products, return candidates
-//  POST { track: [] } -> pull the selected candidates' ads and store them (scoped to the account)
-// Auth-gated; grounded (real Ad Library data only). Requires SCRAPECREATORS_API_KEY.
+// Stage 2: auto competitor discovery from the CONFIRMED brand profile, powered by META'S OWN AD LIBRARY
+// (ads_archive) using the user's already-connected token - the free, first-party source. No third-party
+// key needed.
+//  POST {}            -> search the Ad Library by the profile's category/products, return candidate pages
+//  POST { track: [] } -> pull the selected candidates' live ads and store them (scoped to the account)
+// Auth-gated; grounded (real Ad Library data only).
 export const maxDuration = 60;
-const PULL_CONCURRENCY = 2; // gentle on the provider's rate limit (matches competitors/run)
-const SEARCH_CONCURRENCY = 4; // resolving suggested names is a cheap GET, so a bit more parallelism
+const PULL_CONCURRENCY = 3; // ads_archive is Meta's own API on the user's token; a little more parallelism is fine
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -30,9 +31,8 @@ export async function POST(request: NextRequest) {
   if (!profile || profile.status !== "confirmed") {
     return NextResponse.json({ error: "Confirm the brand profile first - discovery uses it." }, { status: 400 });
   }
-  if (!process.env.SCRAPECREATORS_API_KEY) {
-    return NextResponse.json({ error: "Competitor discovery needs SCRAPECREATORS_API_KEY set in Vercel." }, { status: 400 });
-  }
+  // The Ad Library is filtered by the country the ads reached; derive it from the confirmed profile.
+  const country = iso2FromMarket(profile.targetMarket, profile.currency);
 
   let body: { track?: { pageId: string; name?: string }[] } = {};
   try {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   }
   const admin = createAdminClient();
 
-  // --- TRACK: pull the chosen candidates' ads and store them, scoped to the account. ---
+  // --- TRACK: pull the chosen candidates' live ads and store them, scoped to the account. ---
   if (Array.isArray(body.track) && body.track.length > 0) {
     const targets = body.track.filter((t) => t.pageId).slice(0, 8);
     const brands: { name: string; adCount: number }[] = [];
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         if (!t) return;
         let ads: NormalizedAd[];
         try {
-          ads = await fetchBrandAds(t.pageId, t.name ?? "Competitor", false);
+          ads = await fetchAdLibraryAds(t.pageId, t.name ?? "Competitor", false, country, session!.token);
         } catch (e) {
           errors.push(e instanceof Error ? e.message : `Failed to fetch ${t.pageId}`);
           continue;
@@ -71,45 +71,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, tracked: brands, errors });
   }
 
-  // --- SEARCH: find candidate competitors from the profile. ---
-  // The Ad Library search matches by brand NAME, not product keywords, so we can't search "kurta sets".
-  // Instead ask Gemini for real same-market, same-price-band competitor NAMES, then resolve each to a
-  // REAL Ad Library page. A wrong/invented name just resolves to nothing and drops out (grounded).
-  const names = await suggestCompetitorNames(profile);
-  if (names.length === 0) {
-    return NextResponse.json({ error: "Could not suggest competitors from this profile. Add category / products and confirm again." }, { status: 400 });
+  // --- SEARCH: find candidate competitors from the profile's category + products. ---
+  // Unlike a name lookup, an Ad Library keyword search finds the brands actually RUNNING ads for the
+  // same products right now - the most honest competitor signal. We search the profile's most
+  // discriminating terms, collect the distinct advertiser pages, drop our own brand, and rank the
+  // heaviest advertisers first (shortlist). A vague profile that yields no query drops out honestly.
+  const terms = buildSearchQueries(profile.category, profile.subcategories, profile.keyProducts, 5);
+  const searchTerms = terms.join(" ").trim();
+  if (!searchTerms) {
+    return NextResponse.json({ error: "Add a category and a few key products to the profile, then confirm again - discovery searches on them." }, { status: 400 });
   }
-  const all: Candidate[] = [];
-  const seen = new Set<string>();
-  const nameQueue = [...names];
-  let lookupError: string | null = null; // the provider error, if every lookup is failing
-  async function resolver() {
-    for (;;) {
-      const name = nameQueue.shift();
-      if (!name) return;
-      let results: Candidate[];
-      try {
-        results = await searchCompanies(name, 3); // ranked best NAME-match first
-      } catch (e) {
-        lookupError = e instanceof Error ? e.message : "lookup failed";
-        continue; // one name failing must not sink discovery
-      }
-      // Keep the top 1-2 real pages per name; shortlist then dedupes, drops our own brand, ranks.
-      for (const r of results.slice(0, 2)) if (r.pageId && !seen.has(r.pageId)) { seen.add(r.pageId); all.push(r); }
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(SEARCH_CONCURRENCY, Math.max(1, nameQueue.length)) }, resolver));
-  const candidates = shortlistCandidates(all, session.activeAccountName ?? "", 10);
-  // We got competitor NAMES from Gemini but resolved ZERO real pages AND the lookups were erroring:
-  // that is a provider problem (e.g. Ad Library data credits exhausted), not "profile too vague".
-  // Surface it honestly with the names we did find, instead of misleading "add more sub-categories".
-  if (candidates.length === 0 && lookupError) {
+  let pages;
+  try {
+    pages = await searchAdLibraryPages(searchTerms, country, session.token, 20);
+  } catch (e) {
+    // A Graph error here is almost always the token lacking Ad Library access, or a rate limit.
+    // Report it honestly instead of a misleading "profile too vague".
     return NextResponse.json({
       ok: true,
       candidates: [],
-      suggested: names,
-      lookupError: `Could not look up these brands in the Ad Library (${lookupError}). The competitor data provider may be out of credits.`,
+      suggested: terms,
+      lookupError: `Could not search the Meta Ad Library (${e instanceof Error ? e.message : "request failed"}).`,
     });
   }
-  return NextResponse.json({ ok: true, candidates, suggested: names });
+  const candidates = shortlistCandidates(pages, session.activeAccountName ?? "", 10);
+  return NextResponse.json({ ok: true, candidates, suggested: terms });
 }

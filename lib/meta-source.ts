@@ -6,6 +6,8 @@
 import type { AdSource, TokenSet, SourceAd, MetricsRow } from "./ad-source.ts";
 import type { Objective } from "./rules/comparator.ts";
 import type { CreativeAsset } from "./creative/fingerprint.ts";
+import type { NormalizedAd } from "./competitors/types.ts";
+import type { Candidate } from "./brand/discover.ts";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
@@ -433,6 +435,162 @@ export async function fetchBrandWebsite(accountExternalId: string, token: TokenS
     ];
   });
   return pickBrandWebsiteHost(urls);
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Meta Ad Library (ads_archive) - competitor research from Meta's OWN public transparency data, using
+// the user's already-connected token. This is the free, first-party replacement for ScrapeCreators
+// (which is a paid third party). ads_archive exposes, for any advertiser: the page, the ad COPY
+// (bodies/titles/link captions), CTA-adjacent link text, run dates, platforms, and the snapshot URL.
+// It does NOT expose media format or media files for ordinary commercial ads, so competitor format-mix
+// and thumbnails are unavailable from this source (copy-based intelligence - ICP, pillars, offers,
+// hooks - is fully available). Nothing is fabricated: a field the API omits is null/other.
+// ---------------------------------------------------------------------------------------------------
+
+// Non-EU commercial ads expose only these fields on ads_archive; impressions/spend/demographics are
+// EU-political-only and deliberately not requested.
+const AD_LIBRARY_FIELDS =
+  "id,page_id,page_name,ad_creative_bodies,ad_creative_link_titles,ad_creative_link_captions,ad_creative_link_descriptions,ad_snapshot_url,ad_delivery_start_time,ad_delivery_stop_time,publisher_platforms";
+
+type AdLibraryRawAd = {
+  id?: string;
+  page_id?: string;
+  page_name?: string;
+  ad_creative_bodies?: string[];
+  ad_creative_link_titles?: string[];
+  ad_creative_link_captions?: string[]; // the display host shown under the headline, e.g. "soch.com"
+  ad_creative_link_descriptions?: string[];
+  ad_snapshot_url?: string;
+  ad_delivery_start_time?: string; // ISO date
+  ad_delivery_stop_time?: string; // absent while the ad is still running
+  publisher_platforms?: string[];
+};
+
+// A very small country-name -> ISO-2 map for the ad_reached_countries filter, with a currency-based
+// fallback. ads_archive REQUIRES a reached-country, so we always resolve to something sensible.
+const MARKET_ISO2: Record<string, string> = {
+  india: "IN", "united states": "US", usa: "US", us: "US", "united kingdom": "GB", uk: "GB",
+  canada: "CA", australia: "AU", uae: "AE", "united arab emirates": "AE", singapore: "SG",
+  germany: "DE", france: "FR", indonesia: "ID", pakistan: "PK", bangladesh: "BD",
+};
+export function iso2FromMarket(targetMarket: string | null, currency?: string | null): string {
+  const t = (targetMarket ?? "").trim().toLowerCase();
+  if (t && MARKET_ISO2[t]) return MARKET_ISO2[t];
+  for (const [name, iso] of Object.entries(MARKET_ISO2)) if (t.includes(name)) return iso;
+  if (currency === "INR") return "IN";
+  if (currency === "GBP") return "GB";
+  if (currency === "AED") return "AE";
+  return "US"; // the broadest Ad Library; only used when the market is genuinely unknown
+}
+
+function firstNonEmpty(list: string[] | undefined): string | null {
+  return list?.find((s) => s && s.trim())?.trim() ?? null;
+}
+
+function toEpochSeconds(iso: string | undefined): number | null {
+  if (!iso) return null;
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
+}
+
+function normalizeAdLibraryAd(raw: AdLibraryRawAd, label: string, isMyBrand: boolean): NormalizedAd | null {
+  if (!raw.page_id || !raw.id) return null; // an ad we cannot key is dropped, not faked
+  const caption = firstNonEmpty(raw.ad_creative_link_captions); // display host, e.g. "www.soch.com"
+  const cardCount = Math.max(raw.ad_creative_bodies?.length ?? 1, raw.ad_creative_link_titles?.length ?? 1);
+  return {
+    pageId: String(raw.page_id),
+    adArchiveId: String(raw.id),
+    brandLabel: raw.page_name || label,
+    isMyBrand,
+    isActive: !raw.ad_delivery_stop_time, // no stop time = still delivering (best-effort from public data)
+    displayFormat: "", // ads_archive does not expose media format for commercial ads
+    media: "other", // unknown from this source; copy-based analysis still works
+    ctaText: null,
+    ctaType: null,
+    title: firstNonEmpty(raw.ad_creative_link_titles),
+    body: firstNonEmpty(raw.ad_creative_bodies) ?? firstNonEmpty(raw.ad_creative_link_descriptions),
+    linkUrl: caption ? (caption.includes("://") ? caption : `https://${caption}`) : null,
+    platforms: Array.isArray(raw.publisher_platforms) ? raw.publisher_platforms : [],
+    startDate: toEpochSeconds(raw.ad_delivery_start_time),
+    endDate: toEpochSeconds(raw.ad_delivery_stop_time),
+    cardCount: cardCount > 1 ? cardCount : 1,
+    adUrl: raw.ad_snapshot_url ?? `https://www.facebook.com/ads/library/?id=${raw.id}`,
+    imageUrl: null,
+    videoUrl: null,
+    videoThumbUrl: null,
+  };
+}
+
+/**
+ * Discover competitor pages by searching the Ad Library for advertisers running ads that match the
+ * brand's category / key products in a country. These are REAL brands actively advertising the same
+ * things - the most honest competitor signal there is. Returns Candidate[] (likes carries the ad count
+ * so the shared shortlist ranks the heaviest advertisers first). Own brand is dropped by the caller's
+ * shortlist. Throws on a Graph error (e.g. the token lacks Ad Library access) so the route reports it.
+ */
+export async function searchAdLibraryPages(searchTerms: string, country: string, token: TokenSet, limit = 10): Promise<Candidate[]> {
+  const q = searchTerms.trim();
+  if (!q) return [];
+  const rows = await graphGetAll<AdLibraryRawAd>(
+    "ads_archive",
+    token.accessToken,
+    {
+      search_terms: q,
+      ad_reached_countries: JSON.stringify([country]),
+      ad_active_status: "ACTIVE",
+      ad_type: "ALL",
+      fields: "id,page_id,page_name",
+      limit: "100",
+    },
+    3, // ~300 ads is plenty to surface the distinct advertiser pages in a category
+  );
+  const byPage = new Map<string, { name: string; count: number }>();
+  for (const r of rows) {
+    if (!r.page_id) continue;
+    const id = String(r.page_id);
+    const e = byPage.get(id) ?? { name: r.page_name ?? `Page ${id}`, count: 0 };
+    e.count += 1;
+    if (r.page_name) e.name = r.page_name;
+    byPage.set(id, e);
+  }
+  return [...byPage.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, limit)
+    .map(([pageId, v]) => ({ pageId, name: v.name, category: null, likes: v.count, verified: false }));
+}
+
+/**
+ * Fetch and normalize a competitor's live Ad Library ads by page id, via ads_archive. `label`/`isMyBrand`
+ * tag the rows for the analytics split. Media format/files are null (not exposed for commercial ads);
+ * the copy, CTA link text, landing host, dates, and platforms are real. Throws on a Graph error.
+ */
+export async function fetchAdLibraryAds(
+  pageId: string,
+  label: string,
+  isMyBrand: boolean,
+  country: string,
+  token: TokenSet,
+  limit = 40,
+): Promise<NormalizedAd[]> {
+  const rows = await graphGetAll<AdLibraryRawAd>(
+    "ads_archive",
+    token.accessToken,
+    {
+      search_page_ids: JSON.stringify([pageId]),
+      ad_reached_countries: JSON.stringify([country]),
+      ad_active_status: "ALL",
+      ad_type: "ALL",
+      fields: AD_LIBRARY_FIELDS,
+      limit: "50",
+    },
+    Math.ceil(limit / 50) + 1,
+  );
+  const out: NormalizedAd[] = [];
+  for (const r of rows) {
+    const ad = normalizeAdLibraryAd(r, label, isMyBrand);
+    if (ad) out.push(ad);
+  }
+  return out.slice(0, limit);
 }
 
 /** The ad account's ISO currency (act_<id>?fields=currency), for brand understanding. null on any failure. */
