@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession, bustCockpitCache, fetchLiveCockpit } from "@/lib/meta-sync";
 import { listAllAccessibleAdAccounts } from "@/lib/meta-source";
 import { storeToken } from "@/lib/oauth-store";
+import { autoDeriveBrandDraft } from "@/lib/brand/auto";
 
 // Switch the active ad account. One user OAuth token works across all their accounts,
 // so we upsert the chosen account with a fresh connected_at (making it the most-recent,
@@ -62,13 +63,17 @@ export async function GET(request: NextRequest) {
   }
   // Bust the cached cockpit (both levels) so the newly selected account shows immediately.
   await bustCockpitCache(user.id);
-  // AUTO-PROCESS on account switch: warm the new account's cockpit cache in the BACKGROUND (the
-  // just-upserted account is now the most-recent = active, so this pulls it). By the time the
-  // browser lands on /app the data is usually ready -> instant, not a cold pull. Best-effort.
+  // AUTO-PROCESS on account switch: in the BACKGROUND (the just-upserted account is now the
+  // most-recent = active) warm the new account's cockpit cache, THEN auto-learn the brand from that
+  // warm data. By the time the browser lands on /app the cockpit is usually ready (instant, not a cold
+  // pull), and Market > Brand already has a DRAFT profile waiting to review. Both are best-effort.
   try {
-    after(() => fetchLiveCockpit(user.id, 14).catch(() => {}));
+    after(async () => {
+      await fetchLiveCockpit(user.id, 14).catch(() => {}); // warm first
+      await autoDeriveBrandDraft(user.id, id, match.name, session.token).catch(() => {}); // reuse warm ads
+    });
   } catch {
-    // after() unavailable outside a request scope; the /app load will pull normally.
+    // after() unavailable outside a request scope; the /app load will pull, and Brand can learn on demand.
   }
   // Clear campaign + objective filters: both belong to the previous account and would otherwise
   // scope the new account to nothing / an objective it may not have.
