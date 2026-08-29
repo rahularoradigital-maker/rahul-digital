@@ -1,0 +1,993 @@
+{
+ "document": "Yamin Measurement Canon",
+ "version": "2.0",
+ "date": "2026-08-13",
+ "sister_document": "YAMIN_BUILD_PHASES.html",
+ "purpose": "Canonical weights, formulas and score bands for the Yamin measurement system. Architecture, data model and build order live in the sister document.",
+ "precedence": "If a weight or formula appears in both documents, this one wins.",
+ "doctrine": [
+  "Compare a brand to itself, never to a public benchmark, inside a score.",
+  "Score creative inside its own campaign, because hook rate has no standard formula.",
+  "Measurement is a gate, not a score.",
+  "Grade the portfolio we supply, not the spend the platform allocates.",
+  "Every number carries an evidence tag.",
+  "Yamin recommends, a human acts. Nothing auto launches for the next 12 months."
+ ],
+ "confidence_rules": {
+  "label_accept_min_pct": 97,
+  "label_retry_band_pct": [
+   80,
+   96
+  ],
+  "action_confidence_min_pct": 85,
+  "duplicate_similarity": 0.92,
+  "iteration_pass_pct": 90,
+  "min_spend_to_score_ad_usd": 50
+ },
+ "evidence_tags": {
+  "A": "Platform published or a real dataset. Build on it.",
+  "B": "Named panel, self selected sample. Starting line only, replace with client history after 90 days.",
+  "C": "Unsourced folklore. Never build on it, never quote it.",
+  "Y": "Yamin judgement. No public benchmark exists. Correct from the ledger."
+ },
+ "rollup": {
+  "formula": "0.40*AccountHealth + 0.30*CreativeAnalytics + 0.20*Diversity + 0.10*(100-FatigueLoad)",
+  "weights": {
+   "account_health": 0.4,
+   "creative_analytics": 0.3,
+   "diversity": 0.2,
+   "fatigue_inverse": 0.1
+  },
+  "gate": "If signal quality is under 60, publish only 'measurement broken' and compute nothing else.",
+  "fatigue_load": "Share of active spend on ads scoring above 70 fatigue."
+ },
+ "compute_order": [
+  "Pull raw fields, fail loudly on a partial pull.",
+  "Compute signal quality first.",
+  "Apply the gate. Under 60 means stop.",
+  "Compute the four scorecards, dropping dimensions with missing inputs and rebalancing to 1.00.",
+  "Compute the roll up.",
+  "Compute the five growth blockers with the suppression rule.",
+  "Take the top blocker only, write one action containing a number.",
+  "Log inputs, scores, action and confidence to the ledger."
+ ],
+ "missing_data_policy": [
+  "Never fill a gap with an average.",
+  "If a dimension cannot run, drop it and rebalance remaining weights to 1.00.",
+  "Never substitute silently, always show it on screen.",
+  "A label below 97 percent confidence is a question for a human, not a value."
+ ],
+ "suppression_rules": [
+  {
+   "rule": "audience_used_up_blocker",
+   "condition": "May only be reported when the creative supply blocker AND the ads-are-the-same blocker both score under 40.",
+   "reason": "Prevents the most common and most expensive wrong diagnosis in the industry."
+  }
+ ],
+ "scorecards": [
+  {
+   "id": "acct",
+   "name": "A. Meta Account Health",
+   "purpose": "Is the account in a fit state to spend money at all? This runs before anyone looks at creative, because a broken pixel makes every ad look bad and no amount of good film fixes it.",
+   "weight_sum": 1,
+   "dimensions": [
+    {
+     "key": "signal",
+     "name": "Signal quality",
+     "weight": 0.2,
+     "evidence": "A",
+     "plain_meaning": "Are sales actually reaching Meta, and does Meta know who bought? If this is wrong, every other number here is fiction.",
+     "data_sources": "EMQ, SHOP, AM-M",
+     "formula": "SignalScore = 0.55*Coverage + 0.30*Match + 0.15*Pipe\n\nCoverage = 100 * min(1, meta_purchases / shopify_orders)\nMatch    = 100 * min(1, EMQ / 7.5)\nPipe     = 100 if server side events are live with\n           matching event ids, else 0",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Orders are going missing. Stop and fix. Nothing else on this page can be trusted."
+      },
+      {
+       "range": "40 to 59",
+       "meaning": "Leaking. Roughly 1 in 5 sales never reaches Meta, so bidding is learning from a partial picture."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Acceptable. Small gaps, worth closing when there is time."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Clean. Meta sees nearly every sale."
+      }
+     ],
+     "weight_rationale": "Biggest weight because this is the only line that can make every other line lie. A theme update once broke a purchase event and the dashboard showed 40 sales while the warehouse shipped 2,100."
+    },
+    {
+     "key": "learn",
+     "name": "Learning and delivery",
+     "weight": 0.15,
+     "evidence": "A",
+     "plain_meaning": "Has Meta collected enough sales per ad set to stop guessing? An ad set still learning is spending money while confused.",
+     "data_sources": "AM-M",
+     "formula": "LearnScore = 100 * (1 - adsets_learning_limited / adsets_active)\n\nMeta needs 50 optimisation events per ad set\nper rolling 7 days to leave learning.",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "More than 6 in 10 ad sets are stuck. Usually means budget is split too thin."
+      },
+      {
+       "range": "40 to 59",
+       "meaning": "About half stuck. Consolidation is likely the fix."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Most ad sets are learning fine."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Nearly everything has exited learning."
+      }
+     ],
+     "weight_rationale": "High, because a stuck ad set wastes money in a way no creative change can rescue. The 50 event threshold is Meta's own published number, so this line is solid ground."
+    },
+    {
+     "key": "eff",
+     "name": "Efficiency against our own history",
+     "weight": 0.15,
+     "evidence": "Y",
+     "plain_meaning": "Are we buying customers cheaper or dearer than we did ourselves last quarter? Compared to us, never to a stranger.",
+     "data_sources": "SHOP, AM-M",
+     "formula": "r = nCAC_last_28d / nCAC_trailing_90d\nEffScore = 100 * clamp( (1.25 - r) / 0.50 , 0 , 1 )\n\nr = 0.75 gives 100.  r = 1.00 gives 50.  r = 1.25 gives 0.",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "New customers cost 20 percent or more than our own recent normal."
+      },
+      {
+       "range": "40 to 59",
+       "meaning": "Drifting worse than our own history."
+      },
+      {
+       "range": "50",
+       "meaning": "Exactly the same as our own last 90 days. This is the honest middle."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Meaningfully cheaper than our own recent normal."
+      }
+     ],
+     "weight_rationale": "We compare a brand to itself because public benchmarks disagree by 60 percent on the same year, purely from who is in the sample. Our own history is the only fair line."
+    },
+    {
+     "key": "profit",
+     "name": "Profit truth",
+     "weight": 0.15,
+     "evidence": "B",
+     "plain_meaning": "After product cost, shipping, returns and fees, does a new customer actually make money, and how fast does the cash come back?",
+     "data_sources": "SHOP, FIN",
+     "formula": "ProfitScore = 0.6*Margin + 0.4*Payback\n\nMargin  = 100 * clamp( blended_CM_pct / 0.25 , 0 , 1 )\nPayback = 100 * clamp( (180 - payback_days) / 150 , 0 , 1 )",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Losing money per new customer, or cash comes back slower than 6 months."
+      },
+      {
+       "range": "40 to 59",
+       "meaning": "Thin. Growth is possible but it will strain cash."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Healthy. Blended margin in the high teens, payback under 3 months."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Strong. Margin above 25 percent and payback under 30 days."
+      }
+     ],
+     "weight_rationale": "Equal to efficiency, because a cheap customer who never repays is not a win. Bands taken from a named US agency's 2026 profitability study, so treat as a starting line, not gospel."
+    },
+    {
+     "key": "supply",
+     "name": "Creative supply",
+     "weight": 0.1,
+     "evidence": "A",
+     "plain_meaning": "Are we feeding the machine enough new ads for our size? Starving it caps growth no matter how good the ads are.",
+     "data_sources": "AM-M",
+     "formula": "SupplyScore = 100 * min(1, new_ads_per_week / top_quartile_for_our_spend_tier)\n\nTop quartile new ads per week, by monthly spend:\n  under 10K USD   4.8\n  10K to 50K      8.1\n  50K to 200K    16.0\n  200K to 1M     31.1\n  over 1M        54.6",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Producing like a much smaller account than we are spending like."
+      },
+      {
+       "range": "40 to 59",
+       "meaning": "Below the pace of good accounts our size."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Keeping up with the typical account our size."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Matching the best quarter of accounts our size."
+      }
+     ],
+     "weight_rationale": "Moderate rather than high, because supply only helps if the ads are also different from each other. Supply and diversity have to be read together. Figures come from a panel of 550,000 ads."
+    },
+    {
+     "key": "auction",
+     "name": "Auction position",
+     "weight": 0.08,
+     "evidence": "B",
+     "plain_meaning": "Are we paying more than we used to for the same eyeballs, and is that us or the whole market?",
+     "data_sources": "AM-M",
+     "formula": "r = CPM_last_28d / CPM_trailing_90d\nAuctionScore = 100 * clamp( (1.20 - r) / 0.40 , 0 , 1 )\n\nSeasonal note: during a known festival window,\ncompare to the same window last year instead.",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Paying 20 percent or more above our own recent normal."
+      },
+      {
+       "range": "50",
+       "meaning": "Same price as our own last 90 days."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Buying attention cheaper than our own recent normal."
+      }
+     ],
+     "weight_rationale": "Lower weight because CPM is mostly outside our control. It is context, not a verdict. It matters most as an early warning that something changed in the market."
+    },
+    {
+     "key": "waste",
+     "name": "Waste",
+     "weight": 0.07,
+     "evidence": "Y",
+     "plain_meaning": "Money spent on things that could never have worked. Ads to sold out products, near copies fighting each other, broken links.",
+     "data_sources": "SHOP, FPRINT, AM-M",
+     "formula": "waste = out_of_stock_spend\n      + duplicate_cluster_waste\n      + broken_link_spend\n\nWasteScore = 100 * (1 - waste / total_spend)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "More than 15 percent of spend is provably wasted."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Under 8 percent wasted. Normal for a busy account."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Under 3 percent wasted."
+      }
+     ],
+     "weight_rationale": "Modest weight but the easiest score to move. A stock feed check and a duplicate sweep can recover real money in a week, which makes this the best first win on a new account."
+    },
+    {
+     "key": "proof",
+     "name": "Proof it worked",
+     "weight": 0.05,
+     "evidence": "A",
+     "plain_meaning": "Have we actually tested whether these ads caused the sales, or are we only trusting what the platform claims?",
+     "data_sources": "LEDGER, AM-M",
+     "formula": "ProofScore =\n  100 if a valid holdout or lift test ended within 90 days\n   60 if within 180 days\n   30 if within 365 days\n    0 if never run\n\nValid test: at least 7 days, at least 10 percent of\naudience held out. Typical test runs about 19 days.",
+     "bands": [
+      {
+       "range": "0",
+       "meaning": "Never tested. Every efficiency number is the platform marking its own homework."
+      },
+      {
+       "range": "30 to 60",
+       "meaning": "Tested once, but too long ago to still be true."
+      },
+      {
+       "range": "100",
+       "meaning": "Tested within the quarter."
+      }
+     ],
+     "weight_rationale": "Low weight only because most accounts score zero and it would swamp everything else. It is arguably the most important line here and it should rise as clients mature. Across 640 published experiments the average real lift was 19 percent, and for omnichannel brands about a third of the effect landed outside the website entirely."
+    },
+    {
+     "key": "hygiene",
+     "name": "Structure hygiene",
+     "weight": 0.03,
+     "evidence": "Y",
+     "plain_meaning": "Is the account tidy enough for a human to work in? Dead ad sets, confusing names, orphan campaigns.",
+     "data_sources": "AM-M",
+     "formula": "HygieneScore = 100 * (1 - (dead_adsets + misnamed_campaigns)\n                        / (total_adsets + total_campaigns))\n\ndead = zero spend for 30 days but still enabled",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Nobody can find anything. Onboarding a new buyer takes days."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Mostly tidy."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Clean naming, nothing dead left switched on."
+      }
+     ],
+     "weight_rationale": "Small weight on purpose. Untidiness costs human time, not money. We deliberately refuse to score campaign or ad set counts, because no credible source publishes a right number for either."
+    },
+    {
+     "key": "safety",
+     "name": "Safety",
+     "weight": 0.02,
+     "evidence": "Y",
+     "plain_meaning": "Are ads getting rejected, and is anything at risk of a policy or advertising code problem?",
+     "data_sources": "AM-M, DECODE",
+     "formula": "SafetyScore = 100 * (1 - disapproved_30d / submitted_30d)\n              - 25 per open policy or ASCI flag\n(floor at 0)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Repeated rejections, or an open code problem. This can pause an account."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Clean record."
+      }
+     ],
+     "weight_rationale": "Smallest weight because it is usually 100 or a crisis, with little in between. It is here so that a crisis cannot hide behind a good average."
+    }
+   ]
+  },
+  {
+   "id": "creative",
+   "name": "B. Creative Analytics",
+   "purpose": "Is our creative engine producing winners, and are we running it in a way that lets us learn anything? This is about the factory, not any single ad.",
+   "weight_sum": 1,
+   "dimensions": [
+    {
+     "key": "winners",
+     "name": "Winner production",
+     "weight": 0.25,
+     "evidence": "A",
+     "plain_meaning": "How many real winners did we make this month? A winner is one ad that earns 10 times what our own typical ad earns.",
+     "data_sources": "AM-M",
+     "formula": "winner = ad whose spend >= 10 * median_single_ad_spend\n         (median taken inside this account, so it\n          scales with account size on its own)\n\nWinScore = 100 * min(1, winners_30d / top_quartile_for_tier)\n\nTop quartile winners per month, by monthly spend:\n  under 10K USD  0.0     200K to 1M   6.0\n  10K to 50K     0.5     over 1M     10.5\n  50K to 200K    2.0",
+     "bands": [
+      {
+       "range": "0",
+       "meaning": "No winners this month. Normal for the smallest accounts, alarming above 50K USD a month."
+      },
+      {
+       "range": "40 to 59",
+       "meaning": "Producing winners at about the typical rate for our size."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Producing at the rate of the best quarter of accounts our size."
+      }
+     ],
+     "weight_rationale": "Biggest weight because this is the output that pays for everything else. Only 5 to 8 percent of ads ever become winners and about half never get real spend at all, at every account size. That is how Meta concentrates budget, not a failure of the team."
+    },
+    {
+     "key": "attention",
+     "name": "Attention",
+     "weight": 0.2,
+     "evidence": "B",
+     "plain_meaning": "Do people stop scrolling, and do they stay? Stopping is the hook. Staying is the hold.",
+     "data_sources": "AM-M",
+     "formula": "AttnScore = 0.5*Hook + 0.5*Hold\n\nHook = 100 * percentile_of(hook_rate) among ads in the\n       SAME campaign over the last 14 days\nHold = 100 * percentile_of(hold_rate) same basis\n\nhook_rate = 3s plays / impressions\nhold_rate = 15s plays / 3s plays\n\nOnly score ads with at least USD 50 spend.",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "In the bottom 4 of every 10 ads in its own campaign."
+      },
+      {
+       "range": "50",
+       "meaning": "Exactly middle of its campaign."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Top 2 in every 10 ads in its own campaign."
+      }
+     ],
+     "weight_rationale": "Second biggest, because attention is the part of a creative we can actually brief and fix. Scored inside the campaign, never against a public number, because hook rate has no standard formula and two accounts can report 22 and 41 percent on the very same video."
+    },
+    {
+     "key": "money",
+     "name": "Turning attention into money",
+     "weight": 0.2,
+     "evidence": "B",
+     "plain_meaning": "Watching is not buying. This checks whether the people who stopped actually clicked and bought.",
+     "data_sources": "AM-M, SHOP",
+     "formula": "MoneyScore = 0.5*Click + 0.5*Convert\n\nClick   = 100 * percentile_of( 0.6*outbound_CTR\n                             + 0.4*thumbstop_CTR )\n          among ads in the same campaign\nConvert = 100 * percentile_of(the account's own goal\n          metric, usually click to purchase rate)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "People watch and leave. Usually a promise problem or a landing page problem, not a film problem."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Attention is converting into orders better than the rest of the campaign."
+      }
+     ],
+     "weight_rationale": "Equal to attention on purpose. An ad with a brilliant hook and no sales is a brilliant failure, and weighting attention above money would quietly reward exactly that."
+    },
+    {
+     "key": "testing",
+     "name": "Testing discipline",
+     "weight": 0.15,
+     "evidence": "B",
+     "plain_meaning": "Did each test get enough money and enough days to give a real answer, and did we change only one thing?",
+     "data_sources": "AM-M, LEDGER",
+     "formula": "TestScore = 100 * (tests_passing_all_four / tests_started)\n\nAll four must hold:\n 1. spend >= 2x target CPA before any keep or kill call\n 2. at least 3 days live, 7 to 14 for a real decision\n 3. at least 2,000 impressions OR 50 clicks OR 3 purchases\n 4. exactly one thing changed versus its parent ad",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Most calls are being made on guesswork and small numbers."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Most tests are run properly."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Nearly every test is clean enough to learn from."
+      }
+     ],
+     "weight_rationale": "High, because bad testing does not just waste money, it teaches the team wrong lessons that then get repeated for months. Be honest with clients: almost nobody in this industry runs real statistical tests on Meta creative. These are practical spend rules and we should not call them statistics."
+    },
+    {
+     "key": "cpw",
+     "name": "Cost per winner",
+     "weight": 0.1,
+     "evidence": "B",
+     "plain_meaning": "All testing money plus all production money, divided by the number of winners. The true price of one good ad.",
+     "data_sources": "AM-M, FIN",
+     "formula": "CPW = (test_spend + production_cost) / winners\n\nr = CPW / CPW_trailing_90d\nCPWScore = 100 * clamp( (1.5 - r) / 1.0 , 0 , 1 )\n\nr = 0.5 gives 100.  r = 1.0 gives 50.  r = 1.5 gives 0.",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Each winner is costing half again more than our own recent normal."
+      },
+      {
+       "range": "50",
+       "meaning": "Same as our own last 90 days."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Getting winners much cheaper than we used to."
+      }
+     ],
+     "weight_rationale": "Moderate. It is the metric a finance person understands instantly, but it moves slowly and can be gamed by simply testing less, so it must sit beside winner production, never replace it."
+    },
+    {
+     "key": "mix",
+     "name": "New ideas versus repeats",
+     "weight": 0.05,
+     "evidence": "B",
+     "plain_meaning": "Are we only making small changes to old winners, or still trying genuinely new ideas?",
+     "data_sources": "DECODE, LEDGER",
+     "formula": "share = new_concepts / (new_concepts + variants)\nMixScore = 100 - 200 * abs(share - 0.5)\n(floor at 0)\n\nshare 0.50 gives 100.  0.30 or 0.70 gives 60.\n0.00 or 1.00 gives 0.",
+     "bands": [
+      {
+       "range": "0",
+       "meaning": "Either every ad is a fresh idea with no follow up on winners, or every ad is a repeat with no new ideas. Both are bad."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Reasonable balance."
+      },
+      {
+       "range": "100",
+       "meaning": "An even split of new ideas and improvements to proven ones."
+      }
+     ],
+     "weight_rationale": "Small weight but it guards the most expensive habit in creative: making twelve versions of one idea instead of one version of twelve ideas. Practitioners genuinely disagree on the right split, some say 40 to 50 percent repeats, others say at least 60 percent new. We target the middle and keep the band wide."
+    },
+    {
+     "key": "scale",
+     "name": "Test to scale rate",
+     "weight": 0.05,
+     "evidence": "Y",
+     "plain_meaning": "Of the ads that won a test, how many actually got real budget afterwards? Winning and being used are different things.",
+     "data_sources": "AM-M",
+     "formula": "ScaleScore = 100 * (winners_that_reached_10x_median_spend\n                     within 30 days / winners_declared)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "We find winners and then do nothing with them. Pure waste of the testing budget."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Almost every winner gets the budget it earned."
+      }
+     ],
+     "weight_rationale": "Small but it catches a specific and common failure: a team that tests well, declares winners, and then leaves them sitting while old ads keep the budget. Nobody else appears to measure this."
+    }
+   ]
+  },
+  {
+   "id": "div",
+   "name": "C. Creative Diversity",
+   "purpose": "Are our ads actually different from each other, and do they cover the people and moments we need to reach? Eight of these are original. Two are new and one of those matters a great deal in India.",
+   "weight_sum": 1,
+   "dimensions": [
+    {
+     "key": "hook",
+     "name": "Hook variety",
+     "weight": 0.18,
+     "evidence": "Y",
+     "plain_meaning": "Do our ads open in different ways, or does everything start the same?",
+     "data_sources": "DECODE",
+     "formula": "Hook = 50*Distinct + 30*Spread + 20*Fresh\n\nDistinct = min(1, unique_hooks_30d / 12)\nSpread   = 1 - sum( share_of_spend_per_hook ^ 2 )\nFresh    = min(1, hooks_introduced_14d / 3)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Three or four openings doing all the work."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Around 8 to 10 different openings in healthy rotation."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "12 or more openings, well spread, with new ones arriving."
+      }
+     ],
+     "weight_rationale": "Joint top with angle. The opening is the single highest leverage part of an ad and the fastest thing to change, so a lack of variety here is both the most damaging and the cheapest to fix."
+    },
+    {
+     "key": "angle",
+     "name": "Angle variety",
+     "weight": 0.18,
+     "evidence": "Y",
+     "plain_meaning": "Are we telling different stories, or repeating one reason to buy?",
+     "data_sources": "DECODE",
+     "formula": "Angle = 40*Count + 40*Spread + 20*Coverage\n\nCount    = min(1, live_angles / 8)\nSpread   = 1 - sum( share_of_spend_per_angle ^ 2 )\nCoverage = live_angles / 12 canonical angles\n\nThe 12: product demo, founder story, user review,\ncelebrity drop, bass test, comparison, problem solution,\nfestive sale, new launch, nostalgia, unboxing, lifestyle.",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "One or two reasons to buy carrying the whole account."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "6 to 8 live angles, reasonably spread."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "8 or more, well spread, covering most of the twelve."
+      }
+     ],
+     "weight_rationale": "Joint top, and this is the most important line on this card. Across every serious creative dataset the gap between two different ideas is roughly ten times the gap between two versions of the same idea. Most teams spend their budget the other way round."
+    },
+    {
+     "key": "persona",
+     "name": "Persona coverage",
+     "weight": 0.13,
+     "evidence": "Y",
+     "plain_meaning": "Are we speaking to all our buyer types, or only one?",
+     "data_sources": "DECODE, AM-M",
+     "formula": "Persona = 50*Coverage + 50*Spread\n\nCoverage = personas_with_share_above_5pct\n           / personas_defined_for_this_brand\nSpread   = 1 - sum( share_per_persona ^ 2 )",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Most defined buyer types have no ad speaking to them."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Most covered, one or two thin."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Every persona has real spend behind it."
+      }
+     ],
+     "weight_rationale": "High, because a persona with no ad is not a small gap, it is an entire group of buyers we are invisible to. Also the easiest gap to explain to a client, which makes it useful in a room."
+    },
+    {
+     "key": "funnel",
+     "name": "Funnel balance",
+     "weight": 0.13,
+     "evidence": "B",
+     "plain_meaning": "Are we filling the top of the funnel, or only harvesting people already ready to buy?",
+     "data_sources": "DECODE, AM-M",
+     "formula": "Compare our actual split to the target 50/25/25\nacross top, middle and bottom of funnel.\n\nFunnel = 100 * (1 - distance(actual, target))\nwhere distance is a 0 to 1 measure of how far apart\ntwo splits are.\n\nHard flag if any stage falls below 15 percent.",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Almost everything at the bottom. Growth will stall within weeks."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Reasonable spread, one stage thin."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Close to 50 top, 25 middle, 25 bottom."
+      }
+     ],
+     "weight_rationale": "Same as persona. Bottom heavy accounts look brilliant on reported return and then stop growing, because they are buying people who were already coming. The 50/25/25 target is a growth stage benchmark, not a law, and should be reset per brand once we have our own data."
+    },
+    {
+     "key": "format",
+     "name": "Format spread",
+     "weight": 0.08,
+     "evidence": "Y",
+     "plain_meaning": "Video, still image, carousel, collection. Are we using all the shapes available?",
+     "data_sources": "AM-M",
+     "formula": "Format = 100 * (1 - sum( share_per_format ^ 2 ))\n       + 10 per format holding at least 5 percent share\n(cap at 100)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "One format is more than 70 percent of spend."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Two or three formats in real use."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "All four in play with none dominating."
+      }
+     ],
+     "weight_rationale": "Moderate. Format matters less than what the ad says, but still images in particular are routinely under tested because they feel unglamorous to make, and they keep performing."
+    },
+    {
+     "key": "lang",
+     "name": "Language and region mix",
+     "weight": 0.07,
+     "evidence": "Y",
+     "plain_meaning": "Are we speaking the languages our buyers think in, and does the cast look like India rather than one metro?",
+     "data_sources": "DECODE",
+     "formula": "Lang = 50*LangFit + 50*RegionSpread\n\nLangFit      = 1 - abs(our_hindi_and_hinglish_share\n                       - category_share) / category_share\n               (clamped 0 to 1)\nRegionSpread = 1 - sum( share_per_region ^ 2 )\n               over north, south, east, west casting",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "English only, one metro cast, while the category runs a third of its spend in Hindi."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Hindi present but thin, or casting concentrated in one region."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Language mix matches the category and casting spans regions."
+      }
+     ],
+     "weight_rationale": "NEW LINE. Every diversity framework we found is built for the United States and has nothing for language at all. In India a brand selling into tier 2 and tier 3 towns on English only ads with a single metro cast is invisible to a large part of its market, and no other line here would catch it."
+    },
+    {
+     "key": "retrieval",
+     "name": "Retrieval distinctness",
+     "weight": 0.07,
+     "evidence": "A",
+     "plain_meaning": "Does Meta itself see our ads as different? Meta treats near identical ads as one, so twenty similar ads compete like one.",
+     "data_sources": "FPRINT",
+     "formula": "similarity(A,B) = 0.6*picture_similarity\n                + 0.4*word_similarity\n\ncluster any pair above 0.92\n\nRetrieval = 100 * (1 - ads_inside_a_cluster / active_ads)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Most live ads collapse into a handful of clusters. Meta is choosing between far fewer options than we think we gave it."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Some clustering, mostly healthy."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Nearly every live ad reads as its own creative."
+      }
+     ],
+     "weight_rationale": "NEW LINE. Meta has confirmed that images with different text on top count as one creative, and that videos with similar opening seconds read as near identical. So the question is not whether a human sees a difference. It is whether the machine deciding who sees the ad does."
+    },
+    {
+     "key": "offer",
+     "name": "Offer variety",
+     "weight": 0.06,
+     "evidence": "Y",
+     "plain_meaning": "Is every ad a discount, or do we also sell on the product itself?",
+     "data_sources": "DECODE",
+     "formula": "Offer = 100 * (1 - sum( share_per_offer_type ^ 2 ))\n      + 15 if at least one live ad has NO offer at all\n(cap at 100)\n\nOffer types include: new launch, percent off, flat off,\nfree shipping, cash on delivery, combo, limited stock,\ngift with purchase, warranty, EMI, no offer.",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Discount only. We have taught the market to wait for the next sale."
+      },
+      {
+       "range": "60 to 79",
+       "meaning": "Two or three offer types, brand only ad present."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Wide mix with real brand only advertising running."
+      }
+     ],
+     "weight_rationale": "Lower weight, but it protects margin over time. Discounts recruit discount hunters whose repeat behaviour is structurally worse, so an account that scores well here is quietly building a better customer base."
+    },
+    {
+     "key": "innov",
+     "name": "Innovation",
+     "weight": 0.05,
+     "evidence": "Y",
+     "plain_meaning": "Are we trying anything genuinely new, or only safe repeats?",
+     "data_sources": "DECODE",
+     "formula": "Innovation = min(100, 25 * new_formats_or_hooks_30d)\n\nnew = not seen in this account in the previous 90 days",
+     "bands": [
+      {
+       "range": "0",
+       "meaning": "Nothing new in a month."
+      },
+      {
+       "range": "50",
+       "meaning": "Two new things tried."
+      },
+      {
+       "range": "100",
+       "meaning": "Four or more new things tried."
+      }
+     ],
+     "weight_rationale": "Small, because novelty for its own sake is not a virtue. It is here so an account cannot score well on every other line while quietly doing the same thing forever."
+    },
+    {
+     "key": "dupe",
+     "name": "Anti redundancy",
+     "weight": 0.05,
+     "evidence": "Y",
+     "plain_meaning": "How much money is sitting on near copies of each other?",
+     "data_sources": "FPRINT, AM-M",
+     "formula": "waste_share = (cluster_spend - best_performer_spend)\n              / total_spend\n\nAnti = 100 - 15*redundant_clusters - 20*100*waste_share\n(floor at 0)\n\nFlag any cluster of 4 or more near copies.",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Several groups of 4 or more near copies, real money trapped in the losers."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "No cluster large enough to matter."
+      }
+     ],
+     "weight_rationale": "Small on this card because retrieval distinctness already captures most of the same problem. This line is the money version of it, and it is what we show a client, because it converts a technical point into rupees."
+    }
+   ]
+  },
+  {
+   "id": "fat",
+   "name": "D. Creative Fatigue",
+   "purpose": "How tired is this creative, and how sure are we? Rebuilt on Meta's own published curve. Higher score is worse.",
+   "weight_sum": 1,
+   "dimensions": [
+    {
+     "key": "exposure",
+     "name": "Exposure fatigue",
+     "weight": 0.4,
+     "evidence": "A",
+     "plain_meaning": "How many times the same people have already seen this exact ad, turned into an expected drop using Meta's own published curve.",
+     "data_sources": "AM-M",
+     "formula": "ExposureFatigue = 100 * (1 - (N + 1) ^ -0.4)\n\nN = average times a person already saw THIS creative,\n    counted across every ad set it runs in\n\nN=1 gives 24.  N=2 gives 34.  N=4 gives 45.\nN=8 gives 54.  N=15 gives 64.",
+     "bands": [
+      {
+       "range": "0 to 30",
+       "meaning": "Fresh. Leave it alone."
+      },
+      {
+       "range": "31 to 50",
+       "meaning": "Healthy. Start queuing a replacement."
+      },
+      {
+       "range": "51 to 70",
+       "meaning": "Tiring. Flag to the Media Team."
+      },
+      {
+       "range": "71 to 100",
+       "meaning": "Burnt. Pause candidate, if the other gates agree."
+      }
+     ],
+     "weight_rationale": "Biggest weight because it is the only mechanism in this whole subject with real published maths and a real live test behind it. Meta fitted it with controls and proved it on about 26,000 cases. It also found there is no warm up period: ads get more expensive from the very first repeat."
+    },
+    {
+     "key": "cost",
+     "name": "Cost confirmation",
+     "weight": 0.3,
+     "evidence": "A",
+     "plain_meaning": "Is it actually costing more per sale than our past ads did? This is the proof, not the prediction.",
+     "data_sources": "AM-M",
+     "formula": "r = cost_per_result_now / cost_per_result_of_past_ads\nCostFatigue = 100 * clamp( (r - 1) / 1.0 , 0 , 1 )\n\nr = 1.0 gives 0.  r = 1.5 gives 50.  r = 2.0 gives 100.\n\nMeta's own label calls 2x 'creative fatigue', and\nbetween 1x and 2x 'creative limited'.",
+     "bands": [
+      {
+       "range": "0 to 30",
+       "meaning": "Costing the same as our past ads."
+      },
+      {
+       "range": "50",
+       "meaning": "Half again more expensive than our past ads."
+      },
+      {
+       "range": "100",
+       "meaning": "Twice the cost of our past ads. Meta flags this itself."
+      }
+     ],
+     "weight_rationale": "Second biggest and deliberately close to the first, because exposure predicts and cost confirms. A prediction with no confirmation pauses good ads. A confirmation with no prediction always arrives too late."
+    },
+    {
+     "key": "decay",
+     "name": "Click decay",
+     "weight": 0.15,
+     "evidence": "Y",
+     "plain_meaning": "Are fewer people clicking now than when this ad first started?",
+     "data_sources": "AM-M",
+     "formula": "Decay = 100 * clamp( 1 - CTR_last_3d / CTR_first_3d , 0 , 1 )\n\nRequires at least 3 days of history and\n1,000 impressions in each window.",
+     "bands": [
+      {
+       "range": "0 to 30",
+       "meaning": "Clicking about as well as it did on day one."
+      },
+      {
+       "range": "50",
+       "meaning": "Half the click rate it started with."
+      },
+      {
+       "range": "100",
+       "meaning": "Clicks have collapsed."
+      }
+     ],
+     "weight_rationale": "Middle weight. It is a real signal but a noisy one, because audience changes and seasonality move it too. Useful as support for the two lines above, dangerous as a trigger on its own."
+    },
+    {
+     "key": "annoy",
+     "name": "Annoyance",
+     "weight": 0.1,
+     "evidence": "Y",
+     "plain_meaning": "Are people hiding it, reporting it, or is Meta's quality ranking sliding?",
+     "data_sources": "AM-M",
+     "formula": "Annoy = 100 * clamp( neg_feedback_rate\n                   / our_own_90th_percentile , 0 , 1 )\n        + 50 if quality ranking dropped a bucket\n(cap at 100)",
+     "bands": [
+      {
+       "range": "0 to 30",
+       "meaning": "Normal for this account."
+      },
+      {
+       "range": "100",
+       "meaning": "In our own worst tenth for negative feedback, or ranking has slipped."
+      }
+     ],
+     "weight_rationale": "Low, and deliberately so, because Meta only publishes relative buckets and never absolute rates. There is no public benchmark for what a normal negative feedback rate even is, so we compare only to our own account and keep the weight small until we have our own spread."
+    },
+    {
+     "key": "age",
+     "name": "Age against its own half life",
+     "weight": 0.05,
+     "evidence": "Y",
+     "plain_meaning": "How long do ads of this type usually last for this brand, and how far past that is this one?",
+     "data_sources": "LEDGER",
+     "formula": "HalfLife = days at which this brand's ads of this angle\n           historically lose half their click rate\n           (measured from our own ledger, never a blog)\n\nAge = 100 * clamp( days_running / HalfLife , 0 , 1 )",
+     "bands": [
+      {
+       "range": "0 to 30",
+       "meaning": "Well within its usual life."
+      },
+      {
+       "range": "100",
+       "meaning": "At or past the point where this brand's ads of this type normally die."
+      }
+     ],
+     "weight_rationale": "Smallest weight for now, because it needs our own history before it means anything. There is no rigorous public data on creative half life at all, and every published claim we checked was vendor marketing. This weight should rise as the ledger fills."
+    }
+   ]
+  },
+  {
+   "id": "diag",
+   "name": "E. Growth Diagnosis, why a brand cannot scale",
+   "purpose": "When spend rises and cost per customer rises with it, there are only six possible reasons. One is a gate, checked first. The other five are weighted and ranked, and we act on the top one only.",
+   "weight_sum": 1,
+   "dimensions": [
+    {
+     "key": "gate",
+     "name": "GATE: is the ruler broken",
+     "weight": 0,
+     "evidence": "A",
+     "plain_meaning": "Are we even measuring correctly? If not, every answer below is meaningless, so nothing else is reported.",
+     "data_sources": "Scorecard A, signal quality",
+     "formula": "IF signal_quality < 60:\n    report ONLY 'fix measurement first'\n    STOP. Do not score anything below.",
+     "bands": [
+      {
+       "range": "Gate",
+       "meaning": "This line carries no weight. It is a switch, not a score. Leave it at 0.00."
+      }
+     ],
+     "weight_rationale": "A gate rather than a weight, because a broken ruler does not make a brand slightly harder to diagnose. It makes diagnosis impossible. Averaging it with other blockers would let a good total hide a fatal problem."
+    },
+    {
+     "key": "b_supply",
+     "name": "Not enough new creative",
+     "weight": 0.28,
+     "evidence": "A",
+     "plain_meaning": "Are we feeding the machine enough new ads for the money we are spending?",
+     "data_sources": "Scorecard A, creative supply",
+     "formula": "Severity = 100 * (1 - actual_per_week / target_for_tier)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Supply is fine, look elsewhere."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Spending like a large account, producing like a small one."
+      }
+     ],
+     "weight_rationale": "Top blocker because it is the most common cause and the most fixable. It is also the one a brand can act on this week without any new tools, people or channels."
+    },
+    {
+     "key": "b_same",
+     "name": "Ads are all the same",
+     "weight": 0.24,
+     "evidence": "A",
+     "plain_meaning": "We may be making plenty, but does Meta see them as different ads, or as one ad twenty times?",
+     "data_sources": "Scorecard C",
+     "formula": "Severity = (100 - DiversityScore)\n         + 30 if retrieval_distinctness < 50\n(cap at 100)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Genuinely varied."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Twenty live ads that Meta reads as three."
+      }
+     ],
+     "weight_rationale": "Very close behind supply, because volume without variety does nothing. A team can ship 30 ads a week and still starve the system if they are all the same ad. These two must always be read as a pair."
+    },
+    {
+     "key": "b_tired",
+     "name": "Money stuck on tired ads",
+     "weight": 0.18,
+     "evidence": "A",
+     "plain_meaning": "What share of today's spend is sitting on creative that is already burnt?",
+     "data_sources": "Scorecard D",
+     "formula": "Severity = 100 * (spend_on_ads_scoring_above_70\n                  / total_spend)",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "Little money on burnt creative."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Almost every rupee is going to ads that have stopped working."
+      }
+     ],
+     "weight_rationale": "Middle. Real and often large, but it is a today problem with a known fix, whereas the two above it are structural. Fixing this without fixing those buys a few good weeks and then the same wall."
+    },
+    {
+     "key": "b_aud",
+     "name": "Audience genuinely used up",
+     "weight": 0.16,
+     "evidence": "B",
+     "plain_meaning": "Have we actually reached everybody worth reaching at this price?",
+     "data_sources": "Scorecard A + AL-M",
+     "formula": "Severity = 100 * (reached / addressable)\n\nSUPPRESSION RULE, this may not be reported at all\nunless BOTH:\n   creative supply severity < 40\n   AND ads-are-the-same severity < 40",
+     "bands": [
+      {
+       "range": "Suppressed",
+       "meaning": "Shown as unavailable whenever supply or diversity are weak."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "We have reached nearly everyone worth reaching, with plenty of varied fresh creative, and it still is not working."
+      }
+     ],
+     "weight_rationale": "Deliberately below the creative blockers AND gated behind them. This is the most common wrong diagnosis in our industry. A brand runs six near identical ads, growth stalls, somebody says the audience is saturated, and the client is sold a new channel that costs three months. Usually the audience was fine. The engine is built so it structurally cannot make that mistake."
+    },
+    {
+     "key": "b_maths",
+     "name": "The maths never worked",
+     "weight": 0.14,
+     "evidence": "B",
+     "plain_meaning": "Is this simply unprofitable at any size, so growing it only loses money faster?",
+     "data_sources": "Scorecard A, profit truth",
+     "formula": "Severity = 100 if contribution margin is negative\n           at current CAC, scaling down to 0 as\n           margin approaches 25 percent",
+     "bands": [
+      {
+       "range": "0 to 39",
+       "meaning": "The unit works. This is a growth problem."
+      },
+      {
+       "range": "80 to 100",
+       "meaning": "Every new customer loses money. Scaling multiplies the loss."
+      }
+     ],
+     "weight_rationale": "Lowest weight but never removable. When it fires it overrides everything, because no amount of creative work fixes a product that loses money on every sale. It is last because it is rare, not because it is unimportant."
+    }
+   ]
+  }
+ ]
+}
