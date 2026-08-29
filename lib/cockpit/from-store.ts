@@ -85,6 +85,27 @@ async function readAllMetricRows(
   return out;
 }
 
+// Read every ad_meta row for the account, paging past the 1000-row cap. One row per ad, but a 2-3k-ad
+// account still exceeds 1000 - a single .range() silently truncates to 1000, which left ~34 of Soch's 1034
+// ads with no metadata in the map and tripped the completeness gate, so the store never activated at scale.
+async function readAllMetaRows(admin: ReturnType<typeof createAdminClient>, userId: string, accountExternalId: string): Promise<MetaRowDb[]> {
+  const out: MetaRowDb[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await admin
+      .from("ad_meta")
+      .select("ad_id,name,effective_status,campaign_id,campaign_name,adset_id,adset_name,thumb_url,is_catalog,format,adset_end_unix")
+      .eq("user_id", userId)
+      .eq("account_external_id", accountExternalId)
+      .order("ad_id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`ad_meta read: ${error.message}`);
+    const rows = (data ?? []) as MetaRowDb[];
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return out;
+}
+
 export async function buildCockpitFromStore(opts: {
   userId: string;
   accountExternalId: string;
@@ -109,14 +130,14 @@ export async function buildCockpitFromStore(opts: {
   }
   if (metricRows.length === 0) return null; // nothing stored yet -> fall back
 
-  // Metadata for the account (name/status/parents/creative/format/end). Bounded set (one row per ad).
-  const { data: metaData } = await admin
-    .from("ad_meta")
-    .select("ad_id,name,effective_status,campaign_id,campaign_name,adset_id,adset_name,thumb_url,is_catalog,format,adset_end_unix")
-    .eq("user_id", userId)
-    .eq("account_external_id", accountExternalId)
-    .range(0, 4999);
-  const metaById = new Map<string, MetaRowDb>(((metaData ?? []) as MetaRowDb[]).map((m) => [m.ad_id, m]));
+  // Metadata for the account (name/status/parents/creative/format/end), paged past the 1000-row cap.
+  let metaRows: MetaRowDb[];
+  try {
+    metaRows = await readAllMetaRows(admin, userId, accountExternalId);
+  } catch {
+    return null; // store unavailable -> fall back to the live pull
+  }
+  const metaById = new Map<string, MetaRowDb>(metaRows.map((m) => [m.ad_id, m]));
   // Correctness gate: without metadata we cannot exclude catalog ads or hide paused ads (both would be
   // wrong), so if the metadata half of the store has not synced yet, fall back to the live pull.
   if (metaById.size === 0) return null;
