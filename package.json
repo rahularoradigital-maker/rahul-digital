@@ -42,6 +42,7 @@
     "check:diversity2": "node --experimental-strip-types scripts/check-diversity2.ts",
     "check:recommendations": "node --experimental-strip-types scripts/check-recommendations.ts",
     "check:brand": "node --experimental-strip-types scripts/check-brand.ts",
+    "check:daily-series": "node --experimental-strip-types scripts/check-daily-series.ts",
     "check:rate-limit": "node --experimental-strip-types scripts/check-rate-limit.ts",
     "check:csp": "node --experimental-strip-types scripts/check-csp.ts",
     "check:lru": "node --experimental-strip-types scripts/check-lru.ts",

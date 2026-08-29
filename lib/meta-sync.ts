@@ -19,6 +19,7 @@ import { VERDICT_WEIGHTS, type ScoreWeights } from "./rules/verdict.ts";
 import type { TokenSet } from "./ad-source.ts";
 import { windowFunnel, type FunnelMetrics, type ExtendedMetricsRow } from "./metrics/funnel-metrics.ts";
 import { marginalScaling, type MarginalRead } from "./scoring/marginal.ts";
+import { buildDailySeries, type DailyInputRow, type DailyPoint } from "./cockpit/daily-series.ts";
 import { assessDataQuality, type DataQuality, type QualityRow } from "./scoring/data-quality.ts";
 
 // The user's currently-active Meta account (most-recently connected) and its token.
@@ -109,7 +110,7 @@ export type LiveCockpit =
   // from Meta; stale=true means a day-old cache is being shown while a background refresh runs. Optional
   // so the deep pull (fetchLiveCockpitUncached) and non-UI callers need not set them; fetchLiveCockpit
   // attaches them at the serving boundary where the fresh/stale/cold path is known.
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; syncedAt?: string; stale?: boolean }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; dailySeries: DailyPoint[]; syncedAt?: string; stale?: boolean }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -328,15 +329,25 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     );
     const funnel = windowFunnel(extRows);
 
-    // Marginal scaling: aggregate the day-wise rows to account spend/revenue per day and model
-    // the spend->revenue elasticity (diminishing returns). MODELLED; UNKNOWN without revenue.
-    const byDay = new Map<string, QualityRow>();
+    // ONE per-day aggregation feeds three things: marginal scaling, data quality, AND the day-wise
+    // trend chart. DailyInputRow is a superset of QualityRow (adds the funnel fields the chart's KPIs
+    // need - video/LP/ATC/checkout), so we sum every chartable field once instead of looping twice.
+    const byDay = new Map<string, DailyInputRow>();
     for (const ad of realAds) {
       for (const r of ad.rows) {
-        const d = byDay.get(r.date) ?? { date: r.date, spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0 };
+        const d = byDay.get(r.date) ?? {
+          date: r.date, spend: 0, impressions: 0, clicks: 0, outboundClicks: 0, video3sViews: 0,
+          videoThruplays: 0, landingPageViews: 0, addToCarts: 0, initiateCheckouts: 0, purchases: 0, revenue: 0,
+        };
         d.spend += r.spend;
         d.impressions += r.impressions;
         d.clicks += r.clicks;
+        d.outboundClicks += r.outboundClicks ?? 0;
+        d.video3sViews += r.video3sViews ?? 0;
+        d.videoThruplays += r.videoThruplays ?? 0;
+        d.landingPageViews += r.landingPageViews ?? 0;
+        d.addToCarts += r.addToCarts ?? 0;
+        d.initiateCheckouts += r.initiateCheckouts ?? 0;
         d.purchases += r.purchases;
         d.revenue += r.revenue;
         byDay.set(r.date, d);
@@ -347,6 +358,9 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     const dayRows = [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
     const marginal = marginalScaling(dayRows);
     const dataQuality = assessDataQuality(dayRows);
+    // Day-wise trend points (one per day, every KPI) for the chart. buildDailySeries reuses the funnel
+    // engine and adds ROAS/CPA - it re-sorts internally, so passing dayRows (already sorted) is fine.
+    const dailySeries = buildDailySeries(dayRows);
 
     // TRUE totals for the exact scope (all campaigns/ad sets/ads of the selected objective or
     // campaign filter), summed at campaign level across the whole account - NOT the sum of the
@@ -374,7 +388,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // separate from view.totals, which is the analyzed-ads subset the leaderboard breaks down.
     const scopeTotals = { spendRs: Math.round(sSpend), revenueRs: Math.round(sRev), roas: sSpend > 0 ? sRev / sSpend : null };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality, ownDiversity };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality, ownDiversity, dailySeries };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }
@@ -405,7 +419,7 @@ const COLD_PULL_TIMEOUT_MS = 8_000; // cap the blocking cold pull so a slow Meta
 // permanent fix for cache/schema-mismatch crashes, not a one-off.
 // v3: added view.wasteContributors / atRiskContributors + per-ad conversions/active/names to the
 // cached shape. BUMP THIS on ANY LiveCockpit/view shape change so old-shape blobs are never read.
-const CACHE_SCHEMA = "v4"; // v4: added ownDiversity
+const CACHE_SCHEMA = "v5"; // v5: added dailySeries (day-wise trend). v4: added ownDiversity
 // Bounded so a long-lived instance can't accumulate unbounded (user x account x window x filter x
 // weights) permutations (ISSUE 09). 500 hot entries is far more than one instance serves between
 // evictions; least-recently-used falls out first.

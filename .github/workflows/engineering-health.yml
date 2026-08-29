@@ -24,10 +24,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Type check
-        run: npx tsc --noEmit
+      # Build FIRST: `next build` generates the route/layout types (.next/types: LayoutProps,
+      # PageProps, etc.) that the app's .tsx files reference. A standalone `tsc --noEmit` on a fresh
+      # checkout has no .next/types yet and fails with "Cannot find name 'LayoutProps'" (the 3
+      # annotations that failed this job in ~26s). Running tsc AFTER build gives it those types, and
+      # still adds value over the build's own pass by type-checking scripts/*.ts outside the app graph.
       - name: Build
         run: npm run build
+      - name: Type check
+        run: npx tsc --noEmit
       - name: Correctness gates (all)
         run: npm run check:all
       - name: Health report

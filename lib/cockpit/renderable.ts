@@ -12,6 +12,7 @@ export function isRenderableShape(v: unknown): boolean {
   const view = r.view as Record<string, unknown> | undefined;
   return (
     view != null && r.scopeTotals != null && r.dataQuality != null && r.marginal != null && r.funnel != null && r.metrics != null &&
+    Array.isArray(r.dailySeries) &&
     Array.isArray(view.wasteContributors) && Array.isArray(view.atRiskContributors) && Array.isArray(view.leaderboard) && Array.isArray(view.doThis)
   );
 }

@@ -13,12 +13,13 @@ assert.equal(isRenderableShape({ status: "error", message: "x" }), true, "error 
 const full: Record<string, unknown> = {
   status: "connected",
   view: { wasteContributors: [], atRiskContributors: [], leaderboard: [], doThis: [] },
-  scopeTotals: {}, dataQuality: {}, marginal: {}, funnel: {}, metrics: {},
+  scopeTotals: {}, dataQuality: {}, marginal: {}, funnel: {}, metrics: {}, dailySeries: [],
 };
 assert.equal(isRenderableShape(full), true, "full shape accepted");
 
-// An OLD-shape blob missing any required top-level field is rejected.
-for (const missing of ["scopeTotals", "dataQuality", "marginal", "funnel", "metrics", "view"]) {
+// An OLD-shape blob missing any required top-level field is rejected (dailySeries is the v5 field:
+// a v4 blob without it must degrade to a fresh pull, not render).
+for (const missing of ["scopeTotals", "dataQuality", "marginal", "funnel", "metrics", "view", "dailySeries"]) {
   const bad = { ...full };
   delete bad[missing];
   assert.equal(isRenderableShape(bad), false, `missing ${missing} -> rejected`);

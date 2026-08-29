@@ -1,5 +1,6 @@
 import { KPI_CATALOG } from "@/lib/app/kpi-catalog";
 import { KpiSelector } from "@/components/app/analytics/kpi-selector";
+import { DailyTrendChart } from "@/components/app/analytics/daily-trend-chart";
 import type { CockpitData } from "@/lib/app/cockpit-data";
 import { rupees } from "@/lib/format";
 
@@ -66,6 +67,8 @@ export function KpiSection({ data }: { data: CockpitData }) {
           </a>
         </div>
       )}
+
+      {data.connected && <DailyTrendChart series={data.dailySeries} />}
 
       <KpiSelector catalog={KPI_CATALOG} liveValues={liveValues} />
     </div>
