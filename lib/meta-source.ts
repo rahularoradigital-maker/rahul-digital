@@ -178,20 +178,16 @@ export type MetaAccountRef = { externalId: string; name: string; businessId?: st
  * on a real agency user). Higher limit so nothing paginates off the end.
  */
 export async function listMetaAdAccounts(token: TokenSet): Promise<MetaAccountRef[]> {
-  const data = await graphGet<{ data: MetaAdAccount[] }>("me/adaccounts", token.accessToken, {
-    fields: "account_id,name",
-    limit: "500",
-  });
-  return (data.data ?? []).map((a) => ({ externalId: a.account_id, name: a.name ?? a.account_id }));
+  // ISSUE 05: fully paginate (an agency user can have 200+ accounts). graphGetAll follows the cursor
+  // instead of reading a single limit=500 page.
+  const rows = await graphGetAll<MetaAdAccount>("me/adaccounts", token.accessToken, { fields: "account_id,name", limit: "500" }, 25);
+  return rows.map((a) => ({ externalId: a.account_id, name: a.name ?? a.account_id }));
 }
 
 /** Businesses (BMs) the user can access, for grouping the account picker. */
 export async function listMetaBusinesses(token: TokenSet): Promise<{ id: string; name: string }[]> {
-  const data = await graphGet<{ data: { id: string; name?: string }[] }>("me/businesses", token.accessToken, {
-    fields: "id,name",
-    limit: "100",
-  });
-  return (data.data ?? []).map((b) => ({ id: b.id, name: b.name ?? b.id }));
+  const rows = await graphGetAll<{ id: string; name?: string }>("me/businesses", token.accessToken, { fields: "id,name", limit: "100" }, 25); // ISSUE 05: paginate
+  return rows.map((b) => ({ id: b.id, name: b.name ?? b.id }));
 }
 
 /**
@@ -213,12 +209,13 @@ export async function listAllAccessibleAdAccounts(token: TokenSet): Promise<Meta
     for (const b of businesses) {
       for (const edge of ["owned_ad_accounts", "client_ad_accounts"]) {
         try {
-          const data = await graphGet<{ data: { account_id: string; name?: string }[] }>(
+          const rows = await graphGetAll<{ account_id: string; name?: string }>(
             `${b.id}/${edge}`,
             token.accessToken,
             { fields: "account_id,name", limit: "200" },
+            25, // ISSUE 05: paginate the business edges too
           );
-          for (const a of data.data ?? []) {
+          for (const a of rows) {
             if (!byId.has(a.account_id)) {
               byId.set(a.account_id, { externalId: a.account_id, name: a.name ?? a.account_id, businessId: b.id, businessName: b.name });
             }
@@ -375,12 +372,15 @@ export async function listMetaCampaigns(
   accountExternalId: string,
   token: TokenSet,
 ): Promise<{ id: string; name: string; objective?: string }[]> {
-  const data = await graphGet<{ data: { id: string; name?: string; objective?: string }[] }>(
+  // ISSUE 05: paginate the campaign picker (was a single limit=100 page) so a large account can't
+  // hide campaigns the user is allowed to select. Matches how listAllCampaignObjectives paginates.
+  const rows = await graphGetAll<{ id: string; name?: string; objective?: string }>(
     `act_${accountExternalId}/campaigns`,
     token.accessToken,
     { fields: "id,name,objective", effective_status: '["ACTIVE"]', limit: "100" },
+    25,
   );
-  return (data.data ?? []).map((c) => ({ id: c.id, name: c.name ?? c.id, objective: c.objective }));
+  return rows.map((c) => ({ id: c.id, name: c.name ?? c.id, objective: c.objective }));
 }
 
 /**
@@ -448,6 +448,18 @@ export type ScopeInsights = { spend: number; impressions: number; clicks: number
  * that objective. campaignIds scopes it: undefined = whole account; [ids] = those campaigns;
  * [] = nothing in scope (an objective with no campaigns) -> all zeros, an honest empty state.
  */
+// ISSUE 06: a campaign IN filter with thousands of ids becomes an oversized query payload. Chunk the
+// ids into bounded batches; campaigns are disjoint across batches, so per-batch results aggregate
+// exactly (sum for totals, concat+re-sort for top-N). A set at/under the chunk size is a single batch,
+// i.e. identical to the old single-call behavior - only large accounts split.
+export const CAMPAIGN_FILTER_CHUNK = 50;
+export function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+const campaignFilter = (ids: string[]) => JSON.stringify([{ field: "campaign.id", operator: "IN", value: ids }]);
+
 export async function fetchScopeInsights(
   accountExternalId: string,
   since: string,
@@ -457,17 +469,21 @@ export async function fetchScopeInsights(
 ): Promise<ScopeInsights> {
   const empty: ScopeInsights = { spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0 };
   if (campaignIds && campaignIds.length === 0) return empty;
-  const params: Record<string, string> = {
+  const baseParams: Record<string, string> = {
     level: "campaign",
     fields: "spend,impressions,clicks,actions,action_values",
     time_range: JSON.stringify({ since, until: until ?? today() }),
     limit: "500",
   };
-  if (campaignIds && campaignIds.length > 0) {
-    params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }]);
-  }
-  const rows = await graphGetAll<MetaInsightRow>(`act_${accountExternalId}/insights`, token.accessToken, params, 20);
-  return rows.reduce<ScopeInsights>((acc, r) => {
+  // undefined campaignIds = whole account (one unfiltered call); otherwise one call per id-chunk.
+  const batches = campaignIds ? chunk(campaignIds, CAMPAIGN_FILTER_CHUNK) : [null];
+  const perBatch = await Promise.all(
+    batches.map((ids) => {
+      const params = ids ? { ...baseParams, filtering: campaignFilter(ids) } : baseParams;
+      return graphGetAll<MetaInsightRow>(`act_${accountExternalId}/insights`, token.accessToken, params, 20);
+    }),
+  );
+  return perBatch.flat().reduce<ScopeInsights>((acc, r) => {
     acc.spend += Number(r.spend || 0);
     acc.impressions += Number(r.impressions || 0);
     acc.clicks += Number(r.clicks || 0);
@@ -495,7 +511,7 @@ export async function listTopSpendingAds(
   // nothing (e.g. an objective with no active campaigns), so return nothing rather than
   // silently falling back to unfiltered ads.
   if (campaignIds && campaignIds.length === 0) return [];
-  const params: Record<string, string> = {
+  const baseParams: Record<string, string> = {
     level: "ad",
     fields: "ad_id,ad_name,spend",
     // until defaults to today so a plain since-only call (a preset window) is unchanged;
@@ -504,15 +520,19 @@ export async function listTopSpendingAds(
     sort: "spend_descending",
     limit: String(limit),
   };
-  if (campaignIds && campaignIds.length > 0) {
-    params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }]);
-  }
-  const data = await graphGet<{ data: { ad_id: string; ad_name?: string }[] }>(
-    `act_${accountExternalId}/insights`,
-    token.accessToken,
-    params,
+  // ISSUE 06: chunk a large campaign filter. Each batch returns its own top-`limit` by spend; any ad
+  // in the GLOBAL top-`limit` is in its batch's top-`limit`, so concat + re-sort by spend + slice is
+  // exact. One batch (<= chunk size) is identical to the old single call.
+  const batches = campaignIds ? chunk(campaignIds, CAMPAIGN_FILTER_CHUNK) : [null];
+  const perBatch = await Promise.all(
+    batches.map((ids) => {
+      const params = ids ? { ...baseParams, filtering: campaignFilter(ids) } : baseParams;
+      return graphGet<{ data: { ad_id: string; ad_name?: string; spend?: string }[] }>(`act_${accountExternalId}/insights`, token.accessToken, params);
+    }),
   );
-  return (data.data ?? []).map((r) => ({ externalId: r.ad_id, name: r.ad_name ?? r.ad_id }));
+  const all = perBatch.flatMap((d) => d.data ?? []);
+  all.sort((a, b) => Number(b.spend || 0) - Number(a.spend || 0));
+  return all.slice(0, limit).map((r) => ({ externalId: r.ad_id, name: r.ad_name ?? r.ad_id }));
 }
 
 /**
