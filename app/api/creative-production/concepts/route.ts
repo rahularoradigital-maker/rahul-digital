@@ -11,8 +11,7 @@ import { generateConcepts, loadConcepts } from "@/lib/creative-production/genera
 export const maxDuration = 120;
 
 async function ctx(userId: string) {
-  const conn = await getShopifyConnectionStatus(userId);
-  return conn?.shopDomain ?? null;
+  return getShopifyConnectionStatus(userId);
 }
 
 export async function GET(req: Request) {
@@ -29,8 +28,9 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  const shopDomain = await ctx(user.id);
-  if (!shopDomain) return NextResponse.json({ error: "No connected store." }, { status: 400 });
+  const conn = await ctx(user.id);
+  if (!conn) return NextResponse.json({ error: "No connected store." }, { status: 400 });
+  const shopDomain = conn.shopDomain;
 
   const { productId } = (await req.json().catch(() => ({}))) as { productId?: string };
   if (!productId) return NextResponse.json({ error: "productId required" }, { status: 400 });
@@ -40,6 +40,6 @@ export async function POST(req: Request) {
   const product = await ensureProductDNA(user.id, shopDomain, productId, brandSummary);
   if (!product) return NextResponse.json({ error: "Product not found. Sync the store first." }, { status: 404 });
 
-  const concepts = await generateConcepts(user.id, product, brand);
+  const concepts = await generateConcepts(user.id, product, brand, conn.currency);
   return NextResponse.json({ product, concepts });
 }

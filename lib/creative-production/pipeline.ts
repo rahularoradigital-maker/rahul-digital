@@ -62,7 +62,7 @@ export async function generateAssetsForConcept(
     const creativeId = `${generationId}_${format.id}`;
 
     // Cost control: identical brief already produced this creative -> reuse, do not re-generate/re-bill.
-    const { data: existing } = await admin.from("cp_assets").select("*").eq("creative_id", creativeId).maybeSingle();
+    const { data: existing } = await admin.from("cp_assets").select("*").eq("user_id", userId).eq("creative_id", creativeId).maybeSingle();
     if (existing) {
       out.push(recordFromRow(existing));
       continue;
@@ -110,7 +110,7 @@ export async function generateAssetsForConcept(
 
     await admin.from("cp_generations").upsert(
       { id: generationId, user_id: userId, concept_id: concept.id, brief_hash: hash, provider: gen.provider, model: gen.model, prompt_version: PROMPT_VERSION, cost_usd: gen.costUsd, status: gen.ok ? "done" : "placeholder", created_at: now },
-      { onConflict: "id" },
+      { onConflict: "user_id,id" },
     ).then(undefined, () => {});
 
     await admin.from("cp_assets").upsert(
@@ -119,7 +119,7 @@ export async function generateAssetsForConcept(
         generation_id: generationId, format_id: format.id, provider: gen.provider, model: gen.model, prompt_version: PROMPT_VERSION,
         brand_dna_version: brand.version, product_dna_version: 1, storage_path: storagePath, qa, approval: "draft", cost_usd: gen.costUsd, edits: null, created_at: now,
       },
-      { onConflict: "creative_id" },
+      { onConflict: "user_id,creative_id,version" },
     ).then(undefined, () => {});
 
     out.push(record);

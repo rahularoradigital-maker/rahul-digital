@@ -53,24 +53,29 @@ type CopyOut = {
   evidence: string[];
 }[];
 
-function copyPrompt(product: ProductDNA, brand: BrandDNA, formats: ConceptFormat[]): string {
+function copyPrompt(product: ProductDNA, brand: BrandDNA, formats: ConceptFormat[], currency: string | null): string {
+  // Pass prices as clearly-labelled fields so the model never confuses the discount amount with the MRP.
+  const cur = currency ?? "";
+  const sellingPrice = product.price;
+  const mrp = product.price != null && product.discount != null && product.discount > 0 ? product.price + product.discount : null;
   return [
     "You are a senior DTC creative strategist. Write ad copy for the product below, one entry per format.",
-    "RULES: ground every line in the product facts. Never invent a claim, price, review, or statistic that is not in the product data. No em dashes. Keep headlines under 40 characters, CTA 2-3 words.",
-    `PRODUCT: ${JSON.stringify({ name: product.name, category: product.category, primaryBenefit: product.primaryBenefit, benefits: product.secondaryBenefits, problem: product.problemSolved, persona: product.targetPersona, usps: product.usps, proof: product.proof, price: product.price, discount: product.discount })}`,
+    "RULES: ground every line in the product facts. Never invent a claim, review, or statistic that is not in the product data. No em dashes. Keep headlines under 40 characters, CTA 2-3 words.",
+    `PRICING (use ONLY these exact numbers, never invent a price): currency=${cur || "unknown"}, sellingPrice=${sellingPrice ?? "unknown"}, mrp=${mrp ?? "unknown"}. mrp is the crossed-out original; sellingPrice is what the customer pays. If an offer references price, write it as "${cur}${mrp ?? ""} ${cur}${sellingPrice ?? ""}" (original then current). If mrp is unknown, do not state an MRP.`,
+    `PRODUCT: ${JSON.stringify({ name: product.name, category: product.category, primaryBenefit: product.primaryBenefit, benefits: product.secondaryBenefits, problem: product.problemSolved, persona: product.targetPersona, usps: product.usps, proof: product.proof })}`,
     `BRAND TONE: ${brand.tone}`,
     `FORMATS (write copy matching each format's structure): ${JSON.stringify(formats.map((f) => ({ formatId: f.id, name: f.name, structure: f.structure })))}`,
     'Output a JSON ARRAY. Each item: {formatId, hook, angle, coreMessage, visualDirection, headline, supportingCopy, cta, offer (string or null), persona, problem, desire, whyThisConcept, whyNow, evidence (string[])}.',
   ].join("\n");
 }
 
-export async function generateConcepts(userId: string, product: ProductDNA, brand: BrandDNA): Promise<CreativeConcept[]> {
+export async function generateConcepts(userId: string, product: ProductDNA, brand: BrandDNA, currency: string | null = null): Promise<CreativeConcept[]> {
   // 1) score every archetype deterministically, 2) rank, 3) keep the top K to write copy for.
   const scored = CONCEPT_FORMATS.map((fmt) => ({ fmt, score: scoreConcept(signalsFor(product, brand, fmt)) }));
   const top = rankConcepts(scored).slice(0, TOP_K);
 
   // 4) batched grounded copy for the top K (one LLM call to keep tokens/cost down).
-  const copy = (await deriveJSON<CopyOut>(copyPrompt(product, brand, top.map((t) => t.fmt)))) ?? [];
+  const copy = (await deriveJSON<CopyOut>(copyPrompt(product, brand, top.map((t) => t.fmt), currency))) ?? [];
   const copyById = new Map(copy.map((c) => [c.formatId, c]));
 
   const concepts: CreativeConcept[] = top.map(({ fmt, score }) => {
@@ -105,7 +110,7 @@ export async function generateConcepts(userId: string, product: ProductDNA, bran
     .from("cp_concepts")
     .upsert(
       concepts.map((cc) => ({ id: cc.id, user_id: userId, product_id: cc.productId, concept: cc, score: cc.score, created_at: new Date().toISOString() })),
-      { onConflict: "id" },
+      { onConflict: "user_id,id" },
     )
     .then(undefined, () => {});
   return concepts;
