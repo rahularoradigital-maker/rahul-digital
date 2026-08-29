@@ -42,6 +42,7 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
 | B14 | **Long lists → "See more"; show "why" on every verdict.** | `CollapsibleRows` collapses to top N; every verdict row shows its reason. | 🟢 (live-verified: "Show 92 more ads") |
 | B15 | **Make Ask free (Gemini instead of Claude).** | Ask now runs on Gemini free tier; Claude no longer needed for it. | 🟢 (live-verified) |
 | B16 | **Complete architecture/context dump (offline zip).** | `ARCHITECTURE.md` written + this zip delivered. | 🟢 |
+| B17 | **Creative half-life tab: "ROAS 0.00 → 0.00 (-19%/day)" makes no sense — fix the wording + check the formula.** | Root cause was a trend computed on a near-zero metric (tiny÷tiny = noise) plus a half-life extrapolation with no cap. Three fixes: (1) an ad that never had steady ROAS now reads "stayed near zero … judged on frequency and CPM, not ROAS" instead of a fake %/day; (2) a metric that STARTED at ~0 is no longer called "a real collapse"; (3) a near-flat slope no longer extrapolates to a fantasy half-life, and a **past** ad-set end date no longer clamps to 0 (that had swung the account half-life from "~30354410 days" to "~0 days" and mislabelled healthy ads "already past the fatigue line"). Now honestly says "Not enough day-wise history yet to estimate a half-life." Locked by 3 new regression checks. | 🟢 (live-verified on Soch, all ad lines + account header) |
 
 ---
 
