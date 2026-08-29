@@ -57,6 +57,18 @@ assert.ok(convFatigue.state === "watch" || convFatigue.state === "fatiguing" || 
 assert.ok(convFatigue.evidence[0].includes("ROAS"), "conversion evidence reads on ROAS");
 assert.ok(typeof convFatigue.daysToFatigue === "number", "declining ROAS yields a half-life");
 
+// --- Near-zero ROAS: NO fake trend. An ad that barely converts must not show "ROAS 0.00 -> 0.00 at -X%/day"
+// (tiny/tiny is noise). It reads as an honest "near zero", does not let the noise drive fatigue, and gives
+// no half-life. (Regression for the nonsensical creative-half-life line.) ---
+const nearZeroRoas = readFatigue(
+  series(14, { impr: 10000, clicks0: 200, clicks1: 200, freq0: 2, freq1: 2, spend0: 1000, spend1: 1000, rev0: 5, rev1: 2 }),
+  { objective: "conversion" },
+);
+assert.ok(nearZeroRoas.evidence[0].toLowerCase().includes("near zero"), `near-zero ROAS reads honestly, got: ${nearZeroRoas.evidence[0]}`);
+assert.ok(!/-?\d+\.\d+%\/day/.test(nearZeroRoas.evidence[0]), "near-zero ROAS does not claim a fake %/day");
+assert.equal(nearZeroRoas.signals.ctrDecay, 0, "a near-zero metric does not drive the fatigue decay signal (no noise)");
+assert.equal(nearZeroRoas.daysToFatigue, null, "no half-life extrapolated off a near-zero metric");
+
 // Same numbers judged as ENGAGEMENT (CTR flat) do NOT fatigue on ROAS - CTR is the metric.
 const engRead = readFatigue(convRows, { objective: "engagement" });
 assert.ok(engRead.evidence[0].includes("CTR"), "engagement evidence reads on CTR");

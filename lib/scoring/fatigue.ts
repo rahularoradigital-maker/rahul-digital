@@ -135,12 +135,19 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
   const primaryMean = mean(primary);
   const primarySlope = slope(primary);
 
+  // A trend on a metric that is essentially ZERO is noise: tiny numbers divided by tiny numbers give wild
+  // percentages (e.g. "ROAS 0.00 -> 0.00 at -19%/day" on an ad that never really converted). Below a
+  // per-metric floor the primary metric cannot support a trend read, so we do NOT let it drive fatigue or
+  // claim a %/day - the ad is judged on frequency + CPM and the evidence says so plainly.
+  const PRIMARY_FLOOR = metricLabel === "ROAS" ? 0.1 : metricLabel === "CTR" ? 0.001 : 0;
+  const primaryMeaningful = primaryMean >= PRIMARY_FLOOR;
+
   // Relative per-day slopes (dimensionless): a declining primary metric and a rising CPM add fatigue.
-  const primaryRelSlope = primaryMean > 0 ? primarySlope / primaryMean : 0; // negative = decaying
+  const primaryRelSlope = primaryMeaningful && primaryMean > 0 ? primarySlope / primaryMean : 0; // negative = decaying
   const cpmRelSlope = cpmMean > 0 ? cpmSlope / cpmMean : 0; // positive = rising
 
   const frequencySignal = saturation(latestFreq);
-  const decaySignal = clamp(-primaryRelSlope * REL_SLOPE_GAIN, 0, 100);
+  const decaySignal = primaryMeaningful ? clamp(-primaryRelSlope * REL_SLOPE_GAIN, 0, 100) : 0;
   const cpmRiseSignal = clamp(cpmRelSlope * REL_SLOPE_GAIN, 0, 100);
 
   const index = clamp(
@@ -160,7 +167,7 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
   let daysToFatigue: number | null = null;
   const startPrimary = primary[0];
   const latestPrimary = primary[primary.length - 1];
-  if (primarySlope < 0 && startPrimary > 0) {
+  if (primaryMeaningful && primarySlope < 0 && startPrimary > 0) {
     const floor = startPrimary * CTR_FLOOR_FRACTION;
     if (latestPrimary > floor) {
       daysToFatigue = Math.max(1, Math.round((latestPrimary - floor) / -primarySlope));
@@ -178,8 +185,18 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
 
   // Format the primary metric for the evidence: CTR as a percentage, ROAS / reach as a ratio.
   const fmtPrimary = (v: number) => (metricLabel === "CTR" ? `${(v * 100).toFixed(2)}%` : v.toFixed(2));
+  const nearZero = (v: number) => v < (metricLabel === "CTR" ? 0.0005 : 0.005); // rounds to 0.00 in the display
+  // The primary-metric line, written to make sense in every case (no more "0.00 -> 0.00 at -19%/day"):
+  //  - metric near zero throughout: say the trend can't be read, name what we judge on instead
+  //  - collapsed from a real value to ~0: say "fell to near zero" (not "-> 0.00")
+  //  - otherwise: the normal start -> end (+/-%/day)
+  const primaryLine = !primaryMeaningful
+    ? `${metricLabel} stayed near zero over ${primary.length} days - too little conversion to read a trend, so this ad is judged on frequency and CPM, not ${metricLabel}.`
+    : nearZero(latestPrimary)
+      ? `${metricLabel} fell from ${fmtPrimary(startPrimary)} to near zero over ${primary.length} days (${(primaryRelSlope * 100).toFixed(1)}%/day) - a real collapse.`
+      : `${metricLabel} ${fmtPrimary(startPrimary)} -> ${fmtPrimary(latestPrimary)} over ${primary.length} settled days (${primaryRelSlope >= 0 ? "+" : ""}${(primaryRelSlope * 100).toFixed(1)}%/day).`;
   const evidence: string[] = [
-    `${metricLabel} ${fmtPrimary(startPrimary)} -> ${fmtPrimary(latestPrimary)} over ${primary.length} settled days (${primaryRelSlope >= 0 ? "+" : ""}${(primaryRelSlope * 100).toFixed(1)}%/day).`,
+    primaryLine,
     `Frequency now ${latestFreq.toFixed(1)} (saturation ${frequencySignal}/100).`,
     `CPM ${cpm[0].toFixed(0)} -> ${cpm[cpm.length - 1].toFixed(0)} (${cpmRelSlope >= 0 ? "+" : ""}${(cpmRelSlope * 100).toFixed(1)}%/day).`,
   ];
