@@ -16,6 +16,7 @@ export const NAV_GROUPS: { group: string; items: NavItem[] }[] = [
     group: "Analyze",
     items: [
       { label: "Creative", icon: "◔", href: "/app/creative" },
+      { label: "Studio", icon: "✎", href: "/app/creative-production" },
       { label: "Media", icon: "▲", href: "/app/media" },
       { label: "Market", icon: "⚑", href: "/app/market" },
     ],
