@@ -1,6 +1,7 @@
 import { KPI_CATALOG } from "@/lib/app/kpi-catalog";
 import { KpiSelector } from "@/components/app/analytics/kpi-selector";
 import { DailyTrendChart } from "@/components/app/analytics/daily-trend-chart";
+import { windowHeadline } from "@/lib/cockpit/daily-series";
 import { LevelMetricsSection } from "@/components/app/analytics/level-metrics";
 import type { CockpitData } from "@/lib/app/cockpit-data";
 import { rupees } from "@/lib/format";
@@ -14,7 +15,9 @@ import { rupees } from "@/lib/format";
 export function KpiSection({ data }: { data: CockpitData }) {
   const liveValues: Record<string, string> = {};
   if (data.connected) {
-    const { totals } = data.view;
+    // Scope-wide window totals (Ads-Manager-matching), NOT view.totals - view.totals is the top-N
+    // analyzed-ads subset and under-reports true account spend/revenue.
+    const totals = data.scopeTotals;
     const m = data.metrics;
     const count = new Intl.NumberFormat("en-IN");
     const rs = (v: number | null) => (v === null ? undefined : rupees.format(v));
@@ -69,7 +72,26 @@ export function KpiSection({ data }: { data: CockpitData }) {
         </div>
       )}
 
-      {data.connected && <DailyTrendChart series={data.dailySeries} />}
+      {data.connected && (
+        <DailyTrendChart
+          series={data.dailySeries}
+          headline={windowHeadline(
+            {
+              spendRs: data.scopeTotals.spendRs,
+              revenueRs: data.scopeTotals.revenueRs,
+              roas: data.scopeTotals.roas,
+              impressions: data.metrics.impressions,
+              clicks: data.metrics.clicks,
+              purchases: data.metrics.purchases,
+              cpm: data.metrics.cpm,
+              ctrAll: data.metrics.ctrAll,
+              cpcAll: data.metrics.cpcAll,
+              cpa: data.metrics.cpa,
+            },
+            data.funnel,
+          )}
+        />
+      )}
 
       {data.connected && (
         <LevelMetricsSection

@@ -1,7 +1,8 @@
 // One runnable check for the day-wise trend series. No frameworks.
 // Run: node --experimental-strip-types scripts/check-daily-series.ts
 import assert from "node:assert/strict";
-import { buildDailySeries, DAILY_KPIS, type DailyInputRow } from "../lib/cockpit/daily-series.ts";
+import { buildDailySeries, DAILY_KPIS, windowHeadline, type DailyInputRow } from "../lib/cockpit/daily-series.ts";
+import { windowFunnel } from "../lib/metrics/funnel-metrics.ts";
 
 function row(over: Partial<DailyInputRow> = {}): DailyInputRow {
   return {
@@ -38,4 +39,29 @@ assert.equal(z[0].ctr, null, "impressions 0 -> ctr null");
 // Every advertised KPI key exists on a produced point (the selector never points at a missing field).
 for (const k of DAILY_KPIS) assert.ok(k.key in s[0], `DailyPoint has ${k.key}`);
 
-console.log("PASS: day-wise trend series (roas/cpa/ctr, sorting, null-on-zero, KPI keys)");
+// windowHeadline: the headline must be the WHOLE-WINDOW aggregate, never the last day. This is the
+// bug the KPI cards showed: the last day of a window under-reports conversions (Meta attributes
+// purchases days after the click), so ROAS/Revenue/Purchases read a false 0 on the last day while CPA
+// (null that day) fell back to an earlier day - spend + CPA present, ROAS 0.00, 0 purchases, all at once.
+const winRows: DailyInputRow[] = [
+  row({ date: "2026-08-01", spend: 100, revenue: 500, purchases: 2, impressions: 1000, clicks: 10 }),
+  // Last day: real spend/clicks but conversions not yet attributed (the attribution-lag day).
+  row({ date: "2026-08-02", spend: 100, revenue: 0, purchases: 0, impressions: 1000, clicks: 10 }),
+];
+const totals = {
+  spendRs: 200, revenueRs: 500, roas: 500 / 200,
+  impressions: 2000, clicks: 20, purchases: 2,
+  cpm: (200 / 2000) * 1000, ctrAll: (20 / 2000) * 100, cpcAll: 200 / 20, cpa: 200 / 2,
+};
+const head = windowHeadline(totals, windowFunnel(winRows));
+assert.equal(head.roas, 2.5, "headline ROAS = window revenue/spend (NOT the last day's 0.00)");
+assert.equal(head.purchases, 2, "headline purchases = window total (NOT the last day's 0)");
+assert.equal(head.revenue, 500, "headline revenue = window total");
+assert.equal(head.cpa, 100, "headline CPA = window spend/purchases, consistent with ROAS");
+assert.equal(head.spend, 200, "headline spend = window total (NOT one day)");
+// Self-consistency: a non-null ROAS forbids 0 purchases (the exact contradiction that shipped).
+assert.ok(!(head.roas !== null && head.roas > 0 && head.purchases === 0), "ROAS>0 and 0 purchases can never co-occur");
+// Every KPI key is present on the headline too.
+for (const k of DAILY_KPIS) assert.ok(k.key in head, `windowHeadline has ${k.key}`);
+
+console.log("PASS: day-wise trend series + window headline (whole-window aggregate, no attribution-lag contradiction)");
