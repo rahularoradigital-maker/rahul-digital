@@ -33,14 +33,16 @@ const GRAPH_MAX_ATTEMPTS = 3;
 
 async function graphGet<T>(path: string, token: string, params: Record<string, string>): Promise<T> {
   const url = new URL(`${GRAPH}/${path}`);
-  url.searchParams.set("access_token", token);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  // ISSUE 15: pass the access token in the Authorization header, not the query string, so it never
+  // lands in a URL that a proxy/log/error could capture. Graph API accepts Bearer auth.
+  const headers = { Authorization: `Bearer ${token}` };
   // Caching is handled one level up by the cockpit cache (revalidated on switch / Re-scan).
   for (let attempt = 0; attempt < GRAPH_MAX_ATTEMPTS; attempt++) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), GRAPH_TIMEOUT_MS);
     try {
-      const res = await fetch(url.toString(), { signal: ctrl.signal });
+      const res = await fetch(url.toString(), { signal: ctrl.signal, headers });
       if (res.ok) return (await res.json()) as T;
       const retryable = res.status === 429 || res.status === 500 || res.status === 503;
       if (retryable && attempt < GRAPH_MAX_ATTEMPTS - 1) {

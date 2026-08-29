@@ -35,9 +35,9 @@ export async function probeGemini(): Promise<{ ok: boolean; status: number; body
   const key = process.env.GEMINI_API_KEY;
   if (!key) return { ok: false, status: 0, body: "GEMINI_API_KEY not set" };
   try {
-    const res = await fetch(`${ENDPOINT}?key=${encodeURIComponent(key)}`, {
+    const res = await fetch(ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key }, // key in header, not URL (ISSUE 15)
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Reply with the word ok." }] }] }),
     });
     const body = (await res.text()).slice(0, 300);
@@ -90,8 +90,8 @@ export async function callGemini(
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const res = await fetchWithTimeout(
-        `${ENDPOINT}?key=${encodeURIComponent(key)}`,
-        { method: "POST", headers: { "Content-Type": "application/json" }, body: bodyJson },
+        ENDPOINT,
+        { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: bodyJson }, // key in header, not URL (ISSUE 15)
         20_000,
       );
       if (!res.ok) {
@@ -143,9 +143,9 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
-      const res = await fetch(`${TEXT_ENDPOINT}?key=${encodeURIComponent(key)}`, {
+      const res = await fetch(TEXT_ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key }, // key in header, not URL (ISSUE 15)
         body: bodyJson,
         signal: controller.signal,
       });
