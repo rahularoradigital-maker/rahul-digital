@@ -15,7 +15,21 @@ const UPSERT_BATCH = 250;
 // A real browser UA + Accept: some storefronts vary behaviour by client; keep it a plain public GET.
 const HEADERS = { "User-Agent": "Mozilla/5.0 (AdBrain product sync)", Accept: "application/json" };
 
-export type PublicFetchResult = { ok: boolean; isShopify: boolean; origin: string; products: NormalizedProduct[]; error?: string };
+export type PublicFetchResult = { ok: boolean; isShopify: boolean; origin: string; products: NormalizedProduct[]; currency: string | null; error?: string };
+
+// Read the storefront's active currency from the homepage (Shopify injects `Shopify.currency={"active":"INR"...}`).
+// Best-effort: null if not found (UI then shows the bare amount). One small GET, never throws.
+async function detectCurrency(origin: string): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(origin, { headers: HEADERS }, 12_000);
+    if (!res.ok) return null;
+    const html = await res.text();
+    const m = html.match(/Shopify\.currency\s*=\s*\{[^}]*"active"\s*:\s*"([A-Z]{3})"/) ?? html.match(/"currency"\s*:\s*"([A-Z]{3})"/);
+    return m?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // Normalize any user input ("store.com", "https://store.com/collections/x") to a clean origin.
 export function toOrigin(raw: string): string | null {
@@ -32,7 +46,7 @@ export function toOrigin(raw: string): string | null {
 // Fetch + detect + paginate the public feed. isShopify:false means the URL did not serve a Shopify feed.
 export async function fetchPublicShopifyProducts(rawUrl: string): Promise<PublicFetchResult> {
   const origin = toOrigin(rawUrl);
-  if (!origin) return { ok: false, isShopify: false, origin: "", products: [], error: "That does not look like a valid website URL." };
+  if (!origin) return { ok: false, isShopify: false, origin: "", products: [], currency: null, error: "That does not look like a valid website URL." };
 
   const all: NormalizedProduct[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
@@ -40,21 +54,22 @@ export async function fetchPublicShopifyProducts(rawUrl: string): Promise<Public
     try {
       const res = await fetchWithTimeout(`${origin}/products.json?limit=${PAGE_SIZE}&page=${page}`, { headers: HEADERS }, 15_000);
       if (!res.ok) {
-        if (page === 1) return { ok: false, isShopify: false, origin, products: [], error: `The store did not return a public product feed (HTTP ${res.status}). It may not be Shopify, or the storefront is password-protected.` };
+        if (page === 1) return { ok: false, isShopify: false, origin, products: [], currency: null, error: `The store did not return a public product feed (HTTP ${res.status}). It may not be Shopify, or the storefront is password-protected.` };
         break; // a later page failing just ends pagination with what we have
       }
       json = await res.json();
     } catch {
-      if (page === 1) return { ok: false, isShopify: false, origin, products: [], error: "Could not read a public product feed from that URL. It may not be a Shopify store." };
+      if (page === 1) return { ok: false, isShopify: false, origin, products: [], currency: null, error: "Could not read a public product feed from that URL. It may not be a Shopify store." };
       break;
     }
     const { products, isShopify } = normalizePublicPage(json, origin);
-    if (page === 1 && !isShopify) return { ok: false, isShopify: false, origin, products: [], error: "That URL is not a Shopify store (no public product feed found)." };
+    if (page === 1 && !isShopify) return { ok: false, isShopify: false, origin, products: [], currency: null, error: "That URL is not a Shopify store (no public product feed found)." };
     if (products.length === 0) break;
     all.push(...products);
     if (products.length < PAGE_SIZE) break; // last page
   }
-  return { ok: true, isShopify: true, origin, products: all };
+  const currency = await detectCurrency(origin);
+  return { ok: true, isShopify: true, origin, products: all, currency };
 }
 
 function toRow(userId: string, shopDomain: string, p: NormalizedProduct) {
@@ -67,14 +82,14 @@ function toRow(userId: string, shopDomain: string, p: NormalizedProduct) {
   };
 }
 
-export type PublicSyncResult = { ok: boolean; productsSeen: number; shopDomain: string; error?: string };
+export type PublicSyncResult = { ok: boolean; productsSeen: number; shopDomain: string; currency: string | null; error?: string };
 
 // Fetch the public feed and upsert it into shopify_products. shopDomain = the store host (the scope key the
 // rest of the pipeline reads). Records shopify_sync_state. Never throws.
 export async function syncPublicShopifyProducts(userId: string, rawUrl: string): Promise<PublicSyncResult> {
   const fetched = await fetchPublicShopifyProducts(rawUrl);
   const shopDomain = fetched.origin.replace(/^https?:\/\//, "");
-  if (!fetched.ok) return { ok: false, productsSeen: 0, shopDomain, error: fetched.error };
+  if (!fetched.ok) return { ok: false, productsSeen: 0, shopDomain, currency: null, error: fetched.error };
 
   const admin = createAdminClient();
   const writeState = (fields: Record<string, unknown>) =>
@@ -89,9 +104,9 @@ export async function syncPublicShopifyProducts(userId: string, rawUrl: string):
   } catch (e) {
     const error = e instanceof Error ? e.message : "save failed";
     await writeState({ last_ok: false, last_error: error.slice(0, 500), products_seen: fetched.products.length });
-    return { ok: false, productsSeen: 0, shopDomain, error };
+    return { ok: false, productsSeen: 0, shopDomain, currency: fetched.currency, error };
   }
 
   await writeState({ last_ok: true, last_error: null, products_seen: fetched.products.length, last_synced_at: new Date().toISOString() });
-  return { ok: true, productsSeen: fetched.products.length, shopDomain };
+  return { ok: true, productsSeen: fetched.products.length, shopDomain, currency: fetched.currency };
 }

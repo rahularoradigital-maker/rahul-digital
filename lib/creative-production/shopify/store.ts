@@ -17,6 +17,7 @@ export async function saveShopifyConnection(
   scopes: string | null,
   apiVersion = "2026-07",
   statusOverride?: string,
+  currency?: string | null,
 ): Promise<boolean> {
   const admin = createAdminClient();
   const { error } = await admin.from("shopify_connections").upsert(
@@ -26,6 +27,7 @@ export async function saveShopifyConnection(
       access_token_encrypted: accessToken ? encryptToken(accessToken) : null,
       scopes,
       api_version: apiVersion,
+      currency: currency ?? null,
       status: statusOverride ?? (accessToken ? "connected" : "url_only"),
       connected_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -59,15 +61,15 @@ export async function readShopifyConnection(userId: string): Promise<ShopifyConn
   }
 }
 
-/** Lightweight "is a store connected?" for the UI (no token decrypt). Returns the shop + status or null. */
-export async function getShopifyConnectionStatus(userId: string): Promise<{ shopDomain: string; status: string } | null> {
+/** Lightweight "is a store connected?" for the UI (no token decrypt). Returns the shop + status + currency. */
+export async function getShopifyConnectionStatus(userId: string): Promise<{ shopDomain: string; status: string; currency: string | null } | null> {
   const admin = createAdminClient();
   const { data } = await admin
     .from("shopify_connections")
-    .select("shop_domain, status")
+    .select("shop_domain, status, currency")
     .eq("user_id", userId)
     .order("connected_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return data ? { shopDomain: data.shop_domain as string, status: data.status as string } : null;
+  return data ? { shopDomain: data.shop_domain as string, status: data.status as string, currency: (data.currency as string | null) ?? null } : null;
 }

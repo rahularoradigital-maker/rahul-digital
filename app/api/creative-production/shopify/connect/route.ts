@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
   if (body.urlOnly || !body.accessToken) {
     const res = await syncPublicShopifyProducts(user.id, shopDomain);
     if (!res.ok) return NextResponse.json({ error: res.error ?? "Could not read products from that URL." }, { status: 400 });
-    await saveShopifyConnection(user.id, res.shopDomain, null, "public_feed", "2026-07", "url_public");
-    return NextResponse.json({ ok: true, status: "url_public", shopDomain: res.shopDomain, productsSeen: res.productsSeen });
+    await saveShopifyConnection(user.id, res.shopDomain, null, "public_feed", "2026-07", "url_public", res.currency);
+    return NextResponse.json({ ok: true, status: "url_public", shopDomain: res.shopDomain, productsSeen: res.productsSeen, currency: res.currency });
   }
 
   const accessToken = String(body.accessToken).trim();

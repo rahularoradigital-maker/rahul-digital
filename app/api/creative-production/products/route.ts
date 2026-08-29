@@ -35,5 +35,5 @@ export async function GET() {
   }));
 
   const connected = conn.status === "connected" || conn.status === "url_public";
-  return NextResponse.json({ connected, status: conn.status, shopDomain: conn.shopDomain, products });
+  return NextResponse.json({ connected, status: conn.status, shopDomain: conn.shopDomain, currency: conn.currency, products });
 }
