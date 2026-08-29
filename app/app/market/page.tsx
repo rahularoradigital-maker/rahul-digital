@@ -7,6 +7,8 @@ import { PositioningSection } from "@/components/app/market/positioning-section"
 // Market: Brand understanding (the context that will drive discovery) + Competitors + Competitor
 // Voice, consolidated into one tabbed page.
 
+export const maxDuration = 300; // heavy 90-day day-wise cold pull needs headroom to warm the cache
+
 export default async function MarketPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const sp = await searchParams;
   const tab = sp.tab ?? "brand";

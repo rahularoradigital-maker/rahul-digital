@@ -25,6 +25,10 @@ import { cockpitVerdict } from "@/lib/cockpit/verdict-line";
 // No sample or placeholder numbers ever reach this screen.
 
 
+// The 90-day day-wise cold pull is heavy (up to 100 ads x 90 days); give the background warm enough
+// time to finish and populate the cache, or the loader never resolves until the nightly cron warms it.
+export const maxDuration = 300;
+
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ days?: string; perf?: string }> }) {
   const { days, perf } = await searchParams;
   const data = await loadCockpit(parseDays(days));

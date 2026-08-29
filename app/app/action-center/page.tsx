@@ -16,6 +16,8 @@ import { objectiveHeadline, objectiveFamily } from "@/lib/rules/objective-metric
 
 type PlanItem = CockpitView["doThis"][number];
 
+export const maxDuration = 300; // heavy 90-day day-wise cold pull needs headroom to warm the cache
+
 export default async function ActionCenterPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   const { days } = await searchParams;
   const data = await loadCockpit(parseDays(days));

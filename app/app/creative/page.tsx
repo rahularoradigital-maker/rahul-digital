@@ -37,6 +37,8 @@ async function loadInsights(userId: string, accountId: string): Promise<Record<s
   }
 }
 
+export const maxDuration = 300; // heavy 90-day day-wise cold pull needs headroom to warm the cache
+
 export default async function CreativePage({ searchParams }: { searchParams: Promise<{ days?: string; tab?: string }> }) {
   const sp = await searchParams;
   const tab = sp.tab ?? "fatigue";
