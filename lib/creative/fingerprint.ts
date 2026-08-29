@@ -1,9 +1,16 @@
-// Own-ad creative fingerprint: the deterministic layer. Given a normalized creative
-// asset (pulled from Meta), it derives a stable content identity (content hash) and the
-// facts you can know for free WITHOUT any model call: format, whether it carries video,
-// copy length, CTA. This is the "fingerprint-once" key: creatives are stable day to day,
-// so the expensive Gemini semantic read (hook/angle/persona/visual DNA) is cached against
-// this hash and only recomputed when the creative actually changes.
+// CANONICAL production creative fingerprint (ISSUE 18). This is the deterministic layer that the LIVE
+// path uses: lib/meta-sync.ts + lib/creative/diversity.ts (the diversity the app renders) run on THIS.
+// Given a normalized creative asset (pulled from Meta), it derives a stable content identity (content
+// hash) and the facts you can know for free WITHOUT any model call: format, whether it carries video,
+// copy length, CTA. This is the "fingerprint-once" key: creatives are stable day to day, so the
+// expensive Gemini semantic read (hook/angle/persona/visual DNA) is cached against this hash and only
+// recomputed when the creative actually changes.
+//
+// NOTE the sibling lib/fingerprint.ts is a DIFFERENT, not-yet-wired concept (a future spec-05 SEMANTIC
+// similarity layer, exercised only by its own check). The two are not competing implementations of one
+// thing: this file is deterministic facts in production; that one is semantic similarity for later. If
+// the semantic layer is ever productionized it plugs in behind lib/creative/diversity.ts, it does not
+// replace this fingerprint.
 //
 // Pure, no I/O, no deps, no fabrication. Every field traces to an input Meta returned.
 

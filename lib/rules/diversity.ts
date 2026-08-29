@@ -1,3 +1,8 @@
+// FUTURE / not-yet-wired (ISSUE 18): this is the SEMANTIC diversity engine over spec-05 semantic
+// fingerprints (lib/fingerprint.ts). It is NOT what the app renders - the live diversity is
+// lib/creative/diversity.ts (deterministic, over lib/creative/fingerprint.ts). This file is exercised
+// only by scripts/check-diversity.ts and is kept as the designed seam for embedding-based similarity.
+//
 // Diversity Engine — the five scores of spec 06 (I1–I5), computed over creative
 // fingerprints (spec 05). Pure and deterministic: these measure diversity of
 // IDEAS across fingerprint dimensions, never "number of ads".

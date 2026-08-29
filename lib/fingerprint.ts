@@ -1,3 +1,11 @@
+// FUTURE / not-yet-wired SEMANTIC layer (ISSUE 18). This is NOT the production fingerprint - the live
+// path uses lib/creative/fingerprint.ts (deterministic content-hash facts) + lib/creative/diversity.ts.
+// This file is the spec-05 SEMANTIC representation + similarity primitive, exercised only by
+// scripts/check-diversity.ts; nothing in app/ or the live pipeline imports it yet. Kept as the designed
+// seam for when embedding-based similarity is productionized (it would plug in behind
+// lib/creative/diversity.ts, not replace the deterministic fingerprint). Do not build a second
+// production path here - for creative facts in the app, use lib/creative/fingerprint.ts.
+//
 // Creative fingerprint types + similarity primitive (spec 05).
 // The fingerprint is the per-creative semantic representation, computed once per
 // content_hash and reused forever. Labels are INFERENCE (spec 05 §6): a dimension
