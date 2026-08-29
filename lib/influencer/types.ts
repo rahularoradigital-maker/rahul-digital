@@ -102,6 +102,21 @@ export type CreatorSearchSpec = {
   tier: Tier | null;
 };
 
+/** The brand-side inputs the scoring engines compare a creator against. Derived from the confirmed
+ * BrandProfile + tracked competitors + the creative-gap intelligence + the search spec. Everything a score
+ * needs about "who the brand is and what it needs" lives here, so the scorers stay pure + testable. */
+export type BrandTarget = {
+  category: string | null;
+  keyProducts: string[];
+  targetCountry: string | null; // ISO-2 the brand sells to
+  languages: string[];
+  personaGender: "f" | "m" | null; // the customer persona's gender, when the brand has one
+  tone: string | null; // brand voice, e.g. "festive, elegant"
+  requiredFormats: ("video" | "static" | "carousel" | "ugc")[]; // creative the brand needs (from creative gaps)
+  contentKeywords: string[]; // topics/angles the brand needs the creator to cover
+  competitors: string[]; // competitor brand names/handles, for the overlap read
+};
+
 /** One component of a transparent score: its own sub-score, weight, and the evidence line behind it. */
 export type ScoreComponent = { key: string; score: number; weight: number; reason: string; confidence: Confidence };
 
