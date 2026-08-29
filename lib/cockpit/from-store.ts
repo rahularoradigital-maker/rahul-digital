@@ -9,6 +9,7 @@ import { buildDailySeries, type DailyInputRow } from "@/lib/cockpit/daily-series
 import { levelFunnels } from "@/lib/cockpit/level-funnel";
 import { marginalScaling } from "@/lib/scoring/marginal";
 import { assessDataQuality } from "@/lib/scoring/data-quality";
+import { daysUntilEnd } from "@/lib/scoring/fatigue";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "@/lib/creative/diversity";
 import type { CreativeFormat } from "@/lib/creative/fingerprint";
 import { VERDICT_WEIGHTS, type ScoreWeights } from "@/lib/rules/verdict";
@@ -158,7 +159,7 @@ export async function buildCockpitFromStore(opts: {
       name: m?.name ?? adId,
       objective: mapMetaObjective(rawObjective),
       rows: rows.map(toMetricsRow),
-      endsInDays: endUnix ? Math.max(0, Math.round((endUnix - nowSec) / 86_400)) : null,
+      endsInDays: daysUntilEnd(endUnix, nowSec),
       adSetId: m?.adset_id ?? rows[0]?.adset_id ?? undefined,
       campaignId: m?.campaign_id ?? rows[0]?.campaign_id ?? undefined,
       adsetName: m?.adset_name ?? undefined,

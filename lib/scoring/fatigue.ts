@@ -63,6 +63,16 @@ function saturation(freq: number): number {
   return Math.round(100 * (1 - Math.pow(Math.max(0, freq) + 1, -0.4)));
 }
 
+// Days until an ad set's scheduled end, for the half-life cap. A creative cannot outlive its ad set,
+// so a TODAY-or-FUTURE end date caps the half-life. A PAST end date (common on old accounts whose ad
+// sets ended long ago) must return null - NOT 0. Clamping a past date to 0 manufactured a bogus
+// "already past the fatigue line / ~0 day half-life" for healthy, currently-analyzed creatives.
+export function daysUntilEnd(endUnix: number | null | undefined, nowSec: number): number | null {
+  if (typeof endUnix !== "number") return null;
+  const d = Math.round((endUnix - nowSec) / 86_400);
+  return d >= 0 ? d : null; // past end date -> no future cap
+}
+
 /**
  * Read fatigue for one ad from its daily rows. `windowDays` is informational (the lookback
  * the user selected); the read itself uses the days actually present. `opts.endsInDays` is the

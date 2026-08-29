@@ -22,6 +22,7 @@ import { marginalScaling, type MarginalRead } from "./scoring/marginal.ts";
 import { buildDailySeries, type DailyInputRow, type DailyPoint } from "./cockpit/daily-series.ts";
 import { levelFunnels, type LevelFunnels } from "./cockpit/level-funnel.ts";
 import { assessDataQuality, type DataQuality, type QualityRow } from "./scoring/data-quality.ts";
+import { daysUntilEnd } from "./scoring/fatigue.ts";
 import { buildCockpitFromStore } from "./cockpit/from-store.ts";
 
 // The user's currently-active Meta account (most-recently connected) and its token.
@@ -299,7 +300,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     const realAds: RealAd[] = top.map((ad) => {
       const entry = rowsByAd.get(ad.externalId);
       const endUnix = entry?.adsetId ? adsetEnds.get(entry.adsetId) : undefined;
-      const endsInDays = typeof endUnix === "number" ? Math.max(0, Math.round((endUnix - nowSec) / 86_400)) : null;
+      const endsInDays = daysUntilEnd(endUnix, nowSec);
       // active: true only when Meta reports effective_status ACTIVE (rolls up campaign/adset/ad).
       // Unknown status (not returned) stays undefined -> treated as active downstream, so we never
       // hide a real budget leak just because a status lookup failed.

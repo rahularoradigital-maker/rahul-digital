@@ -1,7 +1,7 @@
 // Runnable check for the day-wise fatigue engine (lib/scoring/fatigue.ts).
 // node --experimental-strip-types scripts/check-fatigue-daywise.ts
 import assert from "node:assert/strict";
-import { readFatigue } from "../lib/scoring/fatigue.ts";
+import { readFatigue, daysUntilEnd } from "../lib/scoring/fatigue.ts";
 import type { MetricsRow } from "../lib/ad-source.ts";
 
 // Build `days` daily rows where clicks, frequency and spend move linearly from start->end.
@@ -100,5 +100,23 @@ const healthyEnding = readFatigue(
 );
 assert.equal(healthyEnding.daysToFatigue, 3, "ad-set end date caps the half-life");
 assert.ok(healthyEnding.evidence.some((e) => e.includes("ends in")), "evidence names the end-date cap");
+
+// --- End-date cap: a PAST ad-set end date must NOT clamp to 0. On old accounts (e.g. "Soch 2022")
+// long-ended ad sets have end dates in the past; clamping them to 0 manufactured a bogus "Account
+// half-life ~0 days" and "Already past the fatigue line" for healthy, flat, currently-analyzed ads. ---
+const NOW = 1_700_000_000; // fixed reference (Date.now() is unavailable here)
+assert.equal(daysUntilEnd(null, NOW), null, "no end date -> no cap");
+assert.equal(daysUntilEnd(undefined, NOW), null, "undefined end date -> no cap");
+assert.equal(daysUntilEnd(NOW - 400 * 86_400, NOW), null, "a PAST end date -> no cap (null), never 0");
+assert.equal(daysUntilEnd(NOW, NOW), 0, "an end date of exactly today -> 0");
+assert.equal(daysUntilEnd(NOW + 7 * 86_400, NOW), 7, "a future end date -> days until it");
+
+// A flat, healthy awareness ad whose ad set ENDED long ago must read "no dated crossing yet" - never a
+// 0-day half-life. (Regression for the live "Account half-life ~0 days" on Soch.) ---
+const flatEnded = readFatigue(
+  series(14, { impr: 100000, clicks0: 1000, clicks1: 1000, freq0: 2, freq1: 2.1, spend0: 1000, spend1: 1000 }),
+  { objective: "awareness", endsInDays: daysUntilEnd(NOW - 400 * 86_400, NOW) },
+);
+assert.equal(flatEnded.daysToFatigue, null, "a flat awareness ad with a long-past ad-set end has no half-life (not 0)");
 
 console.log("PASS: day-wise fatigue engine checks");
