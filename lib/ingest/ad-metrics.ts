@@ -30,6 +30,13 @@ export type SyncResult = { adsSeen: number; rows: number; since: string; ok: boo
 export async function syncAdMetrics(userId: string, accountExternalId: string, token: TokenSet): Promise<SyncResult> {
   const admin = createAdminClient();
 
+  // Always record the run outcome (ok/error/rows) so a background run is observable without server logs.
+  const writeState = (fields: Record<string, unknown>) =>
+    admin
+      .from("ad_sync_state")
+      .upsert({ user_id: userId, account_external_id: accountExternalId, last_run_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...fields }, { onConflict: "user_id,account_external_id" })
+      .then(undefined, () => {});
+
   // Incremental window: first run backfills BACKFILL_DAYS; later runs re-pull only the recent tail + new days.
   let since = isoDaysAgo(BACKFILL_DAYS);
   try {
@@ -57,7 +64,9 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
   try {
     rows = await fetchAccountDayWiseRows(accountExternalId, since, token);
   } catch (e) {
-    return { adsSeen: 0, rows: 0, since, ok: false, error: e instanceof Error ? e.message : "pull failed" };
+    const error = e instanceof Error ? e.message : "pull failed";
+    await writeState({ last_ok: false, last_error: error.slice(0, 500) });
+    return { adsSeen: 0, rows: 0, since, ok: false, error };
   }
 
   // Upsert in batches. Only rows with real activity are stored (spend or impressions), so a brand with
@@ -89,17 +98,13 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
   for (let i = 0; i < dbRows.length; i += UPSERT_BATCH) {
     const batch = dbRows.slice(i, i + UPSERT_BATCH);
     const { error } = await admin.from("ad_metrics").upsert(batch, { onConflict: "user_id,account_external_id,ad_id,date" });
-    if (error) return { adsSeen: 0, rows: i, since, ok: false, error: error.message };
+    if (error) {
+      await writeState({ last_ok: false, last_error: `upsert: ${error.message}`.slice(0, 500), last_rows: i });
+      return { adsSeen: 0, rows: i, since, ok: false, error: error.message };
+    }
   }
 
   const adsSeen = new Set(active.map((r) => r.adId)).size;
-  await admin
-    .from("ad_sync_state")
-    .upsert(
-      { user_id: userId, account_external_id: accountExternalId, last_synced_date: isoDaysAgo(0), last_run_at: new Date().toISOString(), ads_seen: adsSeen, updated_at: new Date().toISOString() },
-      { onConflict: "user_id,account_external_id" },
-    )
-    .then(undefined, () => {}); // bookmark write is best-effort; the upsert above is the real work
-
+  await writeState({ last_ok: true, last_error: null, last_synced_date: isoDaysAgo(0), ads_seen: adsSeen, last_rows: dbRows.length });
   return { adsSeen, rows: dbRows.length, since, ok: true };
 }
