@@ -9,7 +9,8 @@ import { readToken } from "./oauth-store.ts";
 import { LruMap } from "./lru.ts";
 import { createSingleFlight } from "./single-flight.ts";
 import { isRenderableShape } from "./cockpit/renderable.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
+import { todayIn, daysAgo } from "./date-window.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, fetchAccountTimezone, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { deterministicFingerprint, type CreativeAsset } from "./creative/fingerprint.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
@@ -149,15 +150,19 @@ function perfMark(label: string, sinceMs: number): number {
 async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = [], window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
-  let acct: { id: string; external_id: string; name: string | null } | null = null;
+  let acct: { id: string; external_id: string; name: string | null; timezone: string | null } | null = null;
   try {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("ad_accounts")
-      .select("id, external_id, name")
+      .select("id, external_id, name, timezone")
       .eq("user_id", userId)
       .eq("platform", "meta")
       .eq("status", "connected")
+      // Match getActiveAccountExternalId (the cache key): the explicit is_active flag decides the
+      // active account, connected_at is only the fallback. Without this the cache key and the pull
+      // could resolve DIFFERENT accounts if the two ever disagree.
+      .order("is_active", { ascending: false })
       .order("connected_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -179,9 +184,23 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
   try {
     const t0 = performance.now();
     let tp = t0;
-    // A custom range wins over lookbackDays; otherwise since = daysAgo, until = today.
-    const since = window ? window.since : daysAgo(lookbackDays);
-    const until = window ? window.until : undefined;
+    // ISSUE 29: resolve the account's reporting timezone so date windows match Meta's calendar, not
+    // server UTC. Use the stored value; if absent, fetch once and persist (fire-and-forget). A miss
+    // leaves tz null and daysAgo/todayIn fall back to UTC - i.e. exactly the prior behavior, never a
+    // broken window.
+    let tz = acct.timezone;
+    if (!tz) {
+      tz = await fetchAccountTimezone(acct.external_id, token);
+      if (tz) {
+        const acctId = acct.id;
+        const zone = tz;
+        void createAdminClient().from("ad_accounts").update({ timezone: zone }).eq("id", acctId).then(undefined, () => {});
+      }
+    }
+    // A custom range wins over lookbackDays; otherwise since = N days ago, until = today - both in the
+    // account timezone.
+    const since = window ? window.since : daysAgo(lookbackDays, tz);
+    const until = window ? window.until : todayIn(tz);
     // Which campaigns to include: the campaign picker, or the objective picker mapped to
     // the account's campaigns of those objectives. undefined = all; [] = matched nothing.
     const campaignIds = await resolveCampaignIds(acct.external_id, token, campaignId, objectives);
@@ -561,8 +580,3 @@ export async function fetchLiveCockpit(
   return withFreshness(result, Date.now(), false); // a cold pull just synced now (error state passes through)
 }
 
-function daysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
-}

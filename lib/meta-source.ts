@@ -367,6 +367,17 @@ export async function fetchAccountCurrency(accountExternalId: string, token: Tok
   }
 }
 
+/** The ad account's reporting timezone (e.g. "Asia/Kolkata"), so date windows match Meta's calendar
+ * (ISSUE 29). null on any failure - the caller falls back to UTC semantics. */
+export async function fetchAccountTimezone(accountExternalId: string, token: TokenSet): Promise<string | null> {
+  try {
+    const json = await graphGet<{ timezone_name?: string }>(`act_${accountExternalId}`, token.accessToken, { fields: "timezone_name" });
+    return json.timezone_name ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Active campaigns in an ad account (numeric id, no act_ prefix), for the campaign filter. */
 export async function listMetaCampaigns(
   accountExternalId: string,
