@@ -3,12 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { saveShopifyConnection } from "@/lib/creative-production/shopify/store";
 import { shopifyGraphQL } from "@/lib/creative-production/shopify/client";
 import { normalizeShopDomain } from "@/lib/creative-production/shopify/normalize";
+import { syncPublicShopifyProducts } from "@/lib/creative-production/shopify/public-sync";
 
-// Creative Production — connect a Shopify store via a CUSTOM-APP Admin API token (the fast path: the store
-// owner creates a custom app in Shopify admin, grants read_products, and pastes the Admin API access token).
-// We validate the token with one lightweight query before storing it encrypted. Auth-gated (a user connects
-// only their own store). The full public-app OAuth flow lives in ../authorize + ../callback.
-export const maxDuration = 30;
+// Creative Production — connect a Shopify store. PRIMARY path: the user pastes only their store URL; we read
+// the shop's OWN public product feed (/products.json), which needs no token or store access. OPTIONAL upgrade:
+// a custom-app Admin API token for private/full data (unpublished, inventory, metafields). Auth-gated. The
+// full public-app OAuth flow lives in ../authorize + ../callback.
+export const maxDuration = 60;
 
 const SHOP_QUERY = `query { shop { name myshopifyDomain } }`;
 
@@ -25,14 +26,14 @@ export async function POST(request: NextRequest) {
   }
 
   const shopDomain = normalizeShopDomain(String(body.shopDomain ?? ""));
-  if (!shopDomain) return NextResponse.json({ error: "Enter a valid store domain, e.g. your-store.myshopify.com." }, { status: 400 });
+  if (!shopDomain) return NextResponse.json({ error: "Enter a valid store URL, e.g. your-store.com." }, { status: 400 });
 
-  // URL-only fallback (no token yet): store the domain so the UI shows it, degrade features gracefully.
+  // PRIMARY path: no token -> read the public storefront feed and pull the whole published catalogue.
   if (body.urlOnly || !body.accessToken) {
-    const ok = await saveShopifyConnection(user.id, shopDomain, null, null);
-    return ok
-      ? NextResponse.json({ ok: true, status: "url_only", shopDomain })
-      : NextResponse.json({ error: "Could not save. Please try again." }, { status: 500 });
+    const res = await syncPublicShopifyProducts(user.id, shopDomain);
+    if (!res.ok) return NextResponse.json({ error: res.error ?? "Could not read products from that URL." }, { status: 400 });
+    await saveShopifyConnection(user.id, res.shopDomain, null, "public_feed", "2026-07", "url_public");
+    return NextResponse.json({ ok: true, status: "url_public", shopDomain: res.shopDomain, productsSeen: res.productsSeen });
   }
 
   const accessToken = String(body.accessToken).trim();

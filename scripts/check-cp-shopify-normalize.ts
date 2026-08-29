@@ -1,7 +1,7 @@
 // One runnable check for the Shopify product normalize (Creative Production). No frameworks.
 // Run: node --experimental-strip-types scripts/check-cp-shopify-normalize.ts
 import assert from "node:assert/strict";
-import { normalizeProduct, normalizeProductsPage, normalizeShopDomain, type ShopifyProductNode } from "../lib/creative-production/shopify/normalize.ts";
+import { normalizeProduct, normalizeProductsPage, normalizeShopDomain, normalizePublicProduct, normalizePublicPage, type ShopifyProductNode } from "../lib/creative-production/shopify/normalize.ts";
 
 // A node with no id cannot be keyed -> dropped, never faked.
 assert.equal(normalizeProduct({} as ShopifyProductNode), null, "no id -> null");
@@ -66,4 +66,47 @@ assert.equal(normalizeShopDomain("  store.com  "), "store.com");
 assert.equal(normalizeShopDomain("not a domain"), null, "spaces -> null");
 assert.equal(normalizeShopDomain("nodot"), null, "no dot -> null");
 
-console.log("PASS: Shopify product normalize (field mapping, min-price, sparse->null, pagination, domain)");
+// ---------- Public feed (/products.json) normalize ----------
+const pub = normalizePublicProduct(
+  {
+    id: 456,
+    title: "Public Tee",
+    handle: "public-tee",
+    body_html: "<p>A <b>soft</b> tee</p>",
+    product_type: "Apparel",
+    vendor: "Acme",
+    tags: ["cotton", "summer"],
+    images: [{ src: "https://cdn.shopify.com/a.jpg", alt: "front" }, { src: "https://cdn.shopify.com/b.jpg", alt: null }],
+    variants: [
+      { id: 1, title: "L", price: "29.00", compare_at_price: "39.00", sku: "T-L", available: true, inventory_quantity: 5 },
+      { id: 2, title: "S", price: "19.00", compare_at_price: "25.00", sku: "T-S", available: false },
+    ],
+  },
+  "https://acme.com",
+);
+assert.ok(pub);
+assert.equal(pub!.productId, "456", "numeric id -> string");
+assert.equal(pub!.description, "A soft tee", "body_html stripped to text");
+assert.equal(pub!.price, 19, "min-variant price wins (string prices parsed)");
+assert.equal(pub!.compareAtPrice, 25, "compare-at of the min-price variant");
+assert.equal(pub!.onlineStoreUrl, "https://acme.com/products/public-tee", "product url built from origin + handle");
+assert.equal(pub!.featuredImageUrl, "https://cdn.shopify.com/a.jpg");
+assert.equal(pub!.status, "active", "public feed products are active");
+assert.deepEqual(pub!.tags, ["cotton", "summer"]);
+assert.equal(pub!.images.length, 2);
+assert.equal(pub!.variants[0].availableForSale, true, "available -> availableForSale");
+
+// String tags fall back to comma-split; a node without id is dropped.
+const strTags = normalizePublicProduct({ id: 7, title: "X", handle: "x", tags: "a, b ,c", variants: [] }, "https://s.com");
+assert.deepEqual(strTags!.tags, ["a", "b", "c"]);
+assert.equal(normalizePublicProduct({ title: "no id" }, "https://s.com"), null, "no id -> dropped");
+
+// Page detection: a real feed -> isShopify true; a non-feed payload -> isShopify false, empty products.
+const feed = normalizePublicPage({ products: [{ id: 1, title: "A", handle: "a", variants: [] }] }, "https://s.com");
+assert.equal(feed.isShopify, true);
+assert.equal(feed.products.length, 1);
+const notFeed = normalizePublicPage({ errors: "Not Found" }, "https://s.com");
+assert.equal(notFeed.isShopify, false, "no products array -> not a Shopify feed");
+assert.equal(notFeed.products.length, 0);
+
+console.log("PASS: Shopify product normalize (field mapping, min-price, sparse->null, pagination, domain, public feed)");

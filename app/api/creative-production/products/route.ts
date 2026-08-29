@@ -34,5 +34,6 @@ export async function GET() {
     productType: p.product_type as string | null,
   }));
 
-  return NextResponse.json({ connected: conn.status === "connected", status: conn.status, shopDomain: conn.shopDomain, products });
+  const connected = conn.status === "connected" || conn.status === "url_public";
+  return NextResponse.json({ connected, status: conn.status, shopDomain: conn.shopDomain, products });
 }

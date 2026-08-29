@@ -16,6 +16,7 @@ export async function saveShopifyConnection(
   accessToken: string | null,
   scopes: string | null,
   apiVersion = "2026-07",
+  statusOverride?: string,
 ): Promise<boolean> {
   const admin = createAdminClient();
   const { error } = await admin.from("shopify_connections").upsert(
@@ -25,7 +26,7 @@ export async function saveShopifyConnection(
       access_token_encrypted: accessToken ? encryptToken(accessToken) : null,
       scopes,
       api_version: apiVersion,
-      status: accessToken ? "connected" : "url_only",
+      status: statusOverride ?? (accessToken ? "connected" : "url_only"),
       connected_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
