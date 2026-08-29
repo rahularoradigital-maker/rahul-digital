@@ -21,8 +21,12 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
   const conc = view.concentration;
   const waste = view.waste;
   const winners = view.leaderboard.filter((a) => a.verdict === "winner");
-  const totalSpendRs = view.totals.spendRs;
-  const accountRoas = view.totals.roas; // blended account ROAS, the baseline for "ROI vs account"
+  // Denominator + baseline are the TRUE scope-wide totals (Ads-Manager-matching, catalog-aware), NOT
+  // view.totals - view.totals is the top-N analyzed-ads subset, so dividing by it overstated each ad's
+  // "share of total account spend" and mislabeled the blended-ROAS baseline. Share now genuinely means
+  // share of the whole account's spend this window.
+  const totalSpendRs = data.scopeTotals.spendRs;
+  const accountRoas = data.scopeTotals.roas; // blended account ROAS, the baseline for "ROI vs account"
   const topBySpend = [...view.leaderboard].filter((a) => a.spendRs > 0).sort((a, b) => b.spendRs - a.spendRs).slice(0, 8);
 
   return (
