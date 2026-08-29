@@ -27,7 +27,7 @@ export type { AccountMetrics } from "@/lib/meta-sync";
 // here so server pages keep a single import site for the loader + windows.
 export { WINDOWS, parseDays } from "./windows";
 
-export type ConnectReason = "not_connected" | "error" | "no_data";
+export type ConnectReason = "not_connected" | "error" | "no_data" | "syncing";
 export type PerfBreakdown = { authMs: number; scopeMs: number; cockpitMs: number; totalMs: number; freshness: string };
 
 // Discriminated on `connected`: a page either has real data to render, or it does
@@ -89,7 +89,12 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     return { connected: false, days: effectiveDays, reason: "no_data", accountName: live.accountName, userEmail };
   }
   if (live.status === "error") {
-    return { connected: false, days: effectiveDays, reason: "error", errorNote: live.message, userEmail };
+    // A cold pull that exceeded its in-request cap returns a "Still syncing" message: the background
+    // pull is still warming the cache (e.g. right after switching a filter/window). That is a transient
+    // LOADING state, not a connection failure - render it as an auto-refreshing loader, not a scary
+    // "could not reach your account / reconnect" error.
+    const syncing = (live.message ?? "").startsWith("Still syncing");
+    return { connected: false, days: effectiveDays, reason: syncing ? "syncing" : "error", errorNote: syncing ? undefined : live.message, userEmail };
   }
   return { connected: false, days: effectiveDays, reason: "not_connected", userEmail };
 }
