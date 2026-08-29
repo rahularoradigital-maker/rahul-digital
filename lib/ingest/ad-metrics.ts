@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { streamAccountDayWiseRows, listAllSpendingAdIds, fetchAdMeta, fetchAdCreatives, listAdSetEnds, type AdMetricRow } from "@/lib/meta-source";
-import { thumbUrlOf } from "@/lib/creative/fingerprint";
+import { thumbUrlOf, deterministicFingerprint } from "@/lib/creative/fingerprint";
 import type { TokenSet } from "@/lib/ad-source";
 
 // Ingestion pipeline (roadmap #1): pull EVERY ad's day-wise metrics for an account into the ad_metrics
@@ -158,6 +158,7 @@ async function syncAdMeta(
       adset_name: m?.adsetName ?? null,
       thumb_url: c ? thumbUrlOf(c) : null,
       is_catalog: c?.isCatalog ?? false,
+      format: c ? deterministicFingerprint(c).format : null, // for the creative-diversity read off the store
       adset_end_unix: ids?.adsetId ? (ends.get(ids.adsetId) ?? null) : null,
       updated_at: new Date().toISOString(),
     };
