@@ -22,7 +22,9 @@ export async function POST(request: NextRequest) {
   // the full 90-day default. Bounded so it can never ask for more than the comparison window.
   const daysParamRaw = Number(request.nextUrl.searchParams.get("days"));
   const backfillDays = Number.isFinite(daysParamRaw) && daysParamRaw > 0 ? Math.min(90, Math.floor(daysParamRaw)) : 90;
-  const res = await syncAdMetrics(user.id, session.activeExternalId, session.token, backfillDays);
+  // ONE resumable, deadline-bounded slice. For an account too big to finish in one request the caller
+  // re-POSTs until `complete` is true (each call advances the stalest ads); a small account finishes in one.
+  const res = await syncAdMetrics(user.id, session.activeExternalId, session.token, { backfillDays });
   if (!res.ok) return NextResponse.json({ ok: false, error: res.error ?? "Sync failed." }, { status: 502 });
-  return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since });
+  return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since, processed: res.processed, remaining: res.remaining, complete: res.complete });
 }

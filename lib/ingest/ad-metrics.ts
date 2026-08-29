@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { streamAccountDayWiseRows, listAllSpendingAdIds, fetchAdMeta, fetchAdCreatives, listAdSetEnds, type AdMetricRow } from "@/lib/meta-source";
 import { thumbUrlOf, deterministicFingerprint } from "@/lib/creative/fingerprint";
+import { selectAdsToSync } from "@/lib/ingest/select-ads";
 import type { TokenSet } from "@/lib/ad-source";
 
 // Ingestion pipeline (roadmap #1): pull EVERY ad's day-wise metrics for an account into the ad_metrics
@@ -10,27 +11,35 @@ import type { TokenSet } from "@/lib/ad-source";
 // paginate through the whole account. Idempotent: re-running upserts the same rows, so a partial run is
 // safe to retry.
 //
-// Incremental: after the first (backfill) run, each run re-pulls only the last RESYNC_TAIL_DAYS plus any
-// new days. The tail is re-pulled because Meta keeps attributing conversions to recent days for days after
-// the click, so yesterday's revenue/purchases change under us - we must overwrite, not skip.
+// RESUMABLE + deadline-bounded: an account with 2-3k ads cannot be fully pulled inside one serverless
+// request (300s). So each run does a BOUNDED slice - it syncs the ads that are missing or stalest first,
+// stops before the deadline, and records durable progress. Repeated runs (client-looped for a manual sync,
+// self-chained for the cron) converge to complete coverage, then keep it fresh. Idempotent throughout.
 
 const BACKFILL_DAYS = 90; // the app-wide comparison window; first sync backfills this much history
-const RESYNC_TAIL_DAYS = 4; // re-pull this many recent days each run to absorb late attribution
 const UPSERT_BATCH = 500; // rows per upsert call, so a huge account never sends one giant payload
 const AD_CHUNK = 40; // ad ids per day-wise pull: keeps each Meta page fast enough to beat the request timeout
+const DEADLINE_MS = 230_000; // stop a run here, under the 300s function cap, leaving margin to record progress + chain
+const REFRESH_INTERVAL_MS = 20 * 60 * 60 * 1000; // once an ad is synced, skip it for ~a day (then re-pull to absorb late attribution)
 
 function isoDaysAgo(n: number): string {
   return new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 }
 
-export type SyncResult = { adsSeen: number; rows: number; since: string; ok: boolean; error?: string };
+// processed/remaining/complete drive the resumable loop: the caller re-invokes until complete === true.
+export type SyncResult = { adsSeen: number; rows: number; since: string; ok: boolean; error?: string; processed: number; remaining: number; complete: boolean };
 
 /**
- * Sync one account's day-wise ad metrics into the ad_metrics store. Complete coverage: no top-N cap.
- * Returns counts for observability. Never throws - returns { ok:false, error } so a cron loop continues.
+ * Sync one account's day-wise metrics + metadata into the store, RESUMABLY. Complete coverage, no top-N cap,
+ * but BOUNDED per run: it processes the ads that are missing or stalest first, up to opts.deadlineMs, then
+ * returns { processed, remaining, complete }. Re-invoke until complete === true. Never throws - returns
+ * ok:false so a cron loop continues.
  */
-export async function syncAdMetrics(userId: string, accountExternalId: string, token: TokenSet, backfillDays: number = BACKFILL_DAYS): Promise<SyncResult> {
+export async function syncAdMetrics(userId: string, accountExternalId: string, token: TokenSet, opts: { backfillDays?: number; deadlineMs?: number } = {}): Promise<SyncResult> {
   const admin = createAdminClient();
+  const backfillDays = opts.backfillDays ?? BACKFILL_DAYS;
+  const deadline = Date.now() + (opts.deadlineMs ?? DEADLINE_MS);
+  const since = isoDaysAgo(backfillDays);
 
   // Always record the run outcome (ok/error/rows) so a background run is observable without server logs.
   const writeState = (fields: Record<string, unknown>) =>
@@ -38,14 +47,6 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
       .from("ad_sync_state")
       .upsert({ user_id: userId, account_external_id: accountExternalId, last_run_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...fields }, { onConflict: "user_id,account_external_id" })
       .then(undefined, () => {});
-
-  // Always cover the full window [today - backfillDays, today]. Every successful run therefore leaves the
-  // store holding the complete window (and refreshes recent days, whose conversions Meta keeps attributing
-  // late). ponytail: this re-pulls the whole window each run - correct + simple. An incremental "tail-only
-  // after first backfill" optimization is a documented next step (APP-CANON roadmap) for when re-pull cost
-  // at scale (hundreds of accounts x thousands of ads) matters; RESYNC_TAIL_DAYS is reserved for it.
-  void RESYNC_TAIL_DAYS;
-  const since = isoDaysAgo(backfillDays);
 
   // Map one metrics row to its DB shape. Only rows with real activity (spend or impressions) are stored,
   // so a brand with 5 ads stores 5 and one with 5,000 stores 5,000 - nothing capped, nothing empty stored.
@@ -72,55 +73,63 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
     updated_at: new Date().toISOString(),
   });
 
-  const seenAds = new Set<string>();
-  let totalRows = 0;
-  const persist = async (batch: AdMetricRow[]) => {
-    const active = batch.filter((r) => r.spend > 0 || r.impressions > 0);
-    if (active.length === 0) return;
-    for (let i = 0; i < active.length; i += UPSERT_BATCH) {
-      const chunk = active.slice(i, i + UPSERT_BATCH).map(toDbRow);
-      const { error } = await admin.from("ad_metrics").upsert(chunk, { onConflict: "user_id,account_external_id,ad_id,date" });
-      if (error) throw new Error(`upsert: ${error.message}`);
-    }
-    active.forEach((r) => seenAds.add(r.adId));
-    totalRows += active.length;
-  };
-  // Capture each ad's parent ids as we stream, so the metadata sync can attach campaign/ad-set + end dates.
-  const idMap = new Map<string, { campaignId: string | null; adsetId: string | null }>();
-  const persistAndTrack = async (batch: AdMetricRow[]) => {
-    for (const r of batch) if (!idMap.has(r.adId)) idMap.set(r.adId, { campaignId: r.campaignId, adsetId: r.adsetId });
-    await persist(batch);
-  };
-
-  let ads: { adId: string; name: string }[] = [];
+  // 1. Enumerate EVERY spending ad in the window (fast: one paginated insights call, no per-ad work yet).
+  let allAds: { adId: string; name: string }[];
   try {
-    // Enumerate EVERY spending ad (complete, no cap), then pull day-wise in fast filtered chunks - the
-    // whole-account day-wise query is too heavy for Meta to page within the timeout, but ~40 ids at a time
-    // pages quickly. Each page is upserted immediately, so a run cut short still persists what it pulled.
-    ads = await listAllSpendingAdIds(accountExternalId, since, token);
-    for (let i = 0; i < ads.length; i += AD_CHUNK) {
-      const chunk = ads.slice(i, i + AD_CHUNK).map((a) => a.adId);
-      await streamAccountDayWiseRows(accountExternalId, since, token, persistAndTrack, undefined, chunk);
+    allAds = await listAllSpendingAdIds(accountExternalId, since, token);
+  } catch (e) {
+    const error = e instanceof Error ? e.message : "sync failed";
+    await writeState({ last_ok: false, last_error: error.slice(0, 500) });
+    return { adsSeen: 0, rows: 0, since, ok: false, error, processed: 0, remaining: 0, complete: false };
+  }
+
+  // 2. Pick the ads still needing work: never synced (no ad_meta row) first, then the stalest, and skip any
+  //    synced within REFRESH_INTERVAL. This is what makes the sync resumable AND self-refreshing - every run
+  //    advances the least-covered ads, so repeated runs converge on full coverage and then keep it fresh.
+  const { data: metaRows } = await admin.from("ad_meta").select("ad_id, updated_at").eq("user_id", userId).eq("account_external_id", accountExternalId);
+  const syncedAt = new Map<string, number>(((metaRows ?? []) as { ad_id: string; updated_at: string }[]).map((r) => [r.ad_id, Date.parse(r.updated_at)]));
+  const toProcess = selectAdsToSync(allAds, syncedAt, Date.now() - REFRESH_INTERVAL_MS);
+
+  // 3. Process chunks until the deadline (or done). Each chunk syncs metrics AND metadata TOGETHER, so an ad
+  //    is covered atomically: a run cut short leaves whole, usable ads behind, never half-synced ones.
+  let totalRows = 0;
+  let processed = 0;
+  let metaError: string | null = null;
+  try {
+    for (let i = 0; i < toProcess.length; i += AD_CHUNK) {
+      if (Date.now() > deadline) break; // out of time - the next run resumes at the next stalest ad
+      const chunk = toProcess.slice(i, i + AD_CHUNK);
+      const idMap = new Map<string, { campaignId: string | null; adsetId: string | null }>();
+      const persist = async (batch: AdMetricRow[]) => {
+        for (const r of batch) if (!idMap.has(r.adId)) idMap.set(r.adId, { campaignId: r.campaignId, adsetId: r.adsetId });
+        const active = batch.filter((r) => r.spend > 0 || r.impressions > 0);
+        for (let j = 0; j < active.length; j += UPSERT_BATCH) {
+          const { error } = await admin.from("ad_metrics").upsert(active.slice(j, j + UPSERT_BATCH).map(toDbRow), { onConflict: "user_id,account_external_id,ad_id,date" });
+          if (error) throw new Error(`upsert: ${error.message}`);
+        }
+        totalRows += active.length;
+      };
+      await streamAccountDayWiseRows(accountExternalId, since, token, persist, undefined, chunk.map((a) => a.adId));
+      // Metadata for this chunk. A failure is recorded but never fatal to the metrics just stored - the ad
+      // stays "stale" (its ad_meta row isn't written), so the next run naturally retries it.
+      try {
+        await syncAdMeta(userId, accountExternalId, token, chunk, idMap);
+      } catch (e) {
+        metaError = e instanceof Error ? e.message : "ad_meta sync failed";
+        console.error("[ingest] ad_meta chunk failed (metrics stored; ad stays stale for retry)", e);
+      }
+      processed += chunk.length;
     }
   } catch (e) {
     const error = e instanceof Error ? e.message : "sync failed";
-    await writeState({ last_ok: false, last_error: error.slice(0, 500), last_rows: totalRows });
-    return { adsSeen: seenAds.size, rows: totalRows, since, ok: false, error };
+    await writeState({ last_ok: false, last_error: error.slice(0, 500), ads_seen: allAds.length, last_rows: totalRows });
+    return { adsSeen: allAds.length, rows: totalRows, since, ok: false, error, processed, remaining: toProcess.length - processed, complete: false };
   }
 
-  // Metadata (name, status, parent names, creative, end date) for every ad, so the app can render + rank
-  // from the DB. A failure here is recorded in last_error (not swallowed behind last_ok:true, which once
-  // left an empty ad_meta and stranded the cockpit on the slow live pull). Metrics stay stored regardless.
-  let metaError: string | null = null;
-  try {
-    await syncAdMeta(userId, accountExternalId, token, ads, idMap);
-  } catch (e) {
-    metaError = e instanceof Error ? e.message : "ad_meta sync failed";
-    console.error("[ingest] ad_meta sync failed (metrics still stored)", e);
-  }
-
-  await writeState({ last_ok: metaError === null, last_error: metaError ? `metadata: ${metaError}`.slice(0, 500) : null, last_synced_date: isoDaysAgo(0), ads_seen: seenAds.size, last_rows: totalRows });
-  return { adsSeen: seenAds.size, rows: totalRows, since, ok: true };
+  const remaining = toProcess.length - processed;
+  const complete = remaining === 0;
+  await writeState({ last_ok: metaError === null, last_error: metaError ? `metadata: ${metaError}`.slice(0, 500) : null, last_synced_date: isoDaysAgo(0), ads_seen: allAds.length, last_rows: totalRows });
+  return { adsSeen: allAds.length, rows: totalRows, since, ok: true, processed, remaining, complete };
 }
 
 // Sync per-ad METADATA (name, status, parent names, creative thumb + catalog flag, ad-set end date) into
