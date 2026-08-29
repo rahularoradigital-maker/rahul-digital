@@ -132,7 +132,12 @@ export function Topbar() {
       {/* Tier 2 - scope filters, a calm toolbar under a hairline. Wraps cleanly on narrow screens. */}
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--hairline)] pt-3">
         <AccountSwitcher />
-        <DateWindow onChange={() => startTransition(() => router.refresh())} />
+        {/* Window is FIXED at 90 days everywhere: ranking always compares each ad to the account's own
+            last 90 days, day by day. A static chip (not a toggle) so the UI never implies it can change. */}
+        <span className={FILTER_TRIGGER} title="Ranking always compares each ad against the account's last 90 days, day by day - a stable, formula-driven self-baseline.">
+          <span className={FILTER_LABEL}>Window</span>
+          <span>Last 90 days</span>
+        </span>
         <ObjectiveSwitcher />
         <CatalogSwitcher />
         <CampaignSwitcher />

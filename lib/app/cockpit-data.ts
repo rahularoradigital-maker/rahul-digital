@@ -110,7 +110,13 @@ type CookieReader = { get(name: string): { value: string } | undefined };
  * compute the SAME cache key - Ask reuses the dashboard's already-warm cockpit instead of triggering
  * its own separate cold pull, and answers about the window the user is actually viewing.
  */
-export function resolveCockpitScope(cookieStore: CookieReader, defaultDays: number) {
+// PRODUCT RULE: comparison and ranking ALWAYS use a fixed 90-day day-wise self-baseline (an ad is
+// ranked against the account's own last 90 days, day by day - stable, not a noisy short window). The
+// whole app analyzes this one window, so headline totals, KPI cards, funnel, and the leaderboard are
+// all consistent. The Dates toggle no longer changes the analysis window; every surface is 90 days.
+export const COMPARISON_DAYS = 90;
+
+export function resolveCockpitScope(cookieStore: CookieReader, _defaultDays: number) {
   const campaignId = cookieStore.get("adbrain.campaign")?.value || undefined;
   const objectivesRaw = cookieStore.get("adbrain.objectives")?.value || "";
   const objectives = objectivesRaw ? objectivesRaw.split(",").filter(Boolean) : [];
@@ -118,10 +124,17 @@ export function resolveCockpitScope(cookieStore: CookieReader, defaultDays: numb
   // Catalog include/exclude (topbar objective filter). Only the explicit "exclude" opts out;
   // anything else (unset, or a stale value) stays the default "include" = current behavior.
   const catalog: CatalogMode = cookieStore.get("adbrain.catalog")?.value === "exclude" ? "exclude" : "include";
-  const win = parseWindowCookie(cookieStore.get("adbrain.window")?.value);
-  const lookbackDays = win?.kind === "days" ? win.days : win?.kind === "range" ? rangeDays(win.since, win.until) : defaultDays;
-  const explicitWindow = win?.kind === "range" ? { since: win.since, until: win.until } : undefined;
-  return { lookbackDays, campaignId, objectives, explicitWindow, weights, catalog };
+  // Fixed 90-day window everywhere: the Dates cookie is intentionally ignored so ranking is always the
+  // 90-day day-wise baseline. explicitWindow is always undefined now (no custom range narrows the
+  // comparison); the cast keeps the {since,until}|undefined shape callers still destructure and type on.
+  return {
+    lookbackDays: COMPARISON_DAYS,
+    campaignId,
+    objectives,
+    explicitWindow: undefined as { since: string; until: string } | undefined,
+    weights,
+    catalog,
+  };
 }
 
 // Parse the adbrain.window cookie. "days:<n>" -> preset; "range:<from>:<to>" -> custom

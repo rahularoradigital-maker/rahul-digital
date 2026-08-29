@@ -17,10 +17,11 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300; // many accounts x an occasional cold pull
 
 const CONCURRENCY = 3; // bounded so a sync wave never stampedes Meta's rate limits
-// Pre-warm BOTH windows a user actually opens: 14 (the dashboard default) and 30 (the common
-// "last 30 days" view). Every feature/page shares one cockpit cache per window, so warming a window
-// makes the whole app instant for it on the next visit - not a per-feature pull.
-const WARM_WINDOWS = [14, 30];
+// Pre-warm the ONE window the whole app now uses: 90 days (the fixed comparison/ranking baseline, see
+// COMPARISON_DAYS). Every feature/page shares one cockpit cache for it, so warming it makes the whole
+// app instant on the next visit - and a 90-day day-wise pull is the slowest cold pull, so warming it
+// nightly is what keeps the app fast.
+const WARM_WINDOWS = [90];
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;

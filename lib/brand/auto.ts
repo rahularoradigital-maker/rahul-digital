@@ -31,7 +31,7 @@ export async function autoDeriveBrandDraft(
   // cache; ad NAMES alone carry the category/product signal Gemini needs. Currency is a cheap side call.
   const [currency, live, website] = await Promise.all([
     fetchAccountCurrency(accountExternalId, token).catch(() => null),
-    fetchLiveCockpit(userId, 14).catch(() => null),
+    fetchLiveCockpit(userId, 90).catch(() => null), // 90 = the app-wide window, so this hits the warm cache
     fetchBrandWebsite(accountExternalId, token).catch(() => null), // real landing-host website, never guessed
   ]);
   const adNames =

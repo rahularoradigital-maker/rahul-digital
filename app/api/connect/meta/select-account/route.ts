@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
   // pull), and Market > Brand already has a DRAFT profile waiting to review. Both are best-effort.
   try {
     after(async () => {
-      await fetchLiveCockpit(user.id, 14).catch(() => {}); // warm first
+      await fetchLiveCockpit(user.id, 90).catch(() => {}); // warm the app-wide 90-day window first
       await autoDeriveBrandDraft(user.id, id, match.name, session.token).catch(() => {}); // reuse warm ads
     });
   } catch {

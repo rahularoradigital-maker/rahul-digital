@@ -82,7 +82,7 @@ export async function getUserMetaSession(
 // the top 25. The SWR cache serves instantly after the first load, so the deeper pull is paid
 // once per window. ponytail: a background sync job replaces this per-request fetch at scale (ADR-0004).
 const MAX_ADS = 100;
-const LOOKBACK_DAYS = 30;
+const LOOKBACK_DAYS = 90; // the fixed app-wide comparison/ranking window (see COMPARISON_DAYS)
 
 // Account-level raw metrics summed from the real day-wise rows, for KPIs the Meta
 // account can answer directly (impressions, clicks, CPM, CTR, CPC, CPA). Derived
