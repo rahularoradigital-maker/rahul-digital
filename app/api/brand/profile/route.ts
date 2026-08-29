@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession, fetchLiveCockpit } from "@/lib/meta-sync";
-import { fetchAccountCurrency } from "@/lib/meta-source";
+import { fetchAccountCurrency, fetchBrandWebsite } from "@/lib/meta-source";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 import { deriveBrandProfile, loadBrandProfile, saveBrandProfile, type DerivedProfile } from "@/lib/brand/profile";
 
@@ -74,9 +74,12 @@ export async function POST(request: NextRequest) {
   // hits the warm cache from the cockpit they are viewing, keeping this fast; names alone are enough
   // for Gemini to read the category/products.
   const scope = resolveCockpitScope(await cookies(), 14);
-  const [currency, live] = await Promise.all([
+  // Website is discovered from REAL ad landing links (never LLM-guessed) alongside the derive - see
+  // fetchBrandWebsite. Runs in parallel so it adds no latency.
+  const [currency, live, website] = await Promise.all([
     fetchAccountCurrency(acct, session.token),
     fetchLiveCockpit(user.id, scope.lookbackDays, scope.campaignId, scope.objectives, scope.explicitWindow, scope.weights),
+    fetchBrandWebsite(acct, session.token),
   ]);
   const adNames = live.status === "connected" ? live.view.leaderboard.map((a) => a.name).filter((n): n is string => Boolean(n)) : [];
   if (adNames.length === 0) {
@@ -84,6 +87,8 @@ export async function POST(request: NextRequest) {
   }
   const derived = await deriveBrandProfile(session.activeAccountName, currency, adNames, []);
   if (!derived) return NextResponse.json({ error: "Could not read the brand right now. Please try again." }, { status: 502 });
+  // Real landing-host website wins over the model's guess; keep any model value only as fallback.
+  if (website) derived.website = website;
   await saveBrandProfile(user.id, acct, session.activeAccountName, currency, derived, "draft");
   return NextResponse.json({ ok: true, profile: await loadBrandProfile(user.id, acct) });
 }

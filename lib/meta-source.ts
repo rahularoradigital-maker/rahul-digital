@@ -357,6 +357,84 @@ export async function fetchRecentAdNames(accountExternalId: string, token: Token
   }
 }
 
+// Hosts that are never a brand's own website: social / messaging / link-in-bio aggregators and the big
+// marketplaces (a brand may advertise its Amazon listing, but that is not "the brand's website").
+const NON_BRAND_HOSTS = new Set([
+  "facebook.com", "l.facebook.com", "fb.me", "instagram.com", "wa.me", "api.whatsapp.com", "whatsapp.com",
+  "linktr.ee", "bit.ly", "cutt.ly", "youtube.com", "youtu.be", "t.me", "twitter.com", "x.com", "pinterest.com",
+  "amazon.in", "amazon.com", "flipkart.com", "myntra.com", "ajio.com", "meesho.com", "nykaa.com",
+]);
+
+// Strip a hostname to its registrable-ish form (drop a leading www.) for grouping + display.
+function normalizeHost(raw: string): string | null {
+  try {
+    const u = new URL(raw.includes("://") ? raw : `https://${raw}`);
+    return u.hostname.replace(/^www\./i, "").toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The brand's own website host from a list of landing URLs: the most common real brand domain, with
+ * social/messaging/marketplace hosts used only as a last resort (a link to the brand's Amazon page is
+ * not its website). Pure - the network part lives in fetchBrandWebsite. Returns "soch.com" or null.
+ */
+export function pickBrandWebsiteHost(urls: (string | null | undefined)[]): string | null {
+  const counts = new Map<string, number>();
+  const fallback = new Map<string, number>();
+  for (const raw of urls) {
+    if (!raw) continue;
+    const host = normalizeHost(raw);
+    if (!host) continue;
+    const m = NON_BRAND_HOSTS.has(host) ? fallback : counts;
+    m.set(host, (m.get(host) ?? 0) + 1);
+  }
+  const top = (m: Map<string, number>) => [...m.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  return top(counts) ?? top(fallback);
+}
+
+/**
+ * The brand's OWN website, discovered from real ad data - never guessed. A brand's own ads point their
+ * CTA at the brand's own domain, so the most common landing host across recent ads IS the website
+ * (e.g. Soch's ads all link to soch.com). Reads link_data.link, video CTA link, and asset_feed_spec
+ * link_urls from recent creatives via the token already in hand - no third-party service, no LLM.
+ * Social / messaging / marketplace hosts are excluded (a link to the brand's Amazon page is not its
+ * site). Returns the registrable host (e.g. "soch.com") or null when no own-domain link is found.
+ */
+export async function fetchBrandWebsite(accountExternalId: string, token: TokenSet, limit = 40): Promise<string | null> {
+  type LinkCreative = {
+    creative?: {
+      object_story_spec?: {
+        link_data?: { link?: string };
+        video_data?: { call_to_action?: { value?: { link?: string } } };
+      };
+      asset_feed_spec?: { link_urls?: { website_url?: string }[] };
+    };
+  };
+  let ads: LinkCreative[] = [];
+  try {
+    const data = await graphGet<{ data: LinkCreative[] }>(`act_${accountExternalId}/ads`, token.accessToken, {
+      fields: "creative{object_story_spec{link_data{link},video_data{call_to_action{value{link}}}},asset_feed_spec{link_urls{website_url}}}",
+      limit: String(limit),
+    });
+    ads = data.data ?? [];
+  } catch {
+    return null;
+  }
+
+  // Every landing host across recent ads; pickBrandWebsiteHost prefers a real brand domain.
+  const urls = ads.flatMap((ad) => {
+    const c = ad.creative;
+    return [
+      c?.object_story_spec?.link_data?.link,
+      c?.object_story_spec?.video_data?.call_to_action?.value?.link,
+      ...(c?.asset_feed_spec?.link_urls ?? []).map((l) => l.website_url),
+    ];
+  });
+  return pickBrandWebsiteHost(urls);
+}
+
 /** The ad account's ISO currency (act_<id>?fields=currency), for brand understanding. null on any failure. */
 export async function fetchAccountCurrency(accountExternalId: string, token: TokenSet): Promise<string | null> {
   try {

@@ -1,6 +1,6 @@
 import "server-only";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
-import { fetchAccountCurrency } from "@/lib/meta-source";
+import { fetchAccountCurrency, fetchBrandWebsite } from "@/lib/meta-source";
 import type { TokenSet } from "@/lib/ad-source";
 import { deriveBrandProfile, loadBrandProfile, saveBrandProfile } from "./profile";
 
@@ -29,9 +29,10 @@ export async function autoDeriveBrandDraft(
 
   // The switch route warms the 14-day cockpit just before this runs, so this read hits that warm
   // cache; ad NAMES alone carry the category/product signal Gemini needs. Currency is a cheap side call.
-  const [currency, live] = await Promise.all([
+  const [currency, live, website] = await Promise.all([
     fetchAccountCurrency(accountExternalId, token).catch(() => null),
     fetchLiveCockpit(userId, 14).catch(() => null),
+    fetchBrandWebsite(accountExternalId, token).catch(() => null), // real landing-host website, never guessed
   ]);
   const adNames =
     live && live.status === "connected"
@@ -41,6 +42,7 @@ export async function autoDeriveBrandDraft(
 
   const derived = await deriveBrandProfile(accountName ?? "", currency, adNames, []);
   if (!derived) return "derive-failed"; // e.g. the model is rate-limited - stay silent, learn on demand later
+  if (website) derived.website = website; // real landing-host domain wins over the model's guess
   await saveBrandProfile(userId, accountExternalId, accountName, currency, derived, "draft");
   return "saved";
 }
