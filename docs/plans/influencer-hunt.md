@@ -273,3 +273,20 @@ creator→paid → P9 · testing/perf/cost/security → P10 · feature-flag/inte
 2. **ScrapeCreators credits** — the cheap discovery layer needs its credits topped up (currently empty).
 3. **Meta Creator Marketplace API** (optional, later) needs App Review (2–4 weeks) — worth starting only
    if we want first-party IG creator discovery.
+
+## Build status — updated 2026-08-29 (provider-independent core DONE)
+The entire provider-INDEPENDENT brain is built, committed, and regression-protected in `check:all`.
+Nothing below needs a paid provider; everything is pure + feature-flagged (`INFLUENCER_HUNT_ENABLED`),
+so the rest of AdBrain is untouched until the flag is on.
+- Foundation: evidence envelope + types, tiers, dedup, provider interface, flag, 9 DB tables (migration 0007).
+- Path A audience proxy (`audience-proxy.ts`) — honest commenter-sample estimate, confidence capped medium.
+- Scoring engines (P5, `scoring/`) — brand-fit (relevance, follower count EXCLUDED), audience-fit, content-fit,
+  engagement, risk, and the quality composite. All decompose to explainable components; confidence tracks
+  the weakest usable input; missing data scores 0 with confidence none (never a fabricated number).
+- Ranking orchestrator (P6, `rank.ts`) — dedupe→hard-gate→score→deterministic rank. Order is purely the
+  quality formula, tie-broken by confidence/engagement/id, NEVER follower count (reach can't dominate relevance).
+- Checks: `check-influencer-hunt.ts`, `check-influencer-scoring.ts`, `check-influencer-rank.ts` — all in `check:all`.
+
+STILL BLOCKED on Rahul's decisions above (paid provider / ScrapeCreators credits / Meta App Review) — those
+unlock the provider adapters (P2) that actually fetch real creators. UI/nav wiring (P7) deferred while a second
+build session is active in the repo (shared-file merge hazard).
