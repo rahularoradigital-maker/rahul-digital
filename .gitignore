@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# shared-research raw materials (WhatsApp exports, decks, screenshots) - kept LOCAL only, never
+# committed or deployed (2GB+, and personal chat data). Synthesised *.md learnings ARE committed.
+docs/shared-research/**/*.zip
+docs/shared-research/**/*.jpg
+docs/shared-research/**/*.jpeg
+docs/shared-research/**/*.png
+docs/shared-research/**/*.pdf
+docs/shared-research/**/*.mp4
+docs/shared-research/**/*.mov
+docs/shared-research/**/_chat.txt
