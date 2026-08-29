@@ -44,5 +44,6 @@ Open a Claude Code chat **inside the lane's folder**, e.g. `/Users/lyxelflamingo
 and tell it what to build. It only sees + edits its own lane. It builds/verifies there. When done, tell me
 "merge the competitors lane" and I run the gate + merge into `validation-v0-v1`.
 
-Each lane folder shares the main project's `node_modules` and `.env.local` (via a link), so it can build
-immediately — no re-install. If a lane changes dependencies, it runs its own `npm install`.
+Each lane folder has **its own `node_modules`** (installed once with `npm ci`; ~1GB per lane — Next 16's
+Turbopack rejects a shared/symlinked `node_modules`, so it must be real). `.env.local` is linked from the
+main project so secrets are shared. After a lane pulls dependency changes, re-run `npm ci` in that folder.
