@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
   // Usage was already recorded atomically by reserve_ask_quota above. Just age out this user's rows
   // older than the rolling window so ask_log stays bounded (~cap rows/user). Best-effort.
-  await admin.from("ask_log").delete().eq("user_id", user.id).lt("created_at", since).then(undefined, () => {});
+  await admin.from("ask_log").delete().eq("user_id", user.id).lt("created_at", since).then(undefined, (e) => console.error("[ask] ask_log aging failed (recoverable)", e));
 
   try {
     // Gemini takes a single prompt (no separate system role), so fold the rules + data + question

@@ -194,7 +194,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       if (tz) {
         const acctId = acct.id;
         const zone = tz;
-        void createAdminClient().from("ad_accounts").update({ timezone: zone }).eq("id", acctId).then(undefined, () => {});
+        void createAdminClient().from("ad_accounts").update({ timezone: zone }).eq("id", acctId).then(undefined, (e) => console.error("[meta-sync] timezone persist failed (recoverable)", e));
       }
     }
     // A custom range wins over lookbackDays; otherwise since = N days ago, until = today - both in the

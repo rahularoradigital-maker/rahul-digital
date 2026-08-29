@@ -46,6 +46,6 @@ export async function storeCompetitorBrandAds(
   if (rows.length > 0) {
     const keepIds = ads.map((a) => a.adArchiveId).join(","); // Facebook archive ids are all-digit
     const del = admin.from("competitor_ads").delete().eq("user_id", userId).eq("page_id", pageId).not("ad_archive_id", "in", `(${keepIds})`);
-    await (accountId === null ? del.is("account_external_id", null) : del.eq("account_external_id", accountId)).then(undefined, () => {});
+    await (accountId === null ? del.is("account_external_id", null) : del.eq("account_external_id", accountId)).then(undefined, (e) => console.error("[competitors/store] stale-ad cleanup failed (recoverable; new data already written)", e));
   }
 }

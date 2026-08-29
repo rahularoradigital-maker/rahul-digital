@@ -72,11 +72,12 @@ export async function POST(request: NextRequest) {
     if (!answer) {
       return NextResponse.json({ error: "Could not generate right now (the model was slow). Please try again." }, { status: 200 });
     }
-    // Cache it (best-effort; a failed write must not fail the response).
+    // Cache it (RECOVERABLE best-effort: a failed write only means the answer is not cached and will
+    // be regenerated next time; it must not fail the response. Log so the failure is observable).
     await createAdminClient()
       .from("creative_insights")
       .upsert({ user_id: user.id, account_external_id: live.accountExternalId, type, content: answer, model: "gemini", updated_at: new Date().toISOString() }, { onConflict: "user_id,account_external_id,type" })
-      .then(undefined, () => {});
+      .then(undefined, (e) => console.error("[creative/analyze] insight cache write failed (recoverable)", e));
     return NextResponse.json({ content: answer });
   } catch {
     return NextResponse.json({ error: "Generation failed. Please try again." }, { status: 500 });
