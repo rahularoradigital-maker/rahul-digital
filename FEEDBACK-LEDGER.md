@@ -43,7 +43,7 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
 | B15 | **Make Ask free (Gemini instead of Claude).** | Ask now runs on Gemini free tier; Claude no longer needed for it. | 🟢 (live-verified) |
 | B16 | **Complete architecture/context dump (offline zip).** | `ARCHITECTURE.md` written + this zip delivered. | 🟢 |
 | B17 | **Creative half-life tab: "ROAS 0.00 → 0.00 (-19%/day)" makes no sense — fix the wording + check the formula.** | Root cause was a trend computed on a near-zero metric (tiny÷tiny = noise) plus a half-life extrapolation with no cap. Three fixes: (1) an ad that never had steady ROAS now reads "stayed near zero … judged on frequency and CPM, not ROAS" instead of a fake %/day; (2) a metric that STARTED at ~0 is no longer called "a real collapse"; (3) a near-flat slope no longer extrapolates to a fantasy half-life, and a **past** ad-set end date no longer clamps to 0 (that had swung the account half-life from "~30354410 days" to "~0 days" and mislabelled healthy ads "already past the fatigue line"). Now honestly says "Not enough day-wise history yet to estimate a half-life." Locked by 3 new regression checks. | 🟢 (live-verified on Soch, all ad lines + account header) |
-| B18 | **"Do the ad-set metadata sync via cron."** | Found the metadata step (`ad_meta`) was silently failing: one malformed creative threw and killed all rows, then `last_ok=true` was written anyway — so `ad_meta` was 0 while metrics had 448 ads, stranding the cockpit on the slow live pull. Fixed: per-ad guard so one bad creative can't kill the batch; failures now surface in `last_error`. Proven live — a manual sync populated **ad_meta 0 → 222 rows** (real names, formats, statuses). Also gated the store read to require full metadata coverage, so a partial sync can't render nameless ads (verified: cockpit falls back to the clean live view). **Two limits remain, both your side:** (a) the cron is inert until `CRON_SECRET` is set (C1); (b) Soch has **1026** spending ads over 90 days and a single 300s sync can't cover them all — complete coverage needs the incremental/queue sync (D-scale). | 🟠 (fix live-verified; cron + full coverage blocked on C1 + scale work) |
+| B18 | **"Do the ad-set metadata sync via cron"** + **"make the sync scale to 2-3k-ad accounts."** | Fixed the silent metadata failure (per-ad guard so one bad creative can't kill the batch; failures surface in `last_error`). Then made the whole sync **resumable + deadline-bounded**: each run syncs the missing/stalest ads first, stops before 230s, and records durable progress, so repeated runs converge — the manual endpoint loops for the caller, and the cron self-chains (`?uid=&hop=`) to converge within minutes of the daily trigger. Also fixed the store read to page `ad_meta` past Supabase's 1000-row cap (this was silently truncating large accounts). **Proven live on Soch (1034 ads):** two clean slices reached full coverage with no timeout, and the cockpit now serves from the store — **294 analyzable ads across 186 campaigns** (was a capped 4), real account-wide **ROAS 1.00x on ₹41.3L**, and **account half-life ~6 days (21 fatiguing across 87 day-wise ads)** instead of "not enough history." | 🟢 (fix + scale both live-verified; cron auto-run still needs `CRON_SECRET`, C1) |
 
 ---
 
@@ -64,12 +64,12 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
   populating in production).
 - **Gated "coming soon"** screens: Creative → Brand Brain, Concepts, semantic Diversity; Market →
   Voice. Decision pending: build them (they share one Gemini decoder) or remove the placeholders.
-- **Complete-coverage sync doesn't fit one request at scale (D-scale).** Soch has ~1026 ads that spent
-  over 90 days; a single 300s sync run times out before covering them all, so the store never reaches
-  full coverage and the cockpit keeps using the clean (capped) live pull. The real unlock is the
-  incremental / resumable sync + worker-queue tier from the 10k-scale plan (this is exactly the case it
-  was written for). Until then, the metadata sync works for smaller windows/accounts and the store is
-  used only when it fully covers the window.
+- ~~**Complete-coverage sync doesn't fit one request at scale (D-scale).**~~ **RESOLVED (B18).** The sync
+  is now resumable + deadline-bounded and converges over repeated runs (manual: caller loops; cron:
+  self-chains). Live-verified on Soch's 1034 ads: full coverage in 2 clean slices, cockpit now serves all
+  294 analyzable ads from the store. A future optimization (not blocking) is batching the per-ad metadata
+  calls (currently 1 Graph call/ad for status), which is the main driver of Meta's app rate-limit at very
+  large scale — the resumable design already absorbs a rate-limit by retrying stale ads next run.
 
 ---
 
