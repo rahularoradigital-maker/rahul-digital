@@ -904,15 +904,55 @@ export type AdMetricRow = {
  * guard, sized far above any real account). Optional campaign filter for scoped syncs. This is a BACKGROUND
  * job's tool (the cron/worker has the time budget); it must NOT be called on a page-load request path.
  */
-export async function fetchAccountDayWiseRows(
+type DayWiseRaw = MetaInsightRow & {
+  ad_id: string;
+  campaign_id?: string;
+  adset_id?: string;
+  objective?: string;
+  video_play_actions?: MetaInsightAction[];
+  video_thruplay_watched_actions?: MetaInsightAction[];
+  outbound_clicks?: MetaInsightAction[];
+};
+
+function mapDayWiseRow(row: DayWiseRaw): AdMetricRow {
+  return {
+    adId: row.ad_id,
+    date: row.date_start,
+    campaignId: row.campaign_id ?? null,
+    adsetId: row.adset_id ?? null,
+    objective: row.objective ?? null,
+    spend: Number(row.spend || 0),
+    impressions: Number(row.impressions || 0),
+    clicks: Number(row.clicks || 0),
+    frequency: Number(row.frequency || 0),
+    purchases: purchaseValue(row.actions),
+    revenue: purchaseValue(row.action_values),
+    video3s: sumActions(row.video_play_actions),
+    videoThruplays: sumActions(row.video_thruplay_watched_actions),
+    outboundClicks: sumActions(row.outbound_clicks),
+    landingPageViews: firstActionValue(row.actions, ["landing_page_view", "omni_landing_page_view"]),
+    addToCarts: firstActionValue(row.actions, ["add_to_cart", "omni_add_to_cart", "offsite_conversion.fct_add_to_cart"]),
+    initiateCheckouts: firstActionValue(row.actions, ["initiate_checkout", "omni_initiated_checkout", "offsite_conversion.fct_initiate_checkout"]),
+  };
+}
+
+/**
+ * STREAMING complete-coverage pull: paginates every ad's day-wise rows and hands each PAGE to `onBatch`
+ * as it arrives, instead of buffering the whole account in memory. This is what makes the ingestion both
+ * scalable (a 5,000-ad brand never holds 450k rows in memory) and resilient (each page is persisted
+ * immediately, so a run cut short still makes progress and the next run continues). Returns the total
+ * rows streamed. Background-job tool only. onBatch is awaited so back-pressure (the DB write) paces the pull.
+ */
+export async function streamAccountDayWiseRows(
   accountExternalId: string,
   since: string,
   token: TokenSet,
+  onBatch: (rows: AdMetricRow[]) => Promise<void>,
   until?: string,
   campaignIds?: string[],
   maxPages = 400,
-): Promise<AdMetricRow[]> {
-  if (campaignIds && campaignIds.length === 0) return [];
+): Promise<number> {
+  if (campaignIds && campaignIds.length === 0) return 0;
   const params: Record<string, string> = {
     level: "ad",
     fields:
@@ -922,36 +962,22 @@ export async function fetchAccountDayWiseRows(
     limit: "500",
   };
   if (campaignIds) params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }]);
-  const rows = await graphGetAll<
-    MetaInsightRow & {
-      ad_id: string;
-      campaign_id?: string;
-      adset_id?: string;
-      objective?: string;
-      video_play_actions?: MetaInsightAction[];
-      video_thruplay_watched_actions?: MetaInsightAction[];
-      outbound_clicks?: MetaInsightAction[];
+  let after: string | undefined;
+  let total = 0;
+  for (let page = 0; page < maxPages; page++) {
+    const pageParams = after ? { ...params, after } : params;
+    const json = await graphGet<{ data?: DayWiseRaw[]; paging?: { cursors?: { after?: string }; next?: string } }>(
+      `act_${accountExternalId}/insights`,
+      token.accessToken,
+      pageParams,
+    );
+    const mapped = (json.data ?? []).filter((r) => r.ad_id).map(mapDayWiseRow);
+    if (mapped.length > 0) {
+      await onBatch(mapped);
+      total += mapped.length;
     }
-  >(`act_${accountExternalId}/insights`, token.accessToken, params, maxPages);
-  return rows
-    .filter((r) => r.ad_id)
-    .map((row) => ({
-      adId: row.ad_id,
-      date: row.date_start,
-      campaignId: row.campaign_id ?? null,
-      adsetId: row.adset_id ?? null,
-      objective: row.objective ?? null,
-      spend: Number(row.spend || 0),
-      impressions: Number(row.impressions || 0),
-      clicks: Number(row.clicks || 0),
-      frequency: Number(row.frequency || 0),
-      purchases: purchaseValue(row.actions),
-      revenue: purchaseValue(row.action_values),
-      video3s: sumActions(row.video_play_actions),
-      videoThruplays: sumActions(row.video_thruplay_watched_actions),
-      outboundClicks: sumActions(row.outbound_clicks),
-      landingPageViews: firstActionValue(row.actions, ["landing_page_view", "omni_landing_page_view"]),
-      addToCarts: firstActionValue(row.actions, ["add_to_cart", "omni_add_to_cart", "offsite_conversion.fct_add_to_cart"]),
-      initiateCheckouts: firstActionValue(row.actions, ["initiate_checkout", "omni_initiated_checkout", "offsite_conversion.fct_initiate_checkout"]),
-    }));
+    after = json.paging?.cursors?.after;
+    if (!after || !json.paging?.next || (json.data?.length ?? 0) === 0) break;
+  }
+  return total;
 }
