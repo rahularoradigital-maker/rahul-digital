@@ -77,8 +77,8 @@ export function CompetitorDiscovery() {
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 text-base font-normal">Find competitors automatically</div>
       <p className="mb-4 max-w-2xl text-[13px] text-[var(--ink-muted)]">
-        Search the Facebook Ad Library from your confirmed brand profile, then pick the real competitors to track - their
-        ads flow into the Competitors and Competitor Voice tabs. Search is by name/keyword, so review the list before tracking.
+        Searches Meta&apos;s Ad Library for the brands actually running ads for your category and products, then you pick the
+        real competitors to track - their live ads flow into the Competitors and Competitor Voice tabs. Review before tracking.
       </p>
 
       {error && <p className="mb-3 text-[13px] text-[var(--bad-ink)]">{error}</p>}
@@ -120,7 +120,7 @@ export function CompetitorDiscovery() {
                         {c.verified && <span className="shrink-0 text-[var(--accent)]" title="Verified page">&#10004;</span>}
                       </span>
                       <span className="text-[11px] text-[var(--ink-muted)]">
-                        {c.category ?? "Brand"}{c.likes != null ? ` · ${Intl.NumberFormat("en-IN", { notation: "compact" }).format(c.likes)} likes` : ""}
+                        {c.category ?? "Brand"}{c.likes != null ? ` · ${Intl.NumberFormat("en-IN", { notation: "compact" }).format(c.likes)} ads in library` : ""}
                       </span>
                     </span>
                   </label>
