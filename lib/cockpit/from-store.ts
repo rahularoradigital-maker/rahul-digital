@@ -180,6 +180,11 @@ export async function buildCockpitFromStore(opts: {
     realAds = realAds.filter((a) => a.campaignId && set.has(a.campaignId));
   }
 
+  // Completeness gate: only trust the store when metadata covers every ad in the window. A partial sync
+  // (metrics for 1000 ads, metadata for 200) would otherwise render nameless ads and mis-read catalog
+  // status, which is worse than the clean live pull. Until the sync fully covers the window, fall back.
+  for (const adId of rowsByAd.keys()) if (!metaById.has(adId)) return null;
+
   // Same source-level gate as the live path: judge only ads that spent AND are not paused/ended.
   const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0 && a.active !== false);
   if (inputs.length === 0) return null; // store has rows but nothing analyzable in scope -> let the caller fall back
