@@ -17,6 +17,7 @@ import type { DataQuality } from "@/lib/scoring/data-quality";
 import type { ScopeTotals } from "@/lib/meta-sync";
 import { WhyDrawer } from "@/components/cockpit/WhyDrawer";
 import { rupees } from "@/lib/format";
+import { cockpitVerdict } from "@/lib/cockpit/verdict-line";
 
 // The Account Cockpit. Real connected-account data only: if nothing real is
 // available, loadCockpit returns connected:false and we render the Connect state.
@@ -191,6 +192,17 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           {stale ? <span className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">refreshing…</span> : null}
         </div>
         <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">Here&apos;s what to ship this week.</h1>
+        <p className="mt-1 max-w-3xl text-[15px] text-[var(--ink)]">
+          {cockpitVerdict(
+            {
+              atStakeRs: view.opportunity.totalLossRs,
+              doNowCount: view.doThis.filter((a) => a.priority === "DO_NOW").length,
+              winners: view.leaderboard.filter((a) => a.verdict === "winner").length,
+              fatiguing: view.atRiskContributors.length,
+            },
+            rupees.format,
+          )}
+        </p>
       </div>
 
       {/* Data-quality de-rating: honest confidence note when the series is thin or broken */}
