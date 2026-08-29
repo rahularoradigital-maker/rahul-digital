@@ -50,7 +50,11 @@ export async function GET(request: NextRequest) {
     const session = await getUserMetaSession(uid);
     if (!session) return NextResponse.json({ ok: true, uid, skipped: "no session" });
     const res = await syncAdMetrics(uid, session.activeExternalId, session.token);
-    if (res.ok && !res.complete) kickChain(origin, cronSecret, uid, hop + 1);
+    // Continue the chain while there is work AND this hop made progress. An immediate no-progress failure
+    // (processed === 0, e.g. Meta's app-level rate limit blocking the very first call) STOPS the chain, so
+    // it doesn't tight-loop against the wall - the next daily trigger resumes it after a cooldown. A hop
+    // that made progress before hitting the wall still chains, so a big sync keeps advancing between limits.
+    if (!res.complete && res.processed > 0) kickChain(origin, cronSecret, uid, hop + 1);
     return NextResponse.json({ ok: res.ok, uid, hop, processed: res.processed, remaining: res.remaining, complete: res.complete, error: res.error });
   }
 
