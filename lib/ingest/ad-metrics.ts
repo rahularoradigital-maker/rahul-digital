@@ -38,28 +38,13 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
       .upsert({ user_id: userId, account_external_id: accountExternalId, last_run_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...fields }, { onConflict: "user_id,account_external_id" })
       .then(undefined, () => {});
 
-  // Incremental window: first run backfills BACKFILL_DAYS; later runs re-pull only the recent tail + new days.
-  let since = isoDaysAgo(backfillDays);
-  try {
-    const { data } = await admin
-      .from("ad_sync_state")
-      .select("last_synced_date")
-      .eq("user_id", userId)
-      .eq("account_external_id", accountExternalId)
-      .maybeSingle();
-    const last = data?.last_synced_date as string | undefined;
-    if (last) {
-      const tail = isoDaysAgo(RESYNC_TAIL_DAYS);
-      // Start from the earlier of (last-synced minus the tail) and the tail date, but never older than the
-      // backfill horizon - so we always cover the attributing tail + any gap since the last run.
-      const lastMinusTail = new Date(new Date(last).getTime() - RESYNC_TAIL_DAYS * 86_400_000).toISOString().slice(0, 10);
-      since = [lastMinusTail, tail].sort()[0]; // earlier date
-      const floor = isoDaysAgo(backfillDays);
-      if (since < floor) since = floor;
-    }
-  } catch {
-    // no sync-state row yet (or read failed) -> full backfill, which is the safe default
-  }
+  // Always cover the full window [today - backfillDays, today]. Every successful run therefore leaves the
+  // store holding the complete window (and refreshes recent days, whose conversions Meta keeps attributing
+  // late). ponytail: this re-pulls the whole window each run - correct + simple. An incremental "tail-only
+  // after first backfill" optimization is a documented next step (APP-CANON roadmap) for when re-pull cost
+  // at scale (hundreds of accounts x thousands of ads) matters; RESYNC_TAIL_DAYS is reserved for it.
+  void RESYNC_TAIL_DAYS;
+  const since = isoDaysAgo(backfillDays);
 
   // Map one metrics row to its DB shape. Only rows with real activity (spend or impressions) are stored,
   // so a brand with 5 ads stores 5 and one with 5,000 stores 5,000 - nothing capped, nothing empty stored.
