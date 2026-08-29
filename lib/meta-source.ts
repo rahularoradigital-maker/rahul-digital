@@ -874,3 +874,84 @@ function today(): string {
   // ponytail: date-only string for Graph's time_range. Uses the server clock at call time.
   return new Date().toISOString().slice(0, 10);
 }
+
+// One flat day-wise metrics row for the ad_metrics ingestion store: the same fields the analytics read,
+// plus the ad/campaign/adset ids + raw objective, so the store carries everything without a second call.
+export type AdMetricRow = {
+  adId: string;
+  date: string;
+  campaignId: string | null;
+  adsetId: string | null;
+  objective: string | null;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  frequency: number;
+  purchases: number;
+  revenue: number;
+  video3s: number;
+  videoThruplays: number;
+  outboundClicks: number;
+  landingPageViews: number;
+  addToCarts: number;
+  initiateCheckouts: number;
+};
+
+/**
+ * COMPLETE-COVERAGE day-wise pull for the ingestion pipeline: EVERY ad with activity in the window - no
+ * top-N cap and no ad-id filter, so a $100M/month brand's thousands of ads are all captured. Meta returns
+ * every ad at level=ad and paginates; we follow the cursor to the end (bounded by maxPages as a runaway
+ * guard, sized far above any real account). Optional campaign filter for scoped syncs. This is a BACKGROUND
+ * job's tool (the cron/worker has the time budget); it must NOT be called on a page-load request path.
+ */
+export async function fetchAccountDayWiseRows(
+  accountExternalId: string,
+  since: string,
+  token: TokenSet,
+  until?: string,
+  campaignIds?: string[],
+  maxPages = 400,
+): Promise<AdMetricRow[]> {
+  if (campaignIds && campaignIds.length === 0) return [];
+  const params: Record<string, string> = {
+    level: "ad",
+    fields:
+      "ad_id,campaign_id,adset_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective,video_play_actions,video_thruplay_watched_actions,outbound_clicks",
+    time_range: JSON.stringify({ since, until: until ?? today() }),
+    time_increment: "1",
+    limit: "500",
+  };
+  if (campaignIds) params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }]);
+  const rows = await graphGetAll<
+    MetaInsightRow & {
+      ad_id: string;
+      campaign_id?: string;
+      adset_id?: string;
+      objective?: string;
+      video_play_actions?: MetaInsightAction[];
+      video_thruplay_watched_actions?: MetaInsightAction[];
+      outbound_clicks?: MetaInsightAction[];
+    }
+  >(`act_${accountExternalId}/insights`, token.accessToken, params, maxPages);
+  return rows
+    .filter((r) => r.ad_id)
+    .map((row) => ({
+      adId: row.ad_id,
+      date: row.date_start,
+      campaignId: row.campaign_id ?? null,
+      adsetId: row.adset_id ?? null,
+      objective: row.objective ?? null,
+      spend: Number(row.spend || 0),
+      impressions: Number(row.impressions || 0),
+      clicks: Number(row.clicks || 0),
+      frequency: Number(row.frequency || 0),
+      purchases: purchaseValue(row.actions),
+      revenue: purchaseValue(row.action_values),
+      video3s: sumActions(row.video_play_actions),
+      videoThruplays: sumActions(row.video_thruplay_watched_actions),
+      outboundClicks: sumActions(row.outbound_clicks),
+      landingPageViews: firstActionValue(row.actions, ["landing_page_view", "omni_landing_page_view"]),
+      addToCarts: firstActionValue(row.actions, ["add_to_cart", "omni_add_to_cart", "offsite_conversion.fct_add_to_cart"]),
+      initiateCheckouts: firstActionValue(row.actions, ["initiate_checkout", "omni_initiated_checkout", "offsite_conversion.fct_initiate_checkout"]),
+    }));
+}

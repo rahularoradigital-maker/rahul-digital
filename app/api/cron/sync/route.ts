@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchLiveCockpit } from "@/lib/meta-sync";
+import { fetchLiveCockpit, getUserMetaSession } from "@/lib/meta-sync";
+import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
 
 // Background sync (ADR-0004): pre-warm each connected account's DEFAULT cockpit into cockpit_cache
 // on a schedule, so the first page load of a session is a fast cache read instead of a cold ~9s
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
   let warmed = 0;
   let empty = 0;
   let failed = 0;
+  let ingestedAds = 0; // total ads captured into the ad_metrics store across all accounts this run
 
   const queue = [...userIds];
   async function worker() {
@@ -61,6 +63,15 @@ export async function GET(request: NextRequest) {
         if (status === "connected") warmed++;
         else if (status === "not_connected") empty++;
         else failed++;
+
+        // Ingestion pipeline: capture EVERY spending ad day-wise into the ad_metrics store (complete
+        // coverage, no top-N cap). Runs here because the cron has the 300s budget a full-account pull
+        // needs. Best-effort + idempotent: a failure here never fails the warm above.
+        const session = await getUserMetaSession(uid);
+        if (session) {
+          const res = await syncAdMetrics(uid, session.activeExternalId, session.token);
+          if (res.ok) ingestedAds += res.adsSeen;
+        }
       } catch {
         failed++;
       }
@@ -68,5 +79,5 @@ export async function GET(request: NextRequest) {
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, Math.max(1, queue.length)) }, worker));
 
-  return NextResponse.json({ ok: true, accounts: userIds.length, warmed, empty, failed });
+  return NextResponse.json({ ok: true, accounts: userIds.length, warmed, empty, failed, ingestedAds });
 }
