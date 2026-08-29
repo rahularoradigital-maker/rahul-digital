@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "health": "node scripts/health-check.mjs",
+    "smoke": "node scripts/smoke.mjs",
     "check:crypto": "node --experimental-strip-types scripts/check-crypto.ts",
     "check:rules": "node --experimental-strip-types scripts/check-rules.ts",
     "check:validator": "node --experimental-strip-types scripts/check-validator.ts",
