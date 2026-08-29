@@ -8,6 +8,7 @@ import { createAdminClient } from "./supabase/admin.ts";
 import { readToken } from "./oauth-store.ts";
 import { LruMap } from "./lru.ts";
 import { createSingleFlight } from "./single-flight.ts";
+import { isRenderableShape } from "./cockpit/renderable.ts";
 import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { deterministicFingerprint, type CreativeAsset } from "./creative/fingerprint.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
@@ -461,22 +462,6 @@ async function pullAndStore(userId: string, lookbackDays: number, campaignId: st
 const cockpitInflight = createSingleFlight<LiveCockpit>();
 function pullAndStoreSingleFlight(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, deferWrite = false): Promise<LiveCockpit> {
   return cockpitInflight(memKey, () => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, deferWrite));
-}
-
-// Defense-in-depth against cache/schema drift: a cached CONNECTED blob written by older code may
-// lack fields the current render reads unconditionally (scopeTotals/dataQuality/marginal/funnel).
-// Rendering it would crash (the 2026-08-28 500). CACHE_SCHEMA versioning is the primary guard;
-// this validates the actual shape on read so a forgotten version bump degrades to a fresh pull
-// instead of a 500. Non-connected states are never cached, so they pass through.
-function isRenderableShape(v: LiveCockpit): boolean {
-  if (v.status !== "connected") return true;
-  const r = v as unknown as Record<string, unknown>;
-  const view = r.view as Record<string, unknown> | undefined;
-  return (
-    view != null && r.scopeTotals != null && r.dataQuality != null && r.marginal != null && r.funnel != null && r.metrics != null &&
-    // nested view fields the render maps over unconditionally (a missing one crashes the page)
-    Array.isArray(view.wasteContributors) && Array.isArray(view.atRiskContributors) && Array.isArray(view.leaderboard) && Array.isArray(view.doThis)
-  );
 }
 
 // Attach freshness metadata (ISSUE 10) at the serving boundary: syncedAt = when these numbers were
