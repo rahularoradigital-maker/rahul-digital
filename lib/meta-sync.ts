@@ -413,12 +413,22 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // in scope. Best-effort: if it fails, fall back to the analyzed-ads sum rather than 500.
     // Already in flight since right after campaignIds resolved (see scopePromise above), so
     // this await usually returns immediately - it overlapped the whole ad pipeline.
+    //
+    // CATALOG HONESTY: the scope query is campaign-level and is NOT catalog-filtered (catalog is an
+    // ad-level property). Under "Catalog: Excluded" the scope totals would still INCLUDE catalog spend
+    // and revenue - showing catalog-inclusive ROAS/revenue under an "Excluded" label, which is dishonest
+    // and skews every downstream verdict. So in exclude mode we deliberately fall back to the sum over
+    // the catalog-excluded analyzed ads (realAds already had catalog dropped upstream): a genuinely
+    // catalog-free total, consistent with the leaderboard/funnel/sparklines the rest of the view shows.
+    // It is the top-spending non-catalog ads rather than the full account, but honest beats complete-
+    // but-wrong. Include mode keeps the full Ads-Manager-matching scope totals.
     const scope = await scopePromise;
-    const sSpend = scope ? scope.spend : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.spend, 0), 0);
-    const sImpr = scope ? scope.impressions : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.impressions, 0), 0);
-    const sClicks = scope ? scope.clicks : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.clicks, 0), 0);
-    const sPur = scope ? scope.purchases : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.purchases, 0), 0);
-    const sRev = scope ? scope.revenue : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.revenue, 0), 0);
+    const useScope = scope && catalog !== "exclude";
+    const sSpend = useScope ? scope!.spend : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.spend, 0), 0);
+    const sImpr = useScope ? scope!.impressions : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.impressions, 0), 0);
+    const sClicks = useScope ? scope!.clicks : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.clicks, 0), 0);
+    const sPur = useScope ? scope!.purchases : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.purchases, 0), 0);
+    const sRev = useScope ? scope!.revenue : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.revenue, 0), 0);
     const metrics: AccountMetrics = {
       impressions: sImpr,
       clicks: sClicks,
