@@ -11,6 +11,7 @@
 
 import type { MetricsRow } from "../ad-source.ts";
 import type { Objective } from "../rules/comparator.ts";
+import { settledRows } from "./attribution.ts";
 
 export type FatigueState = "fresh" | "watch" | "fatiguing" | "fatigued";
 export type Trajectory = "improving" | "stable" | "worsening";
@@ -82,7 +83,7 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
     d.freqN += 1;
     byDate.set(r.date, d);
   }
-  const days = [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([, v]) => v);
+  const days = [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([date, v]) => ({ date, ...v }));
   const windowDays = days.length;
 
   if (windowDays < MIN_DAYS) {
@@ -104,7 +105,6 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
 
   const cpm = days.map((d) => (d.spend / d.impressions) * 1000);
   const freq = days.map((d) => (d.freqN ? d.freqSum / d.freqN : 0));
-  const ctr = days.map((d) => d.clicks / d.impressions); // fraction (fallback + evidence)
 
   // OBJECTIVE-AWARE primary metric: the thing this objective is actually optimised for, whose
   // DECLINE is the real fatigue signal. Conversion decays on ROAS (a rising CPA is a falling
@@ -116,10 +116,16 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
     if (objective === "awareness") return d.spend > 0 ? d.impressions / d.spend : 0; // reach / rupee
     return d.impressions > 0 ? d.clicks / d.impressions : 0; // CTR
   }
-  let primary = days.map(primaryOf);
+  // The PRIMARY-metric direction must ignore the still-attributing tail: conversion revenue lands days
+  // after the click, so the last day(s) always under-report ROAS and every conversion ad would read as
+  // decaying at the window edge (false fatigue -> bogus pause/refresh recs + inflated "at-risk" spend).
+  // Frequency + CPM settle same-day, so those stay on the full window (latest frequency must be
+  // real-time saturation). settledRows leaves the window untouched when it is too short to trim.
+  const dirDays = settledRows(days);
+  let primary = dirDays.map(primaryOf);
   let metricLabel = objective === "conversion" ? "ROAS" : objective === "awareness" ? "reach/rupee" : "CTR";
   if (mean(primary) === 0) {
-    primary = ctr;
+    primary = dirDays.map((d) => (d.impressions > 0 ? d.clicks / d.impressions : 0));
     metricLabel = "CTR";
   }
 
@@ -173,7 +179,7 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
   // Format the primary metric for the evidence: CTR as a percentage, ROAS / reach as a ratio.
   const fmtPrimary = (v: number) => (metricLabel === "CTR" ? `${(v * 100).toFixed(2)}%` : v.toFixed(2));
   const evidence: string[] = [
-    `${metricLabel} ${fmtPrimary(startPrimary)} -> ${fmtPrimary(latestPrimary)} over ${windowDays} days (${primaryRelSlope >= 0 ? "+" : ""}${(primaryRelSlope * 100).toFixed(1)}%/day).`,
+    `${metricLabel} ${fmtPrimary(startPrimary)} -> ${fmtPrimary(latestPrimary)} over ${primary.length} settled days (${primaryRelSlope >= 0 ? "+" : ""}${(primaryRelSlope * 100).toFixed(1)}%/day).`,
     `Frequency now ${latestFreq.toFixed(1)} (saturation ${frequencySignal}/100).`,
     `CPM ${cpm[0].toFixed(0)} -> ${cpm[cpm.length - 1].toFixed(0)} (${cpmRelSlope >= 0 ? "+" : ""}${(cpmRelSlope * 100).toFixed(1)}%/day).`,
   ];

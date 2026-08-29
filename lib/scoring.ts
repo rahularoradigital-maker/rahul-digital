@@ -9,6 +9,7 @@ import type { MetricsRow } from "./ad-source.ts";
 import type { CockpitAdInput } from "./cockpit/analyze.ts";
 import type { Objective } from "./rules/comparator.ts";
 import { readFatigue } from "./scoring/fatigue.ts";
+import { settledRows } from "./scoring/attribution.ts";
 
 export type RealAd = {
   externalId: string;
@@ -69,7 +70,9 @@ function goodnessOf(objective: Objective, a: Agg): number | null {
 // Real day-wise comparison, not a guess. Objective-aware so an engagement ad trends on
 // its CTR, not on a ROAS it was never optimised for.
 function trendScore(rows: MetricsRow[], objective: Objective): number {
-  const byDate = [...rows].sort((a, b) => a.date.localeCompare(b.date));
+  // Drop the still-attributing tail before reading direction (see settledRows): otherwise the late
+  // half always contains under-reported recent days and every conversion ad reads as declining.
+  const byDate = [...settledRows(rows)].sort((a, b) => a.date.localeCompare(b.date));
   if (byDate.length < 2) return 50;
   const mid = Math.floor(byDate.length / 2);
   const early = goodnessOf(objective, aggregate(byDate.slice(0, mid)));
@@ -134,7 +137,9 @@ function funnelScore(a: Agg, allCtr: number[], allCvr: number[], objective: Obje
 // Stability: day-to-day ROAS coefficient of variation. Low variance = stable. calibrate-at-build.
 const STABLE_CV = 0.5;
 function isStable(rows: MetricsRow[]): boolean {
-  const daily = rows.filter((r) => r.spend > 0).map((r) => r.revenue / r.spend);
+  // Exclude the still-attributing tail: a partial last day spikes daily-ROAS variance and would fail a
+  // genuinely steady ad on the winner gate purely because today has not finished settling.
+  const daily = settledRows(rows).filter((r) => r.spend > 0).map((r) => r.revenue / r.spend);
   if (daily.length < 3) return false; // not enough days to call it stable
   const mean = daily.reduce((s, v) => s + v, 0) / daily.length;
   if (mean === 0) return false;
@@ -152,7 +157,11 @@ function isStable(rows: MetricsRow[]): boolean {
 export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
   const aggs = ads.map((ad) => aggregate(ad.rows));
   const objectives = ads.map((ad) => ad.objective ?? "conversion");
-  const roasList = aggs.filter((a) => a.roas !== null).map((a) => a.roas as number);
+  // medianRoas is the "typical winner" bar for roomToScale, so it must be a median of CONVERSION ads
+  // only. An awareness/engagement ad has spend but ~0 revenue -> roas 0, and letting those zeros into
+  // the list drags the median down, which then wrongly flags mediocre conversion ads as "room to scale"
+  // (J2: compare like with like). Non-conversion ads are judged on their own metric, not ROAS.
+  const roasList = aggs.filter((a, i) => objectives[i] === "conversion" && a.roas !== null).map((a) => a.roas as number);
   const ctrList = aggs.map((a) => (a.impressions > 0 ? a.clicks / a.impressions : 0));
   const cvrList = aggs.map((a) => (a.clicks > 0 ? a.purchases / a.clicks : 0));
   const medianRoas = median(roasList);
