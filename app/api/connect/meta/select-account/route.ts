@@ -47,6 +47,12 @@ export async function GET(request: NextRequest) {
     .single();
   if (error || !acct) return NextResponse.redirect(new URL("/app?connect=error", request.url));
 
+  // ISSUE 25: mark this the EXPLICIT active account. Clear the user's others first (the
+  // one-active-per-user index rejects two actives), then set this one. connected_at stays as history,
+  // so a later reconnect / background write can no longer silently change which account is active.
+  await admin.from("ad_accounts").update({ is_active: false }).eq("user_id", user.id).eq("platform", "meta");
+  await admin.from("ad_accounts").update({ is_active: true }).eq("id", acct.id);
+
   try {
     await storeToken(acct.id, session.token);
   } catch {

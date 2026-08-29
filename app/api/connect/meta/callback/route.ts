@@ -98,6 +98,11 @@ export async function GET(request: NextRequest) {
     .single();
   if (acctErr || !acct) return NextResponse.redirect(new URL("/app?connect=error", request.url));
 
+  // ISSUE 25: a freshly connected account becomes the explicit active one. Clear the user's others
+  // first (one-active-per-user index), then set this one.
+  await admin.from("ad_accounts").update({ is_active: false }).eq("user_id", user.id).eq("platform", "meta");
+  await admin.from("ad_accounts").update({ is_active: true }).eq("id", acct.id);
+
   try {
     await storeToken(acct.id, {
       accessToken,

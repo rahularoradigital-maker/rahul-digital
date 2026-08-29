@@ -36,6 +36,9 @@ export const getActiveAccountExternalId = cache(async (userId: string): Promise<
       .eq("user_id", userId)
       .eq("platform", "meta")
       .eq("status", "connected")
+      // ISSUE 25: the explicit is_active flag decides the active account; connected_at is only a
+      // tiebreak/fallback so a row that predates the flag still resolves (never a null active).
+      .order("is_active", { ascending: false })
       .order("connected_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -56,6 +59,8 @@ export async function getUserMetaSession(
       .eq("user_id", userId)
       .eq("platform", "meta")
       .eq("status", "connected")
+      // ISSUE 25: explicit is_active flag decides the active account; connected_at is the fallback.
+      .order("is_active", { ascending: false })
       .order("connected_at", { ascending: false })
       .limit(1)
       .maybeSingle();
