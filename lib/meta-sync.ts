@@ -284,7 +284,13 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       };
     });
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).
-    const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0);
+    // Only judge/suggest on ads that CAN still be acted on: drop anything Meta reports as not ACTIVE
+    // (paused / archived / ended, incl. a paused parent ad set or campaign - effective_status rolls
+    // that up). A closed ad needs no "pause it" advice. active === undefined (a failed status lookup)
+    // is kept so a live ad is never hidden by a flaky lookup. This is the single source-level gate, so
+    // EVERY downstream surface (leaderboard, do-now, waste, fatigue) inherits it. Headline scope totals
+    // come from a separate account-level pull, so they still reflect all spend in the window.
+    const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0 && a.active !== false);
     const view = analyzeAccount(inputs, "LIVE", weights);
     tp = perfMark("analyzeAccount", tp);
     perfMark("COLD-PULL-TOTAL", t0);
