@@ -5,6 +5,7 @@ import { getUserMetaSession } from "@/lib/meta-sync";
 import { searchCompanies, fetchBrandAds } from "@/lib/scrapecreators";
 import { loadBrandProfile, suggestCompetitorNames } from "@/lib/brand/profile";
 import { shortlistCandidates, type Candidate } from "@/lib/brand/discover";
+import { storeCompetitorBrandAds } from "@/lib/competitors/store";
 import type { NormalizedAd } from "@/lib/competitors/types";
 
 // Stage 2: auto competitor discovery from the CONFIRMED brand profile.
@@ -59,22 +60,10 @@ export async function POST(request: NextRequest) {
           continue;
         }
         const label = ads[0]?.brandLabel ?? t.name ?? `Page ${t.pageId}`;
-        const del = admin.from("competitor_ads").delete().eq("user_id", userId).eq("page_id", t.pageId);
-        await (accountId === null ? del.is("account_external_id", null) : del.eq("account_external_id", accountId));
-        const rows = ads.map((a) => ({
-          user_id: userId, account_external_id: accountId, page_id: a.pageId, ad_archive_id: a.adArchiveId,
-          is_my_brand: false, brand_label: a.brandLabel, is_active: a.isActive, display_format: a.displayFormat,
-          media: a.media, cta_text: a.ctaText, cta_type: a.ctaType, title: a.title, body: a.body, link_url: a.linkUrl,
-          platforms: a.platforms, start_date: a.startDate, end_date: a.endDate, card_count: a.cardCount, ad_url: a.adUrl,
-          image_url: a.imageUrl, video_url: a.videoUrl, video_thumb_url: a.videoThumbUrl,
-        }));
-        await Promise.all([
-          rows.length > 0 ? admin.from("competitor_ads").upsert(rows, { onConflict: "user_id,page_id,ad_archive_id" }) : Promise.resolve(),
-          admin.from("competitor_brands").upsert(
-            { user_id: userId, account_external_id: accountId, page_id: t.pageId, label, is_my_brand: false, ad_library_url: `https://www.facebook.com/ads/library/?view_all_page_id=${t.pageId}`, ad_count: ads.length, updated_at: new Date().toISOString() },
-            { onConflict: "user_id,page_id" },
-          ),
-        ]);
+        await storeCompetitorBrandAds(admin, {
+          userId, accountId, pageId: t.pageId, isMyBrand: false, label,
+          adLibraryUrl: `https://www.facebook.com/ads/library/?view_all_page_id=${t.pageId}`, ads,
+        });
         brands.push({ name: label, adCount: ads.length });
       }
     }
