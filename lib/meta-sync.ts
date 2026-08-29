@@ -11,7 +11,7 @@ import { createSingleFlight } from "./single-flight.ts";
 import { isRenderableShape } from "./cockpit/renderable.ts";
 import { todayIn, daysAgo } from "./date-window.ts";
 import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, fetchAccountTimezone, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
-import { deterministicFingerprint, type CreativeAsset } from "./creative/fingerprint.ts";
+import { deterministicFingerprint, excludeCatalogAds, type CreativeAsset } from "./creative/fingerprint.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
@@ -139,6 +139,10 @@ async function resolveCampaignIds(
 // An explicit {since, until} custom range (YYYY-MM-DD) overrides lookbackDays for the pull.
 export type ExplicitWindow = { since: string; until: string };
 
+// Topbar objective filter: include catalog (dynamic product) ads in the analyzed set (default,
+// current behavior) or exclude them so metrics/leaderboard/health reflect only non-catalog ads.
+export type CatalogMode = "include" | "exclude";
+
 // Opt-in perf tracing: set ADBRAIN_PERF=1 (e.g. in Vercel) to log how long each phase of a cold
 // Meta pull actually takes, so the real bottleneck is measured, not guessed. Off by default (zero
 // cost, no log noise). Each call returns "now" so phases chain: t = perfMark("x", t).
@@ -148,7 +152,7 @@ function perfMark(label: string, sinceMs: number): number {
   return performance.now();
 }
 
-async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = [], window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS): Promise<LiveCockpit> {
+async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = [], window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, catalog: CatalogMode = "include"): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
   let acct: { id: string; external_id: string; name: string | null; timezone: string | null } | null = null;
@@ -227,7 +231,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     tp = perfMark("listTopSpendingAds", tp);
     // Pull daily metrics for all of these ads in ONE account-level call instead of one
     // request per ad (26 round-trips -> 2). This is the main page-speed fix.
-    const top = ads.slice(0, MAX_ADS);
+    let top = ads.slice(0, MAX_ADS);
     // Per-ad status + campaign/ad-set names, in flight concurrently with the insights pull (both
     // only need the ad ids). Status hides paused ads from suggestions; the names make every money
     // figure traceable to a readable campaign / ad set. Best-effort.
@@ -237,6 +241,14 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     const creativesPromise = fetchAdCreatives(acct.external_id, top.map((a) => a.externalId), token).catch(() => new Map<string, CreativeAsset>());
     const rowsByAd = await fetchAdInsights(acct.external_id, top.map((a) => a.externalId), since, token, until);
     tp = perfMark("fetchAdInsights", tp);
+    // Topbar "exclude catalog": drop dynamic-product ads BEFORE analysis so realAds/inputs/view and
+    // every metric derived from them reflect only non-catalog ads. Done here (creatives now resolvable,
+    // already in flight since above) so the filter runs once at the source of the analyzed set. An ad
+    // with no creative this run is not known to be catalog, so it stays.
+    if (catalog === "exclude") {
+      const assets = await creativesPromise;
+      top = excludeCatalogAds(top, (a) => assets.get(a.externalId));
+    }
     // Ad set end dates cap the fatigue half-life (a creative cannot outlive its ad set).
     const adsetIds = [...new Set([...rowsByAd.values()].map((e) => e.adsetId).filter((x): x is string => Boolean(x)))];
     let adsetEnds = new Map<string, number>();
@@ -419,7 +431,7 @@ const COLD_PULL_TIMEOUT_MS = 8_000; // cap the blocking cold pull so a slow Meta
 // permanent fix for cache/schema-mismatch crashes, not a one-off.
 // v3: added view.wasteContributors / atRiskContributors + per-ad conversions/active/names to the
 // cached shape. BUMP THIS on ANY LiveCockpit/view shape change so old-shape blobs are never read.
-const CACHE_SCHEMA = "v5"; // v5: added dailySeries (day-wise trend). v4: added ownDiversity
+const CACHE_SCHEMA = "v6"; // v6: catalog include/exclude is part of the key (exclude analyzes a different ad set). v5: added dailySeries (day-wise trend). v4: added ownDiversity
 // Bounded so a long-lived instance can't accumulate unbounded (user x account x window x filter x
 // weights) permutations (ISSUE 09). 500 hot entries is far more than one instance serves between
 // evictions; least-recently-used falls out first.
@@ -472,8 +484,8 @@ async function writeCockpitL2(userId: string, cacheKey: string, value: LiveCockp
 // deferWrite=true (the cold, user-facing path): return the value immediately and persist to L2 in
 // the background via after(), so the user does not wait on two extra DB round-trips AFTER the ~9s
 // pull already completed. The background-refresh caller leaves it false (nothing is awaiting it).
-async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, deferWrite = false): Promise<LiveCockpit> {
-  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives, window, weights);
+async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, catalog: CatalogMode = "include", deferWrite = false): Promise<LiveCockpit> {
+  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives, window, weights, catalog);
   if (value.status !== "error") {
     cockpitCache.set(memKey, { at: Date.now(), value });
     if (deferWrite) {
@@ -493,8 +505,8 @@ async function pullAndStore(userId: string, lookbackDays: number, campaignId: st
 // Single-flight the pull per cache key (ISSUE 07): concurrent cold misses and repeated stale-refresh
 // triggers for the same key collapse into ONE Meta pull instead of a thundering herd.
 const cockpitInflight = createSingleFlight<LiveCockpit>();
-function pullAndStoreSingleFlight(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, deferWrite = false): Promise<LiveCockpit> {
-  return cockpitInflight(memKey, () => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, deferWrite));
+function pullAndStoreSingleFlight(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, catalog: CatalogMode = "include", deferWrite = false): Promise<LiveCockpit> {
+  return cockpitInflight(memKey, () => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog, deferWrite));
 }
 
 // Attach freshness metadata (ISSUE 10) at the serving boundary: syncedAt = when these numbers were
@@ -511,6 +523,7 @@ export async function fetchLiveCockpit(
   objectives: string[] = [],
   window?: ExplicitWindow,
   weights: ScoreWeights = VERDICT_WEIGHTS,
+  catalog: CatalogMode = "include",
 ): Promise<LiveCockpit> {
   const w0 = performance.now();
   // Key the cache by the ACTIVE account too: without this, every account shares one
@@ -523,7 +536,9 @@ export async function fetchLiveCockpit(
   // Only a non-default weight override changes the key (identity check on the default param), so the
   // vast majority of users keep the exact same cache entries as before this override existed.
   const weightKey = weights === VERDICT_WEIGHTS ? "" : `${weights.performance}-${weights.trend}-${weights.fatigue}-${weights.funnel}`;
-  const cacheKey = `${CACHE_SCHEMA}:${activeId}:${lookbackDays}:${windowKey}:${campaignId ?? ""}:${[...objectives].sort().join(",")}:${weightKey}`;
+  // catalog is part of the key: excluding catalog analyzes a different ad set, so include/exclude
+  // must cache separately (default "include" keeps the exact key shape users already have).
+  const cacheKey = `${CACHE_SCHEMA}:${activeId}:${lookbackDays}:${windowKey}:${campaignId ?? ""}:${[...objectives].sort().join(",")}:${weightKey}:${catalog}`;
   const memKey = `${userId}:${cacheKey}`;
   const now = Date.now();
 
@@ -564,7 +579,7 @@ export async function fetchLiveCockpit(
     if (cached.age < STALE_MS) {
       // Serve stale immediately, refresh in the background so the next load is fresh.
       try {
-        after(() => pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights));
+        after(() => pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog));
       } catch {
         // after() unavailable outside a request scope; the stale value is still fine.
       }
@@ -581,7 +596,7 @@ export async function fetchLiveCockpit(
   // app's honest "still syncing" state. after(pull) keeps the serverless container alive until the
   // pull actually finishes even after we respond, so it still warms L1 + L2 - without it the floating
   // pull is frozen on response flush and every retry is another cold timeout (an endless spinner).
-  const pull = pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, true);
+  const pull = pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog, true);
   try {
     after(pull); // survive past the response; no-op-safe if the pull rejects (Next logs it)
   } catch {

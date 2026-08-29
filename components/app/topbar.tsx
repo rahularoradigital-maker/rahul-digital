@@ -7,6 +7,7 @@ import { WINDOWS } from "@/lib/app/windows";
 import { AccountSwitcher } from "@/components/app/account-switcher";
 import { CampaignSwitcher } from "@/components/app/campaign-switcher";
 import { ObjectiveSwitcher } from "@/components/app/objective-switcher";
+import { CatalogSwitcher } from "@/components/app/catalog-switcher";
 import { FILTER_TRIGGER, FILTER_LABEL } from "@/components/app/control-styles";
 import { rescanCockpit } from "@/app/app/actions";
 
@@ -133,6 +134,7 @@ export function Topbar() {
         <AccountSwitcher />
         <DateWindow onChange={() => startTransition(() => router.refresh())} />
         <ObjectiveSwitcher />
+        <CatalogSwitcher />
         <CampaignSwitcher />
       </div>
     </div>

@@ -11,7 +11,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { getCurrentUser } from "@/lib/app/user";
-import { fetchLiveCockpit, type AccountMetrics, type ProcessedCounts, type ScopeTotals } from "@/lib/meta-sync";
+import { fetchLiveCockpit, type AccountMetrics, type ProcessedCounts, type ScopeTotals, type CatalogMode } from "@/lib/meta-sync";
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import type { MarginalRead } from "@/lib/scoring/marginal";
 import type { DataQuality } from "@/lib/scoring/data-quality";
@@ -52,7 +52,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
   const userEmail = user.email ?? undefined;
   const tAuth = performance.now();
 
-  const { lookbackDays, campaignId, objectives, explicitWindow, weights } = resolveCockpitScope(cookieStore, days);
+  const { lookbackDays, campaignId, objectives, explicitWindow, weights, catalog } = resolveCockpitScope(cookieStore, days);
   const effectiveDays = lookbackDays;
 
   // The exact date window the user is viewing, formatted for the Ads Manager `date` param
@@ -63,7 +63,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     : `${new Date(Date.now() - effectiveDays * 86_400_000).toISOString().slice(0, 10)}_${new Date().toISOString().slice(0, 10)}`;
 
   const tScope = performance.now();
-  const live = await fetchLiveCockpit(user.id, lookbackDays, campaignId, objectives, explicitWindow, weights);
+  const live = await fetchLiveCockpit(user.id, lookbackDays, campaignId, objectives, explicitWindow, weights, catalog);
   const tCockpit = performance.now();
   const perf = {
     authMs: Math.round(tAuth - tStart),
@@ -109,10 +109,13 @@ export function resolveCockpitScope(cookieStore: CookieReader, defaultDays: numb
   const objectivesRaw = cookieStore.get("adbrain.objectives")?.value || "";
   const objectives = objectivesRaw ? objectivesRaw.split(",").filter(Boolean) : [];
   const weights = parseWeights(cookieStore.get("adbrain.weights")?.value) ?? undefined;
+  // Catalog include/exclude (topbar objective filter). Only the explicit "exclude" opts out;
+  // anything else (unset, or a stale value) stays the default "include" = current behavior.
+  const catalog: CatalogMode = cookieStore.get("adbrain.catalog")?.value === "exclude" ? "exclude" : "include";
   const win = parseWindowCookie(cookieStore.get("adbrain.window")?.value);
   const lookbackDays = win?.kind === "days" ? win.days : win?.kind === "range" ? rangeDays(win.since, win.until) : defaultDays;
   const explicitWindow = win?.kind === "range" ? { since: win.since, until: win.until } : undefined;
-  return { lookbackDays, campaignId, objectives, explicitWindow, weights };
+  return { lookbackDays, campaignId, objectives, explicitWindow, weights, catalog };
 }
 
 // Parse the adbrain.window cookie. "days:<n>" -> preset; "range:<from>:<to>" -> custom

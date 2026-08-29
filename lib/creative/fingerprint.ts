@@ -93,6 +93,16 @@ function formatOf(asset: CreativeAsset): CreativeFormat {
   return "unknown";
 }
 
+// Drop catalog (dynamic product) ads from an analyzed set, for the topbar "exclude catalog"
+// objective filter. An ad with NO creative asset this run is not known to be catalog, so it stays
+// (never guess an ad away). Pure: the caller supplies the asset lookup, so this is trivially testable.
+export function excludeCatalogAds<T>(items: T[], assetOf: (item: T) => CreativeAsset | undefined): T[] {
+  return items.filter((item) => {
+    const asset = assetOf(item);
+    return !asset || deterministicFingerprint(asset).format !== "catalog";
+  });
+}
+
 export function deterministicFingerprint(asset: CreativeAsset): DeterministicFingerprint {
   const headline = (asset.title ?? "").trim();
   const body = (asset.body ?? "").trim();

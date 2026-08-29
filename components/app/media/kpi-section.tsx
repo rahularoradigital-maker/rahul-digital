@@ -1,6 +1,7 @@
 import { KPI_CATALOG } from "@/lib/app/kpi-catalog";
 import { KpiSelector } from "@/components/app/analytics/kpi-selector";
 import { DailyTrendChart } from "@/components/app/analytics/daily-trend-chart";
+import { LevelMetricsSection } from "@/components/app/analytics/level-metrics";
 import type { CockpitData } from "@/lib/app/cockpit-data";
 import { rupees } from "@/lib/format";
 
@@ -69,6 +70,22 @@ export function KpiSection({ data }: { data: CockpitData }) {
       )}
 
       {data.connected && <DailyTrendChart series={data.dailySeries} />}
+
+      {data.connected && (
+        <LevelMetricsSection
+          rows={data.view.leaderboard.map((a) => ({
+            id: a.id,
+            name: a.name,
+            adSetId: a.adSetId,
+            adsetName: a.adsetName,
+            campaignId: a.campaignId,
+            campaignName: a.campaignName,
+            spendRs: a.spendRs,
+            revenueRs: a.revenueRs,
+            conversions: a.conversions,
+          }))}
+        />
+      )}
 
       <KpiSelector catalog={KPI_CATALOG} liveValues={liveValues} />
     </div>

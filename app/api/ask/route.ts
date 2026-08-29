@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   // Answer about the SAME scope the user is viewing (window / campaign / objective / weights), and
   // reuse the dashboard's already-warm cockpit cache instead of triggering a separate cold pull.
   const scope = resolveCockpitScope(await cookies(), 14);
-  const live = await fetchLiveCockpit(user.id, scope.lookbackDays, scope.campaignId, scope.objectives, scope.explicitWindow, scope.weights);
+  const live = await fetchLiveCockpit(user.id, scope.lookbackDays, scope.campaignId, scope.objectives, scope.explicitWindow, scope.weights, scope.catalog);
   if (live.status !== "connected") {
     return NextResponse.json({ answer: "Connect a Meta ad account first - I can only answer from your real account data." });
   }
