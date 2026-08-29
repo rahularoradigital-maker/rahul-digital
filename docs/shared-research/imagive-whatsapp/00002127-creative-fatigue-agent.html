@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creative Fatigue Agent</title>
+<style>
+  :root{
+    --bg:#12152b; --bg2:#171c36; --panel:#1A1F3A; --panel2:#232a4d;
+    --line:#2c335a; --line2:#3a4373;
+    --txt:#f5efe0; --mut:#b8b2a2; --mut2:#8a8473;
+    --accent:#7c3fd6; --gold:#D4A24C; --green:#3fb985; --amber:#e0a64a; --red:#d6584d;
+    --sig:linear-gradient(135deg,#5B1FA0,#E07B00);
+    --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;
+  }
+  html[data-theme="light"]{
+    --bg:#F5EFE0; --bg2:#FBF7EC; --panel:#ffffff; --panel2:#F0E9D8;
+    --line:#ddd3bd; --line2:#c9bda1;
+    --txt:#171b30; --mut:#4a4534; --mut2:#6b6452;
+    --accent:#5B1FA0; --gold:#8a5410; --green:#1f6b49; --amber:#8a5410; --red:#b23a30;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1100px 600px at 85% -10%,rgba(124,63,214,.08),transparent 60%),var(--bg);
+       color:var(--txt);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#283140;border-radius:6px;border:2px solid var(--bg)}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 20px 60px}
+  .top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .logo{width:30px;height:30px;border-radius:8px;background:var(--sig);display:grid;place-items:center;font-weight:800;color:#fff;flex:none}
+  .top b{font-size:15px} .top .s{display:block;font-size:10.5px;color:var(--mut2);text-transform:uppercase;letter-spacing:.4px}
+  .top .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .toggle{padding:6px 11px;border:1px solid var(--line2);border-radius:999px;font-size:11.5px;color:var(--mut);background:transparent;cursor:pointer}
+
+  .formula{font-family:var(--mono);font-size:12px;color:var(--mut);background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 14px;margin:14px 0 16px;line-height:2.1}
+  .formula b{color:var(--gold)} .formula .w{color:var(--red);font-weight:700}
+  .formula .lead{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut2);display:block;margin-bottom:7px}
+  .fx{background:rgba(124,63,214,.12);border:1px solid var(--line2);border-radius:6px;color:var(--gold);font-family:var(--mono);font-weight:700;font-size:12px;width:42px;text-align:center;outline:none;cursor:text;padding:2px 2px;vertical-align:middle;-moz-appearance:textfield}
+  .fx::-webkit-outer-spin-button,.fx::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .fx:hover{border-color:var(--accent)} .fx:focus{border-color:var(--accent);background:rgba(124,63,214,.22)}
+  .fx.warn{color:var(--red)} .fx.warn:focus{background:rgba(214,88,77,.18)}
+  .formula .hintedit{font-size:10px;color:var(--mut2);margin-left:6px}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+  @media(max-width:560px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 17px}
+  .card.red{border-color:rgba(214,88,77,.4);background:rgba(214,88,77,.06)}
+  .card.amber{border-color:rgba(224,166,74,.4);background:rgba(224,166,74,.06)}
+  .card .big{font-size:28px;font-weight:800;letter-spacing:-.5px}
+  .card .lbl{font-size:11px;color:var(--mut2);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+
+  /* rules panel */
+  .rules-btn{display:flex;align-items:center;gap:8px;width:100%;padding:11px 14px;border:1px solid var(--line2);border-radius:12px;
+             background:rgba(124,63,214,.07);color:var(--txt);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px}
+  .rules-btn:hover{border-color:var(--accent)} .rules-btn .chev{margin-left:auto;transition:transform .2s;color:var(--mut2)}
+  .rules-btn.open .chev{transform:rotate(180deg)}
+  .rules{display:none;border:1px solid var(--line);border-radius:13px;background:var(--panel);padding:18px;margin-bottom:16px}
+  .rules.open{display:block;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .rules h4{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mut2);margin:0 0 11px}
+  .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;margin-bottom:18px}
+  @media(max-width:560px){.rgrid{grid-template-columns:1fr}}
+  .rfield{display:flex;flex-direction:column;gap:5px}
+  .rfield label{font-size:11.5px;color:var(--mut)}
+  .rfield .in{display:flex;align-items:center;gap:8px}
+  .rfield input[type=number]{width:74px;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:7px 9px;color:var(--txt);font-size:13px;font-family:var(--mono);outline:none}
+  .rfield input[type=number]:focus{border-color:var(--accent)}
+  .rfield .unit{font-size:11px;color:var(--mut2)}
+  .metric-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .metric-row:last-child{border-bottom:none}
+  .metric-row .sw{position:relative;width:38px;height:21px;flex:none;cursor:pointer}
+  .metric-row .sw input{opacity:0;width:0;height:0;position:absolute}
+  .metric-row .sw .tr{position:absolute;inset:0;background:var(--panel2);border:1px solid var(--line2);border-radius:999px;transition:.15s}
+  .metric-row .sw .tr:before{content:"";position:absolute;width:15px;height:15px;left:3px;top:2px;background:var(--mut);border-radius:50%;transition:.15s}
+  .metric-row .sw input:checked+.tr{background:rgba(124,63,214,.3);border-color:var(--accent)}
+  .metric-row .sw input:checked+.tr:before{transform:translateX(16px);background:var(--accent)}
+  .metric-row .mname{flex:1;font-size:13px} .metric-row .mname small{display:block;color:var(--mut2);font-size:10.5px}
+  .metric-row .mth{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mut2)}
+  .metric-row .mth input{width:64px;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:6px 8px;color:var(--txt);font-size:12.5px;font-family:var(--mono);outline:none}
+  .metric-row.off{opacity:.5}
+  .rnote{font-size:11.5px;color:var(--mut2);background:var(--bg2);border:1px dashed var(--line2);border-radius:9px;padding:10px 12px;margin-top:14px;line-height:1.55}
+  .rnote b{color:var(--txt)}
+  .reset{font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;margin-top:10px}
+
+  .bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .bar .ttl{font-size:13px;font-weight:700} .bar .sp{flex:1}
+  .pill{font-size:11.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line2);background:var(--bg2);color:var(--mut);cursor:pointer;font-weight:600}
+  .pill.on{background:var(--sig);color:#fff;border-color:transparent}
+  .search{background:var(--bg2);border:1px solid var(--line2);border-radius:9px;padding:7px 11px;color:var(--txt);font-size:12.5px;outline:none;min-width:140px}
+  .search:focus{border-color:var(--accent)}
+  .sel{background:var(--bg2);border:1px solid var(--line2);border-radius:9px;padding:7px 10px;color:var(--txt);font-size:12px;outline:none;cursor:pointer}
+  .sel:focus{border-color:var(--accent)}
+
+  /* catalogue ad preview — mini product grid */
+  .cat-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:8px}
+  .cat-tile{background:rgba(255,255,255,.92);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#1a1f3a;position:relative}
+  .cat-tile .pic{font-size:18px} .cat-tile .pr{font-size:8.5px;font-weight:800;background:#1a1f3a;color:#fff;padding:1px 5px;border-radius:4px}
+
+  /* ad tile grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px}
+  .adcard{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel);transition:.15s}
+  .adcard:hover{border-color:var(--line2);transform:translateY(-2px)}
+  .adcard.warn{border-color:rgba(214,88,77,.45)} .adcard.watch{border-color:rgba(224,166,74,.4)}
+  .preview{position:relative;display:flex;flex-direction:column;height:188px;color:#fff}
+  .ad-chrome{display:flex;align-items:center;gap:8px;padding:9px 10px;background:rgba(0,0,0,.25)}
+  .ad-av{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.9);flex:none}
+  .ad-chrome b{font-size:11.5px;line-height:1.1;color:#fff} .ad-chrome small{font-size:9.5px;opacity:.85;color:#fff}
+  .ad-plat{margin-left:auto;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;font-size:10px;font-weight:800;background:rgba(255,255,255,.92)}
+  .ad-canvas{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:6px 14px}
+  .ad-canvas .em{font-size:34px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))}
+  .ad-canvas .hl{font-size:14px;font-weight:800;line-height:1.2;text-shadow:0 1px 6px rgba(0,0,0,.35)}
+  .ad-cta{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(255,255,255,.95);color:#1a1f3a}
+  .ad-cta small{font-size:9px;color:#5b6170;display:block} .ad-cta b{font-size:11px}
+  .ad-cta .go{font-size:10.5px;font-weight:800;background:#1a1f3a;color:#fff;padding:5px 11px;border-radius:7px}
+  .ribbon{position:absolute;top:9px;right:9px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:999px;backdrop-filter:blur(4px)}
+  .ribbon.Warning{background:rgba(214,88,77,.92);color:#fff} .ribbon.Watch{background:rgba(224,166,74,.92);color:#241a06} .ribbon.Healthy{background:rgba(63,185,133,.9);color:#04210f}
+
+  .adbody{padding:11px 12px 13px}
+  .adname{display:flex;align-items:center;gap:7px;margin-bottom:2px} .adname b{font-size:12.5px;line-height:1.2}
+  .deliv{width:7px;height:7px;border-radius:50%;flex:none} .deliv.on{background:var(--green);box-shadow:0 0 6px var(--green)} .deliv.off{background:var(--mut2)}
+  .adcamp{font-size:10.5px;color:var(--mut2);margin-bottom:10px}
+  .mchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .mchip{font-size:10.5px;border:1px solid var(--line);border-radius:7px;padding:4px 7px;background:var(--bg2);line-height:1.25}
+  .mchip .ml{color:var(--mut2);font-size:9px;text-transform:uppercase;letter-spacing:.3px;display:block}
+  .mchip .mv{font-family:var(--mono);font-weight:700}
+  .mchip .md{font-family:var(--mono);font-size:9.5px;margin-left:3px}
+  .mchip.bad{border-color:rgba(214,88,77,.45);background:rgba(214,88,77,.07)} .mchip.bad .md{color:var(--red)}
+  .up{color:var(--red)} .down{color:var(--green)} .flat{color:var(--mut)}
+  .sparkrow{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:9px}
+  .sparkrow small{font-size:9.5px;color:var(--mut2);text-transform:uppercase;letter-spacing:.3px}
+  .empty{grid-column:1/-1;text-align:center;color:var(--mut2);padding:40px}
+  .foot{font-size:11px;color:var(--mut2);margin-top:18px;text-align:center}
+  #loader{max-width:560px;margin:80px auto 40px;padding:0 20px}
+  #dropzone{border:1.5px dashed var(--line2);border-radius:16px;padding:48px 24px;background:var(--panel);cursor:pointer;text-align:center}
+  #dropzone:hover{border-color:var(--accent)}
+  #dropzone strong{font-size:15px;display:block}
+  #dropzone p{color:var(--mut2);margin-top:10px;font-size:12.5px;line-height:1.55}
+  #loadError{color:var(--red);margin-top:14px;font-size:12.5px;text-align:center}
+  .digest{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:12.5px;line-height:1.6;color:var(--mut);white-space:pre-wrap}
+  .digest summary{cursor:pointer;font-weight:600;color:var(--txt);margin-bottom:8px}
+  .preview-img{flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#000}
+  .preview-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .live-rules{font-size:12.5px;color:var(--mut);line-height:1.65}
+  .live-rules p{margin-bottom:8px}
+  .live-rules b{color:var(--txt)}
+  .top3-badge{font-size:9px;background:var(--gold);color:#1a1f3a;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:800}
+</style>
+</head>
+<body>
+<div id="loader">
+  <div id="dropzone">
+    <strong>Drop creative_fatigue workflow JSON here, or click to browse</strong>
+    <p>Expected: a <span style="font-family:var(--mono)">creative_fatigue</span> run export (v2 weighted scoring) from the API.<br>Everything renders in your browser — nothing is uploaded.</p>
+    <input type="file" id="fileInput" accept=".json,application/json" style="display:none" />
+  </div>
+  <div id="loadError"></div>
+</div>
+
+<div class="wrap" id="dashboard" style="display:none">
+  <div class="top">
+    <div class="logo">◆</div>
+    <div><b>Creative Fatigue Agent</b><span class="s" id="runSubtitle">Meta · creative fatigue monitor</span></div>
+    <div class="right">
+      <button class="toggle" id="loadAnotherBtn" type="button">Load JSON</button>
+      <button class="toggle" id="themeBtn">☾ Dark</button>
+    </div>
+  </div>
+
+  <div class="formula" id="formula"></div>
+  <details class="digest" id="reportDigest" style="display:none"><summary>Report narrative</summary><div id="reportText"></div></details>
+  <div class="cards" id="cards"></div>
+
+  <button class="rules-btn" id="rulesBtn">⚙ Rules &amp; metrics <span style="font-weight:400;color:var(--mut2)" id="rulesSummary"></span><span class="chev">▾</span></button>
+  <div class="rules" id="rulesPanel">
+    <h4>Windows &amp; frequency thresholds</h4>
+    <div class="rgrid">
+      <div class="rfield"><label>Recent window</label><div class="in"><input type="number" id="r-recent" min="3" max="30"><span class="unit">days</span></div></div>
+      <div class="rfield"><label>Baseline window</label><div class="in"><input type="number" id="r-base" min="14" max="60"><span class="unit">days</span></div></div>
+      <div class="rfield"><label>Frequency Warning when Δ above</label><div class="in"><input type="number" id="r-warn" min="5" max="60"><span class="unit">%</span></div></div>
+      <div class="rfield"><label>Frequency Watch when Δ above</label><div class="in"><input type="number" id="r-watch" min="2" max="40"><span class="unit">%</span></div></div>
+    </div>
+    <h4>Extra fatigue signals <span style="text-transform:none;letter-spacing:0;color:var(--mut2)">— toggle which metrics count</span></h4>
+    <div id="metricRows"></div>
+    <div class="rnote">An ad is a <b>Warning</b> if frequency Δ crosses the warning line <b>or</b> 2+ enabled signals breach their threshold. It's a <b>Watch</b> if frequency crosses the watch line <b>or</b> any 1 signal breaches. Frequency rise is the primary signal; the rest catch fatigue that shows up in performance first.</div>
+    <button class="reset" id="resetBtn">↺ Reset to defaults</button>
+  </div>
+
+  <div class="bar">
+    <span class="ttl" id="adsTitle">Ads running</span>
+    <span class="sp"></span>
+    <select class="sel" id="objSel"></select>
+    <select class="sel" id="typeSel"></select>
+    <input class="search" id="search" placeholder="Search…">
+  </div>
+  <div class="bar" style="margin-top:-4px" id="filterBar">
+    <span class="pill on" data-f="all">All</span>
+    <span class="sp"></span>
+    <button class="pill" id="clearFilters" style="cursor:pointer">↺ Clear filters</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+const pctS=n=>(n>=0?'+':'')+Number(n).toFixed(0)+'%';
+
+let LIVE_MODE=false, DATA=null, OUT=null, SCHEMA_V=2;
+let ADS=[];
+let FILTER='all', OBJ='all', TYPE='all', PROFILE='all';
+
+/* ---------- editable rules (demo only; unused in live mode) ---------- */
+const DEF={recent:7,base:60,warn:20,watch:10};
+let RULES={...DEF};
+const DEFMETRICS=[
+  {key:'ctr', label:'CTR decline',  sub:'click-through dropping', dir:'down', th:20, on:true,  unit:'%', dec:2},
+  {key:'cpm', label:'CPM rise',     sub:'cost per 1k rising',     dir:'up',   th:25, on:false, unit:'$', dec:2},
+  {key:'cpa', label:'CPA rise',     sub:'cost per result rising', dir:'up',   th:25, on:true,  unit:'$', dec:0},
+  {key:'roas',label:'ROAS decline', sub:'return on spend falling',dir:'down', th:20, on:false, unit:'x', dec:1},
+];
+let METRICS=DEFMETRICS.map(m=>({...m}));
+
+const FCOLOR={Video:'#5B1FA0',Static:'#2E7D5B',Carousel:'#A06310',UGC:'#C8453A',Story:'#9d6be8',Catalogue:'#1f6fae',image:'#2E7D5B',video:'#5B1FA0'};
+const FEMOJI={Video:'🎬',Static:'🖼️',Carousel:'🎠',UGC:'🤳',Story:'📲',Catalogue:'🛍️',image:'🖼️',video:'🎬'};
+const STATUS_RANK={Warning:0,Watch:1,Healthy:2,Critical:0,Refresh:1,Keep:3};
+const VERDICT_RANK={ACT_NOW:0,ROTATE:1,REFRESH:2,WATCH:3,KEEP:4};
+const V2_FILTERS=[
+  {key:'all',label:'All'},
+  {key:'ACT_NOW',label:'⚑ Act now'},
+  {key:'ROTATE',label:'↻ Rotate'},
+  {key:'REFRESH',label:'↻ Refresh'},
+  {key:'WATCH',label:'◔ Watch'},
+  {key:'KEEP',label:'✓ Keep'},
+];
+const V1_FILTERS=[
+  {key:'all',label:'All'},
+  {key:'Warning',label:'⚑ Warning'},
+  {key:'Watch',label:'Watch'},
+  {key:'Healthy',label:'Healthy'},
+];
+const SIGNAL_LABELS={
+  ctr:'CTR',roas:'ROAS',cpa:'CPA',cpc:'CPC',cpm:'CPM',cpl:'CPL',cpi:'CPI',
+  leads:'Leads',reach:'Reach',frequency:'Freq',engagement_rate:'Eng rate',
+  purchase_conversion_rate:'Conv rate',lead_conversion_rate:'Lead conv',
+  performance_trend_decline:'Perf decline',audience_saturation:'Saturation',
+  ctr_decay:'CTR decay',creative_repetition:'Repetition',
+};
+
+function darken(hex,f){const n=parseInt(hex.slice(1),16);let r=(n>>16)&255,g=(n>>8)&255,b=n&255;r=Math.round(r*f);g=Math.round(g*f);b=Math.round(b*f);return`rgb(${r},${g},${b})`;}
+
+function detectSchemaVersion(out){
+  const row=out.table?.[0];
+  if(row?.verdict)return 2;
+  if(row?.status)return 1;
+  const s=out.summary||{};
+  if(s.keep!=null||s.act_now!=null||s.refresh!=null)return 2;
+  if(s.urgent!=null||s.warning!=null)return 1;
+  return 2;
+}
+
+function mapBackendStatus(st){
+  const s=String(st||'').toUpperCase();
+  if(s==='URGENT')return 'Warning';
+  if(s==='WARNING')return 'Watch';
+  return 'Healthy';
+}
+
+function verdictUi(verdict){
+  const v=String(verdict||'KEEP').toUpperCase();
+  const map={
+    ACT_NOW:{status:'Critical',ribbon:'⚑ Act now',css:'critical',filter:'ACT_NOW'},
+    ROTATE:{status:'Critical',ribbon:'↻ Rotate',css:'critical',filter:'ROTATE'},
+    REFRESH:{status:'Refresh',ribbon:'↻ Refresh',css:'refresh',filter:'REFRESH'},
+    WATCH:{status:'Watch',ribbon:'◔ Watch',css:'watch',filter:'WATCH'},
+    KEEP:{status:'Keep',ribbon:'✓ Keep',css:'',filter:'KEEP'},
+  };
+  return map[v]||map.KEEP;
+}
+
+function scorePct(score){
+  if(score==null||isNaN(score))return '—';
+  return (Number(score)*100).toFixed(1)+'%';
+}
+
+function signalLabel(key){return SIGNAL_LABELS[key]||String(key||'').replace(/_/g,' ');}
+
+function formatTrendValue(metricKey,value){
+  if(value==null||value==='')return '—';
+  const n=Number(value);
+  if(isNaN(n))return String(value);
+  if(['ctr','engagement_rate','unique_ctr'].includes(metricKey))return n.toFixed(2)+'%';
+  if(['roas'].includes(metricKey))return n.toFixed(2)+'x';
+  if(['cpa','cpc','cpm','cpl','cpi','spend'].includes(metricKey))return '$'+n.toFixed(2);
+  if(Number.isInteger(n)||Math.abs(n)>=100)return n.toLocaleString();
+  return n.toFixed(2);
+}
+
+function mapAssetFormat(assetType){
+  const t=String(assetType||'').toLowerCase();
+  if(t==='video')return 'Video';
+  if(t==='image')return 'Static';
+  return assetType||'Static';
+}
+
+function groupDailyByAd(rows){
+  const by={};
+  (rows||[]).forEach(r=>{
+    const id=String(r.ad_id||'');
+    if(!id)return;
+    (by[id]||(by[id]=[])).push(r);
+  });
+  Object.values(by).forEach(list=>list.sort((a,b)=>String(a.date_start).localeCompare(String(b.date_start))));
+  return by;
+}
+
+function cpmWorseFromTrend(trend){
+  if(trend==='rising')return 30;
+  if(trend==='falling')return -10;
+  return 0;
+}
+
+function normalizeRunV2(out){
+  const adsById={};
+  (out.ads||[]).forEach(a=>{adsById[String(a.ad_id)]=a;});
+  const fatigue=out.fatigue_by_ad||{};
+  const dailyByAd=groupDailyByAd(out.daily_performance);
+  const top3Ids=new Set((out.top_3_to_replace||[]).map(t=>String(t.ad_id)));
+
+  return (out.table||[]).map(row=>{
+    const adId=String(row.ad_id||'');
+    const ad=adsById[adId]||{};
+    const f=fatigue[adId]||{};
+    const dailyRows=dailyByAd[adId]||[];
+    const series=dailyRows.map(d=>({
+      freq:Number(d.frequency)||0,
+      ctr:Number(d.ctr)||0,
+      cpm:Number(d.cpm)||0,
+    })).filter(d=>d.freq>0||d.ctr>0);
+    const ui=verdictUi(row.verdict||f.verdict);
+    const trends=f.trends||{};
+    const freq=Number(row.frequency)||Number(trends.frequency?.recent)||0;
+    const ctrDelta=Number(row.ctr_delta_pct);
+    const ctrRecent=Number(row.ctr_recent);
+    const ctrBaseline=Number(row.ctr_baseline);
+    return {
+      id:adId,
+      name:row.ad_name||ad.name||adId,
+      head:ad.headline||ad.caption||row.ad_name||ad.name||'',
+      format:mapAssetFormat(ad.asset_type),
+      assetType:String(ad.asset_type||'').toLowerCase()||mapAssetFormat(ad.asset_type).toLowerCase(),
+      objective:String(ad.campaign_objective||row.objective_profile||''),
+      objectiveProfile:String(row.objective_profile||f.objective_profile||''),
+      plat:'Meta',
+      camp:String(ad.campaign_id||'—'),
+      thumbnail:ad.thumbnail_url||'',
+      paused:String(ad.status||'ACTIVE').toUpperCase()!=='ACTIVE',
+      status:ui.status,
+      verdict:String(row.verdict||f.verdict||'KEEP').toUpperCase(),
+      filterKey:ui.filter,
+      cardCss:ui.css,
+      ribbon:ui.ribbon,
+      fatigueScore:Number(row.fatigue_score??f.fatigue_score),
+      ctrDelta:isNaN(ctrDelta)?null:ctrDelta,
+      ctrRecent:isNaN(ctrRecent)?null:ctrRecent,
+      ctrBaseline:isNaN(ctrBaseline)?null:ctrBaseline,
+      dominantSignals:row.dominant_signals||f.dominant_signals||[],
+      recommendedAction:row.recommended_action||f.recommended_action||'',
+      timeInMarket:Number(row.time_in_market_days??f.time_in_market_days)||0,
+      isTop3:top3Ids.has(adId),
+      top3Reason:(out.top_3_to_replace||[]).find(t=>String(t.ad_id)===adId)?.reasons||'',
+      trends,
+      series:series.length?series:[{freq,ctr:ctrRecent||0,cpm:Number(trends.cpm?.recent)||0}],
+      freqM:{rAvg:freq,bAvg:freq,raw:ctrDelta||0,worse:Math.abs(ctrDelta||0)},
+    };
+  });
+}
+
+function normalizeRunV1(out){
+  const adsById={};
+  (out.ads||[]).forEach(a=>{adsById[String(a.ad_id)]=a;});
+  const fatigue=out.fatigue_by_ad||{};
+  const dailyByAd=groupDailyByAd(out.daily_performance);
+  const top3Ids=new Set((out.top_3_to_replace||[]).map(t=>String(t.ad_id)));
+  const table=out.table||[];
+  const thresholds=out.thresholds||{};
+  const warnCtr=Number(thresholds.warning_ctr_drop_pct)||20;
+
+  return table.map(row=>{
+    const adId=String(row.ad_id||'');
+    const ad=adsById[adId]||{};
+    const f=fatigue[adId]||{};
+    const dailyRows=dailyByAd[adId]||[];
+    const series=dailyRows.map(d=>({
+      freq:Number(d.frequency)||0,
+      ctr:Number(d.ctr)||0,
+      cpm:Number(d.cpm)||0,
+    })).filter(d=>d.freq>0||d.ctr>0);
+    const freq=Number(row.frequency)||Number(f.frequency_window)||0;
+    const ctrDrop=Number(row.ctr_drop_pct)||Number(f.ctr_drop_pct)||0;
+    const currentCtr=Number(row.current_ctr)||Number(f.current_ctr)||0;
+    const cpmRecent=Number(f.cpm_recent)||0;
+    const st=mapBackendStatus(row.status||f.status);
+    return {
+      id:adId,
+      name:row.ad_name||ad.name||adId,
+      head:ad.headline||ad.caption||row.ad_name||ad.name||'',
+      format:mapAssetFormat(ad.asset_type),
+      assetType:String(ad.asset_type||'').toLowerCase()||mapAssetFormat(ad.asset_type).toLowerCase(),
+      objective:String(ad.campaign_id||''),
+      objectiveProfile:'',
+      plat:'Meta',
+      camp:String(ad.campaign_id||'—'),
+      thumbnail:ad.thumbnail_url||'',
+      paused:String(ad.status||'ACTIVE').toUpperCase()!=='ACTIVE',
+      status:st,
+      verdict:'',
+      filterKey:st,
+      cardCss:st==='Warning'?'warn':st==='Watch'?'watch':'',
+      ribbon:st==='Warning'?'⚑ Urgent':st==='Watch'?'◔ Warning':'✓ Healthy',
+      fatigueScore:null,
+      ctrDelta:ctrDrop,
+      ctrRecent:currentCtr,
+      ctrBaseline:currentCtr,
+      dominantSignals:f.signals||[],
+      recommendedAction:'',
+      timeInMarket:0,
+      isTop3:top3Ids.has(adId),
+      top3Reason:'',
+      trends:{},
+      cpmTrend:f.cpm_trend||'',
+      backendStatus:String(row.status||f.status||'').toUpperCase(),
+      series:series.length?series:[{freq,ctr:currentCtr,cpm:cpmRecent}],
+      freqM:{rAvg:freq,bAvg:freq,raw:ctrDrop,worse:ctrDrop},
+      sig:{
+        ctr:{rAvg:currentCtr,bAvg:currentCtr,raw:-ctrDrop,worse:ctrDrop},
+        cpm:{rAvg:cpmRecent,bAvg:Number(f.cpm_early)||cpmRecent,raw:cpmWorseFromTrend(f.cpm_trend),worse:cpmWorseFromTrend(f.cpm_trend)},
+      },
+      warnCtr,
+    };
+  });
+}
+
+function normalizeRun(out){
+  SCHEMA_V=detectSchemaVersion(out);
+  return SCHEMA_V>=2?normalizeRunV2(out):normalizeRunV1(out);
+}
+
+function validateWorkflowKey(json){
+  const key=json.workflow_key||(json.output||{}).workflow_key;
+  return key==='creative_fatigue';
+}
+
+function bootRun(json){
+  if(!validateWorkflowKey(json)){
+    throw new Error('Not a creative_fatigue workflow export (workflow_key must be "creative_fatigue").');
+  }
+  DATA=json;
+  OUT=json.output||json;
+  SCHEMA_V=detectSchemaVersion(OUT);
+  ADS=normalizeRun(OUT);
+  LIVE_MODE=true;
+  FILTER='all';OBJ='all';TYPE='all';PROFILE='all';
+  $('#search').value='';
+  renderFilterPills();
+
+  const runId=DATA.id||OUT.run_id||'';
+  const dr=OUT.date_range||{};
+  const rangeStr=dr.since&&dr.until?` · ${dr.since} → ${dr.until}`:'';
+  const verLabel=SCHEMA_V>=2?'v2 weighted scoring':'v1 CTR rules';
+  $('#runSubtitle').textContent=`Run ${runId.slice(0,8)}… · ${OUT.reporting_window||'creative fatigue'} · ${verLabel}${rangeStr}`;
+
+  const reportText=OUT.report_text||'';
+  if(reportText){
+    $('#reportDigest').style.display='block';
+    $('#reportText').textContent=reportText;
+  }else{
+    $('#reportDigest').style.display='none';
+  }
+
+  const s=OUT.summary||{};
+  const analyzed=s.ads_analyzed||ADS.length;
+  const excluded=s.excluded||0;
+  const pulled=s.ads_pulled||s.ads_fetched||'';
+  const footParts=[`Run ${runId}`,OUT.reporting_window||'',`${analyzed} ads analyzed`];
+  if(excluded)footParts.push(`${excluded} excluded`);
+  if(pulled)footParts.push(`${pulled} pulled`);
+  $('#foot').textContent=footParts.filter(Boolean).join(' · ');
+
+  $('#loader').style.display='none';
+  $('#dashboard').style.display='block';
+  $('#loadError').textContent='';
+
+  buildFormula();
+  renderLiveRules();
+  populateFilters();
+  renderCards();
+  renderGrid();
+}
+
+function renderFilterPills(){
+  const defs=SCHEMA_V>=2?V2_FILTERS:V1_FILTERS;
+  const bar=$('#filterBar');
+  const clearBtn=$('#clearFilters');
+  bar.innerHTML='';
+  defs.forEach(f=>{
+    const pill=document.createElement('span');
+    pill.className='pill'+(f.key===FILTER?' on':'');
+    pill.dataset.f=f.key;
+    pill.textContent=f.label;
+    pill.onclick=()=>{
+      FILTER=f.key;
+      renderFilterPills();
+      renderGrid();
+    };
+    bar.appendChild(pill);
+  });
+  const sp=document.createElement('span');
+  sp.className='sp';
+  bar.appendChild(sp);
+  bar.appendChild(clearBtn);
+}
+
+function showLoader(){
+  LIVE_MODE=false;DATA=null;OUT=null;ADS=[];SCHEMA_V=2;
+  FILTER='all';OBJ='all';TYPE='all';PROFILE='all';
+  $('#dashboard').style.display='none';
+  $('#loader').style.display='block';
+  $('#loadError').textContent='';
+  $('#fileInput').value='';
+  $('#reportDigest').style.display='none';
+}
+
+function readFile(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{bootRun(JSON.parse(r.result));}
+    catch(e){$('#loadError').textContent=e.message||String(e);}
+  };
+  r.readAsText(file);
+}
+
+const dropzone=$('#dropzone'), fileInput=$('#fileInput');
+dropzone.addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',()=>{if(fileInput.files.length)readFile(fileInput.files[0]);});
+dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.style.borderColor='var(--accent)';});
+dropzone.addEventListener('dragleave',()=>{dropzone.style.borderColor='';});
+dropzone.addEventListener('drop',e=>{
+  e.preventDefault();dropzone.style.borderColor='';
+  if(e.dataTransfer.files.length)readFile(e.dataTransfer.files[0]);
+});
+$('#loadAnotherBtn').onclick=showLoader;
+function fmtVal(m,v){return m.unit==='$'?'$'+v.toFixed(m.dec):m.unit==='x'?v.toFixed(m.dec)+'x':m.unit==='%'?v.toFixed(m.dec)+'%':v.toFixed(m.dec);}
+function arrow(worse){return worse>2?'▲':worse<-2?'▼':'■';}
+function sparkline(s,color){
+  const vals=s.map(d=>d.freq).filter(v=>v>0);
+  if(!vals.length)return '';
+  const w=84,h=24,min=Math.min(...vals),max=Math.max(...vals),rng=max-min||1;
+  const pts=vals.length>1
+    ?vals.map((v,i)=>`${(i/(vals.length-1)*w).toFixed(1)},${(h-2-((v-min)/rng)*(h-4)).toFixed(1)}`).join(' ')
+    :`${0},${(h/2).toFixed(1)} ${w},${(h/2).toFixed(1)}`;
+  return `<svg width="${w}" height="${h}" style="display:block"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6"/></svg>`;
+}
+
+/* ---------- render ---------- */
+function buildFormula(){
+  if(LIVE_MODE&&SCHEMA_V>=2){
+    $('#formula').innerHTML=
+      `<span class="lead">Fatigue scoring v2 (from workflow run)</span>`+
+      `<b>Fatigue score</b> = 40% objective KPI + 30% audience saturation + 20% performance trend + 10% creative repetition. `+
+      `<b>KEEP</b> &lt; 0.20 · <b>WATCH</b> &lt; 0.40 · <b>REFRESH</b> &lt; 0.60 · <b>ROTATE</b> &lt; 0.80 · <b>ACT NOW</b> ≥ 0.80. `+
+      `Objective-aware KPIs (sales, awareness, traffic, etc.) drive the primary signal.`;
+    return;
+  }
+  if(LIVE_MODE){
+    const t=OUT.thresholds||{};
+    $('#formula').innerHTML=
+      `<span class="lead">Fatigue scoring v1 (from workflow run)</span>`+
+      `<b>CTR drop</b> = (60-day baseline CTR − 7-day recent CTR) / baseline CTR × 100. `+
+      `<b>URGENT</b> when CTR drop ≥ ${esc(t.urgent_ctr_drop_pct||20)}% <b>and</b> frequency &gt; ${esc(t.urgent_frequency||3)}. `+
+      `<b>WARNING</b> when CTR drop ≥ ${esc(t.warning_ctr_drop_pct||20)}% <b>or</b> frequency ≥ ${esc(t.warning_frequency||2)}. `+
+      `<b>HEALTHY</b> otherwise. Eligibility: min impressions ${esc(t.min_impressions||1000)}, min spend ${esc(t.min_spend||100)}.`;
+    return;
+  }
+  $('#formula').innerHTML=
+    `<span class="lead">⚙ Fatigue rule — click any number to edit</span>`+
+    `Δ = ( avg freq · last <input class="fx" id="fx-recent" type="number" min="3" max="30">d `+
+    `− avg freq · last <input class="fx" id="fx-base" type="number" min="14" max="60">d ) `+
+    `÷ <span id="fx-base2"></span>d avg × 100 &nbsp;→&nbsp; `+
+    `<span class="w">Δ &gt; +<input class="fx warn" id="fx-warn" type="number" min="5" max="60">% = warning</span> `+
+    `· +<input class="fx" id="fx-watch" type="number" min="2" max="40">–<span id="fx-warn2"></span>% = watch`;
+  const fmap={'fx-recent':'recent','fx-base':'base','fx-warn':'warn','fx-watch':'watch'};
+  Object.entries(fmap).forEach(([id,key])=>{
+    const e=$('#'+id);
+    e.oninput=()=>{const v=+e.value;if(!isNaN(v)){RULES[key]=v;applyRules('formula');}};
+    e.onchange=()=>{applyRules(null);};
+  });
+}
+
+function renderLiveRules(){
+  const t=OUT.thresholds||{};
+  const dr=OUT.date_range||{};
+  $('#rulesSummary').textContent=`· ${OUT.reporting_window||''}${dr.since?` · ${dr.since} → ${dr.until}`:''}`;
+  $$('.rgrid').forEach(el=>{el.style.display='none';});
+  $('#metricRows').style.display='none';
+  $$('#rulesPanel h4').forEach((h,i)=>{if(i>0)h.style.display='none';else h.textContent='Scoring rules (from run)';});
+  $$('#rulesPanel .rnote').forEach(el=>{el.style.display='none';});
+  $('#resetBtn').style.display='none';
+  if(!$('#liveRulesBody')){
+    const div=document.createElement('div');
+    div.id='liveRulesBody';
+    div.className='live-rules';
+    $('#rulesPanel').insertBefore(div,$('#metricRows'));
+  }
+  if(SCHEMA_V>=2){
+    $('#liveRulesBody').innerHTML=
+      `<p><b>Fatigue score</b> combines objective KPI deterioration (40%), audience saturation (30%), performance trend (20%), and creative repetition (10%).</p>`+
+      `<p><b>KEEP</b> score &lt; 0.20 · <b>WATCH</b> &lt; 0.40 · <b>REFRESH</b> &lt; 0.60 · <b>ROTATE</b> &lt; 0.80 · <b>ACT NOW</b> ≥ 0.80.</p>`+
+      `<p>Ads with &lt; 7 days active default to WATCH until enough data is available.</p>`+
+      `<p>Eligibility: min impressions ${esc(t.min_impressions||1000)}, min spend ${esc(t.min_spend||100)}, min days active ${esc(t.min_days_active||3)} (${esc(OUT.reporting_window||'reporting window')}).</p>`+
+      `<p>Frequency saturation: watch ≥ 2.5, urgent ≥ 3.5. Dominant signals include objective KPIs plus audience saturation, CTR decay, and performance trend decline.</p>`;
+    return;
+  }
+  $('#liveRulesBody').innerHTML=
+    `<p><b>CTR drop:</b> (60-day baseline CTR − 7-day recent CTR) / baseline CTR × 100.</p>`+
+    `<p><b>URGENT:</b> CTR drop ≥ ${esc(t.urgent_ctr_drop_pct||20)}% AND frequency &gt; ${esc(t.urgent_frequency||3)}.</p>`+
+    `<p><b>WARNING:</b> CTR drop ≥ ${esc(t.warning_ctr_drop_pct||20)}% OR frequency ≥ ${esc(t.warning_frequency||2)}.</p>`+
+    `<p><b>HEALTHY:</b> Otherwise stable or improving.</p>`+
+    `<p>Eligibility: min impressions ${esc(t.min_impressions||1000)}, min spend ${esc(t.min_spend||100)} (${esc(OUT.reporting_window||'reporting window')}).</p>`+
+    `<p>Signals also tracked: CTR decay, engagement decay, CPM trend, high frequency.</p>`;
+}
+
+function renderCards(){
+  if(LIVE_MODE&&SCHEMA_V>=2){
+    const s=OUT.summary||{};
+    const act=Number(s.act_now)||0, rot=Number(s.rotate)||0, ref=Number(s.refresh)||0;
+    const watch=Number(s.watch)||0, keep=Number(s.keep)||0;
+    $('#cards').className='cards five';
+    $('#cards').innerHTML=`
+      <div class="card ${act?'red':''}"><div class="big" style="color:var(--red)">${act}</div><div class="lbl">Act now</div></div>
+      <div class="card ${rot?'red':''}"><div class="big" style="color:var(--red)">${rot}</div><div class="lbl">Rotate</div></div>
+      <div class="card ${ref?'amber':''}"><div class="big" style="color:var(--amber)">${ref}</div><div class="lbl">Refresh</div></div>
+      <div class="card ${watch?'amber':''}"><div class="big" style="color:var(--amber)">${watch}</div><div class="lbl">Watch</div></div>
+      <div class="card"><div class="big" style="color:var(--green)">${keep}</div><div class="lbl">Keep · of ${s.ads_analyzed||ADS.length}</div></div>`;
+    return;
+  }
+  $('#cards').className='cards';
+  if(LIVE_MODE){
+    const s=OUT.summary||{};
+    const urgent=Number(s.urgent)||0, warning=Number(s.warning)||0, healthy=Number(s.healthy)||0;
+  $('#cards').innerHTML=`
+    <div class="card ${urgent?'red':''}"><div class="big" style="color:var(--red)">${urgent}</div><div class="lbl">Urgent</div></div>
+    <div class="card ${warning?'amber':''}"><div class="big" style="color:var(--amber)">${warning}</div><div class="lbl">Warning</div></div>
+    <div class="card"><div class="big" style="color:var(--green)">${healthy}</div><div class="lbl">Healthy · of ${s.ads_analyzed||ADS.length} analyzed</div></div>`;
+    return;
+  }
+  const a=ADS.filter(x=>!x.paused);
+  const w=a.filter(x=>x.status==='Warning').length, wa=a.filter(x=>x.status==='Watch').length, h=a.filter(x=>x.status==='Healthy').length;
+  $('#cards').innerHTML=`
+    <div class="card ${w?'red':''}"><div class="big" style="color:var(--red)">${w}</div><div class="lbl">Fatigue warnings</div></div>
+    <div class="card ${wa?'amber':''}"><div class="big" style="color:var(--amber)">${wa}</div><div class="lbl">On watch</div></div>
+    <div class="card"><div class="big" style="color:var(--green)">${h}</div><div class="lbl">Healthy · of ${a.length} active</div></div>`;
+  $('#rulesSummary').textContent=`· ${RULES.recent}d vs ${RULES.base}d · ${METRICS.filter(m=>m.on).length+1} signals on`;
+}
+function buildV2Chips(x){
+  const scoreBad=(x.fatigueScore||0)>=0.4;
+  let chips=`<div class="mchip ${scoreBad?'bad':''}"><span class="ml">Fatigue</span><span class="mv">${scorePct(x.fatigueScore)}</span></div>`;
+  chips+=`<div class="mchip"><span class="ml">Freq</span><span class="mv">${x.freqM.rAvg.toFixed(2)}</span></div>`;
+  if(x.ctrDelta!=null){
+    const ctrBad=x.ctrDelta<-10;
+    chips+=`<div class="mchip ${ctrBad?'bad':''}"><span class="ml">CTR</span><span class="mv">${x.ctrRecent!=null?x.ctrRecent.toFixed(2)+'%':'—'}</span>`;
+    chips+=`<span class="md ${x.ctrDelta>2?'up':x.ctrDelta<-2?'down':'flat'}">${pctS(x.ctrDelta)}</span></div>`;
+  }
+  const metricSignals=(x.dominantSignals||[]).filter(s=>x.trends?.[s]);
+  metricSignals.slice(0,3).forEach(sig=>{
+    const t=x.trends[sig];
+    const bad=(t.deterioration_factor||0)>0.2;
+    chips+=`<div class="mchip ${bad?'bad':''}"><span class="ml">${signalLabel(sig)}</span>`;
+    chips+=`<span class="mv">${formatTrendValue(sig,t.recent)}</span>`;
+    if(t.delta_pct!=null)chips+=`<span class="md ${t.delta_pct>0&&t.direction==='cost'?'up':t.delta_pct<0&&t.direction==='higher'?'up':t.delta_pct<0?'down':'flat'}">${pctS(t.delta_pct)}</span>`;
+    chips+=`</div>`;
+  });
+  return chips;
+}
+
+function buildV1Chips(x){
+  const warnTh=x.warnCtr||20;
+  const freqBad=x.freqM.worse>=warnTh;
+  let chips=`<div class="mchip ${freqBad?'bad':''}"><span class="ml">Freq</span><span class="mv">${x.freqM.rAvg.toFixed(2)}</span>`;
+  chips+=`<span class="md ${x.ctrDelta>2?'up':x.ctrDelta<-2?'down':'flat'}">CTR drop ${pctS(x.ctrDelta||0)}</span></div>`;
+  const ctrD=x.sig.ctr;
+  chips+=`<div class="mchip ${ctrD.worse>=warnTh?'bad':''}"><span class="ml">CTR</span><span class="mv">${ctrD.rAvg.toFixed(2)}%</span><span class="md up">${pctS(-ctrD.worse)}</span></div>`;
+  if(x.cpmTrend){
+    const cpmBad=x.cpmTrend==='rising';
+    chips+=`<div class="mchip ${cpmBad?'bad':''}"><span class="ml">CPM</span><span class="mv">${x.cpmTrend}</span></div>`;
+  }
+  return chips;
+}
+
+function renderGrid(){
+  if(!ADS.length){
+    $('#adsTitle').textContent='Ads analyzed (0)';
+    $('#grid').innerHTML=`<div class="empty">No analyzed ads in this run.</div>`;
+    return;
+  }
+  const q=($('#search').value||'').toLowerCase();
+  let a=[...ADS];
+  if(FILTER!=='all'){
+    if(SCHEMA_V>=2)a=a.filter(x=>x.verdict===FILTER);
+    else a=a.filter(x=>x.status===FILTER&&!x.paused);
+  }
+  if(OBJ!=='all'){
+    a=a.filter(x=>LIVE_MODE?(x.camp===OBJ):(x.objective===OBJ));
+  }
+  if(TYPE!=='all'){
+    a=a.filter(x=>LIVE_MODE?((x.assetType||x.format)===TYPE||x.format===TYPE):(x.format===TYPE));
+  }
+  if(PROFILE!=='all'){
+    a=a.filter(x=>(x.objectiveProfile||'')===PROFILE);
+  }
+  if(q)a=a.filter(x=>(x.name+x.camp+x.format+x.plat+(x.objective||'')+(x.objectiveProfile||'')+(x.recommendedAction||'')).toLowerCase().includes(q));
+  if(LIVE_MODE&&SCHEMA_V>=2){
+    a.sort((x,y)=>(VERDICT_RANK[x.verdict]??9)-(VERDICT_RANK[y.verdict]??9)||(y.fatigueScore||0)-(x.fatigueScore||0));
+  }else if(LIVE_MODE){
+    a.sort((x,y)=>(STATUS_RANK[x.status]??9)-(STATUS_RANK[y.status]??9)||Math.abs(y.ctrDelta||0)-Math.abs(x.ctrDelta||0));
+  }else{
+    a.sort((x,y)=>(y.paused?-1:1)-(x.paused?-1:1)||(y.freqM?.worse||0)-(x.freqM?.worse||0));
+  }
+  const platBadge=p=>p==='Meta'?'<span class="ad-plat" style="color:#1877F2">f</span>':'<span class="ad-plat" style="color:#4285F4">G</span>';
+  $('#adsTitle').textContent=LIVE_MODE?`Ads analyzed (${a.length})`:`Ads running (${a.length})`;
+  $('#grid').innerHTML=a.map(x=>{
+    const c=FCOLOR[x.format]||FCOLOR.Static;
+    const grad=`linear-gradient(150deg,${c},${darken(c,.55)})`;
+    const fcls=x.cardCss||'';
+    const chips=SCHEMA_V>=2?buildV2Chips(x):buildV1Chips(x);
+    let canvas;
+    if(x.thumbnail){
+      canvas=`<div class="preview-img"><img src="${esc(x.thumbnail)}" alt="" loading="lazy" /></div>`;
+    }else if(x.format==='Catalogue'&&x.prods){
+      canvas=`<div class="cat-grid">${x.prods.map((p,i)=>`<div class="cat-tile"><span class="pic">${p}</span><span class="pr">$${[19,29,49,12][i]}</span></div>`).join('')}</div>`;
+    }else{
+      canvas=`<div class="ad-canvas"><span class="em">${FEMOJI[x.format]||'🖼️'}</span><div class="hl">${esc(x.head||x.name)}</div></div>`;
+    }
+    const ctaLabel=x.head||x.name||'View ad';
+    const campLabel=LIVE_MODE?`Campaign ${x.camp}`:`${x.plat} · ${x.camp}`;
+    const profileBit=x.objectiveProfile?` · ${x.objectiveProfile}`:'';
+    const timeBit=x.timeInMarket?` · ${x.timeInMarket}d live`:'';
+    const metaLine=LIVE_MODE?`${campLabel} · ${x.format}${profileBit}${timeBit}${x.paused?' · paused':''}${x.isTop3?' · top priority':''}`:`${x.plat} · ${x.camp} · ${x.format} · ${x.objective}${x.paused?' · paused':''}`;
+    const sparkLabel=LIVE_MODE?'Freq trend':'Freq '+RULES.base+'d';
+    const signalTags=(x.dominantSignals||[]).slice(0,5).map(s=>`<span class="sigtag">${esc(signalLabel(s))}</span>`).join('');
+    const actionLine=x.recommendedAction?`<div class="actionline">${esc(x.recommendedAction)}</div>`:'';
+    const ribbonClass=SCHEMA_V>=2?x.verdict:x.status;
+    return `<div class="adcard ${fcls}">
+      <div class="preview" style="background:${x.thumbnail?'#000':grad}">
+        <div class="ad-chrome"><span class="ad-av"></span><div><b>Meta Ad</b><small>Sponsored · ${LIVE_MODE?x.format:(x.objective||x.format)}</small></div>${platBadge(x.plat)}</div>
+        ${canvas}
+        <div class="ad-cta"><div><small>meta</small><b>${esc(ctaLabel)}</b></div><span class="go">Learn More</span></div>
+        <span class="ribbon ${esc(ribbonClass)}">${esc(x.ribbon)}</span>
+      </div>
+      <div class="adbody">
+        <div class="adname"><span class="deliv ${x.paused?'off':'on'}"></span><b>${esc(x.name)}</b>${x.isTop3?'<span class="top3-badge">TOP 3</span>':''}</div>
+        <div class="adcamp">${esc(metaLine)}</div>
+        ${actionLine}
+        <div class="mchips">${chips}</div>
+        ${signalTags?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">${signalTags}</div>`:''}
+        <div class="sparkrow"><small>${sparkLabel}</small>${sparkline(x.series,x.cardCss==='critical'||x.cardCss==='warn'?'var(--red)':x.cardCss==='refresh'||x.cardCss==='watch'?'var(--amber)':'var(--green)')}</div>
+      </div>
+    </div>`;
+  }).join('')||`<div class="empty">No ads match these filters.</div>`;
+}
+function populateFilters(){
+  if(LIVE_MODE){
+    const camps=[...new Set(ADS.map(a=>a.camp).filter(c=>c&&c!=='—'))];
+    const types=[...new Set(ADS.map(a=>a.assetType||a.format).filter(Boolean))];
+    const profiles=[...new Set(ADS.map(a=>a.objectiveProfile).filter(Boolean))];
+    $('#objSel').innerHTML=`<option value="all">All campaigns</option>`+camps.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    $('#typeSel').innerHTML=`<option value="all">All creative types</option>`+types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    if(SCHEMA_V>=2&&profiles.length){
+      if(!$('#profileSel')){
+        const sel=document.createElement('select');
+        sel.className='sel';
+        sel.id='profileSel';
+        sel.onchange=()=>{PROFILE=$('#profileSel').value;renderGrid();};
+        $('#typeSel').after(sel);
+      }
+      $('#profileSel').innerHTML=`<option value="all">All objectives</option>`+profiles.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+      $('#profileSel').value=PROFILE;
+      $('#profileSel').style.display='';
+    }else if($('#profileSel')){
+      $('#profileSel').style.display='none';
+    }
+  }else{
+    const objs=[...new Set(ADS.map(a=>a.objective))];
+    const types=[...new Set(ADS.map(a=>a.format))];
+    $('#objSel').innerHTML=`<option value="all">All objectives</option>`+objs.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    $('#typeSel').innerHTML=`<option value="all">All creative types</option>`+types.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    if($('#profileSel'))$('#profileSel').style.display='none';
+  }
+  $('#objSel').value=OBJ; $('#typeSel').value=TYPE;
+}
+function renderMetricRows(){
+  $('#metricRows').innerHTML=METRICS.map((m,i)=>`
+    <div class="metric-row ${m.on?'':'off'}">
+      <label class="sw"><input type="checkbox" data-i="${i}" ${m.on?'checked':''}><span class="tr"></span></label>
+      <div class="mname">${m.label}<small>${m.sub}</small></div>
+      <div class="mth">flag when ${m.dir==='up'?'rises':'falls'} &gt; <input type="number" data-th="${i}" value="${m.th}" min="5" max="80">%</div>
+    </div>`).join('');
+  $$('#metricRows input[type=checkbox]').forEach(c=>c.onchange=()=>{METRICS[+c.dataset.i].on=c.checked;renderMetricRows();renderAll();});
+  $$('#metricRows input[data-th]').forEach(t=>t.oninput=()=>{const v=+t.value;if(v>=5&&v<=80){METRICS[+t.dataset.th].th=v;renderAll();}});
+}
+// re-classify + redraw cards/grid (live mode uses backend status as-is)
+function renderAll(){if(!LIVE_MODE)recompute();renderCards();renderGrid();}
+function recompute(){/* demo only — no mock data in upload-first mode */}
+// keep rule numbers valid + ordered
+function clampRules(){
+  RULES.recent=Math.max(3,Math.min(30,Math.round(RULES.recent)||DEF.recent));
+  RULES.base  =Math.max(14,Math.min(60,Math.round(RULES.base)||DEF.base));
+  if(RULES.recent>=RULES.base)RULES.recent=Math.max(3,RULES.base-1);
+  RULES.warn =Math.max(5,Math.min(60,Math.round(RULES.warn)||DEF.warn));
+  RULES.watch=Math.max(2,Math.min(40,Math.round(RULES.watch)||DEF.watch));
+  if(RULES.watch>=RULES.warn)RULES.watch=Math.max(2,RULES.warn-1);
+}
+// push current RULES into every place that displays them, skipping wherever the
+// user is actively typing (so the cursor never jumps)
+function reflectRules(source){
+  if(source!=='formula'){$('#fx-recent').value=RULES.recent;$('#fx-base').value=RULES.base;$('#fx-warn').value=RULES.warn;$('#fx-watch').value=RULES.watch;}
+  if(source!=='panel'){$('#r-recent').value=RULES.recent;$('#r-base').value=RULES.base;$('#r-warn').value=RULES.warn;$('#r-watch').value=RULES.watch;}
+  $('#fx-base2').textContent=RULES.base;   // mirror "÷ 60d avg"
+  $('#fx-warn2').textContent=RULES.warn;   // mirror watch-band upper bound
+}
+function applyRules(source){clampRules();reflectRules(source);renderAll();}
+
+/* ---------- rule panel inputs ---------- */
+function bindRules(){
+  const map={'r-recent':'recent','r-base':'base','r-warn':'warn','r-watch':'watch'};
+  Object.entries(map).forEach(([id,key])=>{const e=$('#'+id);
+    e.oninput=()=>{const v=+e.value;if(!isNaN(v)){RULES[key]=v;applyRules('panel');}};
+    e.onchange=()=>applyRules(null);});
+  $('#rulesBtn').onclick=()=>{$('#rulesPanel').classList.toggle('open');$('#rulesBtn').classList.toggle('open');};
+  $('#resetBtn').onclick=()=>{RULES={...DEF};METRICS=DEFMETRICS.map(m=>({...m}));renderMetricRows();applyRules(null);};
+}
+
+$('#search').oninput=renderGrid;
+$('#objSel').onchange=()=>{OBJ=$('#objSel').value;renderGrid();};
+$('#typeSel').onchange=()=>{TYPE=$('#typeSel').value;renderGrid();};
+$('#clearFilters').onclick=()=>{FILTER='all';OBJ='all';TYPE='all';PROFILE='all';$('#search').value='';
+  renderFilterPills();
+  $('#objSel').value='all';$('#typeSel').value='all';
+  if($('#profileSel'))$('#profileSel').value='all';
+  renderGrid();};
+$('#themeBtn').onclick=()=>{const h=document.documentElement,d=h.getAttribute('data-theme')==='dark';h.setAttribute('data-theme',d?'light':'dark');$('#themeBtn').textContent=d?'☀ Light':'☾ Dark';};
+
+bindRules();
+</script>
+</body>
+</html>

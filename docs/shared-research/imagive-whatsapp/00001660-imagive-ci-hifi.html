@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Imagive · Creative Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400;1,9..40,500&family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root {
+  --bg:       #F5F6FA;
+  --surface:  #FFFFFF;
+  --surface2: #F8F9FC;
+  --surface3: #EEF0F7;
+  --border:   #E4E6EF;
+  --border2:  #D1D5E8;
+
+  --ink:      #0D0F1A;
+  --ink2:     #3A3F5C;
+  --ink3:     #6B7294;
+  --ink4:     #A0A8C4;
+
+  --accent:   #5B47E0;
+  --accent-h: #4535C5;
+  --accent-s: #EEF0FF;
+  --accent-ss:#F6F6FF;
+  --accent-t: rgba(91,71,224,.12);
+
+  --lime:     #52C41A;
+  --lime-s:   #F0FAE6;
+  --amber:    #F59E0B;
+  --amber-s:  #FFF8E1;
+  --red:      #EF4444;
+  --red-s:    #FEF2F2;
+  --cyan:     #0EA5E9;
+  --cyan-s:   #E0F7FF;
+
+  --shadow-sm: 0 1px 3px rgba(13,15,26,.06), 0 1px 2px rgba(13,15,26,.04);
+  --shadow:    0 4px 12px rgba(13,15,26,.08), 0 1px 3px rgba(13,15,26,.04);
+  --shadow-lg: 0 12px 32px rgba(13,15,26,.12), 0 4px 8px rgba(13,15,26,.06);
+
+  --r-sm: 8px;
+  --r:    12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+
+  --sidebar-w: 232px;
+  --topbar-h:  56px;
+}
+
+/* ─── RESET ───────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;min-height:100vh;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit}
+a{text-decoration:none;color:inherit}
+svg{flex-shrink:0}
+
+/* ─── NAV BAR (screen switcher) ───────────────────────── */
+.top-nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  background:var(--ink);height:36px;
+  display:flex;align-items:center;gap:2px;padding:0 16px;
+  overflow-x:auto;
+}
+.top-nav::-webkit-scrollbar{display:none}
+.top-nav .nav-brand{font-family:'Fraunces',serif;color:#fff;font-size:13px;font-weight:600;letter-spacing:-.01em;margin-right:20px;white-space:nowrap;opacity:.8}
+.tnav-btn{
+  color:rgba(255,255,255,.5);font-size:11px;font-weight:500;letter-spacing:.3px;
+  padding:4px 12px;border-radius:4px;white-space:nowrap;transition:all .15s;
+  cursor:pointer;border:none;background:none;font-family:inherit;
+}
+.tnav-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.9)}
+.tnav-btn.active{background:var(--accent);color:#fff}
+
+/* ─── LAYOUT ──────────────────────────────────────────── */
+.screens-wrap{margin-top:36px}
+.screen{display:none}
+.screen.active{display:flex;flex-direction:column;min-height:calc(100vh - 36px)}
+
+/* ─── SHELL ───────────────────────────────────────────── */
+.app-shell{display:flex;flex:1;min-height:0}
+
+/* ─── SIDEBAR ─────────────────────────────────────────── */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:sticky;top:36px;height:calc(100vh - 36px);
+  overflow-y:auto;
+  padding:0 0 24px;
+}
+.sidebar::-webkit-scrollbar{width:0}
+.sidebar-brand{
+  padding:18px 20px 14px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:8px;
+}
+.brand-mark{
+  width:28px;height:28px;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),#8B6EFF);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.brand-mark svg{color:#fff}
+.brand-name{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--ink);letter-spacing:-.02em}
+
+.sb-section{padding:0 12px;margin-bottom:4px}
+.sb-label{font-size:10px;font-weight:600;color:var(--ink4);letter-spacing:1.2px;text-transform:uppercase;padding:8px 8px 4px;display:block}
+.sb-item{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);
+  color:var(--ink3);font-size:13px;font-weight:500;cursor:pointer;
+  transition:all .15s;margin-bottom:1px;position:relative;
+}
+.sb-item:hover{background:var(--surface3);color:var(--ink2)}
+.sb-item.active{background:var(--accent-s);color:var(--accent);font-weight:600}
+.sb-item.active .sb-ico{color:var(--accent)}
+.sb-item.child{padding-left:32px;font-size:12.5px}
+.sb-item.child.active{background:var(--accent-s)}
+.sb-ico{width:16px;height:16px;flex-shrink:0;color:var(--ink4)}
+.sb-item.active .sb-ico{color:var(--accent)}
+.sb-badge{margin-left:auto;font-size:10px;font-weight:700;background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;min-width:18px;text-align:center}
+.sb-badge.warn{background:var(--amber)}
+.sb-badge.ok{background:var(--lime)}
+
+.sidebar-footer{
+  margin-top:auto;padding:12px 16px;
+  border-top:1px solid var(--border);
+}
+.brand-selector{
+  display:flex;align-items:center;gap:10px;padding:8px 10px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;
+}
+.brand-avatar{width:26px;height:26px;border-radius:6px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
+.brand-sel-name{font-size:12.5px;font-weight:600;flex:1}
+.brand-sel-arrow{color:var(--ink4);font-size:10px}
+
+/* ─── MAIN AREA ───────────────────────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow-y:auto}
+
+/* ─── TOPBAR ──────────────────────────────────────────── */
+.topbar{
+  height:var(--topbar-h);background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;padding:0 24px;
+  position:sticky;top:0;z-index:10;flex-shrink:0;
+}
+.topbar-title{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-.01em;flex:1}
+.topbar-sub{font-size:12px;color:var(--ink3);margin-top:1px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3)}
+.breadcrumb .sep{color:var(--border2)}
+.breadcrumb .current{color:var(--ink);font-weight:600}
+
+/* ─── BUTTONS ─────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:var(--r-sm);font-size:12.5px;font-weight:600;padding:7px 14px;transition:all .15s;white-space:nowrap;cursor:pointer;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff;border:1.5px solid var(--accent)}
+.btn-primary:hover{background:var(--accent-h);border-color:var(--accent-h)}
+.btn-outline{background:#fff;color:var(--ink2);border:1.5px solid var(--border2)}
+.btn-outline:hover{background:var(--surface2);border-color:var(--border2)}
+.btn-ghost{background:transparent;color:var(--ink3);border:1.5px solid transparent;padding:6px 10px}
+.btn-ghost:hover{background:var(--surface3);color:var(--ink2)}
+.btn-sm{padding:5px 11px;font-size:11.5px}
+.btn-xs{padding:3px 8px;font-size:11px;border-radius:6px}
+.btn-danger{background:var(--red-s);color:var(--red);border:1.5px solid #FECACA}
+.btn-danger:hover{background:#FEE2E2}
+
+/* ─── CONTENT ─────────────────────────────────────────── */
+.content{flex:1;padding:24px;display:flex;flex-direction:column;gap:20px}
+.content-sm{padding:20px}
+
+/* ─── CARDS ───────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm)}
+.card-pad{padding:20px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:13.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.card-sub{font-size:11.5px;color:var(--ink3);margin-top:2px}
+
+/* ─── KPI CARDS ───────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kpi-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:18px 20px;box-shadow:var(--shadow-sm);
+  transition:box-shadow .15s;
+}
+.kpi-card:hover{box-shadow:var(--shadow)}
+.kpi-label{font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.3px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.kpi-val{font-family:'Fraunces',serif;font-size:30px;font-weight:700;line-height:1;color:var(--ink);letter-spacing:-.02em}
+.kpi-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.kpi-delta{font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px}
+.kpi-delta.up{background:var(--lime-s);color:#3a7a0a}
+.kpi-delta.dn{background:var(--red-s);color:#991b1b}
+.kpi-delta.warn{background:var(--amber-s);color:#92400e}
+.kpi-trend{font-size:11px;color:var(--ink3)}
+
+/* ─── AGENT STATUS ────────────────────────────────────── */
+.agent-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.agent-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:20px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
+}
+.agent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.agent-card.diversity::before{background:linear-gradient(90deg,var(--accent),#8B6EFF)}
+.agent-card.analytics::before{background:linear-gradient(90deg,var(--cyan),#38BDF8)}
+.agent-card.fatigue::before{background:linear-gradient(90deg,var(--amber),#FB923C)}
+.agent-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.agent-num{font-size:10px;font-weight:700;color:var(--ink4);letter-spacing:1px;text-transform:uppercase}
+.agent-status-dot{width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 3px var(--lime-s)}
+.agent-name{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px;letter-spacing:-.01em}
+.agent-desc{font-size:12px;color:var(--ink3);margin-bottom:16px;line-height:1.5}
+.agent-metric{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.agent-metric-label{color:var(--ink3)}
+.agent-metric-val{font-weight:700;color:var(--ink)}
+.progress-bar{height:5px;background:var(--surface3);border-radius:10px;overflow:hidden;margin:8px 0 14px}
+.progress-fill{height:100%;border-radius:10px;transition:width .6s ease}
+.pf-accent{background:linear-gradient(90deg,var(--accent),#8B6EFF)}
+.pf-cyan{background:linear-gradient(90deg,var(--cyan),#38BDF8)}
+.pf-amber{background:linear-gradient(90deg,var(--amber),#FB923C)}
+.pf-red{background:linear-gradient(90deg,var(--red),#F87171)}
+
+/* ─── STATUS PILLS ────────────────────────────────────── */
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:20px;font-size:11px;font-weight:600;padding:3px 9px}
+.pill-live{background:var(--lime-s);color:#166534}
+.pill-warn{background:var(--amber-s);color:#92400e}
+.pill-danger{background:var(--red-s);color:#991b1b}
+.pill-neutral{background:var(--surface3);color:var(--ink3)}
+.pill-accent{background:var(--accent-s);color:var(--accent)}
+.pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* ─── TABLE ───────────────────────────────────────────── */
+.data-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.data-table th{border-bottom:1.5px solid var(--border);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;background:var(--surface2);white-space:nowrap}
+.data-table th:first-child{border-radius:var(--r-sm) 0 0 0}
+.data-table th:last-child{border-radius:0 var(--r-sm) 0 0}
+.data-table td{border-bottom:1px solid var(--border);padding:12px 14px;vertical-align:middle;color:var(--ink2)}
+.data-table tbody tr:hover td{background:var(--accent-ss)}
+.data-table tbody tr:last-child td{border-bottom:none}
+.td-strong{font-weight:600;color:var(--ink)}
+.td-mono{font-family:'DM Mono',monospace;font-size:12px}
+.td-muted{color:var(--ink3)}
+
+/* ─── RECEIPT CHIP ────────────────────────────────────── */
+.receipt{
+  display:inline-flex;align-items:center;gap:5px;
+  background:#fff;border:1px solid var(--accent-s);border-left:3px solid var(--accent);
+  border-radius:6px;padding:4px 9px;font-size:11px;font-weight:500;color:var(--ink2);
+  cursor:pointer;transition:all .15s;margin:2px;
+}
+.receipt:hover{background:var(--accent-ss);border-left-color:var(--accent-h)}
+.receipt-icon{font-size:10px}
+.receipt-id{font-family:'DM Mono',monospace;font-size:10.5px;font-weight:600;color:var(--accent)}
+
+/* ─── EVIDENCE BLOCK ──────────────────────────────────── */
+.evidence-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-top:16px}
+.evidence-header{padding:10px 16px;background:var(--surface3);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:1.2px;text-transform:uppercase}
+.evidence-grid{display:grid;grid-template-columns:repeat(3,1fr)}
+.ev-cell{padding:16px;border-right:1px solid var(--border)}
+.ev-cell:last-child{border-right:none}
+.ev-type{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ev-dot{width:8px;height:8px;border-radius:2px}
+.ev-see .ev-dot{background:var(--amber)}
+.ev-evidence .ev-dot{background:var(--accent)}
+.ev-rec .ev-dot{background:var(--lime)}
+.ev-see .ev-type{color:var(--amber)}
+.ev-evidence .ev-type{color:var(--accent)}
+.ev-rec .ev-type{color:var(--lime)}
+.ev-text{font-size:12.5px;color:var(--ink2);line-height:1.6}
+
+/* ─── SECTION HEADING ─────────────────────────────────── */
+.sec{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sec-title{font-size:14px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.sec-actions{display:flex;gap:8px;align-items:center}
+.section-divider{height:1px;background:var(--border);margin:4px 0 20px}
+
+/* ─── TAGS ────────────────────────────────────────────── */
+.tag{display:inline-block;border-radius:6px;font-size:10.5px;font-weight:600;padding:2px 8px;margin:2px}
+.tag-hook{background:var(--accent-s);color:var(--accent)}
+.tag-warning{background:var(--amber-s);color:#92400e}
+.tag-danger{background:var(--red-s);color:#991b1b}
+.tag-ok{background:var(--lime-s);color:#166534}
+.tag-neutral{background:var(--surface3);color:var(--ink3)}
+.tag-cyan{background:var(--cyan-s);color:#0369a1}
+
+/* ─── HEATMAP ─────────────────────────────────────────── */
+.heatmap-wrap{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.heatmap-row{display:flex}
+.hm-cell{flex:1;padding:10px 8px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);font-size:11.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:58px;cursor:pointer;transition:all .15s;position:relative}
+.hm-cell:last-child{border-right:none}
+.heatmap-row:last-child .hm-cell{border-bottom:none}
+.hm-cell.head{background:var(--surface2);cursor:default;font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;min-height:36px}
+.hm-cell.row-label{background:var(--surface2);cursor:default;flex:0 0 140px;align-items:flex-start;font-size:12px;font-weight:600;color:var(--ink2);padding-left:14px}
+.hm-num{font-family:'Fraunces',serif;font-size:20px;font-weight:700;line-height:1}
+.hm-sub{font-size:9.5px;color:inherit;opacity:.7;margin-top:2px}
+.hm-d0{background:#fff;color:var(--ink3)}
+.hm-d1{background:#F0EEFF;color:var(--accent)}
+.hm-d2{background:#DDD5FF;color:#4535C5}
+.hm-d3{background:#C4B5FD;color:#3730A3}
+.hm-d4{background:var(--accent);color:#fff}
+.hm-open{background:var(--lime-s);border:2px dashed #86EFAC;color:#166534}
+.hm-open:hover{background:#DCFCE7;transform:scale(1.02)}
+.hm-d1:hover,.hm-d2:hover,.hm-d3:hover,.hm-d4:hover{filter:brightness(.95)}
+.hm-cell.row-label{pointer-events:none}
+.hm-open-badge{font-size:8.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;background:#16A34A;color:#fff;border-radius:4px;padding:1px 5px;margin-top:3px}
+
+/* ─── SCORE RING ──────────────────────────────────────── */
+.score-ring{width:72px;height:72px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Fraunces',serif;flex-shrink:0;position:relative}
+.score-ring::after{content:'';position:absolute;inset:0;border-radius:50%;border:3px solid var(--border)}
+.score-val{font-size:22px;font-weight:700;line-height:1}
+.score-label{font-size:9px;color:var(--ink3);font-family:'DM Sans',sans-serif;font-weight:600;margin-top:1px}
+.ring-accent{background:radial-gradient(circle,var(--accent-ss) 0%,#fff 70%)}
+.ring-accent::after{border-color:var(--accent)}
+.ring-accent .score-val{color:var(--accent)}
+.ring-warn{background:radial-gradient(circle,var(--amber-s) 0%,#fff 70%)}
+.ring-warn::after{border-color:var(--amber)}
+.ring-warn .score-val{color:var(--amber)}
+.ring-danger{background:radial-gradient(circle,var(--red-s) 0%,#fff 70%)}
+.ring-danger::after{border-color:var(--red)}
+.ring-danger .score-val{color:var(--red)}
+.ring-ok{background:radial-gradient(circle,var(--lime-s) 0%,#fff 70%)}
+.ring-ok::after{border-color:var(--lime)}
+.ring-ok .score-val{color:#16A34A}
+
+/* ─── BAR CHARTS ──────────────────────────────────────── */
+.bar-chart{display:flex;flex-direction:column;gap:10px}
+.bc-row{display:flex;align-items:center;gap:10px}
+.bc-label{font-size:12px;color:var(--ink2);width:130px;flex-shrink:0;text-align:right;font-weight:500}
+.bc-track{flex:1;height:8px;background:var(--surface3);border-radius:20px;overflow:hidden;position:relative}
+.bc-fill{height:100%;border-radius:20px;transition:width .8s ease}
+.bc-val{font-size:12px;font-weight:700;color:var(--ink);width:36px;text-align:right;font-family:'DM Mono',monospace}
+.bc-fill-accent{background:linear-gradient(90deg,var(--accent),#8B6EFF)}
+.bc-fill-cyan{background:linear-gradient(90deg,var(--cyan),#38BDF8)}
+.bc-fill-red{background:linear-gradient(90deg,var(--red),#F87171)}
+.bc-fill-amber{background:linear-gradient(90deg,var(--amber),#FCD34D)}
+.bc-fill-lime{background:linear-gradient(90deg,var(--lime),#86EFAC)}
+
+/* ─── VERDICT CARD ────────────────────────────────────── */
+.verdict-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:18px;display:flex;gap:16px;box-shadow:var(--shadow-sm);
+  margin-bottom:10px;transition:all .2s;cursor:pointer;
+}
+.verdict-card:hover{border-color:var(--border2);box-shadow:var(--shadow);transform:translateY(-1px)}
+.verdict-score-wrap{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.verdict-badge{font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-top:5px}
+.vb-kill{background:var(--ink);color:#fff}
+.vb-watch{background:var(--amber-s);color:#92400e;border:1px solid #FCD34D}
+.vb-safe{background:var(--lime-s);color:#166534;border:1px solid #86EFAC}
+.verdict-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:6px;letter-spacing:-.01em}
+.verdict-desc{font-size:12px;color:var(--ink3);line-height:1.6;margin-bottom:10px}
+
+/* ─── CONCEPT CARD ────────────────────────────────────── */
+.concept-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.concept-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  overflow:hidden;transition:all .2s;cursor:pointer;
+}
+.concept-card:hover{box-shadow:var(--shadow);transform:translateY(-2px);border-color:var(--accent)}
+.concept-card.selected{border-color:var(--accent);border-width:2px;box-shadow:0 0 0 3px var(--accent-t)}
+.concept-thumb{height:110px;background:linear-gradient(135deg,var(--surface3),var(--accent-ss));display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.concept-thumb-num{font-family:'Fraunces',serif;font-size:32px;font-weight:700;color:var(--border2);letter-spacing:-.02em}
+.concept-thumb .hook-badge{position:absolute;bottom:8px;left:8px;background:rgba(255,255,255,.9);backdrop-filter:blur(4px);border-radius:6px;padding:3px 7px;font-size:10px;font-weight:700;color:var(--accent)}
+.concept-body{padding:12px}
+.concept-title{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.concept-meta{font-size:11px;color:var(--ink3);margin-bottom:8px}
+.concept-actions{display:flex;gap:5px}
+.select-check{width:18px;height:18px;border-radius:5px;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.select-check.checked{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ─── TABS ────────────────────────────────────────────── */
+.tabs{display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px}
+.tab-item{padding:6px 14px;border-radius:8px;font-size:12.5px;font-weight:500;color:var(--ink3);cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab-item.active{background:#fff;color:var(--ink);font-weight:600;box-shadow:var(--shadow-sm)}
+
+/* ─── FILTER BAR ──────────────────────────────────────── */
+.filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filter-chip{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;color:var(--ink3);background:var(--surface);border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.filter-chip:hover{border-color:var(--accent);color:var(--accent)}
+.filter-chip.active{background:var(--accent-s);border-color:var(--accent);color:var(--accent);font-weight:600}
+.search-input{
+  flex:1;max-width:220px;height:34px;border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:0 12px 0 32px;font-size:12.5px;color:var(--ink);background:#fff;
+  transition:border-color .15s;outline:none;font-family:inherit;
+}
+.search-input:focus{border-color:var(--accent)}
+.search-wrap{position:relative}
+.search-wrap::before{content:'⌕';position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--ink4);font-size:14px;pointer-events:none}
+
+/* ─── INLINE CALLOUT ──────────────────────────────────── */
+.callout{border-radius:var(--r-sm);padding:12px 16px;font-size:12.5px;line-height:1.6;margin-bottom:12px}
+.callout-info{background:var(--accent-ss);border:1px solid var(--accent-s);color:var(--ink2)}
+.callout-warn{background:var(--amber-s);border:1px solid #FDE68A;color:#92400e}
+.callout-ok{background:var(--lime-s);border:1px solid #BBF7D0;color:#166534}
+.callout-danger{background:var(--red-s);border:1px solid #FECACA;color:#991b1b}
+.callout strong{font-weight:700}
+
+/* ─── FLOW STEPS ──────────────────────────────────────── */
+.flow-steps{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.flow-step{flex:1;padding:12px 16px;border-right:1px solid var(--border);background:#fff;font-size:12px;cursor:pointer;transition:all .15s}
+.flow-step:last-child{border-right:none}
+.flow-step.done{background:var(--accent-ss)}
+.flow-step.active{background:var(--accent-s);border-bottom:2px solid var(--accent)}
+.fs-num{font-size:10px;font-weight:700;color:var(--ink4);letter-spacing:.8px;text-transform:uppercase;margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.fs-num .done-check{width:14px;height:14px;background:var(--lime);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:8px}
+.fs-title{font-weight:700;font-size:13px;color:var(--ink);margin-bottom:2px}
+.fs-desc{font-size:11px;color:var(--ink3)}
+.flow-step.active .fs-title{color:var(--accent)}
+
+/* ─── TIMELINE ────────────────────────────────────────── */
+.timeline{display:flex;flex-direction:column;gap:0;position:relative;padding-left:24px}
+.timeline::before{content:'';position:absolute;left:7px;top:8px;bottom:8px;width:2px;background:var(--border)}
+.tl-item{position:relative;padding:0 0 18px 14px}
+.tl-item::before{content:'';position:absolute;left:-17px;top:5px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--border)}
+.tl-item.done::before{background:var(--accent);border-color:var(--accent)}
+.tl-item.active::before{background:#fff;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-t)}
+.tl-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.tl-meta{font-size:11.5px;color:var(--ink3)}
+
+/* ─── DNA TABLE ───────────────────────────────────────── */
+.dna-table{width:100%;border-collapse:collapse;font-size:12px}
+.dna-table th{background:var(--surface2);border:1px solid var(--border);padding:10px 14px;font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.4px;text-transform:uppercase;white-space:nowrap}
+.dna-table td{border:1px solid var(--border);padding:11px 14px;vertical-align:middle;font-size:12.5px}
+.dna-table td.row-head{font-weight:600;color:var(--ink2);background:var(--surface2)}
+.dna-cell-val{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--ink)}
+.dna-cell-bar{height:4px;background:var(--surface3);border-radius:20px;overflow:hidden;margin-top:4px;width:100%}
+.dna-cell-bar-fill{height:100%;border-radius:20px;background:var(--accent-h)}
+.dna-cell-gap{display:inline-flex;align-items:center;gap:4px;background:var(--red-s);color:#991b1b;border-radius:6px;font-size:10.5px;font-weight:700;padding:2px 7px;margin-left:6px}
+.dna-cell-highlight{background:var(--accent-ss)}
+
+/* ─── PANEL LAYOUT ────────────────────────────────────── */
+.panel-layout{display:grid;grid-template-columns:1fr 280px;gap:20px}
+.right-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;box-shadow:var(--shadow-sm);position:sticky;top:calc(36px + var(--topbar-h));max-height:calc(100vh - 36px - var(--topbar-h) - 48px);overflow-y:auto}
+.right-panel::-webkit-scrollbar{width:4px}
+.right-panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.rpanel-title{font-size:12px;font-weight:700;color:var(--ink3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px}
+
+/* ─── INSIGHT ROW ─────────────────────────────────────── */
+.insight-row{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border)}
+.insight-row:last-child{border-bottom:none}
+.insight-icon{width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.insight-body{flex:1}
+.insight-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.insight-desc{font-size:12px;color:var(--ink3);line-height:1.5;margin-bottom:6px}
+.insight-actions{display:flex;gap:6px;align-items:center}
+
+/* ─── DETAIL VIEW ─────────────────────────────────────── */
+.detail-hero{display:flex;gap:20px;padding:24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.detail-thumb{width:120px;height:152px;background:linear-gradient(135deg,var(--surface3),var(--accent-ss));border-radius:var(--r);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;font-size:11px;color:var(--ink4);text-align:center}
+.detail-meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+.detail-meta-item{background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px}
+.dmi-label{font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.dmi-val{font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--ink)}
+
+/* ─── COPY EDITOR ─────────────────────────────────────── */
+.copy-editor{border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;font-size:13px;line-height:1.7;color:var(--ink2);background:#fff;min-height:60px;cursor:text;transition:border-color .15s}
+.copy-editor:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-t)}
+.field-label{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;margin-top:14px}
+.field-label:first-child{margin-top:0}
+
+/* ─── STATS ROW ───────────────────────────────────────── */
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.stat-item{background:#fff;padding:14px 18px}
+.stat-label{font-size:10.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.stat-val{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--ink)}
+.stat-sub{font-size:11px;color:var(--ink3);margin-top:2px}
+
+/* ─── APPROVAL TABLE ──────────────────────────────────── */
+.approval-status{display:inline-flex;align-items:center;gap:5px;border-radius:6px;font-size:11.5px;font-weight:600;padding:3px 10px}
+.as-approved{background:var(--lime-s);color:#166534}
+.as-review{background:var(--amber-s);color:#92400e}
+.as-pending{background:var(--surface3);color:var(--ink3)}
+.as-rejected{background:var(--red-s);color:#991b1b}
+
+/* ─── SPARKLINE ───────────────────────────────────────── */
+.sparkline{height:32px;display:flex;align-items:flex-end;gap:3px}
+.spark-bar{flex:1;background:var(--accent-s);border-radius:3px 3px 0 0;min-height:4px;transition:height .3s ease}
+.spark-bar.hi{background:var(--accent)}
+
+/* ─── EMPTY STATE ─────────────────────────────────────── */
+.empty{text-align:center;padding:40px 20px;color:var(--ink3)}
+.empty-icon{font-size:32px;margin-bottom:12px;opacity:.5}
+.empty-title{font-size:14px;font-weight:600;color:var(--ink2);margin-bottom:6px}
+.empty-desc{font-size:12.5px;line-height:1.6}
+
+/* ─── MODAL / OVERLAY ─────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(13,15,26,.4);backdrop-filter:blur(3px);z-index:999;display:none;align-items:center;justify-content:center;padding:24px}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--r-xl);box-shadow:var(--shadow-lg);width:100%;max-width:600px;max-height:85vh;overflow-y:auto;animation:fadeUp .2s ease}
+.modal-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1}
+.modal-title{font-size:16px;font-weight:700;color:var(--ink)}
+.modal-body{padding:20px 24px}
+.modal-foot{padding:16px 24px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* ─── TOOLTIP ─────────────────────────────────────────── */
+.has-tooltip{position:relative}
+.tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:11px;padding:5px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:100}
+.has-tooltip:hover .tooltip{opacity:1}
+.tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink)}
+
+/* ─── ANIM ────────────────────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.fade-in{animation:fadeIn .25s ease forwards}
+
+.content > *{animation:fadeIn .2s ease forwards}
+
+/* ─── GRID UTILS ──────────────────────────────────────── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.g3-1{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.flex{display:flex}
+.flex-col{display:flex;flex-direction:column}
+.gap-2{gap:8px}
+.gap-3{gap:12px}
+.gap-4{gap:16px}
+.items-center{align-items:center}
+.justify-between{justify-content:space-between}
+.flex-1{flex:1}
+.mb-1{margin-bottom:4px}
+.mb-2{margin-bottom:8px}
+.mb-3{margin-bottom:12px}
+.mb-4{margin-bottom:16px}
+.mt-2{margin-top:8px}
+.mt-3{margin-top:12px}
+.mt-4{margin-top:16px}
+
+/* helper */
+.text-muted{color:var(--ink3);font-size:12px}
+.text-sm{font-size:12px}
+.text-xs{font-size:11px}
+.fw-bold{font-weight:700}
+.mono{font-family:'DM Mono',monospace;font-size:12px}
+
+/* ─── MICRO CHART ─────────────────────────────────────── */
+.mini-chart{display:flex;align-items:flex-end;gap:2px;height:28px}
+.mc-bar{width:6px;border-radius:2px 2px 0 0;background:var(--accent-s);transition:background .15s}
+.mc-bar.active{background:var(--accent)}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══════════════════════════════════════════ -->
+<div class="top-nav">
+  <span class="nav-brand">imagive</span>
+  <button class="tnav-btn active" onclick="showScreen('overview')">CI Overview</button>
+  <button class="tnav-btn" onclick="showScreen('diversity')">Creative Diversity</button>
+  <button class="tnav-btn" onclick="showScreen('analytics-dna')">DNA Scorecard</button>
+  <button class="tnav-btn" onclick="showScreen('hook-library')">Hook Library</button>
+  <button class="tnav-btn" onclick="showScreen('whitespace')">Whitespace Map</button>
+  <button class="tnav-btn" onclick="showScreen('fatigue')">Creative Fatigue</button>
+  <button class="tnav-btn" onclick="showScreen('fatigue-detail')">Fatigue Detail</button>
+  <button class="tnav-btn" onclick="showScreen('generate-brief')">Generate Brief</button>
+  <button class="tnav-btn" onclick="showScreen('generate-results')">Gen Results</button>
+  <button class="tnav-btn" onclick="showScreen('concept-detail')">Concept Detail</button>
+  <button class="tnav-btn" onclick="showScreen('approval')">Approval</button>
+</div>
+
+<div class="screens-wrap">
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 01 — CI OVERVIEW DASHBOARD
+════════════════════════════════════════════════════ -->
+<div id="screen-overview" class="screen active">
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+      <span class="brand-name">imagive</span>
+    </div>
+    <div class="sb-section">
+      <span class="sb-label">Main</span>
+      <div class="sb-item"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Overview</div>
+      <div class="sb-item active"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Creative Intel</div>
+      <div class="sb-item child active" onclick="showScreen('overview')">CI Overview</div>
+      <div class="sb-item child" onclick="showScreen('diversity')">Creative Diversity</div>
+      <div class="sb-item child" onclick="showScreen('analytics-dna')">Creative Analytics</div>
+      <div class="sb-item child" onclick="showScreen('fatigue')">Creative Fatigue<span class="sb-badge warn">5</span></div>
+    </div>
+    <div class="sb-section">
+      <span class="sb-label">Tools</span>
+      <div class="sb-item"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Ads Library</div>
+      <div class="sb-item"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46L7 19V9A2.5 2.5 0 0 1 9.5 2z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46L17 19V9A2.5 2.5 0 0 0 14.5 2z"/></svg>AI Studio</div>
+      <div class="sb-item"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Whiteboard</div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="brand-selector">
+        <div class="brand-avatar">bA</div>
+        <span class="brand-sel-name">boAt Audio</span>
+        <span class="brand-sel-arrow">▾</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Creative Intelligence</div>
+        <div class="topbar-sub">3 agents active · Last sync 2h ago</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="tabs">
+          <div class="tab-item active">Overview</div>
+          <div class="tab-item">Reports</div>
+          <div class="tab-item">History</div>
+        </div>
+        <button class="btn btn-outline btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.13"/></svg>
+          Refresh
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('generate-brief')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Generate 10
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>
+            Active Ads
+          </div>
+          <div class="kpi-val">43</div>
+          <div class="kpi-row"><span class="kpi-delta up">+7 this week</span><span class="kpi-trend">vs last week</span></div>
+          <div class="mini-chart mt-2">
+            <div class="mc-bar" style="height:40%"></div><div class="mc-bar" style="height:55%"></div><div class="mc-bar" style="height:45%"></div><div class="mc-bar" style="height:70%"></div><div class="mc-bar" style="height:60%"></div><div class="mc-bar active" style="height:100%"></div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Avg Days Live
+          </div>
+          <div class="kpi-val">38</div>
+          <div class="kpi-row"><span class="kpi-delta warn">↑ Watch fatigue</span><span class="kpi-trend">threshold 70d</span></div>
+          <div class="mini-chart mt-2">
+            <div class="mc-bar" style="height:30%"></div><div class="mc-bar" style="height:38%"></div><div class="mc-bar" style="height:42%"></div><div class="mc-bar" style="height:50%"></div><div class="mc-bar" style="height:55%"></div><div class="mc-bar active" style="height:62%"></div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            Hook Archetypes
+          </div>
+          <div class="kpi-val">4<span style="font-size:18px;color:var(--ink3)">/7</span></div>
+          <div class="kpi-row"><span class="kpi-delta dn">3 gaps open</span><span class="kpi-trend">untested types</span></div>
+          <div class="mini-chart mt-2">
+            <div class="mc-bar active" style="height:100%"></div><div class="mc-bar active" style="height:80%"></div><div class="mc-bar active" style="height:65%"></div><div class="mc-bar active" style="height:20%"></div><div class="mc-bar" style="height:4%"></div><div class="mc-bar" style="height:4%"></div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Whitespace Cells
+          </div>
+          <div class="kpi-val">11</div>
+          <div class="kpi-row"><span class="kpi-delta ok">Opportunities</span><span class="kpi-trend">open combos</span></div>
+          <div class="mini-chart mt-2">
+            <div class="mc-bar active" style="height:100%"></div><div class="mc-bar active" style="height:100%"></div><div class="mc-bar active" style="height:70%"></div><div class="mc-bar" style="height:4%"></div><div class="mc-bar" style="height:4%"></div><div class="mc-bar" style="height:4%"></div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Concepts Generated
+          </div>
+          <div class="kpi-val">60</div>
+          <div class="kpi-row"><span class="kpi-delta up">+10 this run</span><span class="kpi-trend">12 approved</span></div>
+          <div class="mini-chart mt-2">
+            <div class="mc-bar" style="height:20%"></div><div class="mc-bar" style="height:30%"></div><div class="mc-bar active" style="height:50%"></div><div class="mc-bar" style="height:40%"></div><div class="mc-bar active" style="height:80%"></div><div class="mc-bar active" style="height:100%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agent Status -->
+      <div>
+        <div class="sec">
+          <div class="sec-title">Agent Status</div>
+          <div class="sec-actions">
+            <span class="text-muted">Next auto-run in 22h</span>
+            <button class="btn btn-ghost btn-sm">View all runs →</button>
+          </div>
+        </div>
+        <div class="agent-grid">
+          <div class="agent-card diversity" style="cursor:pointer" onclick="showScreen('diversity')">
+            <div class="agent-head">
+              <div>
+                <div class="agent-num">Agent 01</div>
+                <div class="agent-name">Creative Diversity</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="agent-status-dot"></div>
+                <span class="pill pill-live"><span class="pill-dot"></span>Live</span>
+              </div>
+            </div>
+            <div class="agent-desc">Detects pattern repetition across your portfolio. 87% concentration in Product Demo hook detected.</div>
+            <div class="agent-metric mb-1">
+              <span class="agent-metric-label">Diversity Score</span>
+              <span class="agent-metric-val" style="color:var(--amber);font-family:'Fraunces',serif;font-size:20px">62<span style="font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink3)">/100</span></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill pf-accent" style="width:62%"></div></div>
+            <button class="btn btn-outline btn-sm" style="width:100%">View Diversity Report →</button>
+          </div>
+          <div class="agent-card analytics" style="cursor:pointer" onclick="showScreen('analytics-dna')">
+            <div class="agent-head">
+              <div>
+                <div class="agent-num">Agent 02</div>
+                <div class="agent-name">Creative Analytics</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="agent-status-dot"></div>
+                <span class="pill pill-live"><span class="pill-dot"></span>Live</span>
+              </div>
+            </div>
+            <div class="agent-desc">Surfaces DNA fingerprints, hook strength scores, and whitespace opportunities across 5 brands.</div>
+            <div class="agent-metric mb-1">
+              <span class="agent-metric-label">Hooks Analyzed</span>
+              <span class="agent-metric-val" style="color:var(--cyan);font-family:'Fraunces',serif;font-size:20px">147</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill pf-cyan" style="width:78%"></div></div>
+            <button class="btn btn-outline btn-sm" style="width:100%">View Monday Digest →</button>
+          </div>
+          <div class="agent-card fatigue" style="cursor:pointer" onclick="showScreen('fatigue')">
+            <div class="agent-head">
+              <div>
+                <div class="agent-num">Agent 03</div>
+                <div class="agent-name">Creative Fatigue</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="agent-status-dot" style="background:var(--red);box-shadow:0 0 0 3px var(--red-s)"></div>
+                <span class="pill pill-danger"><span class="pill-dot"></span>5 alerts</span>
+              </div>
+            </div>
+            <div class="agent-desc">2 ads need immediate replacement. 3 ads approaching fatigue threshold. Daily verdicts ready.</div>
+            <div class="agent-metric mb-1">
+              <span class="agent-metric-label">At-Risk Ads</span>
+              <span class="agent-metric-val" style="color:var(--red);font-family:'Fraunces',serif;font-size:20px">5<span style="font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink3)">/43</span></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill pf-red" style="width:12%"></div></div>
+            <button class="btn btn-outline btn-sm" style="width:100%">View Fatigue List →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Latest Insights -->
+      <div class="card card-pad">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Latest Insights</div>
+            <div class="card-sub">Evidence-backed recommendations from all 3 agents</div>
+          </div>
+          <button class="btn btn-ghost btn-sm">View all →</button>
+        </div>
+        <div>
+          <div class="insight-row">
+            <div class="insight-icon" style="background:var(--accent-s)">🎯</div>
+            <div class="insight-body">
+              <div class="insight-title">87% of ads use Product Demo hook — dangerous concentration</div>
+              <div class="insight-desc">Competitor Noise covers 6 hook archetypes with 38 active ads. boAt uses only 3. Three archetypes (Transformation, Problem/Pain, Feature Reveal) are completely untested.</div>
+              <div class="insight-actions">
+                <span class="tag tag-hook">Diversity</span>
+                <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Noise #4871</span> · 84d · 12v</span>
+                <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Boult #2234</span> · 71d · 6v</span>
+                <button class="btn btn-primary btn-xs" style="margin-left:auto" onclick="showScreen('generate-brief')">Generate →</button>
+              </div>
+            </div>
+          </div>
+          <div class="insight-row">
+            <div class="insight-icon" style="background:var(--cyan-s)">📊</div>
+            <div class="insight-body">
+              <div class="insight-title">Transformation hook scoring 91/100 — highest across all competitors</div>
+              <div class="insight-desc">Boult's Transformation Reels average 84 days live with 8+ variants. Clear signal of audience resonance. boAt has zero Transformation ads.</div>
+              <div class="insight-actions">
+                <span class="tag tag-cyan">Analytics</span>
+                <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Boult #2234</span> · 84d · 8v</span>
+                <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">pTron #0991</span> · 55d · 9v</span>
+                <button class="btn btn-primary btn-xs" style="margin-left:auto" onclick="showScreen('whitespace')">See Map →</button>
+              </div>
+            </div>
+          </div>
+          <div class="insight-row">
+            <div class="insight-icon" style="background:var(--red-s)">⚠️</div>
+            <div class="insight-body">
+              <div class="insight-title">Ad #1023 at 96 days live — fatigue score 82/100, replace immediately</div>
+              <div class="insight-desc">96 days live, 3 variants only. Noise retired equivalent ad at day 70 and replaced with Transformation set. Recommend same action.</div>
+              <div class="insight-actions">
+                <span class="tag tag-danger">Fatigue</span>
+                <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">boAt #1023</span> · 96d · 3v</span>
+                <button class="btn btn-danger btn-xs" style="margin-left:auto" onclick="showScreen('fatigue-detail')">Replace →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 02 — CREATIVE DIVERSITY
+════════════════════════════════════════════════════ -->
+<div id="screen-diversity" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Creative Intel</span>
+      <div class="sb-item" onclick="showScreen('overview')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>CI Overview</div>
+      <div class="sb-item active"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>Creative Diversity</div>
+      <div class="sb-item" onclick="showScreen('analytics-dna')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Creative Analytics</div>
+      <div class="sb-item" onclick="showScreen('fatigue')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Creative Fatigue<span class="sb-badge warn">5</span></div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Creative Intel</span><span class="sep">/</span><span class="current">Creative Diversity</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm">Date: Last 30 days ▾</button>
+        <button class="btn btn-outline btn-sm">Export Report</button>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('generate-brief')">+ Generate 10</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- Score hero -->
+      <div class="card card-pad">
+        <div style="display:flex;gap:24px;align-items:flex-start">
+          <div class="score-ring ring-warn" style="width:88px;height:88px">
+            <div class="score-val">62</div>
+            <div class="score-label">/100</div>
+          </div>
+          <div style="flex:1">
+            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--ink);margin-bottom:6px;letter-spacing:-.02em">Moderate Concentration Risk</div>
+            <div style="font-size:13px;color:var(--ink2);line-height:1.7;margin-bottom:12px">boAt is running <strong>43 active ads</strong>. 87% use a Product Demo hook — a single-archetype monopoly. Competitor Noise covers <strong>6 of 7 archetypes</strong> with 38 active ads. Three archetypes are completely untested.</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Noise #4871</span> · 84d · 12v</span>
+              <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Boult #2234</span> · 71d · 6v</span>
+              <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">pTron #0991</span> · 55d · 9v</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px">Competitor Avg</div>
+            <div class="score-ring ring-ok" style="width:72px;height:72px"><div class="score-val">81</div><div class="score-label">/100</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <!-- Hook distribution -->
+        <div class="card card-pad">
+          <div class="card-head">
+            <div><div class="card-title">Hook Archetype Distribution</div><div class="card-sub">% of 43 active boAt ads</div></div>
+            <div class="tabs" style="scale:.9;transform-origin:right"><div class="tab-item active">By hook</div><div class="tab-item">By format</div></div>
+          </div>
+          <div class="bar-chart">
+            <div class="bc-row"><div class="bc-label">Product Demo</div><div class="bc-track"><div class="bc-fill bc-fill-accent" style="width:87%"></div></div><div class="bc-val">87%</div></div>
+            <div class="bc-row"><div class="bc-label">Social Proof</div><div class="bc-track"><div class="bc-fill bc-fill-cyan" style="width:8%"></div></div><div class="bc-val">8%</div></div>
+            <div class="bc-row"><div class="bc-label">Founder Story</div><div class="bc-track"><div class="bc-fill bc-fill-amber" style="width:5%"></div></div><div class="bc-val">5%</div></div>
+            <div class="bc-row"><div class="bc-label" style="color:var(--red)">Transformation</div><div class="bc-track"><div class="bc-fill bc-fill-red" style="width:0.5%"></div></div><div class="bc-val" style="color:var(--red)">0%</div></div>
+            <div class="bc-row"><div class="bc-label" style="color:var(--red)">Problem / Pain</div><div class="bc-track"><div class="bc-fill bc-fill-red" style="width:0.5%"></div></div><div class="bc-val" style="color:var(--red)">0%</div></div>
+            <div class="bc-row"><div class="bc-label" style="color:var(--red)">Feature Reveal</div><div class="bc-track"><div class="bc-fill bc-fill-red" style="width:0.5%"></div></div><div class="bc-val" style="color:var(--red)">0%</div></div>
+            <div class="bc-row"><div class="bc-label" style="color:var(--red)">Lifestyle / Story</div><div class="bc-track"><div class="bc-fill bc-fill-red" style="width:0.5%"></div></div><div class="bc-val" style="color:var(--red)">0%</div></div>
+          </div>
+          <div class="callout callout-warn mt-3">
+            <strong>Risk:</strong> 4 of 7 archetypes have 0 ads. Competitors Noise and Boult each cover 6+ archetypes.
+          </div>
+        </div>
+
+        <!-- Detected patterns -->
+        <div class="card card-pad">
+          <div class="card-head"><div class="card-title">Detected Patterns</div><div class="card-sub">Repetition signals</div></div>
+          <table class="data-table">
+            <thead><tr><th>Pattern</th><th>Count</th><th>% of Ads</th><th>Risk</th></tr></thead>
+            <tbody>
+              <tr><td class="td-strong">Product Demo Hook</td><td class="td-mono">37</td><td class="td-mono">87%</td><td><span class="pill pill-danger">HIGH</span></td></tr>
+              <tr><td class="td-strong">White background</td><td class="td-mono">31</td><td class="td-mono">72%</td><td><span class="pill pill-warn">MED</span></td></tr>
+              <tr><td class="td-strong">Static image format</td><td class="td-mono">29</td><td class="td-mono">67%</td><td><span class="pill pill-warn">MED</span></td></tr>
+              <tr><td class="td-strong">No human face</td><td class="td-mono">26</td><td class="td-mono">60%</td><td><span class="pill pill-neutral">LOW</span></td></tr>
+              <tr><td class="td-strong">Price CTA</td><td class="td-mono">33</td><td class="td-mono">76%</td><td><span class="pill pill-neutral">LOW</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Evidence -->
+      <div class="evidence-wrap">
+        <div class="evidence-header">Evidence Chain — Diversity Analysis</div>
+        <div class="evidence-grid">
+          <div class="ev-cell ev-see"><div class="ev-type"><div class="ev-dot"></div>What We See</div><div class="ev-text">boAt runs 37 of 43 active ads as Product Demo. Single archetype monopoly across all formats. 3 archetypes have zero representation.</div></div>
+          <div class="ev-cell ev-evidence"><div class="ev-type"><div class="ev-dot"></div>Evidence</div><div class="ev-text">Noise covers 6 archetypes — Transformation alone has 8 ads averaging 71d live. <span class="receipt" style="font-size:10.5px"><span class="receipt-id">Noise #4871</span> · 84d · 12v</span> Boult: 5 Transformation ads, avg 84d.</div></div>
+          <div class="ev-cell ev-rec"><div class="ev-type"><div class="ev-dot"></div>Hypothesis</div><div class="ev-text">Adding Transformation + Problem/Pain hooks may open 2 new audience segments not currently reached by boAt's portfolio.</div></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline">Export PDF</button>
+        <button class="btn btn-outline">Send to Notion</button>
+        <button class="btn btn-primary" onclick="showScreen('generate-brief')">→ Generate 10 Concepts</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 03 — DNA SCORECARD
+════════════════════════════════════════════════════ -->
+<div id="screen-analytics-dna" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Creative Analytics</span>
+      <div class="sb-item active"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>DNA Scorecard</div>
+      <div class="sb-item" onclick="showScreen('hook-library')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Hook Library</div>
+      <div class="sb-item" onclick="showScreen('whitespace')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>Whitespace Map</div>
+      <div class="sb-item" onclick="showScreen('fatigue')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Creative Fatigue<span class="sb-badge warn">5</span></div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Analytics</span><span class="sep">/</span><span class="current">Creative DNA Scorecard</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm">+ Add Competitor</button>
+        <button class="btn btn-outline btn-sm">Export ▾</button>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('generate-brief')">Generate from gap →</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="callout callout-info">
+        <strong>How to read:</strong> Each cell shows % of that brand's active ads with the feature. Click any cell to see source ads. <strong>Gap</strong> badges = boAt is below category average. Click "Generate from gap →" on any row to pre-fill a brief.
+      </div>
+
+      <div class="card" style="overflow:hidden">
+        <div style="overflow-x:auto">
+          <table class="dna-table">
+            <thead>
+              <tr>
+                <th style="width:200px">Dimension / Layer</th>
+                <th style="min-width:130px">boAt<br/><span style="font-weight:400;color:var(--ink4);text-transform:none;letter-spacing:0;font-size:10px">43 active ads</span></th>
+                <th style="min-width:120px">Noise<br/><span style="font-weight:400;color:var(--ink4);text-transform:none;letter-spacing:0;font-size:10px">38 ads</span></th>
+                <th style="min-width:120px">Boult<br/><span style="font-weight:400;color:var(--ink4);text-transform:none;letter-spacing:0;font-size:10px">29 ads</span></th>
+                <th style="min-width:120px">pTron<br/><span style="font-weight:400;color:var(--ink4);text-transform:none;letter-spacing:0;font-size:10px">51 ads</span></th>
+                <th style="min-width:120px">Realme<br/><span style="font-weight:400;color:var(--ink4);text-transform:none;letter-spacing:0;font-size:10px">22 ads</span></th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="row-head">Product Demo Hook</td>
+                <td class="dna-cell-highlight"><div class="dna-cell-val" style="color:var(--red)">87%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:87%;background:var(--red)"></div></div><span class="dna-cell-gap">▲ gap</span></td>
+                <td><div class="dna-cell-val">35%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:35%"></div></div></td>
+                <td><div class="dna-cell-val">28%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:28%"></div></div></td>
+                <td><div class="dna-cell-val">41%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:41%"></div></div></td>
+                <td><div class="dna-cell-val">30%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:30%"></div></div></td>
+                <td><button class="btn btn-outline btn-xs" onclick="showScreen('generate-brief')">Reduce →</button></td>
+              </tr>
+              <tr>
+                <td class="row-head">Transformation Hook</td>
+                <td class="dna-cell-highlight"><div class="dna-cell-val" style="color:var(--red)">0%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:1%"></div></div><span class="dna-cell-gap">▼ missing</span></td>
+                <td><div class="dna-cell-val">21%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:21%"></div></div></td>
+                <td><div class="dna-cell-val">31%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:31%"></div></div></td>
+                <td><div class="dna-cell-val">15%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:15%"></div></div></td>
+                <td><div class="dna-cell-val">27%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:27%"></div></div></td>
+                <td><button class="btn btn-primary btn-xs" onclick="showScreen('generate-brief')">Generate →</button></td>
+              </tr>
+              <tr>
+                <td class="row-head">Video Format</td>
+                <td><div class="dna-cell-val">44%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:44%"></div></div></td>
+                <td><div class="dna-cell-val" style="color:var(--lime)">72%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:72%;background:var(--lime)"></div></div></td>
+                <td><div class="dna-cell-val">55%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:55%"></div></div></td>
+                <td><div class="dna-cell-val">67%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:67%"></div></div></td>
+                <td><div class="dna-cell-val">59%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:59%"></div></div></td>
+                <td><button class="btn btn-outline btn-xs">Learn →</button></td>
+              </tr>
+              <tr>
+                <td class="row-head">Human face ≤ 3s</td>
+                <td class="dna-cell-highlight"><div class="dna-cell-val" style="color:var(--amber)">12%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:12%;background:var(--amber)"></div></div><span class="dna-cell-gap">▼ gap</span></td>
+                <td><div class="dna-cell-val">58%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:58%"></div></div></td>
+                <td><div class="dna-cell-val">44%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:44%"></div></div></td>
+                <td><div class="dna-cell-val">49%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:49%"></div></div></td>
+                <td><div class="dna-cell-val">61%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:61%"></div></div></td>
+                <td><button class="btn btn-primary btn-xs" onclick="showScreen('generate-brief')">Generate →</button></td>
+              </tr>
+              <tr>
+                <td class="row-head">UGC Style</td>
+                <td class="dna-cell-highlight"><div class="dna-cell-val" style="color:var(--red)">4%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:4%;background:var(--red)"></div></div><span class="dna-cell-gap">▼ gap</span></td>
+                <td><div class="dna-cell-val">29%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:29%"></div></div></td>
+                <td><div class="dna-cell-val">41%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:41%"></div></div></td>
+                <td><div class="dna-cell-val">22%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:22%"></div></div></td>
+                <td><div class="dna-cell-val">18%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:18%"></div></div></td>
+                <td><button class="btn btn-primary btn-xs" onclick="showScreen('generate-brief')">Generate →</button></td>
+              </tr>
+              <tr>
+                <td class="row-head">Price CTA</td>
+                <td><div class="dna-cell-val">76%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:76%;background:var(--amber)"></div></div></td>
+                <td><div class="dna-cell-val">42%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:42%"></div></div></td>
+                <td><div class="dna-cell-val">38%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:38%"></div></div></td>
+                <td><div class="dna-cell-val">51%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:51%"></div></div></td>
+                <td><div class="dna-cell-val">35%</div><div class="dna-cell-bar"><div class="dna-cell-bar-fill" style="width:35%"></div></div></td>
+                <td><button class="btn btn-outline btn-xs">Reduce →</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="g3">
+        <div class="card card-pad" style="border-left:4px solid var(--accent)">
+          <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Gap #1 — Biggest</div>
+          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:4px">Transformation Hook</div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">boAt: 0% · Competitor avg: 23% · Gap: −23pts</div>
+          <div><span class="receipt"><span class="receipt-id">Noise #4871</span> · 84d</span></div>
+          <button class="btn btn-primary btn-sm mt-3" style="width:100%" onclick="showScreen('generate-brief')">Generate →</button>
+        </div>
+        <div class="card card-pad" style="border-left:4px solid #8B6EFF">
+          <div style="font-size:10px;font-weight:700;color:#8B6EFF;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Gap #2</div>
+          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:4px">Human Face in Hook</div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">boAt: 12% · Avg: 53% · Gap: −41pts</div>
+          <div><span class="receipt"><span class="receipt-id">Noise #5511</span> · 77d</span></div>
+          <button class="btn btn-outline btn-sm mt-3" style="width:100%" onclick="showScreen('generate-brief')">Generate →</button>
+        </div>
+        <div class="card card-pad" style="border-left:4px solid var(--cyan)">
+          <div style="font-size:10px;font-weight:700;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Gap #3</div>
+          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--ink);margin-bottom:4px">UGC-Style Ads</div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">boAt: 4% · Avg: 28% · Gap: −24pts</div>
+          <div><span class="receipt"><span class="receipt-id">Boult #3341</span> · 62d</span></div>
+          <button class="btn btn-outline btn-sm mt-3" style="width:100%" onclick="showScreen('generate-brief')">Generate →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 04 — HOOK LIBRARY
+════════════════════════════════════════════════════ -->
+<div id="screen-hook-library" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Creative Analytics</span>
+      <div class="sb-item" onclick="showScreen('analytics-dna')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>DNA Scorecard</div>
+      <div class="sb-item active"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Hook Library</div>
+      <div class="sb-item" onclick="showScreen('whitespace')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>Whitespace Map</div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Analytics</span><span class="sep">/</span><span class="current">Hook Library</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm">Score: High first ▾</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="filter-bar">
+        <span style="font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase">Filter:</span>
+        <div class="filter-chip active">All hooks</div>
+        <div class="filter-chip">Product Demo</div>
+        <div class="filter-chip">Transformation</div>
+        <div class="filter-chip">Social Proof</div>
+        <div class="filter-chip">Problem/Pain</div>
+        <div class="filter-chip">Feature Reveal</div>
+        <div class="search-wrap" style="margin-left:auto"><input class="search-input" placeholder="Search ads..." /></div>
+      </div>
+
+      <div class="card" style="overflow:hidden">
+        <table class="data-table">
+          <thead><tr><th>Preview</th><th>Hook Archetype</th><th>Ad Ref</th><th>Brand</th><th>Hook Score</th><th>Days Live</th><th>Variants</th><th>Receipt</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div style="width:44px;height:58px;background:linear-gradient(135deg,#EEF0FF,#DDD5FF);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent)">▶</div></td>
+              <td><span class="tag tag-hook">Transformation</span></td>
+              <td class="td-mono td-strong">#4871</td>
+              <td>Noise</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--lime)">91</span>
+                  <div>
+                    <div style="font-size:10px;color:var(--ink3)">/100</div>
+                    <div class="sparkline" style="height:16px"><div class="mc-bar active" style="height:80%"></div><div class="mc-bar active" style="height:100%"></div><div class="mc-bar active" style="height:90%"></div></div>
+                  </div>
+                </div>
+              </td>
+              <td class="td-mono">84d</td><td class="td-mono">12v</td>
+              <td><span class="receipt"><span class="receipt-id">#4871</span> → Library</span></td>
+            </tr>
+            <tr>
+              <td><div style="width:44px;height:58px;background:linear-gradient(135deg,#E0F7FF,#BAE6FD);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--cyan)">▶</div></td>
+              <td><span class="tag tag-cyan">Social Proof</span></td>
+              <td class="td-mono td-strong">#2234</td>
+              <td>Boult</td>
+              <td><span style="font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--lime)">83</span><span style="font-size:12px;color:var(--ink3)">/100</span></td>
+              <td class="td-mono">71d</td><td class="td-mono">6v</td>
+              <td><span class="receipt"><span class="receipt-id">#2234</span> → Library</span></td>
+            </tr>
+            <tr>
+              <td><div style="width:44px;height:58px;background:linear-gradient(135deg,#F6F6FF,#EEF0FF);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--accent)">▶</div></td>
+              <td><span class="tag tag-hook">Product Demo</span></td>
+              <td class="td-mono td-strong">#1021</td>
+              <td><strong style="color:var(--accent)">boAt</strong></td>
+              <td><span style="font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--amber)">74</span><span style="font-size:12px;color:var(--ink3)">/100</span></td>
+              <td class="td-mono">43d</td><td class="td-mono">4v</td>
+              <td><span class="receipt"><span class="receipt-id">#1021</span> → Library</span></td>
+            </tr>
+            <tr>
+              <td><div style="width:44px;height:58px;background:linear-gradient(135deg,#FFF8E1,#FDE68A);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--amber)">▶</div></td>
+              <td><span class="tag tag-warning">Problem / Pain</span></td>
+              <td class="td-mono td-strong">#0991</td>
+              <td>pTron</td>
+              <td><span style="font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--amber)">68</span><span style="font-size:12px;color:var(--ink3)">/100</span></td>
+              <td class="td-mono">55d</td><td class="td-mono">9v</td>
+              <td><span class="receipt"><span class="receipt-id">#0991</span> → Library</span></td>
+            </tr>
+            <tr>
+              <td><div style="width:44px;height:58px;background:linear-gradient(135deg,#FEF2F2,#FECACA);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--red)">▶</div></td>
+              <td><span class="tag tag-danger">Feature Reveal</span></td>
+              <td class="td-mono td-strong">#3399</td>
+              <td>Noise</td>
+              <td><span style="font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--ink3)">54</span><span style="font-size:12px;color:var(--ink3)">/100</span></td>
+              <td class="td-mono">29d</td><td class="td-mono">2v</td>
+              <td><span class="receipt"><span class="receipt-id">#3399</span> → Library</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card card-pad">
+        <div class="card-title mb-3">Hook Strength Score — How it's Calculated</div>
+        <div class="g4" style="font-size:12px">
+          <div class="card card-pad" style="background:var(--surface2)"><div style="font-size:20px;margin-bottom:6px">⚡</div><div class="fw-bold mb-1">Text appearance time</div><div class="text-muted">Earlier = higher scroll-stop probability</div></div>
+          <div class="card card-pad" style="background:var(--surface2)"><div style="font-size:20px;margin-bottom:6px">🎬</div><div class="fw-bold mb-1">Motion intensity @frame 1</div><div class="text-muted">High motion in first frame = attention</div></div>
+          <div class="card card-pad" style="background:var(--surface2)"><div style="font-size:20px;margin-bottom:6px">🎙</div><div class="fw-bold mb-1">Voice tone signal</div><div class="text-muted">Urgency / curiosity / warmth</div></div>
+          <div class="card card-pad" style="background:var(--surface2)"><div style="font-size:20px;margin-bottom:6px">📏</div><div class="fw-bold mb-1">Calibration anchor</div><div class="text-muted">Ads live 60+ days = winner signal</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 05 — WHITESPACE MAP
+════════════════════════════════════════════════════ -->
+<div id="screen-whitespace" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Creative Analytics</span>
+      <div class="sb-item" onclick="showScreen('analytics-dna')">DNA Scorecard</div>
+      <div class="sb-item" onclick="showScreen('hook-library')">Hook Library</div>
+      <div class="sb-item active">Whitespace Map</div>
+      <div class="sb-item" onclick="showScreen('fatigue')">Creative Fatigue<span class="sb-badge warn">5</span></div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Analytics</span><span class="sep">/</span><span class="current">Whitespace Map</span></div>
+      <div class="topbar-actions">
+        <div class="filter-chip active" style="border-radius:6px">boAt only</div>
+        <div class="filter-chip" style="border-radius:6px">+ Competitors</div>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('generate-brief')">Generate from gap →</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="panel-layout">
+        <div>
+          <div class="callout callout-ok mb-3">
+            <strong>Green cells (✦ OPEN)</strong> = untested hook × format combinations. Click any green cell to see competitor triangulation and generate a brief.
+          </div>
+          <div class="card" style="overflow:hidden">
+            <div class="heatmap-wrap">
+              <!-- Header row -->
+              <div class="heatmap-row">
+                <div class="hm-cell hm-cell head row-label">Hook Type</div>
+                <div class="hm-cell head">Reel</div>
+                <div class="hm-cell head">Static</div>
+                <div class="hm-cell head">Carousel</div>
+                <div class="hm-cell head">Story</div>
+                <div class="hm-cell head">UGC</div>
+              </div>
+              <div class="heatmap-row">
+                <div class="hm-cell row-label">Product Demo</div>
+                <div class="hm-cell hm-d4"><div class="hm-num">18</div><div class="hm-sub">ads</div></div>
+                <div class="hm-cell hm-d4"><div class="hm-num">19</div></div>
+                <div class="hm-cell hm-d2"><div class="hm-num">4</div></div>
+                <div class="hm-cell hm-d1"><div class="hm-num">2</div></div>
+                <div class="hm-cell hm-d0"><div class="hm-num" style="font-size:14px;color:var(--ink4)">—</div></div>
+              </div>
+              <div class="heatmap-row">
+                <div class="hm-cell row-label">Social Proof</div>
+                <div class="hm-cell hm-d1"><div class="hm-num">2</div></div>
+                <div class="hm-cell hm-d2"><div class="hm-num">5</div></div>
+                <div class="hm-cell hm-d0"><div class="hm-num" style="font-size:14px;color:var(--ink4)">—</div></div>
+                <div class="hm-cell hm-d0"><div class="hm-num" style="font-size:14px;color:var(--ink4)">—</div></div>
+                <div class="hm-cell hm-d0"><div class="hm-num" style="font-size:14px;color:var(--ink4)">—</div></div>
+              </div>
+              <div class="heatmap-row">
+                <div class="hm-cell row-label" style="font-weight:700;color:var(--lime)">Transformation ✦</div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Transformation × Reel')"><div class="hm-num">✦</div><div class="hm-open-badge">OPEN</div></div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Transformation × Static')"><div class="hm-num">✦</div><div class="hm-open-badge">OPEN</div></div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Transformation × Carousel')"><div class="hm-num">✦</div><div class="hm-open-badge">OPEN</div></div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Transformation × Story')"><div class="hm-num">✦</div></div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Transformation × UGC')"><div class="hm-num">✦</div></div>
+              </div>
+              <div class="heatmap-row">
+                <div class="hm-cell row-label" style="font-weight:700;color:var(--lime)">Problem/Pain ✦</div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Problem/Pain × Reel')"><div class="hm-num">✦</div><div class="hm-open-badge">OPEN</div></div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Problem/Pain × Static')"><div class="hm-num">✦</div><div class="hm-open-badge">OPEN</div></div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Problem/Pain × Carousel')"><div class="hm-num">✦</div></div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Problem/Pain × Story')"><div class="hm-num">✦</div></div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Problem/Pain × UGC')"><div class="hm-num">✦</div></div>
+              </div>
+              <div class="heatmap-row">
+                <div class="hm-cell row-label">Founder Story</div>
+                <div class="hm-cell hm-d1"><div class="hm-num">1</div></div>
+                <div class="hm-cell hm-d1"><div class="hm-num">1</div></div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Founder Story × Carousel')"><div class="hm-num">✦</div></div>
+                <div class="hm-cell hm-open"><div class="hm-num">✦</div></div>
+                <div class="hm-cell hm-open"><div class="hm-num">✦</div></div>
+              </div>
+              <div class="heatmap-row">
+                <div class="hm-cell row-label" style="font-weight:700;color:var(--lime)">Feature Reveal ✦</div>
+                <div class="hm-cell hm-open" onclick="selectWhitespace('Feature Reveal × Reel')"><div class="hm-num">✦</div></div>
+                <div class="hm-cell hm-open"><div class="hm-num">✦</div></div>
+                <div class="hm-cell hm-open"><div class="hm-num">✦</div></div>
+                <div class="hm-cell hm-open"><div class="hm-num">✦</div></div>
+                <div class="hm-cell hm-open"><div class="hm-num">✦</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;font-size:11px;color:var(--ink3);margin-top:10px;align-items:center">
+            <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;background:var(--accent);border-radius:3px"></div>High density</div>
+            <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;background:#DDD5FF;border-radius:3px"></div>Medium</div>
+            <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;background:var(--lime-s);border:1.5px dashed #86EFAC;border-radius:3px"></div>Open whitespace ✦</div>
+          </div>
+        </div>
+
+        <!-- Right panel -->
+        <div class="right-panel">
+          <div class="rpanel-title" id="ws-panel-title">Selected Cell</div>
+          <div id="ws-panel-content">
+            <div class="empty">
+              <div class="empty-icon">✦</div>
+              <div class="empty-title">Click a green cell</div>
+              <div class="empty-desc">Select any open whitespace cell to see competitor triangulation</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 06 — CREATIVE FATIGUE DASHBOARD
+════════════════════════════════════════════════════ -->
+<div id="screen-fatigue" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Creative Fatigue</span>
+      <div class="sb-item active"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Fatigue Dashboard</div>
+      <div class="sb-item" onclick="showScreen('fatigue-detail')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Risk Scoring</div>
+      <div class="sb-item" onclick="showScreen('generate-brief')"><svg class="sb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Replacement Flow</div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Creative Intel</span><span class="sep">/</span><span class="current">Creative Fatigue</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm">Filter ▾</button>
+        <button class="btn btn-outline btn-sm">Export verdicts</button>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('fatigue-detail')">View #1023 →</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <div class="stats-strip">
+        <div class="stat-item"><div class="stat-label">Kill Now</div><div class="stat-val" style="color:var(--red)">2</div><div class="stat-sub">immediate action</div></div>
+        <div class="stat-item"><div class="stat-label">Watch List</div><div class="stat-val" style="color:var(--amber)">3</div><div class="stat-sub">monitor closely</div></div>
+        <div class="stat-item"><div class="stat-label">Safe</div><div class="stat-val" style="color:var(--lime)">38</div><div class="stat-sub">of 43 ads</div></div>
+        <div class="stat-item"><div class="stat-label">Avg Days Live</div><div class="stat-val">38d</div><div class="stat-sub">threshold: 70d</div></div>
+      </div>
+
+      <div class="callout callout-danger">
+        <strong>2 ads need immediate replacement.</strong> Ad #1023 (96 days, score 82/100) and Ad #1055 (84 days, score 74/100) are past the fatigue threshold. Competitor references confirm pattern exhaustion.
+      </div>
+
+      <!-- Verdict cards -->
+      <div class="verdict-card" onclick="showScreen('fatigue-detail')">
+        <div class="verdict-score-wrap">
+          <div class="score-ring ring-danger"><div class="score-val">82</div><div class="score-label">/100</div></div>
+          <div class="verdict-badge vb-kill">KILL</div>
+        </div>
+        <div style="flex:1">
+          <div class="verdict-title">#1023 — Product Demo Reel · 96 days live</div>
+          <div class="verdict-desc">96 days live, 3 variants only. Performance signals flat. Competitor Noise retired equivalent ad at day 70, replaced with 8-variant Transformation set. Immediate replacement recommended.</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">boAt #1023</span> · 96d · 3v</span>
+            <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Noise #4871</span> · replaced at 70d</span>
+            <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="event.stopPropagation();showScreen('generate-brief')">Replace Now →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="verdict-card">
+        <div class="verdict-score-wrap">
+          <div class="score-ring ring-danger"><div class="score-val">74</div><div class="score-label">/100</div></div>
+          <div class="verdict-badge vb-kill">KILL</div>
+        </div>
+        <div style="flex:1">
+          <div class="verdict-title">#1055 — Static Image · 84 days live</div>
+          <div class="verdict-desc">84 days, 6 variants. No refresh in 45 days. Noise retired equivalent at day 75. Pattern exhaustion likely.</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">boAt #1055</span> · 84d · 6v</span>
+            <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="showScreen('generate-brief')">Replace →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="verdict-card">
+        <div class="verdict-score-wrap">
+          <div class="score-ring ring-warn"><div class="score-val">61</div><div class="score-label">/100</div></div>
+          <div class="verdict-badge vb-watch">WATCH</div>
+        </div>
+        <div style="flex:1">
+          <div class="verdict-title">#1044 — Carousel · 61 days live</div>
+          <div class="verdict-desc">Approaching 60d threshold. 1 variant — very low creative variation. Monitor for next 7 days. Start preparing replacement brief.</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">boAt #1044</span> · 61d · 1v</span>
+            <button class="btn btn-outline btn-sm" style="margin-left:auto">Monitor</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="verdict-card">
+        <div class="verdict-score-wrap">
+          <div class="score-ring ring-warn"><div class="score-val">54</div><div class="score-label">/100</div></div>
+          <div class="verdict-badge vb-watch">WATCH</div>
+        </div>
+        <div style="flex:1">
+          <div class="verdict-title">#1031 — Reel Video · 58 days live</div>
+          <div class="verdict-desc">58 days, 2 variants. Below average variant count for this format. Low creative diversity signal.</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">boAt #1031</span> · 58d · 2v</span>
+            <button class="btn btn-outline btn-sm" style="margin-left:auto">Monitor</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="verdict-card">
+        <div class="verdict-score-wrap">
+          <div class="score-ring ring-ok"><div class="score-val">41</div><div class="score-label">/100</div></div>
+          <div class="verdict-badge vb-safe">SAFE</div>
+        </div>
+        <div style="flex:1">
+          <div class="verdict-title">#1021 — Product Demo Reel · 43 days live</div>
+          <div class="verdict-desc">43 days, 4 variants. Healthy creative variation. Well below fatigue threshold. No action needed.</div>
+          <div><span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">boAt #1021</span> · 43d · 4v</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 07 — FATIGUE DETAIL / RISK SCORING
+════════════════════════════════════════════════════ -->
+<div id="screen-fatigue-detail" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Creative Fatigue</span>
+      <div class="sb-item" onclick="showScreen('fatigue')">Fatigue Dashboard</div>
+      <div class="sb-item active">Risk Score Detail</div>
+      <div class="sb-item" onclick="showScreen('generate-brief')">Replacement Flow</div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Fatigue</span><span class="sep">/</span><span onclick="showScreen('fatigue')" style="cursor:pointer;color:var(--accent)">Dashboard</span><span class="sep">/</span><span class="current">Ad #1023</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm">← Back to list</button>
+        <button class="btn btn-outline btn-sm">Dismiss signal</button>
+        <button class="btn btn-danger btn-sm" onclick="showScreen('generate-brief')">Replace this ad →</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="detail-hero" style="border-radius:var(--r-lg);border:1px solid var(--border);margin-bottom:0">
+        <div class="detail-thumb">
+          <div style="text-align:center;padding:16px">
+            <div style="font-size:28px;margin-bottom:8px">🎬</div>
+            <div style="font-size:11px;color:var(--ink3)">Product Demo<br/>Reel · 9:16</div>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+            <div>
+              <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--ink);margin-bottom:4px">Ad #1023 — Product Demo Reel</div>
+              <div style="font-size:12.5px;color:var(--ink3)">Started 96 days ago · 3 creative variants · boAt Audio</div>
+            </div>
+            <div style="text-align:center">
+              <div class="score-ring ring-danger" style="width:80px;height:80px"><div class="score-val">82</div><div class="score-label">/100</div></div>
+              <div style="font-size:10px;color:var(--ink3);margin-top:6px;font-weight:600">FATIGUE SCORE</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+            <span class="pill pill-danger">KILL SIGNAL</span>
+            <span class="tag tag-neutral">96 days</span>
+            <span class="tag tag-neutral">3 variants</span>
+            <span class="tag tag-hook">Product Demo</span>
+            <span class="tag tag-neutral">Reel / 9:16</span>
+          </div>
+          <div class="detail-meta-grid">
+            <div class="detail-meta-item"><div class="dmi-label">Days Live</div><div class="dmi-val" style="color:var(--red)">96d</div></div>
+            <div class="detail-meta-item"><div class="dmi-label">Variants</div><div class="dmi-val">3</div></div>
+            <div class="detail-meta-item"><div class="dmi-label">Fatigue Score</div><div class="dmi-val" style="color:var(--red)">82/100</div></div>
+            <div class="detail-meta-item"><div class="dmi-label">Threshold</div><div class="dmi-val" style="color:var(--ink3)">70d</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card card-pad">
+          <div class="card-title mb-3">Signal Breakdown</div>
+          <div class="bar-chart">
+            <div class="bc-row"><div class="bc-label" style="color:var(--red)">Days live (96d/70d)</div><div class="bc-track"><div class="bc-fill" style="width:100%;background:linear-gradient(90deg,var(--red),#F87171)"></div></div><div class="bc-val" style="color:var(--red)">HIGH</div></div>
+            <div class="bc-row"><div class="bc-label" style="color:var(--red)">Variant count (3)</div><div class="bc-track"><div class="bc-fill" style="width:85%;background:linear-gradient(90deg,var(--red),#F87171)"></div></div><div class="bc-val" style="color:var(--red)">HIGH</div></div>
+            <div class="bc-row"><div class="bc-label" style="color:var(--amber)">Creative refresh rate</div><div class="bc-track"><div class="bc-fill" style="width:55%;background:linear-gradient(90deg,var(--amber),#FCD34D)"></div></div><div class="bc-val" style="color:var(--amber)">MED</div></div>
+            <div class="bc-row"><div class="bc-label" style="color:var(--amber)">Format saturation</div><div class="bc-track"><div class="bc-fill" style="width:60%;background:linear-gradient(90deg,var(--amber),#FCD34D)"></div></div><div class="bc-val" style="color:var(--amber)">MED</div></div>
+          </div>
+        </div>
+
+        <div class="card card-pad">
+          <div class="card-title mb-3">Replacement Gap — Auto-Detected</div>
+          <div class="callout callout-ok">
+            <strong>Suggested gap:</strong> Transformation × Reel — Noise (8 ads, 71d avg) + Boult (5 ads, 84d avg) validate strong demand.
+          </div>
+          <div style="margin-bottom:12px">
+            <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Noise #4871</span> · 84d · 12v</span>
+            <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Boult #2234</span> · 71d · 6v</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%" onclick="showScreen('generate-brief')">Generate 10 Replacements →</button>
+        </div>
+      </div>
+
+      <div class="evidence-wrap">
+        <div class="evidence-header">Evidence Chain — Ad #1023 Fatigue Analysis</div>
+        <div class="evidence-grid">
+          <div class="ev-cell ev-see"><div class="ev-type"><div class="ev-dot"></div>What We See</div><div class="ev-text">Ad #1023 running 96 days. 3 variants. No new creative added in 45 days. Same format, same hook, same CTA throughout.</div></div>
+          <div class="ev-cell ev-evidence"><div class="ev-type"><div class="ev-dot"></div>Evidence</div><div class="ev-text">Noise retired equivalent Product Demo Reel at day 70. Replaced with 8-variant Transformation set. <span class="receipt" style="font-size:10.5px"><span class="receipt-id">Noise #4871</span> · 84d · 12v</span></div></div>
+          <div class="ev-cell ev-rec"><div class="ev-type"><div class="ev-dot"></div>Hypothesis</div><div class="ev-text">Retiring now and replacing with fresh Transformation Reel may recover audience engagement. Untested archetype = new attention.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 08 — GENERATE BRIEF
+════════════════════════════════════════════════════ -->
+<div id="screen-generate-brief" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Generate 10</span>
+      <div class="sb-item active">Brief Builder</div>
+      <div class="sb-item" onclick="showScreen('generate-results')">Results Grid</div>
+      <div class="sb-item" onclick="showScreen('approval')">Approval</div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Generate 10</span><span class="sep">/</span><span class="current">Brief Builder</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm">Save draft</button>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('generate-results')">Generate 10 →</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <div class="flow-steps">
+        <div class="flow-step active"><div class="fs-num">STEP 01</div><div class="fs-title">Brief</div><div class="fs-desc">Define creative spec</div></div>
+        <div class="flow-step"><div class="fs-num">STEP 02</div><div class="fs-title">Generate</div><div class="fs-desc">10 concepts rendered</div></div>
+        <div class="flow-step"><div class="fs-num">STEP 03</div><div class="fs-title">Review</div><div class="fs-desc">Select + edit copy</div></div>
+        <div class="flow-step"><div class="fs-num">STEP 04</div><div class="fs-title">Approve</div><div class="fs-desc">Export to PDF / Notion</div></div>
+      </div>
+
+      <div class="callout callout-ok">
+        <strong>Auto-filled from Transformation × Reel whitespace gap.</strong> Edit creative spec freely. Reference Ads are read-only — audit trail.
+      </div>
+
+      <div class="panel-layout">
+        <div>
+          <div class="g2 mb-4">
+            <div class="card card-pad">
+              <div class="card-title mb-3">Creative Spec</div>
+              <div class="field-label">Brand</div>
+              <div style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;display:flex;align-items:center;gap:8px"><div class="brand-avatar">bA</div>boAt Audio</div>
+              <div class="field-label">Hook Type</div>
+              <div style="padding:8px 12px;background:var(--accent-ss);border:1.5px solid var(--accent-s);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--accent);display:flex;justify-content:space-between">Transformation <span class="tag tag-ok" style="font-size:9px">auto-filled</span></div>
+              <div class="field-label">Format</div>
+              <div style="padding:8px 12px;background:var(--accent-ss);border:1.5px solid var(--accent-s);border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--accent);display:flex;justify-content:space-between">Reel / 9:16 Video <span class="tag tag-ok" style="font-size:9px">auto-filled</span></div>
+              <div class="field-label">Duration</div>
+              <div style="padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;display:flex;justify-content:space-between;color:var(--ink2)">15–30 seconds <span style="color:var(--ink4)">▾</span></div>
+              <div class="field-label">Tone</div>
+              <div style="padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;display:flex;justify-content:space-between;color:var(--ink2)">Energetic, relatable <span style="color:var(--ink4)">▾</span></div>
+              <div class="field-label">Human face required?</div>
+              <div style="display:flex;gap:8px;margin-top:4px">
+                <div style="padding:6px 14px;background:var(--accent);color:#fff;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer">Yes ✓</div>
+                <div style="padding:6px 14px;background:var(--surface2);color:var(--ink3);border:1px solid var(--border);border-radius:20px;font-size:12px;font-weight:500;cursor:pointer">No</div>
+              </div>
+              <div class="field-label">Concepts to generate</div>
+              <div style="padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--ink)">10 concepts</div>
+            </div>
+
+            <div class="card card-pad">
+              <div class="card-title mb-3">Brief Context</div>
+              <div class="field-label">Brand voice / campaign notes</div>
+              <div class="copy-editor" contenteditable="true" style="min-height:100px">Highlight the before/after transformation moment. Show real-world use — commute, gym, work from home. boAt tone: bold, youth-first, value-driven. Avoid white background unless intentional contrast.</div>
+              <div class="field-label">CTA preference</div>
+              <div style="padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;display:flex;justify-content:space-between;color:var(--ink2)">Shop Now / Limited Offer <span style="color:var(--ink4)">▾</span></div>
+              <div class="mt-3">
+                <div class="card-title mb-2" style="display:flex;align-items:center;gap:8px">Reference Ads <span class="tag tag-neutral" style="font-size:9px">read-only · audit trail</span></div>
+                <table class="data-table" style="font-size:11.5px">
+                  <thead><tr><th>Ad ID</th><th>Brand</th><th>Days</th><th>Variants</th><th>Library</th></tr></thead>
+                  <tbody>
+                    <tr><td class="td-mono">#4871</td><td>Noise</td><td class="td-mono">84d</td><td class="td-mono">12v</td><td><span class="receipt" style="font-size:10px"><span class="receipt-id">→ Library</span></span></td></tr>
+                    <tr><td class="td-mono">#2234</td><td>Boult</td><td class="td-mono">71d</td><td class="td-mono">6v</td><td><span class="receipt" style="font-size:10px"><span class="receipt-id">→ Library</span></span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn btn-outline">Save Draft</button>
+            <button class="btn btn-primary" onclick="showScreen('generate-results')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Generate 10 Concepts →
+            </button>
+          </div>
+        </div>
+
+        <div class="right-panel">
+          <div class="rpanel-title">Gap Summary</div>
+          <div class="card card-pad" style="border:2px solid var(--accent-s);margin-bottom:14px;background:var(--accent-ss)">
+            <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px">Identified Gap</div>
+            <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:2px">Transformation × Reel</div>
+            <div style="font-size:11.5px;color:var(--lime)">11 open whitespace cells</div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:10px">Competitor proof</div>
+          <div class="bar-chart" style="gap:8px">
+            <div class="bc-row"><div class="bc-label" style="font-size:11px">Noise</div><div class="bc-track"><div class="bc-fill bc-fill-accent" style="width:73%"></div></div><div class="bc-val" style="font-size:11px">71d avg</div></div>
+            <div class="bc-row"><div class="bc-label" style="font-size:11px">Boult</div><div class="bc-track"><div class="bc-fill bc-fill-accent" style="width:84%"></div></div><div class="bc-val" style="font-size:11px">84d avg</div></div>
+            <div class="bc-row"><div class="bc-label" style="font-size:11px">pTron</div><div class="bc-track"><div class="bc-fill bc-fill-accent" style="width:55%"></div></div><div class="bc-val" style="font-size:11px">55d avg</div></div>
+          </div>
+          <div class="callout callout-info mt-3" style="font-size:11px">Ads live <strong>60+ days</strong> = high-probability winner signal. Noise + Boult both exceed this threshold for this gap.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 09 — GENERATE RESULTS
+════════════════════════════════════════════════════ -->
+<div id="screen-generate-results" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Generate 10</span>
+      <div class="sb-item" onclick="showScreen('generate-brief')">Brief Builder</div>
+      <div class="sb-item active">Results Grid</div>
+      <div class="sb-item" onclick="showScreen('approval')">Approval</div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Generate 10</span><span class="sep">/</span><span class="current">Results</span></div>
+      <div class="topbar-actions">
+        <span style="font-size:12px;color:var(--ink3)">10 concepts · <span id="sel-count">1</span> selected</span>
+        <button class="btn btn-outline btn-sm" onclick="showScreen('generate-brief')">Regenerate</button>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('approval')">Approve selected →</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="flow-steps">
+        <div class="flow-step done"><div class="fs-num"><span class="done-check">✓</span> STEP 01</div><div class="fs-title">Brief ✓</div><div class="fs-desc">Transformation × Reel</div></div>
+        <div class="flow-step active"><div class="fs-num">STEP 02</div><div class="fs-title">Results</div><div class="fs-desc">Select concepts</div></div>
+        <div class="flow-step"><div class="fs-num">STEP 03</div><div class="fs-title">Review</div><div class="fs-desc">Edit copy</div></div>
+        <div class="flow-step"><div class="fs-num">STEP 04</div><div class="fs-title">Approve</div><div class="fs-desc">Export</div></div>
+      </div>
+
+      <div class="concept-grid">
+        <!-- Concept 01 — selected -->
+        <div class="concept-card selected" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#EEF0FF,#C4B5FD)">
+            <span class="concept-thumb-num">01</span>
+            <div class="hook-badge">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.5px">CONCEPT 01</span>
+              <div class="select-check checked">✓</div>
+            </div>
+            <div class="concept-title">Before/After Commute</div>
+            <div class="concept-meta">9:16 Reel · 20s · Human face</div>
+            <span class="receipt" style="font-size:9.5px;margin-bottom:8px;display:inline-flex"><span class="receipt-id">Noise #4871</span></span>
+          </div>
+        </div>
+        <!-- Concepts 02–10 -->
+        <div class="concept-card" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#E0F7FF,#BAE6FD)">
+            <span class="concept-thumb-num">02</span>
+            <div class="hook-badge" style="color:var(--cyan)">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:var(--ink3)">CONCEPT 02</span><div class="select-check"></div></div>
+            <div class="concept-title">Gym Focus Flow</div>
+            <div class="concept-meta">9:16 Reel · 15s · No face</div>
+            <span class="receipt" style="font-size:9.5px;display:inline-flex"><span class="receipt-id">Boult #2234</span></span>
+          </div>
+        </div>
+        <div class="concept-card" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#F0FAE6,#BBF7D0)">
+            <span class="concept-thumb-num">03</span>
+            <div class="hook-badge" style="color:var(--lime)">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:var(--ink3)">CONCEPT 03</span><div class="select-check"></div></div>
+            <div class="concept-title">WFH Silence → Focus</div>
+            <div class="concept-meta">9:16 Reel · 25s · Human face</div>
+            <span class="receipt" style="font-size:9.5px;display:inline-flex"><span class="receipt-id">Noise #4871</span></span>
+          </div>
+        </div>
+        <div class="concept-card" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#FFF8E1,#FDE68A)">
+            <span class="concept-thumb-num">04</span>
+            <div class="hook-badge" style="color:var(--amber)">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:var(--ink3)">CONCEPT 04</span><div class="select-check"></div></div>
+            <div class="concept-title">Chaos → Calm Study</div>
+            <div class="concept-meta">9:16 Reel · 18s · Human face</div>
+            <span class="receipt" style="font-size:9.5px;display:inline-flex"><span class="receipt-id">Boult #2234</span></span>
+          </div>
+        </div>
+        <div class="concept-card" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#FEF2F2,#FECACA)">
+            <span class="concept-thumb-num">05</span>
+            <div class="hook-badge" style="color:var(--red)">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:var(--ink3)">CONCEPT 05</span><div class="select-check"></div></div>
+            <div class="concept-title">Bad Audio → boAt</div>
+            <div class="concept-meta">9:16 Reel · 20s · Hands only</div>
+            <span class="receipt" style="font-size:9.5px;display:inline-flex"><span class="receipt-id">pTron #0991</span></span>
+          </div>
+        </div>
+        <div class="concept-card" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#F6F6FF,#DDD5FF)">
+            <span class="concept-thumb-num">06</span>
+            <div class="hook-badge">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:var(--ink3)">CONCEPT 06</span><div class="select-check"></div></div>
+            <div class="concept-title">Late Night Creator</div>
+            <div class="concept-meta">9:16 Reel · 22s · Human face</div>
+            <span class="receipt" style="font-size:9.5px;display:inline-flex"><span class="receipt-id">Noise #5502</span></span>
+          </div>
+        </div>
+        <div class="concept-card" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#ECFDF5,#A7F3D0)">
+            <span class="concept-thumb-num">07</span>
+            <div class="hook-badge" style="color:#059669">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:var(--ink3)">CONCEPT 07</span><div class="select-check"></div></div>
+            <div class="concept-title">Morning Routine Switch</div>
+            <div class="concept-meta">9:16 Reel · 28s · Human face</div>
+            <span class="receipt" style="font-size:9.5px;display:inline-flex"><span class="receipt-id">Boult #3341</span></span>
+          </div>
+        </div>
+        <div class="concept-card" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#EEF0FF,#C4B5FD)">
+            <span class="concept-thumb-num">08</span>
+            <div class="hook-badge">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:var(--ink3)">CONCEPT 08</span><div class="select-check"></div></div>
+            <div class="concept-title">Airport Hustle</div>
+            <div class="concept-meta">9:16 Reel · 15s · No face</div>
+            <span class="receipt" style="font-size:9.5px;display:inline-flex"><span class="receipt-id">Noise #4871</span></span>
+          </div>
+        </div>
+        <div class="concept-card" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#FFF8E1,#FDE68A)">
+            <span class="concept-thumb-num">09</span>
+            <div class="hook-badge" style="color:var(--amber)">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:var(--ink3)">CONCEPT 09</span><div class="select-check"></div></div>
+            <div class="concept-title">Teen Homework Mode</div>
+            <div class="concept-meta">9:16 Reel · 18s · Human face</div>
+            <span class="receipt" style="font-size:9.5px;display:inline-flex"><span class="receipt-id">Boult #2234</span></span>
+          </div>
+        </div>
+        <div class="concept-card" onclick="showScreen('concept-detail')">
+          <div class="concept-thumb" style="background:linear-gradient(135deg,#F0F9FF,#BAE6FD)">
+            <span class="concept-thumb-num">10</span>
+            <div class="hook-badge" style="color:var(--cyan)">Transformation</div>
+          </div>
+          <div class="concept-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:10px;font-weight:700;color:var(--ink3)">CONCEPT 10</span><div class="select-check"></div></div>
+            <div class="concept-title">Party → Focus Mode</div>
+            <div class="concept-meta">9:16 Reel · 20s · Group shot</div>
+            <span class="receipt" style="font-size:9.5px;display:inline-flex"><span class="receipt-id">pTron #0991</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+        <button class="btn btn-outline" onclick="showScreen('generate-brief')">← Regenerate</button>
+        <button class="btn btn-primary" onclick="showScreen('approval')">Approve selected (1) →</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 10 — CONCEPT DETAIL
+════════════════════════════════════════════════════ -->
+<div id="screen-concept-detail" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Generate 10</span>
+      <div class="sb-item" onclick="showScreen('generate-brief')">Brief Builder</div>
+      <div class="sb-item" onclick="showScreen('generate-results')">Results Grid</div>
+      <div class="sb-item active">Concept Detail</div>
+      <div class="sb-item" onclick="showScreen('approval')">Approval</div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Generate 10</span><span class="sep">/</span><span onclick="showScreen('generate-results')" style="cursor:pointer;color:var(--accent)">Results</span><span class="sep">/</span><span class="current">Concept 01</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" onclick="showScreen('generate-results')">← Back to grid</button>
+        <button class="btn btn-outline btn-sm">Regenerate this</button>
+        <button class="btn btn-primary btn-sm" onclick="showScreen('approval')">✓ Approve →</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="panel-layout">
+        <div>
+          <div class="card" style="overflow:hidden;margin-bottom:16px">
+            <div style="height:240px;background:linear-gradient(135deg,#EEF0FF 0%,#C4B5FD 50%,#DDD5FF 100%);display:flex;align-items:center;justify-content:center;position:relative">
+              <div style="text-align:center">
+                <div style="font-family:'Fraunces',serif;font-size:48px;font-weight:700;color:rgba(91,71,224,.25);letter-spacing:-.02em">01</div>
+                <div style="font-size:13px;color:var(--accent);font-weight:600;margin-top:4px">Before/After Commute · Transformation Reel</div>
+              </div>
+              <div style="position:absolute;bottom:12px;left:12px;display:flex;gap:6px">
+                <span class="tag tag-hook">Transformation</span>
+                <span class="tag tag-neutral">9:16 Reel</span>
+                <span class="tag tag-neutral">20s</span>
+              </div>
+            </div>
+            <div style="padding:20px">
+              <div class="field-label">Headline</div>
+              <div class="copy-editor" contenteditable="true">Your commute. Your soundtrack. Your world.</div>
+              <div class="field-label">Body Copy</div>
+              <div class="copy-editor" contenteditable="true">Noise? Gone. Focus? On. boAt Airdopes 141 — 42H playtime, true wireless, made for what you're about to do.</div>
+              <div class="field-label">CTA</div>
+              <div class="copy-editor" contenteditable="true">Shop Now →</div>
+              <div class="mt-3">
+                <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px">Reference Ads <span class="tag tag-neutral" style="font-size:9px">read-only</span></div>
+                <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Noise #4871</span> · 84d · 12v</span>
+                <span class="receipt"><span class="receipt-icon">📎</span><span class="receipt-id">Boult #2234</span> · 71d · 6v</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="evidence-wrap">
+            <div class="evidence-header">Why This Concept</div>
+            <div class="evidence-grid">
+              <div class="ev-cell ev-see"><div class="ev-type"><div class="ev-dot"></div>What We See</div><div class="ev-text">boAt has 0 Transformation Reels. 87% concentration in Product Demo. Commute context is completely unexplored.</div></div>
+              <div class="ev-cell ev-evidence"><div class="ev-type"><div class="ev-dot"></div>Evidence</div><div class="ev-text">Noise #4871: 84d live, 12 variants. Before/After audio context. Strong longevity signal for this hook type.</div></div>
+              <div class="ev-cell ev-rec"><div class="ev-type"><div class="ev-dot"></div>Hypothesis</div><div class="ev-text">Commute audience segment is untargeted by boAt. Transformation hook tested in identical format by top competitor.</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="right-panel">
+          <div class="rpanel-title">Concept Meta</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+            <div class="card card-pad" style="background:var(--surface2)"><div class="dmi-label">Hook Type</div><div style="font-weight:700;color:var(--accent);font-size:13px">Transformation</div></div>
+            <div class="card card-pad" style="background:var(--surface2)"><div class="dmi-label">Format</div><div style="font-weight:700;font-size:13px">Reel / 9:16</div></div>
+            <div class="card card-pad" style="background:var(--surface2)"><div class="dmi-label">Duration</div><div style="font-weight:700;font-size:13px">~20 seconds</div></div>
+            <div class="card card-pad" style="background:var(--surface2)"><div class="dmi-label">Human Face</div><div style="font-weight:700;font-size:13px;color:var(--lime)">Required ✓</div></div>
+          </div>
+          <div class="rpanel-title">Navigation</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button class="btn btn-outline btn-sm" style="justify-content:center">← Concept 10</button>
+            <button class="btn btn-outline btn-sm" style="justify-content:center">Concept 02 →</button>
+          </div>
+          <div style="margin-top:16px">
+            <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="showScreen('approval')">✓ Approve This →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 11 — APPROVAL + EXPORT
+════════════════════════════════════════════════════ -->
+<div id="screen-approval" class="screen">
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="brand-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><span class="brand-name">imagive</span></div>
+    <div class="sb-section">
+      <span class="sb-label">Generate 10</span>
+      <div class="sb-item" onclick="showScreen('generate-brief')">Brief Builder</div>
+      <div class="sb-item" onclick="showScreen('generate-results')">Results Grid</div>
+      <div class="sb-item active">Approval & Export</div>
+    </div>
+    <div class="sidebar-footer"><div class="brand-selector"><div class="brand-avatar">bA</div><span class="brand-sel-name">boAt Audio</span><span class="brand-sel-arrow">▾</span></div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb"><span>Generate 10</span><span class="sep">/</span><span class="current">Approval & Export</span></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" onclick="showScreen('generate-results')">← Back to grid</button>
+        <button class="btn btn-outline btn-sm">Export PDF</button>
+        <button class="btn btn-primary btn-sm">Export to Notion →</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <div class="flow-steps">
+        <div class="flow-step done"><div class="fs-num"><span class="done-check">✓</span> STEP 01</div><div class="fs-title">Brief ✓</div></div>
+        <div class="flow-step done"><div class="fs-num"><span class="done-check">✓</span> STEP 02</div><div class="fs-title">Results ✓</div></div>
+        <div class="flow-step done"><div class="fs-num"><span class="done-check">✓</span> STEP 03</div><div class="fs-title">Review ✓</div></div>
+        <div class="flow-step active"><div class="fs-num">STEP 04</div><div class="fs-title">Approve</div><div class="fs-desc">Select + export</div></div>
+      </div>
+
+      <div class="sec"><div class="sec-title">Selected Concepts — 3 of 10</div><button class="btn btn-ghost btn-sm" onclick="showScreen('generate-results')">+ Select more</button></div>
+
+      <div class="card" style="overflow:hidden;margin-bottom:16px">
+        <table class="data-table">
+          <thead><tr><th>Concept</th><th>Hook</th><th>Headline preview</th><th>Receipts</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:46px;background:linear-gradient(135deg,#EEF0FF,#C4B5FD);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--accent)">01</div><span class="td-strong">Concept 01</span></div></td>
+              <td><span class="tag tag-hook">Transformation</span></td>
+              <td class="td-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Your commute. Your soundtrack. Your world.</td>
+              <td><span class="receipt" style="font-size:10px"><span class="receipt-id">Noise #4871</span></span></td>
+              <td><span class="approval-status as-approved">✓ Approved</span></td>
+              <td><button class="btn btn-ghost btn-xs" onclick="showScreen('concept-detail')">Edit</button></td>
+            </tr>
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:46px;background:linear-gradient(135deg,#E0F7FF,#BAE6FD);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:var(--cyan)">03</div><span class="td-strong">Concept 03</span></div></td>
+              <td><span class="tag tag-hook">Transformation</span></td>
+              <td class="td-muted">WFH Silence → Deep Focus. No distractions...</td>
+              <td><span class="receipt" style="font-size:10px"><span class="receipt-id">Noise #4871</span></span></td>
+              <td><span class="approval-status as-review">In Review</span></td>
+              <td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-primary btn-xs">Approve</button></div></td>
+            </tr>
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:46px;background:linear-gradient(135deg,#ECFDF5,#A7F3D0);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:14px;font-weight:700;color:#059669">07</div><span class="td-strong">Concept 07</span></div></td>
+              <td><span class="tag tag-hook">Transformation</span></td>
+              <td class="td-muted">Morning Routine. One upgrade. All the difference.</td>
+              <td><span class="receipt" style="font-size:10px"><span class="receipt-id">Boult #3341</span></span></td>
+              <td><span class="approval-status as-pending">Pending</span></td>
+              <td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-outline btn-xs">Review</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="g2">
+        <div class="card card-pad">
+          <div style="font-size:18px;margin-bottom:10px">📄</div>
+          <div class="card-title mb-2">Export as PDF</div>
+          <div style="font-size:12.5px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Includes: concepts, copy, receipts (read-only), brief context. Reference ads cannot be removed — they are the audit trail.</div>
+          <button class="btn btn-outline" style="width:100%">Export PDF →</button>
+        </div>
+        <div class="card card-pad">
+          <div style="font-size:18px;margin-bottom:10px">📝</div>
+          <div class="card-title mb-2">Export to Notion</div>
+          <div style="font-size:12.5px;color:var(--ink3);margin-bottom:14px;line-height:1.6">Creates one Notion page per concept. Reference ads linked as inline blocks. Read-only. References travel with the brief.</div>
+          <button class="btn btn-primary" style="width:100%">Export to Notion →</button>
+        </div>
+      </div>
+
+      <div class="callout callout-info">
+        <strong>Receipts Rule:</strong> All reference ads (Ad ID, library URL, days live, variants, impression range) travel with every export. They are read-only and cannot be removed. This is the evidence audit trail — marketers verify before acting.
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+</div><!-- .screens-wrap -->
+
+<script>
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tnav-btn').forEach(b => b.classList.remove('active'));
+
+  const screen = document.getElementById('screen-' + id);
+  if (screen) {
+    screen.classList.add('active');
+    screen.scrollTop = 0;
+    window.scrollTo(0,0);
+  }
+
+  const btn = [...document.querySelectorAll('.tnav-btn')].find(b =>
+    b.getAttribute('onclick')?.includes(id)
+  );
+  if (btn) btn.classList.add('active');
+}
+
+// Whitespace panel
+function selectWhitespace(combo) {
+  document.getElementById('ws-panel-title').textContent = combo;
+  document.getElementById('ws-panel-content').innerHTML = `
+    <div class="card card-pad" style="border:2px solid var(--accent-s);margin-bottom:14px;background:var(--accent-ss)">
+      <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px">Open Whitespace</div>
+      <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:2px">${combo}</div>
+      <span class="pill pill-live" style="margin-top:4px;display:inline-flex"><span class="pill-dot"></span>0 boAt ads</span>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.6px;text-transform:uppercase;margin-bottom:8px">Triangulation</div>
+    <div style="font-size:12px;color:var(--ink2);line-height:1.7;margin-bottom:12px;padding:10px 12px;background:var(--surface2);border-radius:var(--r-sm)">
+      Noise has 8 ads in this combo (avg 71d). Boult has 5 ads (avg 84d). Adjacent filled cells confirm audience appetite for this combination.
+    </div>
+    <span class="receipt" style="margin-bottom:6px;display:inline-flex"><span class="receipt-icon">📎</span><span class="receipt-id">Noise #4871</span> · 84d · 12v</span>
+    <span class="receipt" style="display:inline-flex"><span class="receipt-icon">📎</span><span class="receipt-id">Boult #2234</span> · 71d · 6v</span>
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="showScreen('generate-brief')">Generate 10 from this gap →</button>
+      <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center">View adjacent cells</button>
+    </div>
+  `;
+}
+
+// Init
+showScreen('overview');
+</script>
+</body>
+</html>

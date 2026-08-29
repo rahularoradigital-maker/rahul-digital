@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Imagive — Workspace User Flows</title>
+<style>
+:root{
+  --bg:#F3F4F7; --ink:#14151A; --body:#4B5058; --muted:#868B95; --faint:#B7BBC2;
+  --line:#E4E5EA; --line-soft:#EFF0F3;
+  --accent:#6366F1; --accent-dk:#4A4DD6; --accent-wash:#EEEEFE;
+  --warn:#B45309; --warn-w:#FFFBEA; --warn-b:#F3D9A0;
+  --sys:#8A8F99; --sys-w:#F1F2F4;
+  --good:#0E8A5F; --good-w:#DEF2EA;
+  --err:#DC2626; --err-w:#FDE8E8;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--body);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;font-size:13px;line-height:1.5}
+h1,h2{margin:0;color:var(--ink);letter-spacing:-.01em}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:60;background:#fff;border-bottom:1px solid var(--line);padding:16px 32px}
+.topbar h1{font-size:17px;font-weight:750}
+.topbar .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.toprow{display:flex;flex-wrap:wrap;align-items:center;gap:16px 26px;margin-top:14px}
+.tabs{display:flex;gap:8px}
+.tabbtn{border:1px solid var(--line);background:#fff;color:var(--body);font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:9px;cursor:pointer;transition:.15s}
+.tabbtn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.legend .lg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--body);font-weight:600}
+.shape-pill{width:20px;height:11px;border-radius:999px;background:var(--ink);display:inline-block}
+.shape-rect{width:18px;height:13px;border-radius:3px;border:1.4px solid var(--ink);display:inline-block}
+.shape-dia{width:14px;height:14px;border:1.4px solid var(--warn);background:var(--warn-w);display:inline-block;transform:rotate(45deg);border-radius:2px}
+.shape-ln{width:22px;height:0;border-top:1.6px solid var(--ink);display:inline-block}
+.shape-ln.dash{border-top:1.6px dashed var(--sys)}
+
+/* views */
+.flowview{display:none}
+.flowview.active{display:block}
+.persona-note{max-width:1500px;margin:20px 32px 0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:12.5px;color:var(--body)}
+.persona-note b{color:var(--ink)}
+
+.canvas-wrap{overflow-x:auto;padding:40px 40px 90px}
+.canvas{position:relative;min-width:1500px;width:max-content}
+svg.connectors{position:absolute;top:0;left:0;pointer-events:none;z-index:1;overflow:visible}
+.labels-layer{position:absolute;top:0;left:0;z-index:4;pointer-events:none}
+
+.spine{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:52px}
+.fork{display:flex;gap:70px;align-items:flex-start;justify-content:center}
+.fork.offset-right{justify-content:flex-start;padding-left:290px}
+.branch-col{display:flex;flex-direction:column;gap:44px;align-items:center}
+
+/* node shapes */
+.node{position:relative}
+.node-h{font-weight:750;color:var(--ink)}
+.node-sub{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+
+.node.pill{border-radius:999px;padding:13px 24px;text-align:center;font-size:12px;width:max-content;max-width:230px}
+.node.pill .node-h{font-size:12px}
+.node.pill.start{background:var(--ink)}
+.node.pill.start .node-h{color:#fff}
+.node.pill.end-good{background:var(--good)}
+.node.pill.end-good .node-h{color:#fff}
+.node.pill.end-neutral{background:#fff;border:1.5px solid var(--faint)}
+.node.pill.end-neutral .node-h{color:var(--muted)}
+.node.pill.end-error{background:#fff;border:1.5px solid var(--err)}
+.node.pill.end-error .node-h{color:var(--err)}
+
+.node.rect{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 16px;width:225px;box-shadow:0 1px 2px rgba(20,21,26,.04)}
+.node.rect.accent{background:var(--accent);border-color:var(--accent)}
+.node.rect.accent .node-h{color:#fff;font-size:13.5px}
+.node.rect.accent .node-sub{color:rgba(255,255,255,.85)}
+.node.rect.system{border-style:dashed;border-color:var(--sys);background:var(--sys-w)}
+.node.rect.system .node-h{color:#6b7280;font-size:12px}
+.node.rect.cross{border-style:dashed;border-color:var(--accent);background:var(--accent-wash);width:235px}
+.node.rect.cross .node-h{color:var(--accent-dk);font-size:12.5px}
+
+.node.diamond{width:206px;height:146px;background:var(--warn-w);border:1.6px solid var(--warn);clip-path:polygon(50% 2%,97% 50%,50% 98%,3% 50%);display:flex;align-items:center;justify-content:center;text-align:center}
+.node.diamond .node-h{font-size:11.5px;color:#8A5A0B;max-width:118px;line-height:1.35}
+
+.edge-label{position:absolute;background:#fff;border:1px solid var(--line);padding:2px 9px;border-radius:6px;font-size:10px;font-weight:750;transform:translate(-50%,-50%);white-space:nowrap;color:var(--body)}
+.edge-label.yes{color:var(--good);border-color:#BEE8D6}
+.edge-label.no{color:var(--err);border-color:#FBD5D5}
+
+.foot-legend{max-width:1500px;margin:0 32px 60px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px;font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Imagive — Workspace User Flows</h1>
+  <div class="sub">Two entry paths into the same Workspace model: a member who's invited in, and an admin who sets the org up</div>
+  <div class="toprow">
+    <div class="tabs">
+      <button class="tabbtn active" data-tab="a">👤 B2C · Member &amp; Invite Flow</button>
+      <button class="tabbtn" data-tab="b">🏢 B2B · Organization Admin Flow</button>
+    </div>
+    <div class="legend">
+      <span class="lg"><i class="shape-pill"></i> Start / End</span>
+      <span class="lg"><i class="shape-rect"></i> Screen / step</span>
+      <span class="lg"><i class="shape-dia"></i> Decision</span>
+      <span class="lg"><i class="shape-ln"></i> Flow</span>
+      <span class="lg"><i class="shape-ln dash"></i> Loop / cross-reference</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FLOW A — B2C MEMBER ============ -->
+<div class="flowview active" id="view-a">
+  <div class="persona-note"><b>Who this is for:</b> a regular team member. They never create an organization — they either get invited in, or they're already a member. Once inside, what they can do (switch brands, add a brand, open settings) depends entirely on the role their Org Admin gave them.</div>
+
+  <div class="canvas-wrap">
+    <div class="canvas" id="canvas-a">
+      <svg class="connectors" id="svg-a"></svg>
+      <div class="labels-layer" id="labels-a"></div>
+
+      <div class="spine">
+        <div class="node pill start" id="a-start"><div class="node-h">User opens Imagive</div></div>
+        <div class="node rect" id="a-login"><div class="node-h">Log in or sign up</div></div>
+        <div class="node diamond" id="a-dec-invite"><div class="node-h">Has an invite code or link?</div></div>
+
+        <div class="fork">
+          <div class="branch-col">
+            <div class="node rect" id="a-empty"><div class="node-h">Dashboard — no organization yet</div><div class="node-sub">Empty state</div></div>
+            <div class="node pill end-neutral" id="a-end-wait"><div class="node-h">Waiting for an invite from an Org Admin</div></div>
+          </div>
+          <div class="branch-col">
+            <div class="node rect" id="a-accept"><div class="node-h">Accept Invite screen</div><div class="node-sub">Invite code / Org ID + email confirmation</div></div>
+            <div class="node diamond" id="a-dec-validinvite"><div class="node-h">Invite valid &amp; email matches?</div></div>
+            <div class="fork">
+              <div class="branch-col">
+                <div class="node pill end-error" id="a-err-invite"><div class="node-h">Error — invalid or expired invite</div></div>
+              </div>
+              <div class="branch-col">
+                <div class="node rect" id="a-joined"><div class="node-h">Joined organization</div><div class="node-sub">Role &amp; brand scope set by inviter — read-only</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="node rect" id="a-dashboard"><div class="node-h">Dashboard — organization + brand active</div></div>
+        <div class="node diamond" id="a-dec-multiorg"><div class="node-h">Member of 2+ organizations?</div></div>
+
+        <div class="fork offset-right">
+          <div class="branch-col">
+            <div class="node rect" id="a-switchorg"><div class="node-h">Switch Organization</div><div class="node-sub">Org list — plan, your role, brand count</div></div>
+          </div>
+        </div>
+
+        <div class="node diamond" id="a-dec-multibrand"><div class="node-h">Organization has 2+ brands?</div></div>
+
+        <div class="fork offset-right">
+          <div class="branch-col">
+            <div class="node rect" id="a-switchbrand"><div class="node-h">Switch Brand</div><div class="node-sub">Brand list — logo, category, ad account status</div></div>
+          </div>
+        </div>
+
+        <div class="node rect accent" id="a-workspace"><div class="node-h">Brand Workspace</div><div class="node-sub">Hooks &amp; Angles, Create, Ads, Intelligence…</div></div>
+
+        <div class="node diamond" id="a-dec-canaddbrand"><div class="node-h">Role = Org Admin or Brand Manager?</div></div>
+        <div class="fork">
+          <div class="branch-col">
+            <div class="node rect" id="a-addbrand"><div class="node-h">+ Add Brand</div><div class="node-sub">Website URL → auto brand DNA scrape</div></div>
+          </div>
+          <div class="branch-col">
+            <div class="node pill end-neutral" id="a-noaddbrand"><div class="node-h">"Add Brand" hidden (Viewer)</div></div>
+          </div>
+        </div>
+
+        <div class="node diamond" id="a-dec-opensettings"><div class="node-h">Opens Organization Settings?</div></div>
+        <div class="fork">
+          <div class="branch-col">
+            <div class="node rect cross" id="a-tosettings"><div class="node-h">→ Continues in the B2B · Org Admin flow</div></div>
+          </div>
+          <div class="branch-col">
+            <div class="node pill end-neutral" id="a-readonly"><div class="node-h">Read-only "About this org" card</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot-legend"><b style="color:var(--ink)">Reading this flow:</b> the amber diamonds are the only three moments where permission decides what happens next — joining requires a valid invite, adding a brand requires Admin/Manager, and Organization Settings is Admin-only. Everything else (switching org, switching brand, using the product) is open to any member.</div>
+</div>
+
+<!-- ============ FLOW B — B2B ORG ADMIN ============ -->
+<div class="flowview" id="view-b">
+  <div class="persona-note"><b>Who this is for:</b> the Organization Admin — the only role that can create an organization, and the only one who configures members, brands, permissions and billing for everyone else. Creating an org always needs a reserved Organization ID issued by Imagive; it's never self-serve.</div>
+
+  <div class="canvas-wrap">
+    <div class="canvas" id="canvas-b">
+      <svg class="connectors" id="svg-b"></svg>
+      <div class="labels-layer" id="labels-b"></div>
+
+      <div class="spine">
+        <div class="node pill start" id="b-start"><div class="node-h">Prospective Org Admin</div></div>
+        <div class="node diamond" id="b-dec-hasid"><div class="node-h">Already has a reserved Organization ID?</div></div>
+
+        <div class="fork offset-right">
+          <div class="branch-col">
+            <div class="node rect" id="b-sales"><div class="node-h">Contact Imagive Sales</div><div class="node-sub">Enterprise onboarding request</div></div>
+            <div class="node rect system" id="b-issue"><div class="node-h">Imagive issues Organization ID + admin credentials</div><div class="node-sub">System / sales-assisted</div></div>
+          </div>
+        </div>
+
+        <div class="node rect" id="b-login"><div class="node-h">Log in to Imagive</div></div>
+        <div class="node diamond" id="b-dec-orgexists"><div class="node-h">Organization already created?</div></div>
+
+        <div class="fork">
+          <div class="branch-col">
+            <div class="node rect" id="b-createorg"><div class="node-h">Create Organization</div><div class="node-sub">Org name, Organization ID, billing email, plan, industry, permission template</div></div>
+            <div class="node diamond" id="b-dec-idvalid"><div class="node-h">Organization ID valid &amp; unused?</div></div>
+            <div class="fork">
+              <div class="branch-col">
+                <div class="node pill end-error" id="b-err"><div class="node-h">Error — invalid or duplicate Organization ID</div></div>
+              </div>
+              <div class="branch-col">
+                <div class="node rect" id="b-created"><div class="node-h">Organization created</div><div class="node-sub">Admin becomes its first Org Admin member</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="node rect" id="b-orgdash"><div class="node-h">Organization Dashboard</div></div>
+        <div class="node rect accent" id="b-settings"><div class="node-h">Organization Settings</div><div class="node-sub">Admin-only control center</div></div>
+
+        <div class="fork" style="gap:44px">
+          <div class="branch-col">
+            <div class="node rect" id="b-profile"><div class="node-h">Organization Profile</div><div class="node-sub">Name, logo, industry, billing email — Org ID read-only</div></div>
+          </div>
+          <div class="branch-col">
+            <div class="node rect" id="b-members"><div class="node-h">Members &amp; Roles</div><div class="node-sub">Invite, change role, remove</div></div>
+            <div class="fork" style="gap:30px">
+              <div class="branch-col">
+                <div class="node rect" id="b-invite"><div class="node-h">Invite Member</div><div class="node-sub">Email, role, brand scope</div></div>
+                <div class="node pill end-good" id="b-invitesent"><div class="node-h">Invite sent — pending</div></div>
+                <div class="node rect cross" id="b-tomember"><div class="node-h">→ Continues in the B2C · Member flow when accepted</div></div>
+              </div>
+              <div class="branch-col">
+                <div class="node rect" id="b-managemembers"><div class="node-h">Manage existing members</div><div class="node-sub">Change role, remove, transfer ownership</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="branch-col">
+            <div class="node rect" id="b-brands"><div class="node-h">Brands Management</div><div class="node-sub">Add / rename / archive, transfer to another org</div></div>
+          </div>
+          <div class="branch-col">
+            <div class="node rect" id="b-permissions"><div class="node-h">Permissions Matrix</div><div class="node-sub">Role capabilities + brand-level overrides</div></div>
+          </div>
+          <div class="branch-col">
+            <div class="node rect" id="b-billing"><div class="node-h">Billing &amp; Plan</div><div class="node-sub">Plan tier, seats, invoices</div></div>
+          </div>
+        </div>
+
+        <div class="node diamond" id="b-dec-another"><div class="node-h">Manage another organization?</div></div>
+        <div class="fork">
+          <div class="branch-col">
+            <div class="node pill end-neutral" id="b-loopcreate"><div class="node-h">New reserved Organization ID required</div></div>
+          </div>
+          <div class="branch-col">
+            <div class="node pill end-good" id="b-end"><div class="node-h">Organization fully configured &amp; running</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot-legend"><b style="color:var(--ink)">Reading this flow:</b> the only hard gate is the Organization ID — an admin can't create an org without one, and it can't be typed freely, it has to be pre-reserved by Imagive. Everything under Organization Settings (profile, members, brands, permissions, billing) is this admin's own control surface, invisible to every other role.</div>
+</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg';
+const DEFS = `
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#14151A"></path>
+    </marker>
+    <marker id="arrow-dash" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8A8F99"></path>
+    </marker>
+    <marker id="dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
+      <circle cx="5" cy="5" r="4" fill="#fff" stroke="#14151A" stroke-width="1.4"></circle>
+    </marker>
+    <marker id="dot-dash" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
+      <circle cx="5" cy="5" r="4" fill="#fff" stroke="#8A8F99" stroke-width="1.4"></circle>
+    </marker>
+  </defs>`;
+
+function vert(side){ return side==='top'||side==='bottom'; }
+
+function pointOnRect(rect, side, t){
+  t = (t===undefined)?0.5:t;
+  if(side==='top') return {x: rect.left + rect.width*t, y: rect.top};
+  if(side==='bottom') return {x: rect.left + rect.width*t, y: rect.bottom};
+  if(side==='left') return {x: rect.left, y: rect.top + rect.height*t};
+  if(side==='right') return {x: rect.right, y: rect.top + rect.height*t};
+}
+
+function relRect(el, canvasRect){
+  const r = el.getBoundingClientRect();
+  return {left:r.left-canvasRect.left, top:r.top-canvasRect.top, right:r.right-canvasRect.left, bottom:r.bottom-canvasRect.top, width:r.width, height:r.height};
+}
+
+function labelPos(p1, s1, pad){
+  const OFFH = pad!==undefined ? pad+34 : 26;
+  const OFFV = pad!==undefined ? pad+26 : 18;
+  if(s1==='right') return {x:p1.x+OFFH, y:p1.y};
+  if(s1==='left') return {x:p1.x-OFFH, y:p1.y};
+  if(s1==='top') return {x:p1.x, y:p1.y-OFFV};
+  if(s1==='bottom') return {x:p1.x, y:p1.y+OFFV};
+  return p1;
+}
+
+function elbow(p1, s1, p2, s2, pad){
+  let d, mid;
+  if(vert(s1) && vert(s2)){
+    let midY=(p1.y+p2.y)/2;
+    if(pad!==undefined){
+      if(s1==='bottom' && s2==='bottom') midY = Math.max(p1.y,p2.y)+pad;
+      else if(s1==='top' && s2==='top') midY = Math.min(p1.y,p2.y)-pad;
+    }
+    d = `M ${p1.x} ${p1.y} V ${midY} H ${p2.x} V ${p2.y}`;
+  } else if(!vert(s1) && !vert(s2)){
+    let midX=(p1.x+p2.x)/2;
+    if(pad!==undefined){
+      if(s1==='right' && s2==='right') midX = Math.max(p1.x,p2.x)+pad;
+      else if(s1==='left' && s2==='left') midX = Math.min(p1.x,p2.x)-pad;
+    }
+    d = `M ${p1.x} ${p1.y} H ${midX} V ${p2.y} H ${p2.x}`;
+  } else if(vert(s1) && !vert(s2)){
+    d = `M ${p1.x} ${p1.y} V ${p2.y} H ${p2.x}`;
+  } else {
+    d = `M ${p1.x} ${p1.y} H ${p2.x} V ${p2.y}`;
+  }
+  mid = labelPos(p1, s1, pad);
+  return {d, mid};
+}
+
+function drawFlow(canvasId, svgId, labelsId, CONNS){
+  const canvas = document.getElementById(canvasId);
+  const svg = document.getElementById(svgId);
+  const labelsLayer = document.getElementById(labelsId);
+  if(!canvas || !svg) return;
+  labelsLayer.innerHTML = '';
+  const canvasRect = canvas.getBoundingClientRect();
+  svg.setAttribute('width', canvas.scrollWidth);
+  svg.setAttribute('height', canvas.scrollHeight);
+  svg.setAttribute('viewBox', `0 0 ${canvas.scrollWidth} ${canvas.scrollHeight}`);
+  svg.innerHTML = DEFS;
+
+  CONNS.forEach(conn=>{
+    const fromEl = document.getElementById(conn.from[0]);
+    const toEl = document.getElementById(conn.to[0]);
+    if(!fromEl || !toEl) return;
+    const r1 = relRect(fromEl, canvasRect);
+    const r2 = relRect(toEl, canvasRect);
+    const p1 = pointOnRect(r1, conn.from[1], conn.from[2]);
+    const p2 = pointOnRect(r2, conn.to[1], conn.to[2]);
+    const {d, mid} = elbow(p1, conn.from[1], p2, conn.to[1], conn.pad);
+
+    const path = document.createElementNS(NS,'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill','none');
+    if(conn.dashed){
+      path.setAttribute('stroke','#8A8F99');
+      path.setAttribute('stroke-width','1.4');
+      path.setAttribute('stroke-dasharray','5,4');
+      path.setAttribute('marker-start','url(#dot-dash)');
+      path.setAttribute('marker-end','url(#arrow-dash)');
+    } else {
+      path.setAttribute('stroke','#14151A');
+      path.setAttribute('stroke-width','1.6');
+      path.setAttribute('marker-start','url(#dot)');
+      path.setAttribute('marker-end','url(#arrow)');
+    }
+    svg.appendChild(path);
+
+    if(conn.label){
+      const lbl = document.createElement('div');
+      lbl.className = 'edge-label' + (conn.label==='Yes' ? ' yes' : conn.label==='No' ? ' no' : '');
+      lbl.textContent = conn.label;
+      lbl.style.left = mid.x + 'px';
+      lbl.style.top = mid.y + 'px';
+      labelsLayer.appendChild(lbl);
+    }
+  });
+}
+
+const CONN_A = [
+  {from:['a-start','bottom'], to:['a-login','top']},
+  {from:['a-login','bottom'], to:['a-dec-invite','top']},
+  {from:['a-dec-invite','left'], to:['a-empty','top'], label:'No'},
+  {from:['a-dec-invite','right'], to:['a-accept','top'], label:'Yes'},
+  {from:['a-empty','bottom'], to:['a-end-wait','top']},
+  {from:['a-empty','right'], to:['a-accept','left'], dashed:true, label:'Enter code manually'},
+  {from:['a-accept','bottom'], to:['a-dec-validinvite','top']},
+  {from:['a-dec-validinvite','left'], to:['a-err-invite','top'], label:'No'},
+  {from:['a-err-invite','left'], to:['a-accept','left'], dashed:true, label:'Retry', pad:40},
+  {from:['a-dec-validinvite','right'], to:['a-joined','top'], label:'Yes'},
+  {from:['a-joined','bottom'], to:['a-dashboard','top']},
+
+  {from:['a-dashboard','bottom'], to:['a-dec-multiorg','top']},
+  {from:['a-dec-multiorg','right'], to:['a-switchorg','top'], label:'Yes'},
+  {from:['a-switchorg','bottom'], to:['a-dec-multibrand','right']},
+  {from:['a-dec-multiorg','bottom'], to:['a-dec-multibrand','top'], label:'No'},
+
+  {from:['a-dec-multibrand','right'], to:['a-switchbrand','top'], label:'Yes'},
+  {from:['a-switchbrand','bottom'], to:['a-workspace','right']},
+  {from:['a-dec-multibrand','bottom'], to:['a-workspace','top'], label:'No'},
+
+  {from:['a-workspace','bottom'], to:['a-dec-canaddbrand','top']},
+  {from:['a-dec-canaddbrand','left'], to:['a-addbrand','top'], label:'Yes'},
+  {from:['a-addbrand','left'], to:['a-workspace','left'], dashed:true, label:'Brand created', pad:40},
+  {from:['a-dec-canaddbrand','right'], to:['a-noaddbrand','top'], label:'No'},
+
+  {from:['a-dec-canaddbrand','bottom'], to:['a-dec-opensettings','top']},
+  {from:['a-dec-opensettings','left'], to:['a-tosettings','top'], label:'Yes + Admin'},
+  {from:['a-dec-opensettings','right'], to:['a-readonly','top'], label:'No / not Admin'},
+];
+
+const CONN_B = [
+  {from:['b-start','bottom'], to:['b-dec-hasid','top']},
+  {from:['b-dec-hasid','right'], to:['b-sales','top'], label:'No'},
+  {from:['b-sales','bottom'], to:['b-issue','top']},
+  {from:['b-issue','bottom'], to:['b-login','right']},
+  {from:['b-dec-hasid','bottom'], to:['b-login','top'], label:'Yes'},
+
+  {from:['b-login','bottom'], to:['b-dec-orgexists','top']},
+  {from:['b-dec-orgexists','left'], to:['b-createorg','top'], label:'No'},
+  {from:['b-createorg','bottom'], to:['b-dec-idvalid','top']},
+  {from:['b-dec-idvalid','left'], to:['b-err','top'], label:'No'},
+  {from:['b-err','left'], to:['b-createorg','left'], dashed:true, label:'Retry', pad:40},
+  {from:['b-dec-idvalid','right'], to:['b-created','top'], label:'Yes'},
+  {from:['b-created','bottom'], to:['b-orgdash','left']},
+  {from:['b-dec-orgexists','bottom'], to:['b-orgdash','top'], label:'Yes'},
+
+  {from:['b-orgdash','bottom'], to:['b-settings','top']},
+  {from:['b-settings','bottom',0.1], to:['b-profile','top']},
+  {from:['b-settings','bottom',0.3], to:['b-members','top']},
+  {from:['b-settings','bottom',0.5], to:['b-brands','top']},
+  {from:['b-settings','bottom',0.7], to:['b-permissions','top']},
+  {from:['b-settings','bottom',0.9], to:['b-billing','top']},
+
+  {from:['b-members','bottom'], to:['b-invite','top']},
+  {from:['b-invite','bottom'], to:['b-invitesent','top']},
+  {from:['b-invitesent','bottom'], to:['b-tomember','top']},
+  {from:['b-members','bottom',0.8], to:['b-managemembers','top']},
+
+  {from:['b-settings','right'], to:['b-dec-another','right'], label:'when done configuring', dashed:true, pad:260},
+  {from:['b-dec-another','left'], to:['b-loopcreate','top'], dashed:true, label:'Yes'},
+  {from:['b-loopcreate','top'], to:['b-createorg','bottom'], dashed:true},
+  {from:['b-dec-another','bottom'], to:['b-end','top'], label:'No'},
+];
+
+function drawActive(){
+  const activeTab = document.querySelector('.tabbtn.active').dataset.tab;
+  if(activeTab==='a') drawFlow('canvas-a','svg-a','labels-a', CONN_A);
+  else drawFlow('canvas-b','svg-b','labels-b', CONN_B);
+}
+
+document.querySelectorAll('.tabbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.flowview').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+btn.dataset.tab).classList.add('active');
+    requestAnimationFrame(()=>{ drawActive(); setTimeout(drawActive,80); });
+  });
+});
+
+window.addEventListener('load', ()=>{ drawActive(); setTimeout(drawActive,120); });
+window.addEventListener('resize', ()=>{ clearTimeout(window.__rt); window.__rt=setTimeout(drawActive,120); });
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(()=>setTimeout(drawActive,60)); }
+</script>
+
+</body>
+</html>

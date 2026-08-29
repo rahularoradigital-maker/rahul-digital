@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en-IN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Creative Fatigue Report</title>
+<style>
+:root[data-theme="dark"] {
+  --ink:#0a0d14; --panel:#11151e; --panel2:#171d29; --border:#283041; --border-soft:#1d2433;
+  --text:#e8eef6; --muted:#8a94a7; --faint:#5b6577; --iris:#8f8aff; --iris-soft:rgba(143,138,255,0.14);
+  --cyan:#41c8de; --cyan-soft:rgba(65,200,222,0.13); --green:#43c46a; --green-soft:rgba(67,196,106,0.14);
+  --amber:#e3a017; --amber-soft:rgba(227,160,23,0.14); --red:#f0566b; --red-soft:rgba(240,86,107,0.14);
+  --chip:#1c2740; --chip-bd:#2c3c5c; --code-bg:#0c1018; --shadow:0 8px 24px rgba(0,0,0,0.32);
+  --hero-grad:radial-gradient(120% 120% at 12% 0%, #161d2e 0%, #0a0d14 55%);
+}
+:root[data-theme="light"] {
+  --ink:#f5f6fb; --panel:#fff; --panel2:#f0f2f8; --border:#dde2ee; --border-soft:#e9edf5;
+  --text:#16203a; --muted:#5a6478; --faint:#97a0b2; --iris:#5a52e0; --iris-soft:rgba(90,82,224,0.10);
+  --cyan:#0f8fa6; --cyan-soft:rgba(15,143,166,0.10); --green:#1f9d4f; --green-soft:rgba(31,157,79,0.12);
+  --amber:#b87708; --amber-soft:rgba(184,119,8,0.13); --red:#d63a52; --red-soft:rgba(214,58,82,0.12);
+  --chip:#eef1f8; --chip-bd:#d4dcec; --code-bg:#f0f2f8; --shadow:0 8px 24px rgba(16,24,40,0.06);
+  --hero-grad:radial-gradient(120% 120% at 12% 0%, #eef1fb 0%, #f5f6fb 55%);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:Inter,Segoe UI,system-ui,sans-serif;font-size:14px;line-height:1.55}
+a{color:var(--cyan)}
+header{padding:14px 26px 0;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:0;z-index:60}
+.head-row{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+header h1{font-size:16px;font-weight:650}
+header .sub{color:var(--muted);font-size:12px;margin-top:2px}
+.iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:6px 11px;cursor:pointer;font-size:12.5px}
+nav#sectionNav{display:flex;gap:2px;flex-wrap:wrap;margin-top:12px;overflow-x:auto}
+nav#sectionNav a{color:var(--muted);text-decoration:none;font-size:12.5px;padding:9px 12px;border-bottom:2px solid transparent;white-space:nowrap}
+nav#sectionNav a.active{color:var(--text);border-bottom-color:var(--iris)}
+main{padding:0 26px 90px;max-width:1360px;margin:0 auto}
+#loader{max-width:660px;margin:70px auto;text-align:center}
+#dropzone{border:1.5px dashed var(--border);border-radius:16px;padding:52px 26px;background:var(--panel);cursor:pointer}
+#dropzone strong{font-size:16px;display:block}
+#dropzone p{color:var(--muted);margin-top:8px;font-size:13px}
+#loadError{color:var(--red);margin-top:14px}
+section.story{padding-top:30px;scroll-margin-top:96px}
+section.story>h2{font-size:23px;font-weight:680;margin-bottom:4px}
+section.story>.lede{color:var(--muted);font-size:13.5px;margin-bottom:18px;max-width:760px}
+h3{font-size:14px;font-weight:640;margin:22px 0 10px}
+.hint,.note{color:var(--muted);font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:13px 16px}
+.card .k{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
+.card .v{font-size:20px;font-weight:700;margin-top:3px}
+#hero{background:var(--hero-grad);border:1px solid var(--border);border-radius:18px;padding:26px 28px;margin-top:26px;box-shadow:var(--shadow)}
+.hero-title{font-size:26px;font-weight:720;line-height:1.15}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:12px;color:var(--muted)}
+.funnel{margin-top:22px}
+.funnel .bar{margin:0 auto 5px;border-radius:8px;padding:9px 14px;border:1px solid var(--border);background:var(--panel2);font-size:12.5px;text-align:center}
+.funnel .bar .n{font-size:17px;font-weight:720}
+.funnel .bar .lbl{color:var(--muted)}
+.funnel .conn{width:1px;height:12px;margin:0 auto;background:var(--border)}
+.funnel .split{display:flex;gap:8px;justify-content:center;max-width:560px;margin:0 auto}
+.funnel .split .bar{flex:1}
+.funnel .bar.urgent{border-color:var(--red);background:var(--red-soft)} .funnel .bar.urgent .n{color:var(--red)}
+.funnel .bar.warning{border-color:var(--amber);background:var(--amber-soft)} .funnel .bar.warning .n{color:var(--amber)}
+.funnel .bar.healthy{border-color:var(--green);background:var(--green-soft)} .funnel .bar.healthy .n{color:var(--green)}
+.digest{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--iris);border-radius:12px;padding:16px 20px;white-space:pre-wrap;font-size:13px;line-height:1.65}
+.tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:760px;background:var(--panel)}
+th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--border-soft);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{background:var(--panel2);color:var(--muted);font-size:10.5px;text-transform:uppercase}
+th[data-sort]{cursor:pointer}
+tbody tr:hover td{background:var(--panel2)}
+td.urgent{color:var(--red);font-weight:650}
+td.warning{color:var(--amber);font-weight:650}
+td.healthy{color:var(--green);font-weight:650}
+.controls{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+input[type=text]{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:8px 13px;width:280px;font-size:13px}
+.badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;border-radius:6px;padding:2px 9px}
+.badge.URGENT{background:var(--red-soft);color:var(--red)}
+.badge.WARNING{background:var(--amber-soft);color:var(--amber)}
+.badge.HEALTHY{background:var(--green-soft);color:var(--green)}
+.candidates{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:16px}
+.cand{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex}
+.cand.URGENT{border-left:4px solid var(--red)} .cand.WARNING{border-left:4px solid var(--amber)}
+.cand .media{width:150px;flex-shrink:0;background:#000}
+.cand .media img{width:100%;height:100%;min-height:200px;object-fit:cover;display:block}
+.cand .body{padding:14px 16px;flex:1}
+.adgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.adcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer}
+.adcard:hover{border-color:var(--faint)}
+.adcard .media{aspect-ratio:1/1;background:#000}
+.adcard .media img{width:100%;height:100%;object-fit:cover;display:block}
+.adcard .ab{padding:10px 12px}
+.adcard .aid{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--cyan)}
+.adcard .meta{color:var(--muted);font-size:11.5px;margin-top:4px}
+.infobox{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:15px 18px;margin-bottom:16px;font-size:13px}
+.pipeline .pstep{display:grid;grid-template-columns:40px 1fr;gap:0 14px;margin-bottom:12px}
+.pipeline .dot{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--iris-soft);color:var(--iris);border:1px solid var(--iris);font-weight:700;font-size:12px}
+.pipeline .pbody{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.pipeline .pbody p{color:var(--muted);font-size:12.5px;margin-top:4px}
+.chip{display:inline-block;background:var(--chip);border:1px solid var(--chip-bd);border-radius:999px;padding:1px 10px;font-size:12px;margin:2px 4px 2px 0}
+.adlink{color:var(--cyan);cursor:pointer;text-decoration:none}
+.adlink:hover{text-decoration:underline}
+.mono{font-family:ui-monospace,Consolas,monospace}
+body.ad-detail .detail-wrap{max-width:1080px;margin:0 auto;padding:24px 26px}
+.detail-hero{display:grid;grid-template-columns:280px 1fr;gap:20px;background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:18px}
+.detail-hero .media{min-height:300px;background:#000}
+.detail-hero .media img{width:100%;height:100%;object-fit:cover;display:block}
+.detail-section{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.metricgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 14px;margin:12px 0}
+.metricgrid .m .k{color:var(--muted);font-size:10.5px}
+.metricgrid .m .v{font-weight:650;font-size:14px}
+details.explore{background:var(--panel);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+details.explore>summary{cursor:pointer;padding:11px 16px;font-weight:600;font-size:13px}
+details.explore pre{margin:0;padding:14px 16px;border-top:1px solid var(--border);overflow-x:auto;font-size:12px;max-height:400px;background:var(--code-bg)}
+@media(max-width:800px){.detail-hero{grid-template-columns:1fr}.candidates{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="head-row">
+    <div>
+      <h1>Creative Fatigue Report</h1>
+      <div class="sub" id="runMeta">Load a creative_fatigue workflow JSON to begin.</div>
+    </div>
+    <div>
+      <button class="iconbtn" id="themeToggle" type="button">&#9789; Light</button>
+    </div>
+  </div>
+  <nav id="sectionNav" style="display:none">
+    <a href="#summary">Summary</a>
+    <a href="#how">How it works</a>
+    <a href="#rules">Rules</a>
+    <a href="#filtered">Filtered out</a>
+    <a href="#table">Fatigue table</a>
+    <a href="#top3">Top 3</a>
+    <a href="#ads">All ads</a>
+    <a href="#daily">Daily performance</a>
+    <a href="#explorer">Explorer</a>
+  </nav>
+</header>
+<main>
+  <div id="loader">
+    <div id="dropzone">
+      <strong>Drop the workflow response JSON here, or click to browse</strong>
+      <p>Expected: a <span class="mono">creative_fatigue</span> run export.<br>Everything renders in your browser — nothing is uploaded.</p>
+      <input type="file" id="fileInput" accept=".json,application/json" style="display:none" />
+    </div>
+    <div id="loadError"></div>
+  </div>
+  <div id="app" style="display:none"></div>
+</main>
+<script>
+"use strict";
+var DATA=null,OUT=null,CURRENT_RUN_ID=null,adBase={},fatigueIndex={},dailyByAd={},windowByAd={},excludedIndex={},top3ByAd={};
+var STORAGE_KEY="creative_fatigue_run_v1";
+var SELF=(location.pathname.split("/").pop()||"creative_fatigue_report.html");
+
+function isNum(v){return typeof v==="number"&&isFinite(v)}
+function fmt(v,d){if(!isNum(v))return"\u2014";return Number(v).toLocaleString("en-IN",{minimumFractionDigits:d||0,maximumFractionDigits:d||2})}
+function fmtPct(v){return isNum(v)?fmt(v,2)+"%":"\u2014"}
+function fmtInt(v){return isNum(v)?v.toLocaleString("en-IN"):"\u2014"}
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+
+var dropzone=document.getElementById("dropzone");
+var fileInput=document.getElementById("fileInput");
+var loadError=document.getElementById("loadError");
+dropzone.addEventListener("click",function(){fileInput.click()});
+fileInput.addEventListener("change",function(){if(fileInput.files.length)readFile(fileInput.files[0])});
+dropzone.addEventListener("dragover",function(e){e.preventDefault();dropzone.style.borderColor="var(--cyan)"});
+dropzone.addEventListener("dragleave",function(){dropzone.style.borderColor=""});
+dropzone.addEventListener("drop",function(e){e.preventDefault();dropzone.style.borderColor="";if(e.dataTransfer.files.length)readFile(e.dataTransfer.files[0])});
+function readFile(file){var r=new FileReader();r.onload=function(){try{boot(JSON.parse(r.result))}catch(e){loadError.textContent="Could not parse JSON: "+e.message}};r.readAsText(file)}
+
+document.getElementById("themeToggle").addEventListener("click",function(){
+  var next=document.documentElement.getAttribute("data-theme")==="light"?"dark":"light";
+  document.documentElement.setAttribute("data-theme",next);
+  this.innerHTML=next==="light"?"\u263D Dark":"\u263C Light";
+});
+
+function getQueryParam(name){try{return new URLSearchParams(location.search).get(name)}catch(e){return null}}
+function getQueryAdId(){return getQueryParam("ad_id")}
+function getQueryRunId(){return getQueryParam("run_id")}
+function getRunId(json){
+  var out=json.output||json;
+  return String(json.id||out.run_id||"default");
+}
+function storageKeyForRun(runId){
+  return STORAGE_KEY+"_"+String(runId).replace(/[^a-zA-Z0-9_-]/g,"_");
+}
+function storeRun(json,runId){
+  var payload=JSON.stringify(json);
+  try{
+    localStorage.setItem(storageKeyForRun(runId),payload);
+    localStorage.setItem(STORAGE_KEY,payload);
+  }catch(e){}
+}
+function readStoredRun(runId){
+  var key=runId?storageKeyForRun(runId):null;
+  var raw=(key&&localStorage.getItem(key))||localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try{return JSON.parse(raw)}catch(e){}
+  }
+  try{
+    if(window.opener&&!window.opener.closed&&window.opener.DATA){
+      var openerRun=window.opener.CURRENT_RUN_ID;
+      if(!runId||runId===openerRun)return window.opener.DATA;
+    }
+  }catch(e){}
+  return null;
+}
+function adDetailUrl(adId,runId){
+  runId=runId||CURRENT_RUN_ID||"default";
+  return SELF+"?ad_id="+encodeURIComponent(adId)+"&run_id="+encodeURIComponent(runId);
+}
+function openAdDetail(adId){
+  if(!CURRENT_RUN_ID)return;
+  storeRun(DATA,CURRENT_RUN_ID);
+  window.open(adDetailUrl(adId,CURRENT_RUN_ID),"_blank");
+}
+function openAdDetailFromClick(e,adId){
+  if(e)e.preventDefault();
+  openAdDetail(adId);
+}
+function tryBootFromQuery(){
+  var adId=getQueryAdId(),runId=getQueryRunId();
+  if(!adId&&!runId)return false;
+  var json=readStoredRun(runId);
+  if(!json){
+    document.getElementById("loader").innerHTML="<p class='note'>Report data for this tab is not available. Open the main report, load your JSON, then click an ad.</p>";
+    return true;
+  }
+  try{boot(json,{adDetailOnly:adId||null})}catch(e){loadError.textContent=e.message}
+  return true;
+}
+if(!tryBootFromQuery()){}
+
+function boot(json,opts){
+  opts=opts||{};DATA=json;OUT=json.output||json;
+  CURRENT_RUN_ID=getRunId(json);
+  adBase={};fatigueIndex={};dailyByAd={};windowByAd={};excludedIndex={};top3ByAd={};
+  (OUT.ads||[]).forEach(function(a){adBase[a.ad_id]=a});
+  fatigueIndex=OUT.fatigue_by_ad||{};
+  (OUT.daily_performance||[]).forEach(function(r){
+    var id=r.ad_id;(dailyByAd[id]||(dailyByAd[id]=[])).push(r);
+  });
+  (OUT.window_performance||[]).forEach(function(r){windowByAd[r.ad_id]=r});
+  (OUT.excluded_ads||[]).forEach(function(r){excludedIndex[r.ad_id]=r});
+  (OUT.top_3_to_replace||[]).forEach(function(r){top3ByAd[r.ad_id]=r});
+  try{storeRun(json,CURRENT_RUN_ID)}catch(e){}
+
+  if(opts.adDetailOnly){
+    document.body.classList.add("ad-detail");
+    document.getElementById("loader").style.display="none";
+    document.getElementById("sectionNav").style.display="none";
+    document.getElementById("app").style.display="block";
+    renderAdDetail(opts.adDetailOnly);
+    return;
+  }
+
+  document.getElementById("loader").style.display="none";
+  document.getElementById("app").style.display="block";
+  document.getElementById("sectionNav").style.display="flex";
+  var dr=OUT.date_range||{};
+  document.getElementById("runMeta").innerHTML="Run <span class='mono'>"+esc(DATA.id||OUT.run_id||"")+"</span> &middot; <strong>"+esc(DATA.status||OUT.status||"")+"</strong> &middot; "+esc(OUT.reporting_window||"")+(dr.since?" ("+esc(dr.since)+" \u2192 "+esc(dr.until)+")":"");
+
+  var app=document.getElementById("app");
+  app.innerHTML=
+    sec("summary","Summary","Executive fatigue overview.")+
+    sec("how","How it works","Five-step pipeline from Meta pull to fatigue report.")+
+    sec("rules","Rules & thresholds","How URGENT, WARNING, and HEALTHY are determined.")+
+    sec("filtered","Filtered out","Ads excluded by eligibility gates.")+
+    sec("table","Fatigue table","All analyzed ads with status and key metrics.")+
+    sec("top3","Top 3 to replace","Highest-priority replacement candidates.")+
+    sec("ads","All ads","Every analyzed ad with preview and status.")+
+    sec("daily","Daily performance","Per-ad daily delivery rows.")+
+    sec("explorer","Data explorer","Raw output keys for debugging.");
+
+  renderSummary();renderHow();renderRules();renderFiltered();renderTable();renderTop3();renderAds();renderDaily();renderExplorer();
+}
+function sec(id,title,lede){return "<section class='story' id='"+id+"'><h2>"+esc(title)+"</h2><p class='lede'>"+esc(lede)+"</p><div id='panel-"+id+"'></div></section>"}
+
+function renderSummary(){
+  var s=OUT.summary||{},el=document.getElementById("panel-summary");
+  var html="<div id='hero'><div class='hero-title'>"+fmtInt(s.ads_analyzed||0)+" ads analyzed for creative fatigue.</div>";
+  html+="<div class='hero-meta'><span><b>"+fmtInt(s.urgent||0)+"</b> URGENT</span><span><b>"+fmtInt(s.warning||0)+"</b> WARNING</span><span><b>"+fmtInt(s.healthy||0)+"</b> HEALTHY</span><span><b>"+fmtInt(s.excluded||0)+"</b> excluded</span></div>";
+  html+="<div class='funnel'>";
+  html+="<div class='bar'><span class='n'>"+fmtInt(s.ads_pulled||0)+"</span> <span class='lbl'>ads pulled</span></div><div class='conn'></div>";
+  html+="<div class='bar'><span class='n'>"+fmtInt(s.ads_with_data||0)+"</span> <span class='lbl'>had delivery data</span></div><div class='conn'></div>";
+  html+="<div class='bar'><span class='n'>"+fmtInt(s.ads_analyzed||0)+"</span> <span class='lbl'>eligible & analyzed</span></div><div class='conn'></div>";
+  html+="<div class='split'><div class='bar urgent'><span class='n'>"+fmtInt(s.urgent||0)+"</span><br><span class='lbl'>URGENT</span></div>";
+  html+="<div class='bar warning'><span class='n'>"+fmtInt(s.warning||0)+"</span><br><span class='lbl'>WARNING</span></div>";
+  html+="<div class='bar healthy'><span class='n'>"+fmtInt(s.healthy||0)+"</span><br><span class='lbl'>HEALTHY</span></div></div></div>";
+  html+="<h3>Report</h3><div class='digest'>"+esc(OUT.report_text||"No report text.")+"</div></div>";
+  el.innerHTML=html;
+}
+
+function renderHow(){
+  var steps=[
+    {t:"Pull Meta ads",p:"Fetches active ads with preview fields and sets a 30-day reporting window."},
+    {t:"Fetch performance",p:"Pulls daily and window-aggregated insights for CTR, frequency, engagement, and CPM trends."},
+    {t:"Compute fatigue",p:"Deterministic scoring: CTR decay, frequency, engagement decay, CPM trend, and status."},
+    {t:"Select replacements",p:"Ranks URGENT and WARNING ads; picks top 3 to replace first."},
+    {t:"Generate report",p:"LLM writes narrative; full JSON output is saved for this HTML viewer."}
+  ];
+  var html="<div class='pipeline'>";
+  steps.forEach(function(s,i){html+="<div class='pstep'><div class='dot'>"+(i+1)+"</div><div class='pbody'><h4>"+esc(s.t)+"</h4><p>"+esc(s.p)+"</p></div></div>"});
+  document.getElementById("panel-how").innerHTML=html+"</div>";
+}
+
+function renderRules(){
+  var t=OUT.thresholds||{};
+  document.getElementById("panel-rules").innerHTML=
+    "<div class='infobox'><p><b>URGENT:</b> CTR drop from peak &gt; "+esc(t.urgent_ctr_drop_pct||20)+"% AND frequency &gt; "+esc(t.urgent_frequency||3)+".</p>"+
+    "<p><b>WARNING:</b> CTR drop "+esc(t.warning_ctr_drop_pct||10)+"\u2013"+esc(t.urgent_ctr_drop_pct||20)+"% OR frequency "+esc(t.warning_frequency||2)+"\u2013"+esc(t.urgent_frequency||3)+".</p>"+
+    "<p><b>HEALTHY:</b> Otherwise stable or improving.</p>"+
+    "<p>Eligibility: min impressions "+fmtInt(t.min_impressions||1000)+", min spend "+fmt(t.min_spend||100,2)+".</p></div>";
+}
+
+function renderFiltered(){
+  var rows=OUT.excluded_ads||[];
+  if(!rows.length){document.getElementById("panel-filtered").innerHTML="<p class='note'>No ads were excluded.</p>";return}
+  var html="<div class='tablewrap'><table><thead><tr><th>Ad</th><th>Impr.</th><th>Spend</th><th style='text-align:left'>Reason</th></tr></thead><tbody>";
+  rows.forEach(function(r){html+="<tr><td>"+adLink(r.ad_id,r.ad_name)+"</td><td>"+fmtInt(r.impressions)+"</td><td>"+fmt(r.spend,2)+"</td><td style='text-align:left'>"+esc(r.reason)+"</td></tr>"});
+  document.getElementById("panel-filtered").innerHTML=html+"</tbody></table></div>";
+}
+
+function renderTable(){
+  var rows=OUT.table||[];
+  var html="<div class='controls'><input type='text' id='tableFilter' placeholder='Filter by ad name or id\u2026' /></div>";
+  html+="<div class='tablewrap'><table id='fatigueTable'><thead><tr><th data-sort>Ad</th><th data-sort>Status</th><th data-sort>Days</th><th data-sort>Peak CTR</th><th data-sort>Current CTR</th><th data-sort>Drop %</th><th data-sort>Freq</th><th style='text-align:left'>Action</th></tr></thead><tbody>";
+  rows.forEach(function(r){
+    var cls=(r.status||"").toLowerCase();
+    html+="<tr data-key='"+esc(r.ad_id)+"'><td>"+adLink(r.ad_id,r.ad_name)+"</td><td class='"+cls+"'>"+esc(r.status)+"</td><td>"+fmtInt(r.days_active)+"</td><td>"+fmtPct(r.peak_ctr)+"</td><td>"+fmtPct(r.current_ctr)+"</td><td>"+fmtPct(r.ctr_drop_pct)+"</td><td>"+fmt(r.frequency,2)+"</td><td style='text-align:left'>"+esc(r.recommended_action)+"</td></tr>";
+  });
+  document.getElementById("panel-table").innerHTML=html+"</tbody></table></div>";
+  document.getElementById("tableFilter").addEventListener("input",function(){
+    var q=this.value.trim().toLowerCase();
+    document.querySelectorAll("#fatigueTable tbody tr").forEach(function(tr){
+      tr.style.display=!q||tr.dataset.key.toLowerCase().indexOf(q)!==-1||(tr.textContent.toLowerCase().indexOf(q)!==-1)?"":"none";
+    });
+  });
+  makeSortable(document.getElementById("fatigueTable"));
+}
+
+function renderTop3(){
+  var items=OUT.top_3_to_replace||[];
+  if(!items.length){document.getElementById("panel-top3").innerHTML="<p class='note'>No URGENT or WARNING ads in this run.</p>";return}
+  var html="<div class='candidates'>";
+  items.forEach(function(item){
+    var st=item.status||"WARNING";
+    html+="<div class='cand "+esc(st)+"'>";
+    html+=mediaBlock(item.ad_id);
+    html+="<div class='body'><span class='badge "+esc(st)+"'>"+esc(st)+"</span>";
+    html+="<div class='mono' style='margin:6px 0'>"+adLink(item.ad_id,item.ad_name)+"</div>";
+    html+="<div class='metricgrid'><div class='m'><div class='k'>CTR drop</div><div class='v'>"+fmtPct(item.ctr_drop_pct)+"</div></div>";
+    html+="<div class='m'><div class='k'>Frequency</div><div class='v'>"+fmt(item.frequency,2)+"</div></div></div>";
+    html+="<div class='note'>"+esc(item.reasons||"See fatigue signals in ad detail.")+"</div></div></div>";
+  });
+  document.getElementById("panel-top3").innerHTML=html+"</div>";
+}
+
+function renderAds(){
+  var ids=Object.keys(fatigueIndex);
+  var html="<div class='adgrid'>";
+  ids.forEach(function(id){
+    var f=fatigueIndex[id]||{},a=adBase[id]||{};
+    html+="<div class='adcard' data-ad='"+esc(id)+"'>";
+    html+=mediaBlock(id,true);
+    html+="<div class='ab'><div class='row'><span class='aid'>"+esc(id)+"</span><span class='badge "+esc(f.status||"")+"'>"+esc(f.status||"")+"</span></div>";
+    html+="<div class='meta'>"+esc(a.name||"")+"</div>";
+    html+="<div class='meta'>CTR drop "+fmtPct(f.ctr_drop_pct)+" &middot; freq "+fmt(f.frequency_window,2)+"</div></div></div>";
+  });
+  document.getElementById("panel-ads").innerHTML=html+"</div>";
+  document.querySelectorAll(".adcard").forEach(function(card){
+    card.addEventListener("click",function(){openAdDetail(card.dataset.ad)});
+  });
+}
+
+function renderDaily(){
+  var ids=Object.keys(dailyByAd);
+  var html="<p class='hint'>"+ids.length+" ads with daily rows. Click an ad id to open detail.</p>";
+  ids.slice(0,20).forEach(function(id){
+    var rows=dailyByAd[id]||[];
+    html+="<h3>"+adLink(id,(adBase[id]||{}).name||id)+" <span class='note'>("+rows.length+" days)</span></h3>";
+    html+="<div class='tablewrap'><table><thead><tr><th>Date</th><th>Impr.</th><th>CTR</th><th>CPM</th><th>Freq</th><th>Eng. rate</th></tr></thead><tbody>";
+    rows.sort(function(a,b){return String(a.date_start).localeCompare(String(b.date_start))}).forEach(function(r){
+      html+="<tr><td>"+esc(r.date_start)+"</td><td>"+fmtInt(r.impressions)+"</td><td>"+fmtPct(r.ctr)+"</td><td>"+fmt(r.cpm,2)+"</td><td>"+fmt(r.frequency,2)+"</td><td>"+fmt(r.engagement_rate,4)+"</td></tr>";
+    });
+    html+="</tbody></table></div>";
+  });
+  if(ids.length>20)html+="<p class='note'>Showing first 20 ads; use per-ad detail for full daily table.</p>";
+  document.getElementById("panel-daily").innerHTML=html;
+}
+
+function renderExplorer(){
+  var keys=["summary","table","top_3_to_replace","ads","excluded_ads","daily_performance","window_performance","fatigue_by_ad","warnings","thresholds"];
+  var html="";
+  keys.forEach(function(k){
+    var val=OUT[k];
+    html+="<details class='explore'><summary>"+esc(k)+" <span class='mono note'>"+(Array.isArray(val)?val.length+" items":typeof val)+"</span></summary><pre>"+esc(JSON.stringify(val,null,2))+"</pre></details>";
+  });
+  document.getElementById("panel-explorer").innerHTML=html;
+}
+
+function renderAdDetail(adId){
+  var a=adBase[adId]||{},f=fatigueIndex[adId]||{},w=windowByAd[adId]||{},daily=dailyByAd[adId]||[],top=top3ByAd[adId];
+  var backUrl=SELF+(CURRENT_RUN_ID?"?run_id="+encodeURIComponent(CURRENT_RUN_ID):"");
+  var html="<a class='adlink' href='"+esc(backUrl)+"'>&larr; Back to full report</a>";
+  html+="<div class='detail-hero'>"+mediaBlock(adId,false);
+  html+="<div style='padding:20px'><h1 style='font-size:22px'>"+esc(a.name||adId)+"</h1>";
+  html+="<p class='note mono'>"+esc(adId)+"</p><span class='badge "+esc(f.status||"")+"'>"+esc(f.status||"")+"</span>";
+  html+="<div class='metricgrid' style='margin-top:14px'>";
+  html+=pm("Peak CTR",fmtPct(f.peak_ctr))+pm("Current CTR",fmtPct(f.current_ctr))+pm("CTR drop",fmtPct(f.ctr_drop_pct));
+  html+=pm("Frequency",fmt(f.frequency_window,2))+pm("Freq at peak",fmt(f.frequency_at_peak,2))+pm("Days active",fmtInt(f.days_active));
+  html+="</div>";
+  html+="<p style='margin-top:12px'><b>CTR trend:</b> 7d "+fmtPct(f.ctr_7d)+" &middot; 14d "+fmtPct(f.ctr_14d)+" &middot; 30d "+fmtPct(f.ctr_30d)+"</p>";
+  html+="<p><b>Engagement:</b> early "+fmt(f.engagement_rate_early,4)+" &middot; recent "+fmt(f.engagement_rate_recent,4)+" &middot; decay "+fmtPct(f.engagement_decay_pct)+"</p>";
+  html+="<p><b>CPM:</b> "+esc(f.cpm_trend||"unknown")+" (early "+fmt(f.cpm_early,2)+" \u2192 recent "+fmt(f.cpm_recent,2)+")</p>";
+  if((f.signals||[]).length)html+="<p>"+(f.signals||[]).map(function(s){return "<span class='chip'>"+esc(s)+"</span>"}).join("")+"</p>";
+  html+="<p style='margin-top:10px'><b>Action:</b> "+esc(f.recommended_action||"")+"</p>";
+  if(top&&top.reasons)html+="<p class='note'>"+esc(top.reasons)+"</p>";
+  html+="</div></div>";
+
+  if(daily.length){
+    html+="<div class='detail-section'><h3>Daily performance ("+daily.length+" rows)</h3><div class='tablewrap'><table><thead><tr><th>Date</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>CPM</th><th>Freq</th><th>React</th><th>Comments</th><th>Shares</th></tr></thead><tbody>";
+    daily.sort(function(x,y){return String(x.date_start).localeCompare(String(y.date_start))}).forEach(function(r){
+      html+="<tr><td>"+esc(r.date_start)+"</td><td>"+fmtInt(r.impressions)+"</td><td>"+fmtInt(r.clicks)+"</td><td>"+fmtPct(r.ctr)+"</td><td>"+fmt(r.cpm,2)+"</td><td>"+fmt(r.frequency,2)+"</td><td>"+fmtInt(r.reactions)+"</td><td>"+fmtInt(r.comments)+"</td><td>"+fmtInt(r.shares)+"</td></tr>";
+    });
+    html+="</tbody></table></div></div>";
+  }
+  if(w.ad_id){
+    html+="<div class='detail-section'><h3>30-day window aggregate</h3><p>Impressions "+fmtInt(w.impressions)+" &middot; Reach "+fmtInt(w.reach)+" &middot; Spend "+fmt(w.spend,2)+" &middot; CTR "+fmtPct(w.ctr)+" &middot; CPM "+fmt(w.cpm,2)+" &middot; Frequency "+fmt(w.frequency,2)+"</p></div>";
+  }
+  document.getElementById("app").innerHTML=html;
+  document.title="Ad "+adId+" \u2014 Creative Fatigue";
+}
+function pm(k,v){return "<div class='m'><div class='k'>"+k+"</div><div class='v'>"+v+"</div></div>"}
+
+function mediaBlock(adId,compact){
+  var a=adBase[adId]||{},url=a.thumbnail_url||a.image_url||a.media_url||"";
+  if(!url)return "<div class='media' style='min-height:"+(compact?"120":"200")+"px;background:var(--panel2)'></div>";
+  return "<div class='media'><img src='"+esc(url)+"' alt='' loading='lazy' /></div>";
+}
+function adLink(adId,label){
+  return "<a class='adlink' href='"+esc(adDetailUrl(adId,CURRENT_RUN_ID))+"' onclick='openAdDetailFromClick(event,\""+esc(adId)+"\")'>"+esc(label||adId)+"</a>";
+}
+
+function makeSortable(table){
+  if(!table)return;
+  var ths=table.querySelectorAll("th[data-sort]");
+  ths.forEach(function(th,idx){
+    th.addEventListener("click",function(){
+      var tbody=table.tBodies[0],rows=Array.from(tbody.rows),asc=th.dataset.dir!=="asc";
+      ths.forEach(function(h){delete h.dataset.dir});th.dataset.dir=asc?"asc":"desc";
+      rows.sort(function(a,b){
+        var av=a.cells[idx].textContent,bv=b.cells[idx].textContent,an=parseFloat(av),bn=parseFloat(bv);
+        if(isFinite(an)&&isFinite(bn))return asc?an-bn:bn-an;
+        return asc?av.localeCompare(bv):bv.localeCompare(av);
+      });
+      rows.forEach(function(r){tbody.appendChild(r)});
+    });
+  });
+}
+</script>
+</body>
+</html>

@@ -24,5 +24,5 @@ export async function POST(request: NextRequest) {
   const backfillDays = Number.isFinite(daysParamRaw) && daysParamRaw > 0 ? Math.min(90, Math.floor(daysParamRaw)) : 90;
   const res = await syncAdMetrics(user.id, session.activeExternalId, session.token, backfillDays);
   if (!res.ok) return NextResponse.json({ ok: false, error: res.error ?? "Sync failed." }, { status: 502 });
-  return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since, metaAds: res.metaAds ?? 0, metaError: res.metaError ?? null });
+  return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since });
 }

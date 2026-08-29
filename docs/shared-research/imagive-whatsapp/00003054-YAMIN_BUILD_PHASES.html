@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yamin Build Phases - from watching an account to telling a brand what to do</title>
+<style>
+:root{
+ --indigo:#1A1F3A; --gold:#C9A227; --gold-lt:#F5E4BC; --cream:#FDFBF5; --paper:#FFFFFF;
+ --ink:#1A1F3A; --grey:#55534E; --faint:#8A8578; --line:#E3DCC9;
+ --green:#1E6B4F; --green-bg:#E8F4EF; --amber:#A0630F; --amber-bg:#FFF3E0;
+ --red:#B03A2E; --red-bg:#FDECEC; --purple:#4A3B8C; --purple-bg:#EDE9F7;
+ --blue:#2C3E6B; --blue-bg:#EFF2F8; --teal:#136F72; --teal-bg:#E4F2F2;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Calibri,sans-serif;
+ font-size:15px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1200px;margin:0 auto;padding:0 28px 100px}
+
+header.hero{background:var(--indigo);color:var(--gold-lt);padding:56px 28px 46px;
+ border-bottom:5px solid var(--gold)}
+header.hero .inner{max-width:1200px;margin:0 auto}
+.kicker{font-family:"Courier New",monospace;font-size:11px;letter-spacing:.22em;
+ text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+header.hero h1{font-family:Georgia,serif;font-size:39px;line-height:1.15;margin:0 0 16px;
+ color:#fff;font-weight:600;max-width:920px}
+header.hero p{margin:0;max-width:840px;font-size:16px;color:#D8D3C4}
+
+h2{font-family:Georgia,serif;font-size:27px;margin:66px 0 6px;padding-top:26px;
+ border-top:3px solid var(--indigo);font-weight:600}
+h2 .num{font-family:"Courier New",monospace;font-size:13px;color:var(--gold);
+ display:block;letter-spacing:.16em;margin-bottom:8px;font-weight:700}
+h3{font-family:Georgia,serif;font-size:20px;margin:36px 0 10px;font-weight:600}
+h4{font-size:13px;margin:24px 0 8px;text-transform:uppercase;letter-spacing:.09em;color:var(--grey)}
+p{margin:0 0 14px} .lead{font-size:16.5px;color:var(--grey);margin-bottom:22px;max-width:900px}
+
+table{width:100%;border-collapse:collapse;margin:16px 0 26px;font-size:13.5px;background:var(--paper)}
+th{background:var(--indigo);color:var(--gold-lt);text-align:left;padding:11px 12px;
+ font-weight:600;font-size:12px;vertical-align:bottom}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even){background:#FAF8F2}
+td.w{font-family:"Courier New",monospace;font-weight:700;text-align:center;
+ background:var(--gold-lt);color:var(--indigo);width:62px}
+code{font-family:"Courier New",monospace;font-size:12.5px;background:#F2EFE6;
+ padding:1.5px 5px;border-radius:3px;color:var(--purple)}
+tfoot td{background:var(--indigo);color:var(--gold-lt);font-weight:700;font-size:12.5px}
+
+.formula{background:var(--indigo);color:#F0EDE2;padding:16px 20px;border-radius:6px;
+ font-family:"Courier New",monospace;font-size:13.5px;margin:16px 0 22px;
+ border-left:5px solid var(--gold);overflow-x:auto;line-height:1.8}
+.formula b{color:var(--gold)}
+
+.box{border-radius:7px;padding:17px 21px;margin:20px 0;border-left:5px solid}
+.box p:last-child{margin-bottom:0}
+.box .lbl{font-family:"Courier New",monospace;font-size:10px;letter-spacing:.16em;
+ text-transform:uppercase;font-weight:700;display:block;margin-bottom:7px}
+.warn{background:var(--red-bg);border-color:var(--red)} .warn .lbl{color:var(--red)}
+.note{background:var(--amber-bg);border-color:var(--amber)} .note .lbl{color:var(--amber)}
+.good{background:var(--green-bg);border-color:var(--green)} .good .lbl{color:var(--green)}
+.moat{background:var(--purple-bg);border-color:var(--purple)} .moat .lbl{color:var(--purple)}
+.plain{background:var(--blue-bg);border-color:var(--blue)} .plain .lbl{color:var(--blue)}
+
+/* phase timeline */
+.timeline{margin:26px 0 34px}
+.trow{display:grid;grid-template-columns:52px 1fr;gap:0;border-left:3px solid var(--line);
+ padding-left:0;margin-bottom:0}
+.phase{background:var(--paper);border:1px solid var(--line);border-radius:8px;
+ margin:0 0 16px 0;overflow:hidden}
+.phead{display:flex;align-items:center;gap:16px;padding:15px 20px;background:var(--indigo);color:#fff}
+.pnum{font-family:"Courier New",monospace;font-size:22px;font-weight:700;color:var(--gold);
+ min-width:52px}
+.ptitle{flex:1}
+.ptitle b{display:block;font-family:Georgia,serif;font-size:18px;font-weight:600}
+.ptitle span{font-size:12.5px;color:#B9B4A4}
+.pweek{font-family:"Courier New",monospace;font-size:11px;background:var(--gold);
+ color:var(--indigo);padding:4px 11px;border-radius:12px;font-weight:700;white-space:nowrap}
+.pbody{padding:18px 22px}
+.pbody h5{margin:14px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--grey)}
+.pbody h5:first-child{margin-top:0}
+.pbody ul{margin:0 0 6px;padding-left:20px}
+.pbody li{margin-bottom:5px;font-size:13.8px}
+.dod{background:var(--green-bg);border-left:4px solid var(--green);padding:11px 15px;
+ border-radius:5px;margin-top:14px;font-size:13.5px}
+.dod b{color:var(--green)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:17px 19px}
+.card h5{margin:0 0 8px;font-size:14px;font-family:Georgia,serif}
+.card p{font-size:13.4px;margin-bottom:8px;color:var(--grey)}
+.card p:last-child{margin-bottom:0}
+
+.flow{display:flex;align-items:stretch;gap:0;margin:24px 0 30px;flex-wrap:wrap}
+.fnode{flex:1;min-width:150px;background:var(--paper);border:2px solid var(--line);
+ border-radius:7px;padding:13px 14px;margin-right:26px;position:relative;font-size:13px}
+.fnode:last-child{margin-right:0}
+.fnode:not(:last-child):after{content:"";position:absolute;right:-19px;top:50%;
+ width:12px;height:12px;border-top:2px solid var(--gold);border-right:2px solid var(--gold);
+ transform:translateY(-50%) rotate(45deg)}
+.fnode b{display:block;font-family:"Courier New",monospace;font-size:10px;
+ letter-spacing:.1em;color:var(--gold);margin-bottom:5px;text-transform:uppercase}
+.fnode.hit{border-color:var(--purple);background:var(--purple-bg)}
+
+footer{margin-top:80px;padding-top:26px;border-top:3px solid var(--indigo);
+ font-size:12.5px;color:var(--faint)}
+a{color:var(--purple)}
+@media(max-width:860px){.grid2,.grid3{grid-template-columns:1fr}
+ header.hero h1{font-size:29px}.fnode{margin-right:0;margin-bottom:24px}
+ .fnode:not(:last-child):after{right:50%;top:auto;bottom:-19px;transform:translateX(50%) rotate(135deg)}}
+
+/* ============ STATUS TRACKER ============ */
+#tkBar{position:sticky;top:0;z-index:90;background:var(--indigo);color:#fff;
+ padding:12px 28px;border-bottom:3px solid var(--gold);box-shadow:0 3px 14px rgba(26,31,58,.22)}
+#tkBar .in{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+#tkBar .ttl{font-family:"Courier New",monospace;font-size:10.5px;letter-spacing:.17em;
+ text-transform:uppercase;color:var(--gold);font-weight:700}
+#tkPct{font-family:Georgia,serif;font-size:25px;font-weight:700;color:#fff;line-height:1}
+#tkBarOuter{flex:1;min-width:190px;height:11px;background:rgba(255,255,255,.16);border-radius:6px;overflow:hidden}
+#tkBarFill{height:100%;width:0;background:linear-gradient(90deg,var(--gold),#E8C766);
+ border-radius:6px;transition:width .35s ease}
+#tkCounts{display:flex;gap:7px;flex-wrap:wrap}
+.tkPill{font-family:"Courier New",monospace;font-size:10.5px;padding:3px 9px;border-radius:11px;
+ font-weight:700;white-space:nowrap}
+.tkbtn{background:var(--gold);color:var(--indigo);border:none;padding:8px 15px;border-radius:5px;
+ font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.tkbtn:hover{background:#E0BB44}
+.tkbtn.ghost{background:transparent;color:var(--gold-lt);border:1.5px solid rgba(245,228,188,.45)}
+.tkbtn.ghost:hover{background:rgba(245,228,188,.12)}
+#tkWho{background:rgba(255,255,255,.1);border:1.5px solid rgba(245,228,188,.3);color:#fff;
+ padding:7px 11px;border-radius:5px;font-size:12.5px;font-family:inherit;width:150px}
+#tkWho::placeholder{color:rgba(255,255,255,.45)}
+
+.tkctl{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-left:auto}
+.tksel{font-family:inherit;font-size:12px;font-weight:700;padding:6px 10px;border-radius:5px;
+ border:2px solid transparent;cursor:pointer;min-width:128px}
+.tkmeta{background:#FAF8F2;border-top:1px solid var(--line);padding:11px 22px;
+ display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.tkmeta label{font-family:"Courier New",monospace;font-size:9.5px;letter-spacing:.11em;
+ text-transform:uppercase;color:var(--faint);font-weight:700}
+.tkmeta input{font-family:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--line);
+ border-radius:4px;background:#fff;color:var(--ink)}
+.tkmeta input.own{width:135px} .tkmeta input.due{width:145px} .tkmeta input.note{flex:1;min-width:190px}
+.tkprog{font-family:"Courier New",monospace;font-size:11px;color:var(--faint);font-weight:700}
+
+/* status colours */
+.st-todo{background:#EFEDE6;color:#6B6A63}
+.st-doing{background:#EFF2F8;color:#2C3E6B}
+.st-blocked{background:#FDECEC;color:#B03A2E}
+.st-testing{background:#FFF3E0;color:#A0630F}
+.st-done{background:#E8F4EF;color:#1E6B4F}
+.phase[data-st="done"]{border-color:var(--green)}
+.phase[data-st="doing"]{border-color:var(--blue)}
+.phase[data-st="blocked"]{border-color:var(--red)}
+.phase[data-st="testing"]{border-color:var(--amber)}
+.phase[data-st="done"] .phead{background:var(--green)}
+.phase[data-st="doing"] .phead{background:var(--blue)}
+.phase[data-st="blocked"] .phead{background:var(--red)}
+.phase[data-st="testing"] .phead{background:var(--amber)}
+
+.pbody li.tkli{list-style:none;margin-left:-20px;display:flex;gap:9px;align-items:flex-start}
+.pbody li.tkli input[type=checkbox]{margin-top:3px;width:15px;height:15px;cursor:pointer;flex-shrink:0;
+ accent-color:var(--green)}
+.pbody li.tkli.ok > span{color:var(--faint);text-decoration:line-through}
+#tkToast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(90px);
+ background:var(--indigo);color:var(--gold-lt);padding:13px 24px;border-radius:7px;font-size:13.5px;
+ box-shadow:0 7px 26px rgba(0,0,0,.3);transition:transform .3s ease;z-index:200;border-left:4px solid var(--gold)}
+#tkToast.show{transform:translateX(-50%) translateY(0)}
+@media print{#tkBar{position:static}.tkbtn,#tkWho{display:none}}
+@media(max-width:860px){.tkctl{margin-left:0;width:100%}#tkBar .in{gap:11px}}
+
+/* ---- per phase spec tables ---- */
+.spec{margin-top:6px}
+.spec h5{margin:20px 0 7px;font-size:12px;text-transform:uppercase;letter-spacing:.09em;
+ color:var(--purple);font-weight:700;border-top:2px solid var(--purple-bg);padding-top:13px}
+table.spectbl{width:100%;border-collapse:collapse;margin:8px 0 6px;font-size:12.8px;background:#fff}
+table.spectbl th{background:var(--purple);color:#fff;text-align:left;padding:8px 10px;
+ font-size:11px;font-weight:600;vertical-align:bottom}
+table.spectbl td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.spectbl tbody tr:nth-child(even){background:#FAF8F2}
+table.spectbl td.w{font-family:"Courier New",monospace;font-weight:700;text-align:center;
+ background:var(--gold-lt);color:var(--indigo)}
+table.spectbl tfoot td{background:var(--purple-bg);color:var(--purple);font-weight:700;
+ border-bottom:none;font-size:12px}
+</style>
+</head>
+<body>
+
+<header class="hero">
+ <div class="inner">
+  <div class="kicker">Yamin &middot; Build Phases &middot; v1.0 &middot; August 2026</div>
+  <h1>From watching one ad account to telling a brand exactly what to do next</h1>
+  <p>Twelve weeks, seven phases, in build order. Each phase says what the tech team ships, where the data comes
+  from, and how we know it is finished. The point of all of it is Phase 5, where four separate streams of
+  analysis finally meet and turn into a plan a brand can act on.</p>
+ </div>
+</header>
+
+<div class="wrap">
+
+<!-- ===== 0 ===== -->
+<h2><span class="num">Section 0</span>Read this first, especially if you are an engineer or an AI</h2>
+
+<div class="box moat">
+ <span class="lbl">What this file is, and what its sister file is</span>
+ <p><b>This file is the build plan.</b> It says what the system is made of, where data flows, what the
+ database looks like, what runs when, and in what order to build it. It contains no application code on
+ purpose. Code goes stale, contracts do not.</p>
+ <p><b>Its sister file is <code>YAMIN_MEASUREMENT_CANON.html</code>.</b> That one holds every weight, every
+ formula, every score band, and the full data contract for each input field. The two are meant to be read
+ together, and both are self contained enough to be uploaded anywhere.</p>
+ <p><b>Split of duties, so nothing is defined twice.</b> Architecture, data model, job schedule and build
+ order live only here. Weights, formulas and score bands live only in the canon. If the same number appears in
+ both, <b>the canon wins and this file has a bug.</b></p>
+</div>
+
+<div class="box plain">
+ <span class="lbl">If you are an AI reading this file</span>
+ <p>The complete build spec also exists as clean JSON inside this same file. Look for the script tag with
+ <code>id="YAMIN_BUILD_SPEC"</code> near the bottom. It holds every phase, every signal group it reads, every
+ scored line with its weight, every table in the data model, and every scheduled job.</p>
+ <p>The canon file carries a matching block called <code>YAMIN_SPEC</code>. Read both and you have the entire
+ system with nothing missing.</p>
+</div>
+
+<h3>What we are building, in one paragraph</h3>
+<p>A system that watches one Meta ad account and the ads of its rivals, reads every ad into named signals,
+scores five things about the account, works out the single biggest reason the brand cannot grow, and turns
+that into briefs a person can shoot this week. It never launches or pauses anything by itself. Every
+recommendation, every human decision and every outcome is written to a permanent record, and that record is
+what slowly turns our starting guesses into measured facts.</p>
+
+<h3>The parts of the system, and what each one does</h3>
+<table>
+<thead><tr><th style="width:170px">Part</th><th style="width:32%">Its one job</th><th>What it must handle</th></tr></thead>
+<tbody>
+<tr><td><b>Puller</b></td><td>Fetch raw data from Meta, Shopify and the public ad library, on a schedule.</td><td>Rate limits, partial failures, retries. Must fail loudly rather than save half a day of data.</td></tr>
+<tr><td><b>Store</b></td><td>Hold everything, separated strictly per client.</td><td>Row level separation so one client can never see another's data. Painful to retrofit, so build it first.</td></tr>
+<tr><td><b>Decoder</b></td><td>Turn a video or image into named signals: hook, angle, persona, format, language, cast, offer.</td><td>Accept a label only at 97 percent confidence. Below that, retry once, then mark unknown and send to a human.</td></tr>
+<tr><td><b>Fingerprinter</b></td><td>Turn each ad into a list of numbers so we can measure how alike two ads are.</td><td>Store fingerprints forever, they are small. Delete the video frames after 30 days, they are large and rebuildable.</td></tr>
+<tr><td><b>Scorer</b></td><td>Apply the formulas from the canon and produce the five scorecards.</td><td>Drop any dimension whose input is missing and rebalance the weights, then say so on screen.</td></tr>
+<tr><td><b>Diagnoser</b></td><td>Rank the growth blockers and pick the single top one.</td><td>The gate and the suppression rule. These two rules are the product.</td></tr>
+<tr><td><b>Brief writer</b></td><td>Turn the top blocker into shootable briefs.</td><td>Four quality gates before a brief is shown to anyone.</td></tr>
+<tr><td><b>Ledger</b></td><td>Record every recommendation, decision, reason and outcome. Add only, never edit.</td><td>Nothing may ever be updated or deleted. A corrected row is a new row.</td></tr>
+<tr><td><b>Web view</b></td><td>Show the scores, the diagnosis and the briefs, and take human approvals.</td><td>Every number must be traceable back to the row it came from in one click.</td></tr>
+</tbody>
+</table>
+
+<h3>How data moves, end to end</h3>
+<div class="flow">
+ <div class="fnode"><b>1 Pull</b>Meta API, Shopify, public ad library<br><span style="color:var(--grey)">raw rows, once a day</span></div>
+ <div class="fnode"><b>2 Check</b>Meta sales against Shopify orders<br><span style="color:var(--grey)">the gate. fails here, stops here</span></div>
+ <div class="fnode"><b>3 Read</b>Decoder plus fingerprinter<br><span style="color:var(--grey)">every new ad, ours and theirs</span></div>
+ <div class="fnode"><b>4 Score</b>Five scorecards<br><span style="color:var(--grey)">formulas from the canon</span></div>
+ <div class="fnode"><b>5 Diagnose</b>Rank blockers, take the top one<br><span style="color:var(--grey)">one action, with a number in it</span></div>
+ <div class="fnode hit"><b>6 Record</b>Ledger<br><span style="color:var(--purple)"><b>advice, decision, outcome. Forever.</b></span></div>
+</div>
+
+<div class="box plain">
+ <span class="lbl">Say it to a 10 year old</span>
+ <p>Step 1 is collecting. Step 2 is checking your ruler is not broken before you measure anything. Step 3 is
+ looking carefully at every picture. Step 4 is giving marks. Step 5 is saying which one problem to fix first.
+ Step 6 is writing down what you said and what happened, so next time you are less wrong.</p>
+</div>
+
+<h3>The data model, the tables you actually need</h3>
+<p class="lead">Nine tables. Everything else is a view on top of these.</p>
+<table>
+<thead><tr><th style="width:130px">Table</th><th style="width:33%">Key fields</th><th>Notes that will save you a rewrite</th></tr></thead>
+<tbody>
+<tr><td><code>workspace</code></td><td>id, client name, meta ad account id, encrypted token, spend tier, auto pause allowed, currency</td><td>One row per client. Every other table carries this id and every query filters on it.</td></tr>
+<tr><td><code>creative</code></td><td>id, workspace id, meta ad id, format, length, media url, transcript, caption, labels with confidences, picture fingerprint, word fingerprint, fatigue score</td><td>The centre of the system. One row per creative, <b>not per ad</b>. The same creative running in ten ad sets is one row, and getting this wrong is the most common way fatigue comes out wrong.</td></tr>
+<tr><td><code>creative_daily</code></td><td>creative id, date, placement, spend, impressions, clicks, results, 3s plays, 15s plays, exposure count</td><td>One row per creative per day per placement. This is the biggest table. Partition it by date.</td></tr>
+<tr><td><code>account_daily</code></td><td>workspace id, date, spend, meta purchases, shopify orders, revenue, new customers, returns, match quality</td><td>Drives the gate and every "against our own past" comparison. Keep at least 400 days so year on year festival comparisons work.</td></tr>
+<tr><td><code>rival_creative</code></td><td>id, brand, first seen, last seen, media url, same labels, same fingerprints</td><td>Same shape as our own creative table on purpose, so one decoder serves both. We can see what rivals run, never what it earns.</td></tr>
+<tr><td><code>score</code></td><td>workspace id, date, scorecard, dimension, raw value, score, weight used, contribution, dropped flag</td><td><b>Store the weight that was used, in the row.</b> Weights change over time, and without this you can never explain last month's number again.</td></tr>
+<tr><td><code>blocker</code></td><td>workspace id, date, blocker key, severity, weight, rank, suppressed flag and reason</td><td>Recording the suppressed ones matters as much as the reported one. It is the proof we did not jump to the easy wrong answer.</td></tr>
+<tr><td><code>brief</code></td><td>id, workspace id, blocker it answers, the named gap, title, shot list, voiceover, on screen text, expected effect, status, rejection reason</td><td>Status moves one way: open, approved or rejected, sent to producer, shot. Never backwards.</td></tr>
+<tr><td><code>ledger</code></td><td>id, workspace id, timestamp, what we advised, reasoning, confidence, what the human decided, who, why, outcome at 30 days</td><td><b>Add only. Never update, never delete.</b> A correction is a new row pointing at the old one. This table is the asset.</td></tr>
+</tbody>
+</table>
+
+<div class="box warn">
+ <span class="lbl">Four decisions that are painful to reverse later</span>
+ <p><b>1. One row per creative, not per ad.</b> Roll up spend and exposure across every ad set a creative
+ appears in, before scoring anything.</p>
+ <p><b>2. Store the weight inside the score row.</b> Otherwise last quarter's numbers become unexplainable the
+ first time somebody edits a weight.</p>
+ <p><b>3. Client separation at the database row level, from day one.</b> Retrofitting it is slow and one
+ mistake is unrecoverable in reputation terms.</p>
+ <p><b>4. Keep fingerprints forever, frames for 30 days.</b> Frames are large and can be rebuilt. Fingerprints
+ are small and everything later depends on them. Throwing them away is the one mistake with no undo.</p>
+</div>
+
+<h3>What runs when, and what waits for what</h3>
+<table>
+<thead><tr><th style="width:150px">Job</th><th style="width:110px">When</th><th style="width:150px">Waits for</th><th>If it fails</th></tr></thead>
+<tbody>
+<tr><td><b>Pull account</b></td><td>Daily 03:00 local</td><td>nothing</td><td>Retry three times, then alert. Never publish a partial day.</td></tr>
+<tr><td><b>Pull rivals</b></td><td>Daily 03:30</td><td>nothing</td><td>Degrade quietly. Yesterday's rival picture is still useful.</td></tr>
+<tr><td><b>Reconcile</b></td><td>Daily 04:00</td><td>Pull account, Shopify</td><td>Hard stop. Everything downstream is cancelled for the day.</td></tr>
+<tr><td><b>Decode new ads</b></td><td>Daily 04:15</td><td>both pulls</td><td>Skip the ad, mark unknown, queue for a human. Never guess a label.</td></tr>
+<tr><td><b>Fingerprint</b></td><td>Daily 04:30</td><td>decode</td><td>Retry. Nothing about similarity can run without this.</td></tr>
+<tr><td><b>Score</b></td><td>Daily 05:00</td><td>reconcile, fingerprint</td><td>Publish what can be computed, mark the rest unavailable on screen.</td></tr>
+<tr><td><b>Diagnose</b></td><td>Daily 05:15</td><td>score</td><td>If the gate failed, publish only the measurement warning.</td></tr>
+<tr><td><b>Write briefs</b></td><td>Daily 05:30</td><td>diagnose</td><td>A rejected brief is regenerated once, then skipped. Never lower the quality gates to fill a quota.</td></tr>
+<tr><td><b>Outcome sweep</b></td><td>Daily 06:00</td><td>nothing</td><td>Fills in what happened for ledger rows now 30 days old. The most valuable job in the system.</td></tr>
+</tbody>
+</table>
+
+<div class="box note">
+ <span class="lbl">Things not to build, so nobody wastes a month</span>
+ <p><b>Do not build a bidding or budget robot.</b> Yamin recommends and a human acts, for the next 12 months.
+ That is a positioning decision, not a missing feature.</p>
+ <p><b>Do not build creative generation.</b> We write briefs for humans to shoot. Finished AI ads are not in
+ scope.</p>
+ <p><b>Do not build a general dashboard product.</b> Anything that only shows numbers without ranking a
+ problem and naming an action is out of scope by design.</p>
+ <p><b>Do not chase real time.</b> Every number here moves on a scale of days. A daily run at a fixed hour is
+ correct and much cheaper than streaming.</p>
+ <p><b>Do not add a second ad platform before phase 7 works on one.</b> Breadth before depth is how this kind
+ of system ends up shallow everywhere.</p>
+</div>
+
+<!-- ===== 1 ===== -->
+<h2><span class="num">Section 1</span>The shape of the whole thing</h2>
+
+<p class="lead">Four things get measured. They are useless separately. The entire value is in the fifth box,
+where they meet.</p>
+
+<div class="flow">
+ <div class="fnode"><b>Stream 1</b>Meta account analytics<br><span style="color:var(--grey)">Is the account fit to spend?</span></div>
+ <div class="fnode"><b>Stream 2</b>Our creative analytics<br><span style="color:var(--grey)">Is our creative engine producing winners?</span></div>
+ <div class="fnode"><b>Stream 3</b>Outside world<br><span style="color:var(--grey)">What are rivals running that we are not?</span></div>
+ <div class="fnode"><b>Stream 4</b>Diversity and fatigue<br><span style="color:var(--grey)">Are our ads different, and are they tired?</span></div>
+ <div class="fnode hit"><b>The point</b>Growth Diagnosis<br><span style="color:var(--purple)"><b>Why can this brand not scale, and what do we do on Monday?</b></span></div>
+</div>
+
+<div class="box plain">
+ <span class="lbl">Say it to a 8 year old</span>
+ <p>A doctor does not just take your temperature. She takes your temperature, looks at your throat, asks what
+ you ate, and checks if your brother is also sick. Any one of those alone tells her nothing.</p>
+ <p>Only when she puts all four together can she say "you have a throat infection, take this, and stay home
+ for two days". That last sentence is the only part you actually needed. Everything before it was just
+ collecting.</p>
+ <p>Phases 1 to 4 are the doctor collecting. Phase 5 is the doctor telling you what to do. If we build 1 to 4
+ and stop, we have built a thermometer, not a doctor.</p>
+</div>
+
+<h3>The twelve week map</h3>
+<table>
+<thead><tr><th style="width:60px">Phase</th><th style="width:90px">Weeks</th><th style="width:250px">What gets built</th><th>Why it must come in this position</th></tr></thead>
+<tbody>
+<tr><td><b>0</b></td><td>Week 0</td><td>Plumbing and the honest ruler</td><td>Every later number is a lie if the measuring is wrong. Nothing else may start first.</td></tr>
+<tr><td><b>1</b></td><td>Weeks 1 to 2</td><td>Meta Account Health</td><td>Tells us whether a bad number is the account or the creative. Without it every creative verdict is a guess.</td></tr>
+<tr><td><b>2</b></td><td>Weeks 3 to 4</td><td>Creative decode and Creative Analytics</td><td>Needs Phase 1 spend data to know which creative earned what.</td></tr>
+<tr><td><b>3</b></td><td>Weeks 5 to 6</td><td>The outside world, competitor scraping</td><td>Needs Phase 2's decoder, because a rival's ad is useless until we can read it the same way we read ours.</td></tr>
+<tr><td><b>4</b></td><td>Weeks 7 to 8</td><td>Diversity and Fatigue scores</td><td>Diversity needs both our ads and theirs. Fatigue needs exposure history that only exists after Phase 1.</td></tr>
+<tr><td><b>5</b></td><td>Weeks 9 to 10</td><td><b>Growth Diagnosis Engine</b></td><td>The convergence. Cannot exist before all four streams do. This is the product.</td></tr>
+<tr><td><b>6</b></td><td>Weeks 11 to 12</td><td>Asset generation, the briefs</td><td>A diagnosis nobody can act on is a complaint. This turns it into a shot list.</td></tr>
+<tr><td><b>7</b></td><td>Ongoing</td><td>The loop and the ledger</td><td>Where every guess in phases 1 to 6 slowly becomes a measured fact.</td></tr>
+</tbody>
+</table>
+
+<div class="box warn">
+ <span class="lbl">The most common way this build fails</span>
+ <p>A team builds phases 1 to 4, ships a beautiful dashboard full of scores, and the client says "yes, but what
+ do I do?". Then the project quietly dies, because a dashboard that raises questions and answers none becomes
+ one more tab nobody opens.</p>
+ <p><b>If we are running out of time, cut depth in phases 1 to 4. Never cut Phase 5.</b> A rough diagnosis
+ built on three signals beats a perfect measurement system that diagnoses nothing.</p>
+</div>
+
+<!-- ===== 2 ===== -->
+<h2><span class="num">Section 2</span>The phases in detail</h2>
+
+<div class="phase">
+ <div class="phead"><div class="pnum">0</div>
+  <div class="ptitle"><b>Plumbing and the honest ruler</b><span>Before we measure anything, prove the measuring works</span></div>
+  <div class="pweek">WEEK 0</div></div>
+ <div class="pbody">
+  <h5>What the tech team builds</h5>
+  <ul>
+   <li>Meta Marketing API connection with proper rate limit handling. Watch the usage headers, back off at 80 percent, never exceed 200 calls per hour per ad account.</li>
+   <li>Shopify Admin API connection for real orders, revenue, returns and stock.</li>
+   <li>Dataset Quality API pull so Event Match Quality is read by code, not by a person squinting at Events Manager.</li>
+   <li>The reconciliation job: Meta reported purchases against Shopify orders, every day, per account.</li>
+   <li>Database with row level isolation per client. One client can never see another's data. This is not optional and is very hard to retrofit later.</li>
+  </ul>
+  <h5>Where the data comes from</h5>
+  <ul><li><code>AM-M</code> Meta Marketing API &middot; <code>SHOP</code> Shopify Admin API &middot; <code>EMQ</code> Dataset Quality API &middot; <code>FIN</code> a finance sheet somebody has to fill in by hand</li></ul>
+  <div class="dod"><b>Done when:</b> we can state, for yesterday, what share of real Shopify orders Meta reported,
+  and that number is stable across three days. If it swings wildly, the pipe is broken, not the ads.</div>
+ </div>
+</div>
+
+<div class="phase">
+ <div class="phead"><div class="pnum">1</div>
+  <div class="ptitle"><b>Meta Account Health</b><span>Is this account in a fit state to spend money?</span></div>
+  <div class="pweek">WEEKS 1 to 2</div></div>
+ <div class="pbody">
+  <h5>What the tech team builds</h5>
+  <ul>
+   <li>The 10 dimension Account Health score from the Measurement Canon, weights as published.</li>
+   <li>Structure pull: campaigns, ad sets, ads, and which ad sets are stuck below 50 optimisation events in a rolling 7 days.</li>
+   <li>Trailing 90 day baseline per account for CPM, CPA and MER. <b>We compare a brand to itself, never to a stranger.</b></li>
+   <li>The waste detector: spend running to out of stock products, dead links, ads pointing at 404 pages.</li>
+   <li>The suppression rule: if Account Health falls below 40, hide the top level score and show only "measurement is broken, fix this first".</li>
+  </ul>
+  <h5>What the media team gets</h5>
+  <ul><li>One number per account per week, and a list of exactly which dimension pulled it down, ranked by how much score each one cost.</li></ul>
+  <div class="dod"><b>Done when:</b> given a real account with a deliberately broken pixel, the system says
+  "signal quality" and not "creative is tired". That single test is the whole point of this phase.</div>
+ </div>
+</div>
+
+<div class="phase">
+ <div class="phead"><div class="pnum">2</div>
+  <div class="ptitle"><b>Creative decode and Creative Analytics</b><span>Read every ad, then judge the engine that makes them</span></div>
+  <div class="pweek">WEEKS 3 to 4</div></div>
+ <div class="pbody">
+  <h5>What the tech team builds</h5>
+  <ul>
+   <li><b>The decoder.</b> Pull the actual video or image, cut frames at 1 per second plus 3 keyframes, transcribe the audio, then label the ad: hook type, angle, persona, funnel stage, offer, language, cast, format. This is the single most reusable thing in the whole build.</li>
+   <li><b>Fingerprints.</b> Turn each ad into a list of numbers, one for the visuals and one for the words. Store these fingerprints forever. They cost almost nothing and everything later depends on them.</li>
+   <li>The four attention scores, scored <b>against the other ads in the same campaign</b>, with a USD 50 minimum spend before an ad is scored at all.</li>
+   <li>The hook and hold 2 by 2, which tells a buyer whether to scale it, re-cut the opening, rewrite the middle, or kill the angle.</li>
+   <li>Winner detection: an ad that takes 10 times the account's own median single ad spend. The median is per account, so it scales with size on its own.</li>
+   <li>Cost per winner: all testing spend plus all production cost, divided by winners.</li>
+  </ul>
+  <div class="box note" style="margin:14px 0 4px">
+   <span class="lbl">Design rule the tech team must not break</span>
+   <p>Never score an ad against a public benchmark. Hook rate has no standard formula, and two accounts can
+   report 22 percent and 41 percent on the exact same video just by defining it differently. Score an ad
+   against the other ads in its own campaign in the same week.</p>
+  </div>
+  <div class="dod"><b>Done when:</b> we can take any live ad and, without a human watching it, say what its
+  hook type is, what angle it uses, who it speaks to, and which of the four 2 by 2 boxes it sits in.</div>
+ </div>
+</div>
+
+<div class="phase">
+ <div class="phead"><div class="pnum">3</div>
+  <div class="ptitle"><b>The outside world</b><span>Stop looking only at ourselves</span></div>
+  <div class="pweek">WEEKS 5 to 6</div></div>
+ <div class="pbody">
+  <p style="font-size:13.8px;color:var(--grey)">Everything so far only looks inward. An account can be healthy,
+  producing winners, and still losing, because the category moved and we did not. This phase is the eyes.</p>
+  <h5>What the tech team builds</h5>
+  <ul>
+   <li><b>Ad Library scraper.</b> Meta's Ad Library is public and needs no login. Pull every live ad for our brand plus 4 to 8 named rivals, daily. For boAt that means Noise, boult, Realme, Mivi, OnePlus, JBL.</li>
+   <li><b>Run rival ads through the same decoder.</b> This is why Phase 2 came first. A rival's ad is just a video until we can read it in the same vocabulary as ours.</li>
+   <li><b>The whitespace finder.</b> Cross every hook against every brand. A hook that 0 or 1 brands use is open ground. A hook that 6 of 8 use is a crowded street.</li>
+   <li><b>Ownership map.</b> Who owns which hook, who has the widest format spread, who has the deepest creator network, who runs the most Hindi.</li>
+   <li><b>The copying alarm.</b> If rivals start running a hook we have owned for 60 days or more, our version has become category wallpaper and needs replacing.</li>
+   <li>Landing page and offer scraping for rivals: price points, discount depth, EMI availability, free shipping thresholds, guarantee language.</li>
+  </ul>
+  <div class="box warn" style="margin:14px 0 4px">
+   <span class="lbl">Be careful and be honest here</span>
+   <p>Only scrape what is genuinely public and meant to be public. The Ad Library is published by Meta
+   deliberately, so it is fair. Respect robots files and rate limits on brand websites. Never attempt anything
+   behind a login. Store rival creative for analysis, never republish it.</p>
+   <p>And one honest limit worth telling the client: the Ad Library shows what is <b>running</b>, never what it
+   <b>earns</b>. We can see a rival's whole hand of cards. We cannot see their score. Anyone claiming to know a
+   competitor's ROAS from public data is guessing.</p>
+  </div>
+  <div class="dod"><b>Done when:</b> we can produce a table of every hook in the category, which brands use it,
+  and which ones nobody has touched, refreshed daily and without a human opening the Ad Library.</div>
+ </div>
+</div>
+
+<div class="phase">
+ <div class="phead"><div class="pnum">4</div>
+  <div class="ptitle"><b>Diversity and Fatigue</b><span>Are our ads actually different, and are they tired?</span></div>
+  <div class="pweek">WEEKS 7 to 8</div></div>
+ <div class="pbody">
+  <h5>What the tech team builds</h5>
+  <ul>
+   <li>The 10 dimension Diversity score, including the two India specific ones: language and region mix, and retrieval distinctness.</li>
+   <li><b>Duplicate detection.</b> Compare the fingerprints of every pair of ads. <code>similarity = 0.6 x visual + 0.4 x words</code>. Above 0.92 is a duplicate cluster. Four or more near copies is flagged as waste, and the waste is the cluster's total spend minus the best performer's spend.</li>
+   <li>Fatigue on Meta's own published curve, <code>1 - (N+1)^-0.4</code>, counted per creative across every ad set it runs in. <b>Not on a frequency threshold.</b></li>
+   <li>The pause rule with both gates: score above 70 and confidence above 85 percent, maximum 20 a day, and never without 3 replacements already queued.</li>
+   <li>Half life measured per brand per angle from our own history, not taken from anyone's blog.</li>
+  </ul>
+  <div class="box moat" style="margin:14px 0 4px">
+   <span class="lbl">The subtle thing that makes our diversity number correct</span>
+   <p>Meta concentrates budget on purpose. Roughly 6 percent of ads take most of the spend in any account.
+   So a diversity score measured on <b>spend</b> will always look terrible and will blame us for Meta's choice.</p>
+   <p>We measure the spread of <b>the portfolio we supplied</b>: distinct concepts, hooks, angles, personas,
+   formats across all active ads. Grade our own work, not Meta's allocation. Nobody else appears to make this
+   distinction and it changes the answer completely.</p>
+  </div>
+  <div class="dod"><b>Done when:</b> the system can point at a specific group of live ads and say "these six are
+  the same ad to Meta, and Rs 4.1 lakh is stuck in the five that are not the best one".</div>
+ </div>
+</div>
+
+<div class="phase" style="border:3px solid var(--purple)">
+ <div class="phead" style="background:var(--purple)"><div class="pnum" style="color:#fff">5</div>
+  <div class="ptitle"><b>The Growth Diagnosis Engine</b><span>Where the four streams meet and become a plan</span></div>
+  <div class="pweek" style="background:#fff;color:var(--purple)">WEEKS 9 to 10</div></div>
+ <div class="pbody">
+  <p class="lead" style="margin-bottom:12px">This is the product. Everything before it is preparation. It answers
+  one question, and it is the only question a founder actually asks.</p>
+  <p style="font-size:17px;font-family:Georgia,serif;color:var(--purple);margin-bottom:18px">
+  <b>"We are spending more and it is not working. Why, and what do we do about it?"</b></p>
+  <p>When spend rises and cost per customer rises with it, there are only six possible reasons. Not twenty.
+  Six. The engine checks them in a fixed order, because some of them make the others impossible to read.</p>
+  <h5>What the tech team builds</h5>
+  <ul>
+   <li><b>The gate.</b> If signal quality is under 60, stop and report only "fix measurement first". Nothing else runs. This one rule prevents most wrong diagnoses.</li>
+   <li><b>The six blocker scores</b>, each 0 to 100, using the formulas in Section 3.</li>
+   <li><b>The ranker.</b> Multiply each score by its weight, sort, and report only the top blocker. Fixing two things at once hides which fix worked.</li>
+   <li><b>The suppression rule.</b> "Audience used up" may never be reported while creative supply or diversity are weak. This blocks the most expensive wrong answer in our industry.</li>
+   <li><b>The action writer.</b> Turn the top blocker into a specific instruction with a number in it, not a category. "Brief 4 comfort angle ads for tier 2 female buyers" and not "improve diversity".</li>
+   <li><b>The expected effect range.</b> Every action states what should move, by how much, and when to check. Always a range, never a promise.</li>
+  </ul>
+  <p style="margin-top:12px">See Section 3 for the full engine, the weights, and a worked example.</p>
+  <div class="dod"><b>Done when:</b> for any account, the system outputs a ranked list of blockers with a score
+  each, and for the top blocker, a specific action with an expected effect in rupees. Not "improve creative
+  diversity". Something like "brief 4 ads on the comfort angle for the tier 2 female buyer, none exist today,
+  and this segment is 31 percent of category spend".</div>
+ </div>
+</div>
+
+<div class="phase">
+ <div class="phead"><div class="pnum">6</div>
+  <div class="ptitle"><b>Asset generation</b><span>Turn the diagnosis into something a person can shoot on Monday</span></div>
+  <div class="pweek">WEEKS 11 to 12</div></div>
+ <div class="pbody">
+  <h5>What the tech team builds</h5>
+  <ul>
+   <li><b>The brief generator.</b> Each brief must name the gap it fills, be shootable in one day, use assets and people the brand actually has, and carry a shot list, the exact voiceover, on screen text and the call to action.</li>
+   <li><b>Rejection guards, all four must pass or the brief is demoted and re-ranked:</b> not similar to anything tested in the last 6 months, maximum 2 briefs from any one cluster in the top 20, the first 20 briefs cover at least 6 personas, and the format mix holds at least 3 statics, at least 2 carousels and 12 to 15 videos.</li>
+   <li><b>The learning loop on rejections.</b> When the Media Team rejects a brief, capture why in a fixed set of reasons: already tested, off brand, too ambitious, wrong persona, wrong format, too expensive, legal. Feed those reasons into the next generation so the same bad brief never comes back twice.</li>
+   <li>Compliance check before anything ships: prohibited claims, ASCI rules for India, trademark collisions, and whether the creative is AI generated and needs disclosure.</li>
+  </ul>
+  <div class="box note" style="margin:14px 0 4px">
+   <span class="lbl">Where governance doctrine bites, and it should</span>
+   <p>Yamin generates <b>briefs</b>, not finished ads, and it does not launch anything on its own. A human
+   approves every brief and every budget move above the threshold. For the next 12 months this is deliberate,
+   not a limitation we are apologising for.</p>
+   <p>The reason is simple and worth saying out loud to the team: the value we are building is the record of
+   what humans decided and what happened next. If the machine decides everything, there is no judgement to
+   learn from, and the asset never forms.</p>
+  </div>
+  <div class="dod"><b>Done when:</b> a creative producer can read one brief, with no other context, and start
+  shooting. If they have to ask a question first, the brief failed.</div>
+ </div>
+</div>
+
+<div class="phase">
+ <div class="phead"><div class="pnum">7</div>
+  <div class="ptitle"><b>The loop and the ledger</b><span>Where guesses turn into measured facts</span></div>
+  <div class="pweek">ONGOING</div></div>
+ <div class="pbody">
+  <h5>What the tech team builds</h5>
+  <ul>
+   <li>A daily run at a fixed hour: look, plan, act, check, repeat. Every run writes a full record of what it saw and why it concluded what it did.</li>
+   <li><b>The decision ledger, append only, never edited.</b> Every recommendation, what the Media Team decided, the reasoning, the confidence, and crucially the outcome 30 days later.</li>
+   <li>The threshold corrector. Every weight in the Measurement Canon marked Y for Yamin judgement gets re-fitted from real outcomes once there is enough data. The document is designed to be corrected, not defended.</li>
+   <li>Stop condition, so the loop knows when to leave an account alone: Diversity above 80, no persona gap over 20 points, no funnel stage under 15 percent, no duplicate cluster, fewer than 5 tired ads.</li>
+  </ul>
+  <div class="box moat" style="margin:14px 0 4px">
+   <span class="lbl">Why this phase never ends, and why it is the only one that cannot be copied</span>
+   <p>Any competent team can rebuild phases 0 to 6 in a quarter. They can read this document and copy every
+   weight in it.</p>
+   <p>What they cannot copy is two years of records showing what we recommended, what the Media Team decided,
+   and what actually happened. That record is what turns our starting guesses into the only Indian benchmarks
+   that exist. Software is a commodity. The ledger is not.</p>
+  </div>
+  <div class="dod"><b>Done when:</b> it is never done. But the first real milestone is the day a threshold gets
+  changed because the ledger said so, and not because somebody had an opinion.</div>
+ </div>
+</div>
+
+<!-- ===== 3 ===== -->
+<h2><span class="num">Section 3</span>The Growth Diagnosis Engine, in full</h2>
+
+<p class="lead">A brand is spending more and getting worse. There are six possible reasons. The engine scores
+each one, ranks them, and gives the top one a specific action. Here is exactly how.</p>
+
+<h3>The six blockers, and why they are checked in this order</h3>
+
+<table>
+<thead><tr><th style="width:52px">Order</th><th style="width:210px">Blocker</th><th class="w">Weight</th><th>The question it asks</th><th style="width:210px">Where the answer comes from</th></tr></thead>
+<tbody>
+<tr><td><b>1</b></td><td><b>The ruler is broken</b></td><td class="w">GATE</td>
+ <td>Are we even measuring correctly? If not, every other answer below is meaningless.</td>
+ <td>Phase 1, signal quality dimension</td></tr>
+<tr><td><b>2</b></td><td><b>Not enough new creative</b></td><td class="w">0.28</td>
+ <td>Are we feeding the machine enough new ads for the money we are spending?</td>
+ <td>Phase 2, creative velocity against the spend tier table</td></tr>
+<tr><td><b>3</b></td><td><b>Ads are all the same</b></td><td class="w">0.24</td>
+ <td>We may be making plenty, but does Meta see them as different ads, or as one ad twenty times?</td>
+ <td>Phase 4, diversity score and retrieval distinctness</td></tr>
+<tr><td><b>4</b></td><td><b>Money stuck on tired ads</b></td><td class="w">0.18</td>
+ <td>What share of today's spend is sitting on creative that is already burnt?</td>
+ <td>Phase 4, fatigue load</td></tr>
+<tr><td><b>5</b></td><td><b>Audience genuinely used up</b></td><td class="w">0.16</td>
+ <td>Have we actually reached everybody worth reaching at this price?</td>
+ <td>Phase 1 reach against addressable size, plus Phase 3 category share</td></tr>
+<tr><td><b>6</b></td><td><b>The maths never worked</b></td><td class="w">0.14</td>
+ <td>Is this simply unprofitable at any scale, so growing it only loses money faster?</td>
+ <td>Phase 1, profit truth. Contribution margin and payback.</td></tr>
+</tbody>
+<tfoot><tr><td colspan="2">Total of the five scored blockers</td><td class="w">1.00</td><td colspan="2">Blocker 1 is a gate, not a weight. If it fails, nothing else is reported.</td></tr></tfoot>
+</table>
+
+<div class="formula">
+<b>Step 1, the gate.</b>  IF SignalQuality &lt; 60  &rarr;  STOP. Report only "fix measurement first". Nothing else runs.
+
+<b>Step 2, score each blocker 0 to 100</b>, where 100 means "this is definitely what is stopping you".
+
+<b>Step 3, rank.</b>  BlockerScore<sub>i</sub> = weight<sub>i</sub> &times; severity<sub>i</sub>
+
+<b>Step 4, act on the top one only.</b>  Fixing the second and third at the same time hides which fix worked.
+</div>
+
+<div class="box plain">
+ <span class="lbl">Say it to a 8 year old</span>
+ <p>Your bicycle is slow. It could be a flat tyre, a rusty chain, the brakes rubbing, or you are just going
+ uphill.</p>
+ <p>You do not fix all four at once. You check the most likely one first, fix it, and see if the bike is faster.
+ If you fix all four together you will never know which one was actually the problem, so next time you will be
+ just as lost.</p>
+ <p>And there is one thing you check before all of that: is the speedometer even working? Because if it is
+ broken, the bike might not be slow at all.</p>
+</div>
+
+<h3>How each blocker is scored</h3>
+
+<table>
+<thead><tr><th style="width:200px">Blocker</th><th>Severity formula</th><th>What makes it 100</th></tr></thead>
+<tbody>
+<tr><td><b>Not enough new creative</b></td>
+ <td><code>100 x (1 - actual_per_week / target_for_our_tier)</code></td>
+ <td>We are shipping nothing while spending like a brand that ships 30 a week.</td></tr>
+<tr><td><b>Ads are all the same</b></td>
+ <td><code>100 - DiversityScore</code>, then add up to 30 more if retrieval distinctness alone is under 50</td>
+ <td>Twenty live ads that Meta reads as three.</td></tr>
+<tr><td><b>Money stuck on tired ads</b></td>
+ <td><code>100 x (spend on ads scoring above 70 / total spend)</code></td>
+ <td>Every rupee is going to creative that has already stopped working.</td></tr>
+<tr><td><b>Audience used up</b></td>
+ <td><code>100 x (reached / addressable)</code>, only counted when new creative and diversity are both healthy</td>
+ <td>We have reached nearly everyone worth reaching, with fresh varied ads, and it still is not working.</td></tr>
+<tr><td><b>The maths never worked</b></td>
+ <td><code>100</code> if contribution margin is negative at current CAC, scaled down as margin improves</td>
+ <td>Every new customer loses money, so scaling multiplies the loss.</td></tr>
+</tbody>
+</table>
+
+<div class="box warn">
+ <span class="lbl">The rule that stops us giving stupid advice</span>
+ <p><b>"Audience used up" may never be reported while creative supply or diversity are weak.</b></p>
+ <p>This is the most common wrong diagnosis in our industry. A brand runs six near identical ads, growth
+ stalls, and somebody says "we have saturated the audience, we need new channels". Usually the audience is
+ fine. They have simply seen the same ad six times and it reads as one ad.</p>
+ <p>Telling a client to open TikTok when the real problem is that they shot one video and cropped it four ways
+ is expensive, slow, and wrong. The engine is built so it structurally cannot make that mistake.</p>
+</div>
+
+<h3>Worked example: boAt cannot get past Rs 9 lakh a day</h3>
+
+<div class="card" style="margin-bottom:18px">
+ <p style="margin-bottom:6px"><b>The situation.</b> boAt lifted daily Meta spend from Rs 6 lakh to Rs 9 lakh over
+ three weeks to chase a Diwali target. Orders rose only 9 percent. CAC went from Rs 295 to Rs 481. The team's
+ own theory was audience saturation and they were preparing a proposal to open a new channel.</p>
+</div>
+
+<table>
+<thead><tr><th style="width:56px">Order</th><th style="width:190px">Blocker</th><th style="width:130px">What we found</th><th class="w">Score</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>The ruler is broken</td><td>Signal quality 81</td><td class="w">PASS</td><td>Tracking is fine. Numbers can be trusted. Continue.</td></tr>
+<tr><td>2</td><td>Not enough new creative</td><td>4.2 new ads a week, target for this tier is 11.2</td><td class="w" style="background:var(--red-bg);color:var(--red)">17.1</td><td><b>Top blocker.</b> Spending like a large account, producing like a small one.</td></tr>
+<tr><td>3</td><td>Ads are all the same</td><td>Diversity 54, retrieval distinctness 38</td><td class="w" style="background:var(--amber-bg);color:var(--amber)">14.6</td><td>19 live ads, but Meta reads them as roughly 7. Same hook on 11 of them.</td></tr>
+<tr><td>4</td><td>Money stuck on tired ads</td><td>34 percent of spend on ads above 70</td><td class="w">6.1</td><td>Real, and fixable in a week once replacements exist.</td></tr>
+<tr><td>5</td><td>Audience used up</td><td>Suppressed</td><td class="w">-</td><td><b>Not reported.</b> Blockers 2 and 3 are both weak, so this cannot be assessed honestly yet.</td></tr>
+<tr><td>6</td><td>The maths never worked</td><td>Contribution margin 22 percent</td><td class="w">2.8</td><td>The unit works. This is a growth problem, not a pricing problem.</td></tr>
+</tbody>
+</table>
+
+<div class="box good">
+ <span class="lbl">What the brand is actually told</span>
+ <p><b>The headline:</b> "Your audience is not used up. You are spending like a large account and producing
+ creative like a small one. Meta has 19 of your ads live and reads them as about 7, because 11 open the same
+ way. The extra Rs 3 lakh a day is buying more views of ads people have already seen."</p>
+ <p><b>The action, this week:</b> ship 11 new ads, not variants. Specifically: 4 on the comfort angle, which
+ nobody in the category is running and which is 0 of 8 brands; 3 in Hindi, since Hindi is 11 percent of our mix
+ against 34 percent of category spend; 2 statics, since we have none live and statics are under tested; 2 with
+ a tier 2 cast, since our persona coverage there is 0.</p>
+ <p><b>The expected effect, stated as a range, not a promise:</b> retrieval distinctness from 38 to roughly 65,
+ which historically moves CPM down 8 to 14 percent at this spend level on this account. Recheck in 14 days.</p>
+ <p><b>What we will not do:</b> open a new channel. That was the proposal on the table and it would have cost
+ three months and a new team to solve a problem that is 11 briefs deep.</p>
+</div>
+
+<div class="box moat">
+ <span class="lbl">Why this example is the whole pitch</span>
+ <p>Four dashboards would each have shown a number. Account health 74. Creative analytics 41. Diversity 54.
+ Fatigue load 34 percent. All true, all useless on their own, and a founder would have stared at them and still
+ asked "so what do I do".</p>
+ <p>The engine ranks them, kills the wrong answer the team had already convinced itself of, and hands over
+ eleven briefs. <b>That gap, between a number and a decision, is the entire product.</b></p>
+</div>
+
+<!-- ===== 4 ===== -->
+<h2><span class="num">Section 4</span>Every word, in simple language</h2>
+
+<p class="lead">If you are new, read this first. Nothing else in the document assumes you know these.</p>
+
+<table>
+<thead><tr><th style="width:190px">Word</th><th style="width:44%">What it actually means</th><th>A boAt example</th></tr></thead>
+<tbody>
+<tr><td><b>Impression</b></td><td>One time an ad appeared on someone's screen. Not a person, an appearance. The same person can make ten.</td><td>10,000 impressions might be 3,000 people seeing it three times each.</td></tr>
+<tr><td><b>CPM</b></td><td>What it costs to show an ad one thousand times. Think of it as rent for attention.</td><td>boAt's CPM rose from Rs 176 to Rs 259 in Diwali week. The ads did not get worse. The auction filled up.</td></tr>
+<tr><td><b>Hook rate</b></td><td>Out of everyone who saw it, how many stopped for 3 seconds. Did the first moment work.</td><td>28 percent hook rate means roughly 1 in 4 people stopped scrolling.</td></tr>
+<tr><td><b>Hold rate</b></td><td>Out of those who stopped, how many were still watching at 15 seconds. Did the story keep them.</td><td>High stop but low stay means the opening promised something the video did not deliver.</td></tr>
+<tr><td><b>Frequency</b></td><td>Average number of times one person saw the ad.</td><td>We show it because buyers expect it. We never fire an action on it, because Meta's own research says it is the wrong unit.</td></tr>
+<tr><td><b>Fatigue</b></td><td>The ad still works, people are just bored of it. Like a joke on the fifth telling.</td><td>By the fourth showing, click likelihood drops about 45 percent. That is measured, not guessed.</td></tr>
+<tr><td><b>Diversity</b></td><td>How different our ads really are from each other, in openings, stories, people, formats and languages.</td><td>19 live ads that Meta reads as 7 is low diversity, even though the count looks healthy.</td></tr>
+<tr><td><b>Retrieval distinctness</b></td><td>Whether Meta's system sees two ads as different. Not whether a human does. Only Meta's view affects delivery.</td><td>The same video with different text on top counts as one ad to Meta, even though it looks like two to us.</td></tr>
+<tr><td><b>Angle</b></td><td>The reason to buy that an ad argues. Battery life is one angle, comfort is another, price is a third.</td><td>The gap between two angles is about ten times the gap between two versions of the same angle.</td></tr>
+<tr><td><b>Persona</b></td><td>A type of buyer. Not a real person, a group who behave alike.</td><td>"College student in a tier 2 town" is a persona. If no ad speaks to them, they are a gap.</td></tr>
+<tr><td><b>Funnel: TOF, MOF, BOF</b></td><td>Top is people who never heard of you. Middle is people thinking about it. Bottom is people about to buy.</td><td>Spending everything at the bottom is buying people who were already coming to you.</td></tr>
+<tr><td><b>Winner</b></td><td>One ad that earns 10 times the account's own median ad spend. Measured against yourself, so it works at any size.</td><td>Only 5 to 8 percent of ads become winners, and about half never get real spend at all. That is normal.</td></tr>
+<tr><td><b>CAC</b></td><td>What it costs to get one new customer.</td><td>boAt's CAC went from Rs 295 to Rs 481 when spend was pushed too fast.</td></tr>
+<tr><td><b>Contribution margin</b></td><td>What is left from a sale after product cost, shipping, returns and fees. The money that is actually yours.</td><td>A 22 percent contribution margin means the unit works and this is a growth problem, not a pricing one.</td></tr>
+<tr><td><b>Payback</b></td><td>How many days until a customer has paid back what it cost to get them.</td><td>Under 90 days is comfortable. Over a year and cash gets tight even while growing.</td></tr>
+<tr><td><b>Holdout test</b></td><td>Deliberately not showing ads to some places, then comparing. The only honest way to know ads caused the sales.</td><td>Stop ads in 3 of 20 cities for 3 weeks. If sales there hold steady, the ads were not doing much.</td></tr>
+<tr><td><b>Fingerprint</b></td><td>An ad turned into a long list of numbers, so a computer can measure how alike two ads are.</td><td>Two ads with fingerprints 0.94 alike are near copies, even if the colours differ.</td></tr>
+<tr><td><b>Whitespace</b></td><td>An idea nobody in the category is using yet. Open ground.</td><td>Comfort for long wear is used by 0 of 8 audio brands in India. That is whitespace.</td></tr>
+</tbody>
+</table>
+
+<!-- ===== 5 ===== -->
+<h2><span class="num">Section 5</span>What the tech team should worry about</h2>
+
+<div class="grid2">
+ <div class="card" style="border-left:5px solid var(--red)">
+  <h5 style="color:var(--red)">Risks that will actually bite</h5>
+  <p><b>Rate limits.</b> Meta caps calls per hour per ad account. Hit the cap during an ingest and the day's data
+  is incomplete, which silently corrupts every score. Track the usage headers, back off at 80 percent, use async
+  reports for anything over 1,000 rows.</p>
+  <p><b>The finance sheet nobody fills in.</b> Cost of goods, return rate and fees cannot be pulled from any
+  platform. Every profit number depends on a human keeping a sheet current. This is the most common reason a
+  measurement system quietly dies in month four. Name an owner on day one.</p>
+  <p><b>Ad Library changing shape.</b> It is public but it is not a supported product. Build the scraper so a
+  layout change degrades one feature rather than breaking the daily run.</p>
+  <p><b>Cost drift.</b> Decoding video is the expensive part. Cache aggressively, never re-decode an unchanged
+  ad, and cap spend per account with a hard stop.</p>
+ </div>
+ <div class="card" style="border-left:5px solid var(--green)">
+  <h5 style="color:var(--green)">Decisions worth making early</h5>
+  <p><b>Store embeddings forever, frames for 30 days.</b> Frames are big and cheap to recreate. Fingerprints are small and everything later depends on them. Throwing them away is the one mistake that cannot be undone.</p>
+  <p><b>Version every prompt, never edit one in place.</b> Add a v2 and run both. Otherwise a scoring change
+  quietly rewrites history and last month's numbers stop being comparable.</p>
+  <p><b>Log every recommendation from day one</b>, even before anyone is using them. The ledger only becomes
+  valuable with age, so the cheapest day to start it is the first day.</p>
+  <p><b>Isolate client data at the database row level from the start.</b> Retrofitting this is painful and one
+  mistake is unrecoverable in reputation terms.</p>
+ </div>
+</div>
+
+<h3>What to cut if we run out of time</h3>
+<table>
+<thead><tr><th style="width:150px">Cut this</th><th>Why it is safe to lose in v1</th></tr></thead>
+<tbody>
+<tr><td>Rival landing page and offer scraping</td><td>Useful, but the Ad Library alone gives most of the competitive picture.</td></tr>
+<tr><td>Half life measured per angle</td><td>Weighted at only 0.05 in fatigue. Use a single account level number for now.</td></tr>
+<tr><td>The attention machine learning signals</td><td>Genuinely frontier, genuinely expensive, and nothing downstream depends on it yet.</td></tr>
+<tr><td>Everything past 4 rival brands</td><td>Four rivals gives most of the whitespace picture. Eight gives precision we cannot act on yet.</td></tr>
+</tbody>
+</table>
+
+<div class="box warn">
+ <span class="lbl">What must never be cut</span>
+ <p>The reconciliation job in Phase 0. The gate in Phase 5. The ledger in Phase 7.</p>
+ <p>Without the first, everything we report may be fiction. Without the second, we will confidently diagnose
+ creative problems on accounts with broken tracking. Without the third, we are building software instead of an
+ asset, and software can be rebuilt by anyone in a quarter.</p>
+</div>
+
+<footer>
+ <p><b>Yamin Build Phases v1.0</b> &middot; August 2026 &middot; Companion to the Yamin Measurement Canon, which
+ holds the weights and formulas referenced throughout.<br>
+ Reference brand: boAt, India D2C audio. All figures in the worked example are illustrative and modelled on
+ real account patterns, not audited client data.<br>
+ Doctrine reminder: Yamin recommends, the Media Team decides. Nothing launches without a human. That is a
+ choice, and it is the choice that creates the asset.</p>
+</footer>
+
+</div>
+
+<div id="tkToast"></div>
+
+<script>
+/* ============================================================
+   PER PHASE SPEC. Two tables get added to every phase:
+   what it READS (the raw signals) and what it SCORES
+   (the weighted lines, with what earns full marks).
+   Weights inside each score table always add to 1.00.
+   ============================================================ */
+(function(){
+"use strict";
+var SPEC={
+0:{reads:[
+   ["Meta account fields","Campaign, ad set and ad structure. Daily spend, impressions, clicks, results, split by placement. Delivery status per ad set."],
+   ["Sale events","Every purchase event with its id, value, currency and time, from both the browser and the server."],
+   ["Shopify truth","Order count, order value, returns, refunds, stock level per item, new versus repeat buyer flag."],
+   ["Match quality","Event Match Quality score per event type, read by code from the quality endpoint."],
+   ["Money facts","Cost of goods, shipping cost, return rate, payment fees. Typed in by a person, there is no API for this."]],
+  scores:null,
+  note:"Phase 0 scores nothing on purpose. It exists to prove the measuring works. If it produced a score, people would start trusting numbers before the ruler was checked."},
+
+1:{reads:[
+   ["Delivery health","Ad sets below 50 sale events in a rolling 7 days. Days since each ad set left learning. Ad sets enabled but not spending for 30 days."],
+   ["Price signals","CPM, CPC and cost per result, each against this account's own trailing 90 days, not against a public number."],
+   ["Waste signals","Spend running to items with zero stock. Spend on links that return an error. Spend inside duplicate groups."],
+   ["Profit signals","Contribution margin per order after all costs. Days until a new customer pays back what they cost."],
+   ["Proof signals","Date and result of the last holdout or lift test. Whether it ran at least 7 days and held out at least 10 percent."]],
+  scores:[["Signal quality",0.20,"Are sales actually reaching Meta, and does Meta know who bought","99 percent of Shopify orders reported, match quality at 7.5, server events live"],
+   ["Learning and delivery",0.15,"Ad sets that finished learning instead of still guessing","No ad set stuck below 50 events in 7 days"],
+   ["Efficiency against our own past",0.15,"New customer cost now versus our own last 90 days","Cost per new customer 25 percent below our own recent normal"],
+   ["Profit truth",0.15,"Real money left after cost of goods, shipping, returns and fees","25 percent blended margin and payback inside 30 days"],
+   ["Creative supply",0.10,"New ads shipped per week for the money we spend","Matching the top quarter of accounts at our spend level"],
+   ["Auction position",0.08,"What we pay for attention versus our own recent normal","CPM 20 percent below our own trailing 90 days"],
+   ["Waste",0.07,"Money on things that could never have worked","Under 3 percent of spend provably wasted"],
+   ["Proof it worked",0.05,"Have we tested that ads caused sales, or only trusted the platform","A valid holdout test finished inside 90 days"],
+   ["Structure hygiene",0.03,"Can a human find their way around this account","No dead ad sets left on, standard naming everywhere"],
+   ["Safety",0.02,"Rejections and code risk","Zero rejections in 30 days and no open flags"]]},
+
+2:{reads:[
+   ["A. Surface, crystals 1 to 14","Length, scene count, shot length, transcript, on screen text, voice tone, face emotion, setting, objects, actions, camera angles, cuts, music type, noise level, hook strength 0 to 100, pace, pattern breaks, topic, intent, funnel stage, hook type, call to action type, script shape."],
+   ["B. Human signal, 15 and 16","Faces per frame, seconds of direct eye contact, close versus wide shot ratio, face on screen percent, repeat talent recognition, cast age and gender balance, India north south east west representation, talent tier from unknown user to celebrity, gesture density, hand to product touches."],
+   ["C. Visual craft, 17 and 18","Top 5 colours as hex, brand colour adherence percent, contrast ratio, style class from phone shot to cinematic to screen recording, film grain versus clean digital, colour grade, cuts per second, camera steadiness, motion energy 0 to 100, cut to beat sync."],
+   ["D. Sound craft, 19","Music type and sub type, beats per minute, music to voice ratio, trending audio match, voiceover versus on camera, use of silence, accent, language mix across English, Hindi, Hinglish, Tamil, Bengali, sound off understanding score, sound on extra value."],
+   ["E. Copy craft, 20","Words per frame, safe zone compliance per placement, font count and pairing, text animation style, emoji use, caption to audio sync score."],
+   ["F. Narrative, 21 and 22","Story shape, seconds to first product reveal, gap between hook and payoff, second hook at 7 to 15 seconds, curiosity gaps, loopability, reading grade level, you versus we versus I ratio, command verbs, questions, statistics, persuasion methods, Hinglish density."],
+   ["G. Offer, 23","Seconds to product shown, product screen time percent, price shown or hidden, offer stack, item count per ad, trust badges and review stars, guarantee timestamp."],
+   ["H. Platform fit, 24","Aspect ratios covered, placement specific edits, trend format match, native talent style, watermark detection which signals a repost risk."],
+   ["I. Attention, 25","Thumb stop probability 0 to 100, saliency map per frame, gaze prediction, mental load curve, first frame score, what is still remembered 15 minutes later."],
+   ["J. Safety, 26 and 27","Banned claims, policy risk before submission, ASCI flags for India, trademark clash, music rights risk, face rights, stereotyping, AI voice probability, deepfake risk, which AI model made it, content provenance watermark, how much was human made."],
+   ["K. Library intelligence, 28","Ad DNA fingerprint, which winning ad this came from, version number V1 to Vn, winning pattern inheritance score, cross brand style borrowing flag, whether this adds a new signal or is a duplicate."],
+   ["L. Journey, 29 and 30","Landing page continuity score, post click intent match, role in the funnel, contribution per creative feature, lifetime value link by hook type, single variable isolation, test versus control status."]],
+  scores:[["Winner production",0.25,"Real winners made this month, where a winner earns 10 times our own typical ad","Matching the top quarter of accounts at our spend level"],
+   ["Attention",0.20,"Do people stop, and do they stay","Top 2 in every 10 ads inside its own campaign"],
+   ["Turning attention into money",0.20,"Do the people who stopped actually click and buy","Top 2 in every 10 for click and buy rate inside its own campaign"],
+   ["Testing discipline",0.15,"Enough money, enough days, one thing changed","Every test passes all four rules"],
+   ["Cost per winner",0.10,"All test money plus all production money, per winner","Half the cost per winner of our own last 90 days"],
+   ["New ideas versus repeats",0.05,"Fresh concepts against small edits of old ones","An even split, 50 new ideas to 50 improvements"],
+   ["Test to scale rate",0.05,"Winners that actually got real budget afterwards","Every declared winner reaches 10 times median spend inside 30 days"]]},
+
+3:{reads:[
+   ["Rival ad inventory","Every live ad for 4 to 8 named rivals, pulled daily from the public ad library. For boAt that means Noise, boult, Realme, Mivi, OnePlus, JBL."],
+   ["Rival ads decoded","Every rival ad run through our own decoder, so their hooks, angles, personas and formats are named in the same words as ours."],
+   ["Hook map","Every hook in the category, and which brands use it. A hook used by 0 or 1 brands is open ground. A hook used by 6 of 8 is a crowded street."],
+   ["Ownership map","Who owns which hook, who has the widest format spread, who has the deepest creator network, who runs the most Hindi."],
+   ["Copying alarm","Rivals starting to run a hook we have owned for 60 days or more, which means ours has become category wallpaper."],
+   ["Offer and page signals","Rival price points, discount depth, EMI availability, free shipping thresholds, guarantee wording."]],
+  scores:[["Whitespace captured",0.20,"Open ideas nobody else is running that we have live","We are live in at least 3 territories used by 0 or 1 rivals"],
+   ["Hook ownership",0.20,"Hooks where we are the main voice, not one of six","At least 2 hooks where our share of category ads is above 50 percent"],
+   ["Share of category ads",0.20,"How visible we are next to rivals","At or above the category median number of live ads"],
+   ["Format breadth versus category",0.15,"Are rivals using shapes we are not","We cover every format any rival uses"],
+   ["Creator network depth",0.15,"Real creator pages running our ads versus theirs","Matching the deepest rival creator network"],
+   ["Language coverage versus category",0.10,"Are we speaking the languages the category is winning in","Our Hindi and regional share matches the category"]],
+  note:"Honest limit to tell the client: the ad library shows what is running, never what it earns. We can see a rival's whole hand of cards. We cannot see their score. Anyone claiming to know a rival's return from public data is guessing."},
+
+4:{reads:[
+   ["Diversity inputs","Distinct hooks, angles, personas, formats, offers and languages across every live ad, plus how spend is spread across each of them."],
+   ["Fingerprint pairs","Picture and word fingerprints compared for every pair of live ads, to find near copies."],
+   ["Exposure history","How many times each person has already seen each creative, counted across every ad set that creative appears in."],
+   ["Cost history","Cost per result for this creative against the cost per result of this account's past ads."],
+   ["Annoyance signals","Negative feedback rate and any drop in Meta's quality ranking bucket."],
+   ["Own half life","Days at which this brand's ads of this angle historically lose half their click rate, measured from our own ledger."]],
+  scores:[["Hook variety",0.18,"Do ads open in different ways","12 different openings in 30 days, well spread, with new ones arriving"],
+   ["Angle variety",0.18,"Are we telling different stories or repeating one reason to buy","8 live angles out of the 12 we recognise, well spread"],
+   ["Persona coverage",0.13,"Are we speaking to every buyer type","Every defined persona holding above 5 percent share"],
+   ["Funnel balance",0.13,"Are we filling the top or only harvesting the bottom","Close to 50 top, 25 middle, 25 bottom, with no stage under 15 percent"],
+   ["Format spread",0.08,"Video, still, carousel, collection","All four in use with none above 40 percent"],
+   ["Language and region mix",0.07,"Do we speak the languages our buyers think in, and does the cast look like India","Hindi share matches the category and casting spans all four regions"],
+   ["Retrieval distinctness",0.07,"Does Meta itself see our ads as different","No live ad sits inside a similarity group above 0.92"],
+   ["Offer variety",0.06,"Is every ad a discount","Wide offer mix with at least one brand only ad live"],
+   ["Innovation",0.05,"Anything genuinely new tried","4 new formats or hooks in 30 days, new meaning unseen for 90 days"],
+   ["Anti redundancy",0.05,"Money sitting on near copies","No group of 4 or more near copies anywhere"]],
+  scores2:[["Exposure fatigue",0.40,"Times the same people already saw this exact ad, on Meta's published curve","Reads 0, meaning almost nobody has seen it twice"],
+   ["Cost confirmation",0.30,"Costing more per sale than our past ads did","Reads 0, meaning it costs the same as our past ads"],
+   ["Click decay",0.15,"Fewer people clicking now than on day one","Reads 0, meaning the click rate is holding"],
+   ["Annoyance",0.10,"Hides, reports, or a quality ranking slide","Reads 0, normal for this account"],
+   ["Age against its own half life",0.05,"How far past its usual life this ad is","Reads 0, well inside its usual life"]]},
+
+5:{reads:[
+   ["The four stream scores","Account health, creative analytics, diversity and fatigue, all from the phases above."],
+   ["Reach against addressable","How many people we have reached against how many are worth reaching at this price."],
+   ["Profit position","Contribution margin at the current cost per new customer."]],
+  scores:[["Not enough new creative",0.28,"Feeding the machine less than our spend needs","Reads 0, we ship at the top quarter rate for our size"],
+   ["Ads are all the same",0.24,"Meta sees our many ads as few","Reads 0, diversity above 80 and every ad distinct"],
+   ["Money stuck on tired ads",0.18,"Share of spend on burnt creative","Reads 0, almost no spend on ads above 70 fatigue"],
+   ["Audience genuinely used up",0.16,"Reached everyone worth reaching. Locked unless the two creative blockers are both healthy","Reads 0, plenty of addressable audience left"],
+   ["The maths never worked",0.14,"Unprofitable at any size","Reads 0, margin above 25 percent"]],
+  note:"The gate runs first and carries no weight. If signal quality is under 60 the engine reports only 'fix measurement first' and scores nothing below, because a broken ruler does not make diagnosis harder, it makes it impossible."},
+
+6:{reads:[
+   ["The named gap","Which exact hole this brief fills: a persona, a funnel stage, a hook, an angle, a format or an offer."],
+   ["Brand assets available","Real people, real products, real places this brand can actually use this week."],
+   ["Last 6 months of tests","Everything already tried, as fingerprints, so we never brief the same idea twice."],
+   ["Rejection history","Why the Media Team turned down past briefs, in fixed reasons, so the same bad brief never returns."],
+   ["Compliance rules","Banned claims, ASCI rules for India, trademark risk, and whether AI made any of it."]],
+  scores:[["Names a specific gap",0.30,"Does the brief say exactly which hole it fills, with a number","Reasoning names the gap and its size in rupees or percent"],
+   ["Genuinely new",0.25,"Not close to anything tested in the last 6 months","Fingerprint below 0.72 against every past test"],
+   ["Shootable in one day",0.20,"Uses assets and people the brand already has","A producer can start with no further questions"],
+   ["Keeps the set balanced",0.25,"The top 20 briefs together cover enough personas and formats","At least 6 personas, at least 3 stills, at least 2 carousels, 12 to 15 videos, and no more than 2 briefs from any one group"]],
+  note:"Yamin writes briefs, never finished ads, and launches nothing by itself. A human approves every brief. That is deliberate for the next 12 months, because the record of what humans decided is the thing we are actually building."},
+
+7:{reads:[
+   ["Every recommendation","What was advised, to whom, with what reasoning and what confidence."],
+   ["Every decision","What the Media Team actually chose, including when they overruled us, and why."],
+   ["Every outcome","What happened 30 days later. This is the field most systems forget, and it is the only one that turns a guess into a fact."],
+   ["Every threshold marked Y","Each number that started as our own judgement, so it can be refitted once there is enough real data."]],
+  scores:[["Outcome capture rate",0.40,"Share of decisions that have a real result recorded 30 days later","Every decision has an outcome, none left blank"],
+   ["Reasoning capture rate",0.30,"Share of decisions with a written reason, not just an action","Every decision explains why in plain words"],
+   ["Overrule capture",0.20,"Are we recording when humans disagreed with us, and what happened","Every overrule logged with its result, because these are the most valuable rows we own"],
+   ["Threshold correction rate",0.10,"Judgement numbers replaced by measured ones","Every Y tagged number refitted from real outcomes"]],
+  note:"This is the only phase that never ends, and the only one a competitor cannot copy. Anyone can rebuild phases 0 to 6 in a quarter. Nobody can rebuild two years of what we decided and what happened next."}
+};
+
+function el(t,c,h){var e=document.createElement(t);if(c)e.className=c;if(h!==undefined)e.innerHTML=h;return e;}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+function scoreTable(rows,title){
+ var sum=rows.reduce(function(a,r){return a+r[1];},0);
+ var ok=Math.abs(sum-1)<0.005;
+ var h='<h5 style="margin-top:20px">'+esc(title)+'</h5>'+
+  '<table class="spectbl"><thead><tr>'+
+  '<th style="width:33%">What gets scored</th><th style="width:64px">Weight</th>'+
+  '<th style="width:31%">What it measures</th><th>Full marks when</th></tr></thead><tbody>';
+ rows.forEach(function(r){
+  h+='<tr><td><b>'+esc(r[0])+'</b></td><td class="w">'+r[1].toFixed(2)+'</td>'+
+     '<td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>';
+ });
+ h+='</tbody><tfoot><tr><td>Adds up to</td><td class="w">'+sum.toFixed(2)+'</td>'+
+    '<td colspan="2">'+(ok?"Balanced. Every weight here is editable in the Measurement Canon.":
+    "<b style='color:#B03A2E'>Does not add to 1.00, fix this.</b>")+'</td></tr></tfoot></table>';
+ return h;
+}
+function readTable(rows){
+ var h='<h5 style="margin-top:20px">What this phase reads, the raw signals</h5>'+
+  '<table class="spectbl"><thead><tr><th style="width:29%">Group</th>'+
+  '<th>The signals captured</th></tr></thead><tbody>';
+ rows.forEach(function(r){
+  h+='<tr><td><b>'+esc(r[0])+'</b></td><td>'+esc(r[1])+'</td></tr>';
+ });
+ return h+'</tbody></table>';
+}
+
+function run(){
+ var phases=document.querySelectorAll(".phase");
+ Array.prototype.forEach.call(phases,function(ph,i){
+  var sp=SPEC[i];if(!sp)return;
+  var body=ph.querySelector(".pbody");if(!body)return;
+  var wrap=el("div","spec");
+  var h="";
+  if(sp.reads)h+=readTable(sp.reads);
+  if(sp.scores)h+=scoreTable(sp.scores,i===4?"What this phase scores, part 1 of 2: Diversity":"What this phase scores, and how much each counts");
+  if(sp.scores2)h+=scoreTable(sp.scores2,"What this phase scores, part 2 of 2: Fatigue. Higher is worse.");
+  if(sp.note)h+='<div class="box note" style="margin:16px 0 2px"><span class="lbl">Worth knowing</span><p>'+esc(sp.note)+'</p></div>';
+  wrap.innerHTML=h;
+  body.appendChild(wrap);
+ });
+}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",run);
+else run();
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+var STATUSES=[
+ {k:"todo",    label:"Not started"},
+ {k:"doing",   label:"Working on it"},
+ {k:"blocked", label:"Stuck"},
+ {k:"testing", label:"Testing it"},
+ {k:"done",    label:"Done"}
+];
+var LSKEY="yamin_build_phases_v1";
+var state={updated:"",by:"",phases:{},items:{}};
+
+function today(){var d=new Date();return d.getFullYear()+"-"+
+ String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+
+/* ---------- load saved state: baked-in file first, then this browser ---------- */
+function load(){
+ var baked=document.getElementById("SAVED_STATE");
+ if(baked&&baked.textContent.trim()){
+  try{var s=JSON.parse(baked.textContent);if(s&&s.phases){state=s;return "file";}}catch(e){}
+ }
+ try{var raw=localStorage.getItem(LSKEY);
+  if(raw){var t=JSON.parse(raw);if(t&&t.phases){state=t;return "browser";}}
+ }catch(e){}
+ return "new";
+}
+function save(){
+ state.updated=today();
+ try{localStorage.setItem(LSKEY,JSON.stringify(state));}catch(e){}
+ render();
+}
+
+/* ---------- build the controls ---------- */
+var phases=[];
+function build(){
+ phases=Array.prototype.slice.call(document.querySelectorAll(".phase"));
+ phases.forEach(function(ph,pi){
+  var id="p"+pi;
+  if(!state.phases[id]) state.phases[id]={status:"todo",owner:"",due:"",note:""};
+
+  /* status dropdown in the header */
+  var head=ph.querySelector(".phead");
+  var ctl=document.createElement("div");
+  ctl.className="tkctl tk-ui";
+  var sel=document.createElement("select");
+  sel.className="tksel";
+  sel.setAttribute("aria-label","Status for phase "+pi);
+  STATUSES.forEach(function(s){
+   var o=document.createElement("option");o.value=s.k;o.textContent=s.label;sel.appendChild(o);
+  });
+  sel.value=state.phases[id].status;
+  sel.addEventListener("change",function(){state.phases[id].status=sel.value;save();});
+  ctl.appendChild(sel);
+  head.appendChild(ctl);
+
+  /* owner, date, note strip */
+  var body=ph.querySelector(".pbody");
+  var meta=document.createElement("div");
+  meta.className="tkmeta tk-ui";
+  function field(cls,ph2,val,key,type){
+   var wrap=document.createElement("div");
+   wrap.style.display="flex";wrap.style.alignItems="center";wrap.style.gap="6px";
+   if(cls==="note")wrap.style.flex="1";
+   var lab=document.createElement("label");
+   lab.textContent=(cls==="own"?"Who":cls==="due"?"By when":"Note");
+   var inp=document.createElement("input");
+   inp.className=cls;inp.placeholder=ph2;inp.value=val||"";inp.type=type||"text";
+   inp.addEventListener("input",function(){state.phases[id][key]=inp.value;save();});
+   wrap.appendChild(lab);wrap.appendChild(inp);
+   return wrap;
+  }
+  meta.appendChild(field("own","name",state.phases[id].owner,"owner"));
+  meta.appendChild(field("due","",state.phases[id].due,"due","date"));
+  meta.appendChild(field("note","anything the team should know",state.phases[id].note,"note"));
+  var prog=document.createElement("span");
+  prog.className="tkprog";prog.setAttribute("data-prog",id);
+  meta.appendChild(prog);
+  body.parentNode.insertBefore(meta,body);
+
+  /* a tickbox on every build item */
+  var lis=ph.querySelectorAll(".pbody ul li");
+  Array.prototype.forEach.call(lis,function(li,li_i){
+   var key=id+"-i"+li_i;
+   var cb,inner;
+   if(li.classList.contains("tkli")){
+    /* already converted, for example in a saved copy opened fresh. Reuse, do not rebuild. */
+    cb=li.querySelector("input.tk-cb");
+    if(!cb)return;
+   }else{
+    inner=document.createElement("span");
+    inner.innerHTML=li.innerHTML;
+    cb=document.createElement("input");
+    cb.type="checkbox";cb.className="tk-cb";
+    cb.setAttribute("aria-label","Mark task done");
+    li.innerHTML="";
+    li.className="tkli";
+    li.appendChild(cb);li.appendChild(inner);
+   }
+   cb.checked=!!state.items[key];
+   li.classList.toggle("ok",cb.checked);
+   cb.addEventListener("change",function(){
+    state.items[key]=cb.checked;
+    li.classList.toggle("ok",cb.checked);
+    save();
+   });
+  });
+ });
+}
+
+/* ---------- top bar ---------- */
+function bar(){
+ var b=document.createElement("div");
+ b.id="tkBar";b.className="tk-ui";
+ b.innerHTML=
+  '<div class="in">'+
+   '<div><div class="ttl">Where we are</div><div id="tkPct">0%</div></div>'+
+   '<div id="tkBarOuter"><div id="tkBarFill"></div></div>'+
+   '<div id="tkCounts"></div>'+
+   '<input id="tkWho" placeholder="Updated by">'+
+   '<button class="tkbtn" id="tkSave">Save a copy to share</button>'+
+   '<button class="tkbtn ghost" id="tkCopy">Copy update</button>'+
+   '<button class="tkbtn ghost" id="tkReset">Reset</button>'+
+  '</div>';
+ document.body.insertBefore(b,document.body.firstChild);
+
+ document.getElementById("tkWho").value=state.by||"";
+ document.getElementById("tkWho").addEventListener("input",function(){state.by=this.value;save();});
+ document.getElementById("tkSave").addEventListener("click",saveCopy);
+ document.getElementById("tkCopy").addEventListener("click",copyUpdate);
+ document.getElementById("tkReset").addEventListener("click",function(){
+  if(confirm("Clear every status, owner, date and tick on this page?")){
+   state={updated:today(),by:"",phases:{},items:{}};
+   try{localStorage.removeItem(LSKEY);}catch(e){}
+   location.reload();
+  }
+ });
+}
+
+/* ---------- render ---------- */
+function render(){
+ var doneItems=0,totalItems=0,counts={};
+ STATUSES.forEach(function(s){counts[s.k]=0;});
+
+ phases.forEach(function(ph,pi){
+  var id="p"+pi,st=state.phases[id].status;
+  ph.setAttribute("data-st",st);
+  counts[st]=(counts[st]||0)+1;
+  var sel=ph.querySelector(".tksel");
+  if(sel){sel.value=st;sel.className="tksel st-"+st;}
+  var cbs=ph.querySelectorAll(".tk-cb");
+  var d=0;
+  Array.prototype.forEach.call(cbs,function(c){if(c.checked)d++;});
+  doneItems+=d;totalItems+=cbs.length;
+  var pr=ph.querySelector('[data-prog="'+id+'"]');
+  if(pr)pr.textContent=cbs.length?(d+" of "+cbs.length+" tasks done"):"";
+ });
+
+ var pct=totalItems?Math.round(doneItems/totalItems*100):0;
+ document.getElementById("tkPct").textContent=pct+"%";
+ document.getElementById("tkBarFill").style.width=pct+"%";
+
+ var c=document.getElementById("tkCounts");
+ c.innerHTML="";
+ STATUSES.forEach(function(s){
+  if(!counts[s.k])return;
+  var el=document.createElement("span");
+  el.className="tkPill st-"+s.k;
+  el.textContent=counts[s.k]+" "+s.label.toLowerCase();
+  c.appendChild(el);
+ });
+ var tot=document.createElement("span");
+ tot.className="tkPill";tot.style.background="rgba(255,255,255,.14)";tot.style.color="#F5E4BC";
+ tot.textContent=doneItems+" of "+totalItems+" tasks";
+ c.appendChild(tot);
+}
+
+/* ---------- save a copy with the status baked in ---------- */
+function saveCopy(){
+ state.updated=today();
+ var clone=document.documentElement.cloneNode(true);
+ /* strip the controls we injected, so the saved file rebuilds them cleanly on open */
+ Array.prototype.forEach.call(clone.querySelectorAll(".tk-ui"),function(n){n.remove()});
+ /* put the task bullets back to plain markup, otherwise the saved copy shows
+    tickboxes that nothing is listening to */
+ Array.prototype.forEach.call(clone.querySelectorAll("li.tkli"),function(li){
+  var sp=li.querySelector("span");
+  li.className="";
+  li.innerHTML=sp?sp.innerHTML:li.textContent;
+ });
+ /* #tkToast is deliberately kept, the script needs it to exist */
+ var oldS=clone.querySelector("#SAVED_STATE");
+ if(oldS)oldS.remove();
+ var s=clone.ownerDocument.createElement("script");
+ s.id="SAVED_STATE";s.type="application/json";
+ s.textContent=JSON.stringify(state);
+ clone.querySelector("head").appendChild(s);
+
+ var html="<!DOCTYPE html>\n"+clone.outerHTML;
+ var blob=new Blob([html],{type:"text/html;charset=utf-8"});
+ var a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="Yamin_Build_Status_"+state.updated+".html";
+ document.body.appendChild(a);a.click();
+ setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1500);
+ toast("Saved. Send that file to the team, it opens with these statuses already set.");
+}
+
+/* ---------- copy a short update for WhatsApp ---------- */
+function copyUpdate(){
+ var lines=["Yamin build status, "+today()];
+ var doneItems=0,totalItems=0;
+ phases.forEach(function(ph,pi){
+  var id="p"+pi,p=state.phases[id];
+  var name=ph.querySelector(".ptitle b");
+  var lab="";
+  STATUSES.forEach(function(s){if(s.k===p.status)lab=s.label;});
+  var cbs=ph.querySelectorAll(".tk-cb"),d=0;
+  Array.prototype.forEach.call(cbs,function(c){if(c.checked)d++;});
+  doneItems+=d;totalItems+=cbs.length;
+  var row="Phase "+pi+" "+(name?name.textContent:"")+": "+lab;
+  if(cbs.length)row+=" ("+d+"/"+cbs.length+")";
+  if(p.owner)row+=" - "+p.owner;
+  if(p.due)row+=", by "+p.due;
+  if(p.note)row+=". Note: "+p.note;
+  lines.push(row);
+ });
+ var pct=totalItems?Math.round(doneItems/totalItems*100):0;
+ lines.splice(1,0,"Overall: "+pct+"% of tasks done ("+doneItems+" of "+totalItems+")");
+ if(state.by)lines.push("Updated by "+state.by);
+ var txt=lines.join("\n");
+
+ function done(){toast("Copied. Paste it straight into WhatsApp.");}
+ if(navigator.clipboard&&navigator.clipboard.writeText){
+  navigator.clipboard.writeText(txt).then(done,function(){fallback(txt,done);});
+ }else{fallback(txt,done);}
+}
+function fallback(txt,cb){
+ var ta=document.createElement("textarea");
+ ta.value=txt;ta.style.position="fixed";ta.style.opacity="0";
+ document.body.appendChild(ta);ta.select();
+ try{document.execCommand("copy");cb();}catch(e){window.prompt("Copy this:",txt);}
+ ta.remove();
+}
+
+var tmr;
+function toast(m){
+ var t=document.getElementById("tkToast");
+ t.textContent=m;t.classList.add("show");
+ clearTimeout(tmr);tmr=setTimeout(function(){t.classList.remove("show");},4200);
+}
+
+function init(){
+ var src=load();
+ build();
+ bar();
+ render();
+ if(src==="file"&&state.updated)toast("Showing the status saved in this file on "+state.updated+".");
+}
+if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}
+else{init();}
+})();
+</script>
+
+<script type="application/json" id="YAMIN_BUILD_SPEC">
+{
+ "document": "Yamin Build Phases",
+ "version": "1.1",
+ "date": "2026-08-13",
+ "sister_document": "YAMIN_MEASUREMENT_CANON.html",
+ "purpose": "Architecture, data model, job schedule and build order. Weights, formulas and score bands live in the sister document.",
+ "precedence": "If a weight or formula appears in both documents, the canon wins and this file has a bug.",
+ "what_we_are_building": "A system that watches one Meta ad account and its rivals, reads every ad into named signals, scores five things, works out the single biggest reason the brand cannot grow, and turns that into briefs a person can shoot this week. It never launches or pauses anything by itself.",
+ "components": [
+  {
+   "name": "Puller",
+   "job": "Fetch raw data from Meta, Shopify and the public ad library on a schedule.",
+   "must_handle": "Rate limits, partial failures, retries. Fail loudly rather than store half a day."
+  },
+  {
+   "name": "Store",
+   "job": "Hold everything, separated strictly per client.",
+   "must_handle": "Row level client separation from day one."
+  },
+  {
+   "name": "Decoder",
+   "job": "Turn a video or image into named signals.",
+   "must_handle": "Accept a label only at 97 percent confidence, else retry once then mark unknown."
+  },
+  {
+   "name": "Fingerprinter",
+   "job": "Turn each ad into numbers so similarity can be measured.",
+   "must_handle": "Fingerprints forever, frames 30 days."
+  },
+  {
+   "name": "Scorer",
+   "job": "Apply canon formulas, produce five scorecards.",
+   "must_handle": "Drop dimensions with missing inputs, rebalance to 1.00, show that on screen."
+  },
+  {
+   "name": "Diagnoser",
+   "job": "Rank growth blockers, pick the top one.",
+   "must_handle": "The gate and the suppression rule."
+  },
+  {
+   "name": "Brief writer",
+   "job": "Turn the top blocker into shootable briefs.",
+   "must_handle": "Four quality gates before display."
+  },
+  {
+   "name": "Ledger",
+   "job": "Record advice, decision, reason and outcome. Add only.",
+   "must_handle": "No updates, no deletes. A correction is a new row."
+  },
+  {
+   "name": "Web view",
+   "job": "Show scores, diagnosis and briefs, take human approvals.",
+   "must_handle": "Every number traceable to its source row in one click."
+  }
+ ],
+ "data_flow": [
+  "Pull raw rows daily from Meta, Shopify and the public ad library.",
+  "Check the ruler: Meta reported sales against real Shopify orders. Fail here means stop here.",
+  "Read every new ad, ours and rivals, through the same decoder and fingerprinter.",
+  "Score the five scorecards using the canon formulas.",
+  "Rank the growth blockers, take the top one, write one action containing a number.",
+  "Record advice, human decision and the outcome 30 days later."
+ ],
+ "data_model": [
+  {
+   "table": "workspace",
+   "keys": "id, client, meta_ad_account_id, token_encrypted, spend_tier, auto_pause_allowed, currency",
+   "note": "One row per client. Every other table carries this id and every query filters on it."
+  },
+  {
+   "table": "creative",
+   "keys": "id, workspace_id, meta_ad_id, format, duration, media_url, transcript, caption, labels_with_confidence, vision_fp, text_fp, fatigue_score",
+   "note": "One row per CREATIVE, not per ad. A creative in ten ad sets is one row. Getting this wrong is the most common cause of wrong fatigue."
+  },
+  {
+   "table": "creative_daily",
+   "keys": "creative_id, date, placement, spend, impressions, clicks, results, plays_3s, plays_15s, exposure_n",
+   "note": "Largest table. Partition by date."
+  },
+  {
+   "table": "account_daily",
+   "keys": "workspace_id, date, spend, meta_purchases, shopify_orders, revenue, new_customers, returns, emq",
+   "note": "Drives the gate and every comparison to our own past. Keep 400 days for year on year festival checks."
+  },
+  {
+   "table": "rival_creative",
+   "keys": "id, brand, first_seen, last_seen, media_url, labels, vision_fp, text_fp",
+   "note": "Same shape as creative on purpose so one decoder serves both. Shows what rivals run, never what it earns."
+  },
+  {
+   "table": "score",
+   "keys": "workspace_id, date, scorecard, dimension, raw_value, score, weight_used, contribution, dropped",
+   "note": "Store the weight used inside the row, otherwise past scores become unexplainable when a weight changes."
+  },
+  {
+   "table": "blocker",
+   "keys": "workspace_id, date, blocker_key, severity, weight, rank, suppressed, suppression_reason",
+   "note": "Record suppressed blockers too. That is the proof we did not jump to the easy wrong answer."
+  },
+  {
+   "table": "brief",
+   "keys": "id, workspace_id, blocker_key, named_gap, title, shot_list, voiceover, on_screen_text, expected_effect, status, reject_reason",
+   "note": "Status moves forward only: open, approved or rejected, sent to producer, shot."
+  },
+  {
+   "table": "ledger",
+   "keys": "id, workspace_id, ts, advice, reasoning, confidence, human_decision, decided_by, decision_reason, outcome_30d",
+   "note": "Append only. Never update, never delete. This table is the asset."
+  }
+ ],
+ "schedule": [
+  {
+   "job": "pull_account",
+   "when": "daily 03:00 local",
+   "depends_on": [],
+   "on_failure": "Retry 3 times then alert. Never publish a partial day."
+  },
+  {
+   "job": "pull_rivals",
+   "when": "daily 03:30",
+   "depends_on": [],
+   "on_failure": "Degrade quietly, yesterday's picture is still useful."
+  },
+  {
+   "job": "reconcile",
+   "when": "daily 04:00",
+   "depends_on": [
+    "pull_account"
+   ],
+   "on_failure": "Hard stop, cancel everything downstream for the day."
+  },
+  {
+   "job": "decode",
+   "when": "daily 04:15",
+   "depends_on": [
+    "pull_account",
+    "pull_rivals"
+   ],
+   "on_failure": "Skip the ad, mark unknown, queue for a human. Never guess a label."
+  },
+  {
+   "job": "fingerprint",
+   "when": "daily 04:30",
+   "depends_on": [
+    "decode"
+   ],
+   "on_failure": "Retry. Nothing about similarity runs without this."
+  },
+  {
+   "job": "score",
+   "when": "daily 05:00",
+   "depends_on": [
+    "reconcile",
+    "fingerprint"
+   ],
+   "on_failure": "Publish what can be computed, mark the rest unavailable."
+  },
+  {
+   "job": "diagnose",
+   "when": "daily 05:15",
+   "depends_on": [
+    "score"
+   ],
+   "on_failure": "If the gate failed, publish only the measurement warning."
+  },
+  {
+   "job": "write_briefs",
+   "when": "daily 05:30",
+   "depends_on": [
+    "diagnose"
+   ],
+   "on_failure": "Regenerate once then skip. Never lower the gates to fill a quota."
+  },
+  {
+   "job": "outcome_sweep",
+   "when": "daily 06:00",
+   "depends_on": [],
+   "on_failure": "Retry. Fills outcomes for ledger rows now 30 days old."
+  }
+ ],
+ "out_of_scope": [
+  "A bidding or budget robot. Yamin recommends, a human acts, for the next 12 months.",
+  "Creative generation. We write briefs for humans to shoot.",
+  "A general dashboard that shows numbers without ranking a problem and naming an action.",
+  "Real time anything. Every number here moves on a scale of days.",
+  "A second ad platform before phase 7 works on the first one."
+ ],
+ "irreversible_decisions": [
+  "One row per creative, not per ad. Roll up across ad sets before scoring.",
+  "Store the weight used inside each score row.",
+  "Client separation at the database row level from day one.",
+  "Keep fingerprints forever, frames for 30 days."
+ ],
+ "phases": [
+  {
+   "phase": 0,
+   "name": "Plumbing and the honest ruler",
+   "timing": "Week 0",
+   "reads": [
+    {
+     "group": "Meta account fields",
+     "signals": "Campaign, ad set and ad structure. Daily spend, impressions, clicks, results, split by placement. Delivery status per ad set."
+    },
+    {
+     "group": "Sale events",
+     "signals": "Every purchase event with its id, value, currency and time, from both the browser and the server."
+    },
+    {
+     "group": "Shopify truth",
+     "signals": "Order count, order value, returns, refunds, stock level per item, new versus repeat buyer flag."
+    },
+    {
+     "group": "Match quality",
+     "signals": "Event Match Quality score per event type, read by code from the quality endpoint."
+    },
+    {
+     "group": "Money facts",
+     "signals": "Cost of goods, shipping cost, return rate, payment fees. Typed in by a person, there is no API for this."
+    }
+   ],
+   "scores": [],
+   "scores_secondary": [],
+   "note": "Phase 0 scores nothing on purpose. It exists to prove the measuring works. If it produced a score, people would start trusting numbers before the ruler was checked."
+  },
+  {
+   "phase": 1,
+   "name": "Meta Account Health",
+   "timing": "Weeks 1 to 2",
+   "reads": [
+    {
+     "group": "Delivery health",
+     "signals": "Ad sets below 50 sale events in a rolling 7 days. Days since each ad set left learning. Ad sets enabled but not spending for 30 days."
+    },
+    {
+     "group": "Price signals",
+     "signals": "CPM, CPC and cost per result, each against this account's own trailing 90 days, not against a public number."
+    },
+    {
+     "group": "Waste signals",
+     "signals": "Spend running to items with zero stock. Spend on links that return an error. Spend inside duplicate groups."
+    },
+    {
+     "group": "Profit signals",
+     "signals": "Contribution margin per order after all costs. Days until a new customer pays back what they cost."
+    },
+    {
+     "group": "Proof signals",
+     "signals": "Date and result of the last holdout or lift test. Whether it ran at least 7 days and held out at least 10 percent."
+    }
+   ],
+   "scores": [
+    {
+     "name": "Signal quality",
+     "weight": 0.2,
+     "measures": "Are sales actually reaching Meta, and does Meta know who bought",
+     "full_marks_when": "99 percent of Shopify orders reported, match quality at 7.5, server events live"
+    },
+    {
+     "name": "Learning and delivery",
+     "weight": 0.15,
+     "measures": "Ad sets that finished learning instead of still guessing",
+     "full_marks_when": "No ad set stuck below 50 events in 7 days"
+    },
+    {
+     "name": "Efficiency against our own past",
+     "weight": 0.15,
+     "measures": "New customer cost now versus our own last 90 days",
+     "full_marks_when": "Cost per new customer 25 percent below our own recent normal"
+    },
+    {
+     "name": "Profit truth",
+     "weight": 0.15,
+     "measures": "Real money left after cost of goods, shipping, returns and fees",
+     "full_marks_when": "25 percent blended margin and payback inside 30 days"
+    },
+    {
+     "name": "Creative supply",
+     "weight": 0.1,
+     "measures": "New ads shipped per week for the money we spend",
+     "full_marks_when": "Matching the top quarter of accounts at our spend level"
+    },
+    {
+     "name": "Auction position",
+     "weight": 0.08,
+     "measures": "What we pay for attention versus our own recent normal",
+     "full_marks_when": "CPM 20 percent below our own trailing 90 days"
+    },
+    {
+     "name": "Waste",
+     "weight": 0.07,
+     "measures": "Money on things that could never have worked",
+     "full_marks_when": "Under 3 percent of spend provably wasted"
+    },
+    {
+     "name": "Proof it worked",
+     "weight": 0.05,
+     "measures": "Have we tested that ads caused sales, or only trusted the platform",
+     "full_marks_when": "A valid holdout test finished inside 90 days"
+    },
+    {
+     "name": "Structure hygiene",
+     "weight": 0.03,
+     "measures": "Can a human find their way around this account",
+     "full_marks_when": "No dead ad sets left on, standard naming everywhere"
+    },
+    {
+     "name": "Safety",
+     "weight": 0.02,
+     "measures": "Rejections and code risk",
+     "full_marks_when": "Zero rejections in 30 days and no open flags"
+    }
+   ],
+   "scores_secondary": [],
+   "note": null
+  },
+  {
+   "phase": 2,
+   "name": "Creative decode and Creative Analytics",
+   "timing": "Weeks 3 to 4",
+   "reads": [
+    {
+     "group": "A. Surface, crystals 1 to 14",
+     "signals": "Length, scene count, shot length, transcript, on screen text, voice tone, face emotion, setting, objects, actions, camera angles, cuts, music type, noise level, hook strength 0 to 100, pace, pattern breaks, topic, intent, funnel stage, hook type, call to action type, script shape."
+    },
+    {
+     "group": "B. Human signal, 15 and 16",
+     "signals": "Faces per frame, seconds of direct eye contact, close versus wide shot ratio, face on screen percent, repeat talent recognition, cast age and gender balance, India north south east west representation, talent tier from unknown user to celebrity, gesture density, hand to product touches."
+    },
+    {
+     "group": "C. Visual craft, 17 and 18",
+     "signals": "Top 5 colours as hex, brand colour adherence percent, contrast ratio, style class from phone shot to cinematic to screen recording, film grain versus clean digital, colour grade, cuts per second, camera steadiness, motion energy 0 to 100, cut to beat sync."
+    },
+    {
+     "group": "D. Sound craft, 19",
+     "signals": "Music type and sub type, beats per minute, music to voice ratio, trending audio match, voiceover versus on camera, use of silence, accent, language mix across English, Hindi, Hinglish, Tamil, Bengali, sound off understanding score, sound on extra value."
+    },
+    {
+     "group": "E. Copy craft, 20",
+     "signals": "Words per frame, safe zone compliance per placement, font count and pairing, text animation style, emoji use, caption to audio sync score."
+    },
+    {
+     "group": "F. Narrative, 21 and 22",
+     "signals": "Story shape, seconds to first product reveal, gap between hook and payoff, second hook at 7 to 15 seconds, curiosity gaps, loopability, reading grade level, you versus we versus I ratio, command verbs, questions, statistics, persuasion methods, Hinglish density."
+    },
+    {
+     "group": "G. Offer, 23",
+     "signals": "Seconds to product shown, product screen time percent, price shown or hidden, offer stack, item count per ad, trust badges and review stars, guarantee timestamp."
+    },
+    {
+     "group": "H. Platform fit, 24",
+     "signals": "Aspect ratios covered, placement specific edits, trend format match, native talent style, watermark detection which signals a repost risk."
+    },
+    {
+     "group": "I. Attention, 25",
+     "signals": "Thumb stop probability 0 to 100, saliency map per frame, gaze prediction, mental load curve, first frame score, what is still remembered 15 minutes later."
+    },
+    {
+     "group": "J. Safety, 26 and 27",
+     "signals": "Banned claims, policy risk before submission, ASCI flags for India, trademark clash, music rights risk, face rights, stereotyping, AI voice probability, deepfake risk, which AI model made it, content provenance watermark, how much was human made."
+    },
+    {
+     "group": "K. Library intelligence, 28",
+     "signals": "Ad DNA fingerprint, which winning ad this came from, version number V1 to Vn, winning pattern inheritance score, cross brand style borrowing flag, whether this adds a new signal or is a duplicate."
+    },
+    {
+     "group": "L. Journey, 29 and 30",
+     "signals": "Landing page continuity score, post click intent match, role in the funnel, contribution per creative feature, lifetime value link by hook type, single variable isolation, test versus control status."
+    }
+   ],
+   "scores": [
+    {
+     "name": "Winner production",
+     "weight": 0.25,
+     "measures": "Real winners made this month, where a winner earns 10 times our own typical ad",
+     "full_marks_when": "Matching the top quarter of accounts at our spend level"
+    },
+    {
+     "name": "Attention",
+     "weight": 0.2,
+     "measures": "Do people stop, and do they stay",
+     "full_marks_when": "Top 2 in every 10 ads inside its own campaign"
+    },
+    {
+     "name": "Turning attention into money",
+     "weight": 0.2,
+     "measures": "Do the people who stopped actually click and buy",
+     "full_marks_when": "Top 2 in every 10 for click and buy rate inside its own campaign"
+    },
+    {
+     "name": "Testing discipline",
+     "weight": 0.15,
+     "measures": "Enough money, enough days, one thing changed",
+     "full_marks_when": "Every test passes all four rules"
+    },
+    {
+     "name": "Cost per winner",
+     "weight": 0.1,
+     "measures": "All test money plus all production money, per winner",
+     "full_marks_when": "Half the cost per winner of our own last 90 days"
+    },
+    {
+     "name": "New ideas versus repeats",
+     "weight": 0.05,
+     "measures": "Fresh concepts against small edits of old ones",
+     "full_marks_when": "An even split, 50 new ideas to 50 improvements"
+    },
+    {
+     "name": "Test to scale rate",
+     "weight": 0.05,
+     "measures": "Winners that actually got real budget afterwards",
+     "full_marks_when": "Every declared winner reaches 10 times median spend inside 30 days"
+    }
+   ],
+   "scores_secondary": [],
+   "note": null
+  },
+  {
+   "phase": 3,
+   "name": "The outside world, competitor watch",
+   "timing": "Weeks 5 to 6",
+   "reads": [
+    {
+     "group": "Rival ad inventory",
+     "signals": "Every live ad for 4 to 8 named rivals, pulled daily from the public ad library. For boAt that means Noise, boult, Realme, Mivi, OnePlus, JBL."
+    },
+    {
+     "group": "Rival ads decoded",
+     "signals": "Every rival ad run through our own decoder, so their hooks, angles, personas and formats are named in the same words as ours."
+    },
+    {
+     "group": "Hook map",
+     "signals": "Every hook in the category, and which brands use it. A hook used by 0 or 1 brands is open ground. A hook used by 6 of 8 is a crowded street."
+    },
+    {
+     "group": "Ownership map",
+     "signals": "Who owns which hook, who has the widest format spread, who has the deepest creator network, who runs the most Hindi."
+    },
+    {
+     "group": "Copying alarm",
+     "signals": "Rivals starting to run a hook we have owned for 60 days or more, which means ours has become category wallpaper."
+    },
+    {
+     "group": "Offer and page signals",
+     "signals": "Rival price points, discount depth, EMI availability, free shipping thresholds, guarantee wording."
+    }
+   ],
+   "scores": [
+    {
+     "name": "Whitespace captured",
+     "weight": 0.2,
+     "measures": "Open ideas nobody else is running that we have live",
+     "full_marks_when": "We are live in at least 3 territories used by 0 or 1 rivals"
+    },
+    {
+     "name": "Hook ownership",
+     "weight": 0.2,
+     "measures": "Hooks where we are the main voice, not one of six",
+     "full_marks_when": "At least 2 hooks where our share of category ads is above 50 percent"
+    },
+    {
+     "name": "Share of category ads",
+     "weight": 0.2,
+     "measures": "How visible we are next to rivals",
+     "full_marks_when": "At or above the category median number of live ads"
+    },
+    {
+     "name": "Format breadth versus category",
+     "weight": 0.15,
+     "measures": "Are rivals using shapes we are not",
+     "full_marks_when": "We cover every format any rival uses"
+    },
+    {
+     "name": "Creator network depth",
+     "weight": 0.15,
+     "measures": "Real creator pages running our ads versus theirs",
+     "full_marks_when": "Matching the deepest rival creator network"
+    },
+    {
+     "name": "Language coverage versus category",
+     "weight": 0.1,
+     "measures": "Are we speaking the languages the category is winning in",
+     "full_marks_when": "Our Hindi and regional share matches the category"
+    }
+   ],
+   "scores_secondary": [],
+   "note": "Honest limit to tell the client: the ad library shows what is running, never what it earns. We can see a rival's whole hand of cards. We cannot see their score. Anyone claiming to know a rival's return from public data is guessing."
+  },
+  {
+   "phase": 4,
+   "name": "Diversity and Fatigue",
+   "timing": "Weeks 7 to 8",
+   "reads": [
+    {
+     "group": "Diversity inputs",
+     "signals": "Distinct hooks, angles, personas, formats, offers and languages across every live ad, plus how spend is spread across each of them."
+    },
+    {
+     "group": "Fingerprint pairs",
+     "signals": "Picture and word fingerprints compared for every pair of live ads, to find near copies."
+    },
+    {
+     "group": "Exposure history",
+     "signals": "How many times each person has already seen each creative, counted across every ad set that creative appears in."
+    },
+    {
+     "group": "Cost history",
+     "signals": "Cost per result for this creative against the cost per result of this account's past ads."
+    },
+    {
+     "group": "Annoyance signals",
+     "signals": "Negative feedback rate and any drop in Meta's quality ranking bucket."
+    },
+    {
+     "group": "Own half life",
+     "signals": "Days at which this brand's ads of this angle historically lose half their click rate, measured from our own ledger."
+    }
+   ],
+   "scores": [
+    {
+     "name": "Hook variety",
+     "weight": 0.18,
+     "measures": "Do ads open in different ways",
+     "full_marks_when": "12 different openings in 30 days, well spread, with new ones arriving"
+    },
+    {
+     "name": "Angle variety",
+     "weight": 0.18,
+     "measures": "Are we telling different stories or repeating one reason to buy",
+     "full_marks_when": "8 live angles out of the 12 we recognise, well spread"
+    },
+    {
+     "name": "Persona coverage",
+     "weight": 0.13,
+     "measures": "Are we speaking to every buyer type",
+     "full_marks_when": "Every defined persona holding above 5 percent share"
+    },
+    {
+     "name": "Funnel balance",
+     "weight": 0.13,
+     "measures": "Are we filling the top or only harvesting the bottom",
+     "full_marks_when": "Close to 50 top, 25 middle, 25 bottom, with no stage under 15 percent"
+    },
+    {
+     "name": "Format spread",
+     "weight": 0.08,
+     "measures": "Video, still, carousel, collection",
+     "full_marks_when": "All four in use with none above 40 percent"
+    },
+    {
+     "name": "Language and region mix",
+     "weight": 0.07,
+     "measures": "Do we speak the languages our buyers think in, and does the cast look like India",
+     "full_marks_when": "Hindi share matches the category and casting spans all four regions"
+    },
+    {
+     "name": "Retrieval distinctness",
+     "weight": 0.07,
+     "measures": "Does Meta itself see our ads as different",
+     "full_marks_when": "No live ad sits inside a similarity group above 0.92"
+    },
+    {
+     "name": "Offer variety",
+     "weight": 0.06,
+     "measures": "Is every ad a discount",
+     "full_marks_when": "Wide offer mix with at least one brand only ad live"
+    },
+    {
+     "name": "Innovation",
+     "weight": 0.05,
+     "measures": "Anything genuinely new tried",
+     "full_marks_when": "4 new formats or hooks in 30 days, new meaning unseen for 90 days"
+    },
+    {
+     "name": "Anti redundancy",
+     "weight": 0.05,
+     "measures": "Money sitting on near copies",
+     "full_marks_when": "No group of 4 or more near copies anywhere"
+    }
+   ],
+   "scores_secondary": [
+    {
+     "name": "Exposure fatigue",
+     "weight": 0.4,
+     "measures": "Times the same people already saw this exact ad, on Meta's published curve",
+     "full_marks_when": "Reads 0, meaning almost nobody has seen it twice"
+    },
+    {
+     "name": "Cost confirmation",
+     "weight": 0.3,
+     "measures": "Costing more per sale than our past ads did",
+     "full_marks_when": "Reads 0, meaning it costs the same as our past ads"
+    },
+    {
+     "name": "Click decay",
+     "weight": 0.15,
+     "measures": "Fewer people clicking now than on day one",
+     "full_marks_when": "Reads 0, meaning the click rate is holding"
+    },
+    {
+     "name": "Annoyance",
+     "weight": 0.1,
+     "measures": "Hides, reports, or a quality ranking slide",
+     "full_marks_when": "Reads 0, normal for this account"
+    },
+    {
+     "name": "Age against its own half life",
+     "weight": 0.05,
+     "measures": "How far past its usual life this ad is",
+     "full_marks_when": "Reads 0, well inside its usual life"
+    }
+   ],
+   "note": null
+  },
+  {
+   "phase": 5,
+   "name": "The Growth Diagnosis Engine",
+   "timing": "Weeks 9 to 10",
+   "reads": [
+    {
+     "group": "The four stream scores",
+     "signals": "Account health, creative analytics, diversity and fatigue, all from the phases above."
+    },
+    {
+     "group": "Reach against addressable",
+     "signals": "How many people we have reached against how many are worth reaching at this price."
+    },
+    {
+     "group": "Profit position",
+     "signals": "Contribution margin at the current cost per new customer."
+    }
+   ],
+   "scores": [
+    {
+     "name": "Not enough new creative",
+     "weight": 0.28,
+     "measures": "Feeding the machine less than our spend needs",
+     "full_marks_when": "Reads 0, we ship at the top quarter rate for our size"
+    },
+    {
+     "name": "Ads are all the same",
+     "weight": 0.24,
+     "measures": "Meta sees our many ads as few",
+     "full_marks_when": "Reads 0, diversity above 80 and every ad distinct"
+    },
+    {
+     "name": "Money stuck on tired ads",
+     "weight": 0.18,
+     "measures": "Share of spend on burnt creative",
+     "full_marks_when": "Reads 0, almost no spend on ads above 70 fatigue"
+    },
+    {
+     "name": "Audience genuinely used up",
+     "weight": 0.16,
+     "measures": "Reached everyone worth reaching. Locked unless the two creative blockers are both healthy",
+     "full_marks_when": "Reads 0, plenty of addressable audience left"
+    },
+    {
+     "name": "The maths never worked",
+     "weight": 0.14,
+     "measures": "Unprofitable at any size",
+     "full_marks_when": "Reads 0, margin above 25 percent"
+    }
+   ],
+   "scores_secondary": [],
+   "note": "The gate runs first and carries no weight. If signal quality is under 60 the engine reports only 'fix measurement first' and scores nothing below, because a broken ruler does not make diagnosis harder, it makes it impossible."
+  },
+  {
+   "phase": 6,
+   "name": "Asset generation, the briefs",
+   "timing": "Weeks 11 to 12",
+   "reads": [
+    {
+     "group": "The named gap",
+     "signals": "Which exact hole this brief fills: a persona, a funnel stage, a hook, an angle, a format or an offer."
+    },
+    {
+     "group": "Brand assets available",
+     "signals": "Real people, real products, real places this brand can actually use this week."
+    },
+    {
+     "group": "Last 6 months of tests",
+     "signals": "Everything already tried, as fingerprints, so we never brief the same idea twice."
+    },
+    {
+     "group": "Rejection history",
+     "signals": "Why the Media Team turned down past briefs, in fixed reasons, so the same bad brief never returns."
+    },
+    {
+     "group": "Compliance rules",
+     "signals": "Banned claims, ASCI rules for India, trademark risk, and whether AI made any of it."
+    }
+   ],
+   "scores": [
+    {
+     "name": "Names a specific gap",
+     "weight": 0.3,
+     "measures": "Does the brief say exactly which hole it fills, with a number",
+     "full_marks_when": "Reasoning names the gap and its size in rupees or percent"
+    },
+    {
+     "name": "Genuinely new",
+     "weight": 0.25,
+     "measures": "Not close to anything tested in the last 6 months",
+     "full_marks_when": "Fingerprint below 0.72 against every past test"
+    },
+    {
+     "name": "Shootable in one day",
+     "weight": 0.2,
+     "measures": "Uses assets and people the brand already has",
+     "full_marks_when": "A producer can start with no further questions"
+    },
+    {
+     "name": "Keeps the set balanced",
+     "weight": 0.25,
+     "measures": "The top 20 briefs together cover enough personas and formats",
+     "full_marks_when": "At least 6 personas, at least 3 stills, at least 2 carousels, 12 to 15 videos, and no more than 2 briefs from any one group"
+    }
+   ],
+   "scores_secondary": [],
+   "note": "Yamin writes briefs, never finished ads, and launches nothing by itself. A human approves every brief. That is deliberate for the next 12 months, because the record of what humans decided is the thing we are actually building."
+  },
+  {
+   "phase": 7,
+   "name": "The loop and the ledger",
+   "timing": "Ongoing",
+   "reads": [
+    {
+     "group": "Every recommendation",
+     "signals": "What was advised, to whom, with what reasoning and what confidence."
+    },
+    {
+     "group": "Every decision",
+     "signals": "What the Media Team actually chose, including when they overruled us, and why."
+    },
+    {
+     "group": "Every outcome",
+     "signals": "What happened 30 days later. This is the field most systems forget, and it is the only one that turns a guess into a fact."
+    },
+    {
+     "group": "Every threshold marked Y",
+     "signals": "Each number that started as our own judgement, so it can be refitted once there is enough real data."
+    }
+   ],
+   "scores": [
+    {
+     "name": "Outcome capture rate",
+     "weight": 0.4,
+     "measures": "Share of decisions that have a real result recorded 30 days later",
+     "full_marks_when": "Every decision has an outcome, none left blank"
+    },
+    {
+     "name": "Reasoning capture rate",
+     "weight": 0.3,
+     "measures": "Share of decisions with a written reason, not just an action",
+     "full_marks_when": "Every decision explains why in plain words"
+    },
+    {
+     "name": "Overrule capture",
+     "weight": 0.2,
+     "measures": "Are we recording when humans disagreed with us, and what happened",
+     "full_marks_when": "Every overrule logged with its result, because these are the most valuable rows we own"
+    },
+    {
+     "name": "Threshold correction rate",
+     "weight": 0.1,
+     "measures": "Judgement numbers replaced by measured ones",
+     "full_marks_when": "Every Y tagged number refitted from real outcomes"
+    }
+   ],
+   "scores_secondary": [],
+   "note": "This is the only phase that never ends, and the only one a competitor cannot copy. Anyone can rebuild phases 0 to 6 in a quarter. Nobody can rebuild two years of what we decided and what happened next."
+  }
+ ]
+}
+</script>
+</body>
+</html>

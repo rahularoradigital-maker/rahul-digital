@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>40 Static Ad Formats — Annotated Creative Library v2</title>
+<style>
+  :root{--ground:#f6f5f1;--raise:#ffffff;--ink:#211f1a;--ink-soft:#55514a;--ink-faint:#8a857b;--line:#e2ded3;--line-soft:#eeebe3;--accent:#b8791b;--accent-soft:#f3e6cf;--tag-cta:#2f6f5e;--tag-price:#b8791b;--tag-offer:#a63d4e;--tag-hook:#3a5a9b;--tag-product:#6b5aa6;--tag-proof:#2f6f5e;--shadow:0 1px 2px rgba(33,31,26,.04),0 8px 24px rgba(33,31,26,.05)}
+  @media (prefers-color-scheme: dark){:root{--ground:#17161a;--raise:#201e22;--ink:#efece4;--ink-soft:#b3afa5;--ink-faint:#837e75;--line:#322f34;--line-soft:#292730;--accent:#e0a545;--accent-soft:#3a2f1c;--tag-cta:#6fc0a8;--tag-price:#e0a545;--tag-offer:#e08b98;--tag-hook:#8aa8e0;--tag-product:#b3a3e0;--tag-proof:#6fc0a8;--shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35)}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:54rem;margin:0 auto;padding:clamp(2.5rem,6vw,5rem) clamp(1.15rem,5vw,2rem) 5rem}
+  .eyebrow{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin:0 0 1.1rem;display:flex;align-items:center;gap:.6rem}
+  .eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+  h1{font-size:clamp(2rem,6vw,3.05rem);line-height:1.04;letter-spacing:-.025em;font-weight:800;margin:0 0 .9rem;text-wrap:balance}
+  .lede{font-size:1.12rem;color:var(--ink-soft);margin:0 0 1.5rem;max-width:46ch}
+  .meta-row{display:flex;flex-wrap:wrap;gap:.5rem 1.4rem;font-family:ui-monospace,Menlo,monospace;font-size:.74rem;color:var(--ink-faint);padding-bottom:2rem;border-bottom:2px solid var(--ink)}
+  .meta-row b{color:var(--ink);font-weight:600}
+  .finding{background:var(--raise);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:4px;padding:1.4rem 1.5rem;margin:2.2rem 0 2rem;box-shadow:var(--shadow)}
+  .finding h2{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 .6rem;font-family:ui-monospace,Menlo,monospace}
+  .finding p{margin:0;font-size:1.02rem}.finding strong{color:var(--ink)}
+  .legend{display:flex;flex-wrap:wrap;gap:.7rem 1.3rem;margin:0 0 .4rem;font-size:.9rem;color:var(--ink-soft)}
+  .legend div{display:flex;align-items:center;gap:.5rem}
+  .legend-note{font-size:.82rem;color:var(--ink-faint);margin:0 0 2rem}
+  .tag{font-family:ui-monospace,Menlo,monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:.14rem .45rem;border-radius:3px;border:1px solid currentColor;white-space:nowrap;font-weight:600}
+  .tag.cta{color:var(--tag-cta)}.tag.price{color:var(--tag-price)}.tag.offer{color:var(--tag-offer)}
+  .tag.hook{color:var(--tag-hook)}.tag.product{color:var(--tag-product)}.tag.proof{color:var(--tag-proof)}
+  .section-label{font-family:ui-monospace,Menlo,monospace;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-faint);margin:3rem 0 .2rem;padding-top:1.8rem;border-top:1px solid var(--line)}
+  .cat-sub{font-size:.92rem;color:var(--ink-soft);margin:0 0 1.2rem}
+  .fmts{list-style:none;margin:0;padding:0}
+  .fmt{padding:1.9rem 0;border-top:1px solid var(--line-soft)}
+  .fmt:first-child{border-top:none;padding-top:.4rem}
+  .fmt-head{display:flex;align-items:baseline;gap:.7rem;flex-wrap:wrap;margin-bottom:1rem}
+  .fmt-no{font-family:ui-monospace,Menlo,monospace;font-size:.9rem;color:var(--accent);font-weight:700}
+  .fmt-head h3{font-size:1.2rem;margin:0;font-weight:700}
+  .fmt-head .tags{display:flex;gap:.3rem;flex-wrap:wrap;margin-left:auto}
+  .brk{padding-top:.1rem}
+  .key{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.8rem}
+  .krow{display:flex;gap:.55rem;font-size:.88rem;line-height:1.5;color:var(--ink-soft)}
+  .krow b{color:var(--ink);font-weight:600}
+  .knum{width:19px;height:19px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-top:2px}
+  .knum.product{background:#6b5aa6}.knum.hook{background:#3a5a9b}.knum.cta{background:#2f6f5e}
+  .knum.price{background:#b8791b}.knum.offer{background:#a63d4e}.knum.proof{background:#2f6f5e}
+  .chip{font-family:ui-monospace,Menlo,monospace;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.08rem .35rem;border-radius:3px;border:1px solid currentColor;font-weight:600}
+  .chip.product{color:var(--tag-product)}.chip.hook{color:var(--tag-hook)}.chip.cta{color:var(--tag-cta)}
+  .chip.price{color:var(--tag-price)}.chip.offer{color:var(--tag-offer)}.chip.proof{color:var(--tag-proof)}
+  .use{font-size:.88rem;color:var(--ink-soft);margin:.2rem 0 .7rem}
+  .use b{color:var(--ink);font-weight:600}
+  .swipe{background:var(--raise);border:1px solid var(--line);border-radius:5px;padding:.6rem .85rem}
+  .swipe-lbl{font-family:ui-monospace,Menlo,monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+  .swipe ul{margin:.35rem 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.15rem}
+  .swipe li{font-family:Georgia,serif;font-style:italic;font-size:.9rem;color:var(--ink-soft)}
+  .swipe li::before{content:"\201C";color:var(--accent)}.swipe li::after{content:"\201D";color:var(--accent)}
+  .sources{list-style:none;margin:0;padding:0}
+  .source{padding:1.9rem 0;border-top:1px solid var(--line)}
+  .source:first-child{border-top:none;padding-top:.5rem}
+  .src-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem .9rem;margin-bottom:.55rem}
+  .domain{font-family:ui-monospace,Menlo,monospace;font-size:.74rem;color:var(--ink-faint)}
+  .src-head .tags{display:flex;gap:.35rem;flex-wrap:wrap}
+  .source h3{font-size:1.24rem;line-height:1.25;margin:0 0 .8rem;font-weight:700}
+  blockquote{margin:0 0 .85rem;padding-left:1.05rem;border-left:2px solid var(--line);font-family:Georgia,serif;font-size:1.02rem;line-height:1.6;color:var(--ink-soft);font-style:italic}
+  .takeaway{font-size:.93rem;color:var(--ink);margin:0;display:flex;gap:.55rem}
+  .takeaway::before{content:"\2192";color:var(--accent);font-weight:700;flex-shrink:0}
+  .src-link{display:inline-block;margin-top:.7rem;font-family:ui-monospace,Menlo,monospace;font-size:.72rem;color:var(--ink-faint);text-decoration:none;word-break:break-all}
+  .src-link:hover{color:var(--accent)}
+  footer{margin-top:3rem;padding-top:1.6rem;border-top:2px solid var(--ink);font-size:.86rem;color:var(--ink-faint)}
+  footer b{color:var(--ink-soft);font-weight:600}
+
+  /* ---- zone-based ad frames (no overlap by construction) ---- */
+  .spread{display:grid;grid-template-columns:250px 1fr;gap:1.6rem;align-items:start}
+  @media(max-width:660px){.spread{grid-template-columns:1fr}.ad-col{max-width:250px}}
+  .ad{width:100%;aspect-ratio:4/5;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow);border:1px solid var(--line);background:#101116}
+  .zn{position:relative;display:flex;flex-direction:column;justify-content:center;padding:12px 34px 12px 14px;color:#fff;font-size:11px;flex:1;min-height:0}
+  .zpin{position:absolute;top:50%;right:8px;transform:translateY(-50%);width:19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;border:2px solid rgba(255,255,255,.9);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .zpin.product{background:#6b5aa6}.zpin.hook{background:#3a5a9b}.zpin.cta{background:#2f6f5e}
+  .zpin.price{background:#b8791b}.zpin.offer{background:#a63d4e}.zpin.proof{background:#2f6f5e}
+  .zc.dark{background:#101116}.zc.dark2{background:#1a1b22}.zc.dark3{background:rgba(0,0,0,.65)}
+  .zc.dim2{background:#26272d}.zc.dim3{background:#1d1e24}
+  .zc.red{background:linear-gradient(120deg,#E31E24,#9E1013)}.zc.red2{background:#b3161c}
+  .zc.teal{background:linear-gradient(120deg,#0f7a5d,#0a4d3b)}.zc.teal2{background:#0a4d3b}
+  .zc.green{background:linear-gradient(120deg,#1d5c3f,#0e3a26)}.zc.green2{background:#0e3a26}
+  .zc.navy{background:linear-gradient(120deg,#1a2f5a,#0c1830)}.zc.plum{background:linear-gradient(120deg,#3a2350,#1c1030)}
+  .zc.light{background:#F4F5F8;color:#14151A}
+  .zc.tall{flex:2.2}
+  .zheroimg{flex:2.4;display:flex;align-items:center;justify-content:center;font-size:56px;background:radial-gradient(circle at 50% 42%,#34363f,#0d0e12);position:relative;padding-right:34px}
+  .zheroimg.warm{background:radial-gradient(circle at 50% 42%,#4b3b2f,#1c1510)}
+  .zheroimg.pinkg{background:radial-gradient(circle at 50% 42%,#8a4a5e,#2a1218)}
+  .zcream{background:#F3EDE4;color:#2A2118}.zcream2{background:#EDE5D8;color:#2A2118}
+  .zh{font-size:12.5px;font-weight:800;line-height:1.25}
+  .zh.ink{color:#14151A}
+  .zhL{font-size:14px;font-weight:900;line-height:1.2;margin-top:4px}
+  .zhXL{font-size:19px;font-weight:900;line-height:1.05;margin-top:4px}
+  .zb{font-size:10.5px;line-height:1.4;opacity:.95}
+  .zb.ink{color:#14151A;opacity:1}.zb.faint{opacity:.65;font-size:9.5px;margin-top:4px}
+  .zb.bold{font-weight:800;font-size:12px}.zb.center{text-align:center}
+  .cl{font-size:8.5px;letter-spacing:1.2px;opacity:.75;font-weight:700}
+  .rd{color:#FF6b6b}
+  .povl{font-size:8.5px;letter-spacing:1px;opacity:.6}
+  .pe{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#43464f,#16171c);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 6px 14px rgba(0,0,0,.4);flex-shrink:0}
+  .pe.s{width:38px;height:38px;font-size:17px}.pe.g{filter:grayscale(1);opacity:.75}
+  .rowline{display:flex;align-items:center;gap:9px}
+  .zsplit{flex-direction:row;padding:0 34px 0 0;flex:2}
+  .zsplit .cell{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px;text-align:center}
+  .cell.dim{background:#2b2c31;opacity:.85}.cell.win{background:linear-gradient(160deg,#E31E24,#8f0f13)}
+  .cell.win2{background:linear-gradient(160deg,#0f7a5d,#0a4d3b)}.cell.teal{background:linear-gradient(160deg,#0f7a5d,#0a4d3b)}
+  .cp{font-size:11px;font-weight:700}.cp.big{font-size:15px;font-weight:900}
+  .ztable{flex:2.4;background:#F4F5F8;color:#14151A;padding:8px 34px 8px 14px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+  .trow{display:grid;grid-template-columns:1fr 44px 44px;font-size:10px;padding:4px 0;border-top:1px solid #e0e2e8;align-items:center}
+  .trow.th{border-top:none;font-weight:800;font-size:9px}
+  .trow .you{color:#0f7a5d;text-align:center;font-weight:800}.trow .oth{color:#999;text-align:center}
+  .ok{color:#1FA971;font-weight:900;text-align:center}.no{color:#E14B4B;font-weight:900;text-align:center}
+  .ztiers{flex:2.2;display:flex;align-items:flex-end;justify-content:center;gap:12px;padding:12px 34px 14px 14px;background:#16171d}
+  .tier{text-align:center}.tl{font-size:8px;margin-top:4px;opacity:.7}.tl.gold{color:#FFC531;opacity:1}
+  .tp{font-size:10.5px;font-weight:800}.tp.big{font-size:13px;font-weight:900}
+  .pill{border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:2px 8px;font-size:8px;font-weight:800;display:inline-block;margin-bottom:4px}
+  .pill.red{border-color:#FF6b6b;color:#FF9a9a}.pill.w{background:#fff;color:#111;border:none}
+  .ctab{background:#fff;color:#111;font-weight:800;text-align:center;border-radius:20px;padding:7px 12px;font-size:10.5px}
+  .ctab.ink{background:#14151A;color:#fff}
+  .bigemoji{font-size:30px}
+  .zlist{flex:2.4;display:flex;flex-direction:column;justify-content:center;gap:7px;padding:10px 34px 10px 14px;background:#16171d}
+  .zlist.light{background:#F4F5F8}
+  .pl-r{font-size:10.5px;line-height:1.4;display:flex;align-items:center;gap:7px}
+  .pl-r.ok2{color:#7ee2b8;font-weight:700}.pl-r.ink2{color:#222}
+  .pl-r.n{font-weight:700}
+  .pl-r.vs2{justify-content:space-between}.pl-r.vs2 span{opacity:.6;font-size:9.5px}
+  .rnum{width:18px;height:18px;border-radius:50%;background:#FF3B3B;color:#fff;font-weight:900;font-size:9.5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .zmeme{flex:2;background:#dfe3ea;display:flex;align-items:center;justify-content:center;font-size:44px;padding-right:34px}
+  .strike{text-decoration:line-through;opacity:.55}
+  .stars{color:#FFC531;letter-spacing:1.5px;font-size:15px}.stars.sm{font-size:9.5px}
+  .stars.dimt{color:#666}
+  .ratebig{font-size:34px;font-weight:900;margin-top:2px}.ratebig span{font-size:14px;opacity:.6}
+  .ratebig.s{font-size:24px}.dim2t{opacity:.6}
+  .qmark{font-size:30px;line-height:.6;color:#FF6b6b}
+  .zrev{flex:2.6;background:#F4F5F8;display:flex;flex-direction:column;justify-content:center;padding:12px 34px 12px 14px}
+  .rev-top{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #e4e6ec;border-radius:10px 10px 0 0;padding:8px 10px 4px;font-size:9.5px;color:#111}
+  .rev-b{background:#fff;border:1px solid #e4e6ec;border-top:none;padding:4px 10px;font-size:9.5px;color:#333;line-height:1.45}
+  .rev-v{background:#fff;border:1px solid #e4e6ec;border-top:none;border-radius:0 0 10px 10px;padding:4px 10px 8px;font-size:8px;color:#1FA971;font-weight:700}
+  .av{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#f6a,#a6f);flex-shrink:0}
+  .rd2{margin-left:auto;font-size:7.5px;color:#999}
+  .zwall{flex:2.2;display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 34px 10px 14px;background:#16171d}
+  .wc{background:rgba(255,255,255,.09);border-radius:8px;padding:7px 8px;font-size:8.5px;line-height:1.45;color:#FFC531;display:flex;flex-direction:column;justify-content:center}
+  .wc.c{align-items:center;text-align:center;color:#fff;font-size:9px}
+  .zchat{flex:2.6;background:#F4F5F8;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:12px 34px 12px 14px}
+  .cb{border-radius:11px;padding:5px 9px;font-size:9px;line-height:1.4;max-width:82%;background:#e6e7ea;color:#111}
+  .cb.r{background:#0A84FF;color:#fff;align-self:flex-end}
+  .pressl{font-size:8px;font-weight:800;letter-spacing:.5px;opacity:.75}
+  .badge-r{background:#FF3B3B;color:#fff;font-weight:800;padding:2px 9px;border-radius:5px;font-size:9.5px;display:inline-block;margin-bottom:4px}
+  .badge-w{background:#fff;color:#111;font-weight:900;padding:2px 9px;border-radius:5px;font-size:9.5px;display:inline-block;margin-bottom:4px}
+  .was{font-size:12px;text-decoration:line-through;opacity:.5}
+  .now{font-size:34px;font-weight:900;color:#FF6b6b;letter-spacing:-.02em;line-height:1}
+  .zcoupon{flex:1.6;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#16171d;padding-right:34px}
+  .cp-l{font-size:8px;letter-spacing:1px;opacity:.7}.cp-c{font-size:19px;font-weight:900;letter-spacing:2px;color:#FFC531;border:2px dashed #FFC531;border-radius:8px;padding:5px 16px;margin-top:4px}
+  .zperks{flex-direction:row;justify-content:center;gap:13px;background:#16171d;font-size:8px}
+  .pk{text-align:center;opacity:.9}.pk span{display:block;margin-top:1px}
+  .seal{font-size:26px}
+  .fn-l{font-size:8px;letter-spacing:1px;color:#9A5100;font-weight:800}
+  .fn-t{font-size:11.5px;line-height:1.5;margin-top:8px;font-weight:600}
+  .fn-sign{font-family:Georgia,serif;font-style:italic;font-size:16px;color:#a63d4e}
+  .fn-by{font-size:8.5px;opacity:.7}
+  .statn{font-size:52px;font-weight:900;line-height:.9;letter-spacing:-.03em;color:#FFC531}
+  .statu{font-size:17px;font-weight:900;letter-spacing:2px}
+  .zscale{flex:1.8;flex-direction:row;align-items:center;justify-content:center;gap:14px;background:#16171d}
+  .sc{text-align:center}.sc span{display:block;font-size:8px;opacity:.7;margin-top:3px}
+  .vs{font-size:16px;opacity:.5}
+  .zexplode{flex:2.2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:radial-gradient(circle at 50% 50%,#2a2d35,#0a0b0f);padding-right:34px}
+  .ex{font-size:17px;display:flex;flex-direction:column;align-items:center;color:#fff}
+  .ex.big{font-size:23px}.ex span{font-size:7.5px;opacity:.7;margin-top:1px}
+  .zsplitv{flex:2.2;flex-direction:row;align-items:center;gap:10px;background:#16171d}
+  .ilist{flex:1;display:flex;flex-direction:column;gap:5px}
+  .il-r{font-size:9px;color:#c9e8d4}
+  .brand-chip{font-family:ui-monospace,Menlo,monospace;font-size:.62rem;color:var(--ink-faint);border:1px solid var(--line);border-radius:3px;padding:.12rem .45rem}
+  .specbox{margin-top:.6rem;background:var(--line-soft);border-radius:5px;padding:.55rem .8rem}
+  .spec-lbl{font-family:ui-monospace,Menlo,monospace;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:.25rem}
+  .specbox code{font-family:ui-monospace,Menlo,monospace;font-size:.68rem;color:var(--ink-soft);word-break:break-all;line-height:1.5}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<p class="eyebrow">Creative Library · v2 · Clean + Multi-Brand</p>
+<h1>40 static ad formats, annotated</h1>
+<p class="lede">Zone-based mocks across 10 real DTC brands — every element pinned at the zone edge, decoded beside the mock, with an LLM-trainable spec per format and verbatim real-ad copy in the appendix.</p>
+<div class="meta-row">
+<span><b>40</b> formats</span>
+<span><b>10</b> brands</span>
+<span>Compiled Jul 2026</span>
+<span>Frame <b>4:5</b></span>
+<span>Real-ad appendix <b>sourced</b></span>
+</div>
+</header>
+
+<section class="finding">
+<h2>How to read each mock</h2>
+<p><strong>Every ad is built from stacked zones — one element per zone, pin at the zone's right edge.</strong> No pin ever sits on the content. Match the pin number to the key beside the mock. The <strong>LLM spec</strong> line is a compact JSON of the format's structure — feed these 40 specs to a model and it learns the layout grammar of DTC statics. Product emojis are placeholders for real product photography.</p>
+</section>
+
+<div class="legend">
+<div><span class="tag product">Product</span> hero image</div>
+<div><span class="tag hook">Hook</span> headline</div>
+<div><span class="tag proof">Proof</span> reviews / ratings</div>
+<div><span class="tag cta">CTA</span> button</div>
+<div><span class="tag price">Price</span> price / strikethrough</div>
+<div><span class="tag offer">Offer</span> discount / urgency</div>
+</div>
+<p class="legend-note">Brands used: boAt · Mamaearth · Lenskart · Wakefit · mCaffeine · The Whole Truth · SKIMS · Glossier · AG1 · Liquid Death</p>
+
+<p class="section-label">A · Comparison &amp; Positioning</p><p class="cat-sub">Win the head-to-head. Cold + competitor-conquest.</p><ul class="fmts">
+  <li class="fmt" id="f1">
+    <div class="fmt-head">
+      <span class="fmt-no">01</span>
+      <h3>Us vs Them</h3>
+      <span class="brand-chip">boAt · audio</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span><span class="tag price">Price</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>WHY PAY MORE?</div><span class="zpin hook">1</span></div><div class="zn zsplit"><div class='cell dim'><div class='cl'>THEM</div><div class='pe g'>🎧</div><div class='cp'>₹4,999</div></div><div class='cell win'><div class='cl'>boAt</div><div class='pe'>🎧</div><div class='cp big'>₹999</div></div><span class="zpin product">2</span></div><div class="zn zc red"><div class='zb'>Same sound · ⅓ the price</div><span class="zpin price">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>verdict headline</b> — top band states who wins, before you see why</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>split panel</b> — competitor greyed left · your product bright right</span></div><div class="krow"><span class="knum price">3</span><span><span class="chip price">Price</span> <b>the proof line</b> — bottom band lands the price gap in one phrase</span></div></div>
+        <p class="use"><b>Use it for:</b> Cold + competitor-conquest audiences. Reframes the category leader as overpriced.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Same sound. ⅓ the price.</li><li>Why pay ₹5,000 for this?</li><li>The ₹999 flex.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"us_vs_them","funnel":"cold","zones":["hook/top","product-split/mid","price-claim/bottom"],"device":"greyscale-them_color-us"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f2">
+    <div class="fmt-head">
+      <span class="fmt-no">02</span>
+      <h3>Before / After</h3>
+      <span class="brand-chip">Mamaearth · skincare</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>28 days. Same skin. New story.</div><span class="zpin hook">1</span></div><div class="zn zsplit"><div class='cell dim'><div class='cl'>DAY 0</div><div class='pe g'>🙎</div><div class='cp'>dull · uneven</div></div><div class='cell teal'><div class='cl'>DAY 28</div><div class='pe'>😊</div><div class='cp'>bright · even</div></div><span class="zpin product">2</span></div><div class="zn zc light"><div class='zb ink'>Start your 28 days → 🧴 Vitamin C range</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>transformation promise</b> — a time-boxed claim: 28 days</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>the two states</b> — day 0 muted left · day 28 vivid right; product causes the change</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>the invitation</b> — start-your-journey framing + the hero SKU named</span></div></div>
+        <p class="use"><b>Use it for:</b> Top-of-funnel. Sells the transformation, not the ingredient list.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>28 days to brighter skin.</li><li>Your skin, before and after.</li><li>The glow-up is scheduled.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"before_after","funnel":"cold","zones":["hook-timebox/top","state-split/mid","cta-product/bottom"],"device":"day0_vs_day28"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f3">
+    <div class="fmt-head">
+      <span class="fmt-no">03</span>
+      <h3>Comparison Table</h3>
+      <span class="brand-chip">Lenskart · eyewear</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag proof">Proof</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc light"><div class='zh ink'>Lenskart vs your optician</div><span class="zpin product">1</span></div><div class="zn ztable"><div class='trow th'><span></span><span class='you'>Lenskart</span><span class='oth'>Optician</span></div><div class='trow'><span>Home eye test</span><span class='ok'>✓</span><span class='no'>✗</span></div><div class='trow'><span>3-day delivery</span><span class='ok'>✓</span><span class='no'>✗</span></div><div class='trow'><span>14-day return</span><span class='ok'>✓</span><span class='no'>✗</span></div><div class='trow'><span>From ₹1,500</span><span class='ok'>✓</span><span class='no'>✗</span></div><span class="zpin proof">2</span></div><div class="zn zc light"><div class='ctab ink'>See the difference →</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum product">1</span><span><span class="chip product">Product</span> <b>your name atop the winning column</b> — brand leads the header row</span></div><div class="krow"><span class="knum proof">2</span><span><span class="chip proof">Proof</span> <b>the checkmark wall</b> — green ✓ down your column, red ✗ down theirs</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>soft close</b> — invites verification, not pressure</span></div></div>
+        <p class="use"><b>Use it for:</b> Consideration + spec-driven buyers. Wins on every row.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>We ticked every box.</li><li>4 things your optician can't do.</li><li>Compare. Then switch.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"comparison_table","funnel":"mid","zones":["header/top","check-table/mid","cta/bottom"],"device":"green_check_red_cross"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f4">
+    <div class="fmt-head">
+      <span class="fmt-no">04</span>
+      <h3>Old Way / New Way</h3>
+      <span class="brand-chip">Wakefit · sleep</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dim2"><div class='cl'>THE OLD WAY</div><div class='zb'>Mattress shop. Salesman. Guesswork.</div><span class="zpin hook">1</span></div><div class="zn zc teal"><div class='cl'>THE WAKEFIT WAY</div><div class='zb'>100-night trial. At home. 🛏️</div><span class="zpin product">2</span></div><div class="zn zc light"><div class='ctab ink'>Try it for 100 nights</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the outdated way</b> — top band names the old ritual, muted colours</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>your way</b> — bright band; the product IS the new behaviour</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>risk-free door</b> — trial framing carries the close</span></div></div>
+        <p class="use"><b>Use it for:</b> Category reframe. Positions you as the modern default.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Buying a mattress in 2015 vs now.</li><li>Skip the showroom.</li><li>Sleep on it. Literally. 100 nights.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"old_vs_new","funnel":"cold","zones":["old-way/top","new-way/mid","cta-trial/bottom"],"device":"muted_top_bright_mid"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f5">
+    <div class="fmt-head">
+      <span class="fmt-no">05</span>
+      <h3>This or That</h3>
+      <span class="brand-chip">boAt · audio</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc navy"><div class='rowline'><span class='pe s'>🎧</span><span><span class='cl'>GYM MODE</span><div class='zb'>Bass that hits harder</div></span></div><span class="zpin product">1</span></div><div class="zn zc red"><div class='zh'>— WHICH ONE ARE YOU? —</div><span class="zpin hook">2</span></div><div class="zn zc plum"><div class='rowline'><span class='pe s'>🎧</span><span><span class='cl'>FOCUS MODE</span><div class='zb'>ANC that shuts the world</div></span></div><span class="zpin product">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum product">1</span><span><span class="chip product">Product</span> <b>persona A</b> — first use-case, own colour world</span></div><div class="krow"><span class="knum hook">2</span><span><span class="chip hook">Hook</span> <b>the self-select prompt</b> — the centre strip asks the viewer to pick a side</span></div><div class="krow"><span class="knum product">3</span><span><span class="chip product">Product</span> <b>persona B</b> — second use-case, same product, different life</span></div></div>
+        <p class="use"><b>Use it for:</b> Relevance boost — the viewer recognises themselves instantly.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Which one are you?</li><li>Gym head or focus head?</li><li>One pair. Both lives.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"this_or_that","funnel":"cold","zones":["usecase-a/top","prompt/mid","usecase-b/bottom"],"device":"two_color_worlds"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f6">
+    <div class="fmt-head">
+      <span class="fmt-no">06</span>
+      <h3>Product Tier Lineup</h3>
+      <span class="brand-chip">mCaffeine · skincare</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag price">Price</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>Pick your ritual ☕</div><span class="zpin hook">1</span></div><div class="zn ztiers"><div class='tier'><div class='pe s'>🧴</div><div class='tl'>Starter</div><div class='tp'>₹349</div></div><div class='tier hero'><div class='pe'>🧴</div><div class='tl gold'>★ BESTSELLER</div><div class='tp big'>₹599</div></div><div class='tier'><div class='pe s'>🧴</div><div class='tl'>Pro Kit</div><div class='tp'>₹999</div></div><span class="zpin product">2</span></div><div class="zn zc light"><div class='ctab ink'>Shop the range</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the range invite</b> — one line, names the choice</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>three tiers rising</b> — mid-tier biggest + starred — the anchor</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>range close</b> — shop-the-range keeps all doors open</span></div></div>
+        <p class="use"><b>Use it for:</b> Range awareness + anchoring the mid-tier as the smart pick.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Good. Better. Bestseller.</li><li>There's one for every routine.</li><li>Start at ₹349.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"tier_lineup","funnel":"mid","zones":["invite/top","tier-row/mid","cta/bottom"],"device":"mid_tier_anchor"}</code></div>
+      </div>
+    </div>
+  </li></ul><p class="section-label">B · Problem &amp; Emotion</p><p class="cat-sub">Stop the scroll with a feeling. Top-of-funnel.</p><ul class="fmts">
+  <li class="fmt" id="f7">
+    <div class="fmt-head">
+      <span class="fmt-no">07</span>
+      <h3>Problem – Agitate – Solve</h3>
+      <span class="brand-chip">The Whole Truth · protein</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag offer">Offer</span><span class="tag product">Product</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dim2"><span class='pill'>PROBLEM</span><div class='zb'>Read your protein bar's label lately?</div><span class="zpin hook">1</span></div><div class="zn zc dim3"><span class='pill red'>AGITATE</span><div class='zb'>17 ingredients. You can pronounce 4.</div><span class="zpin offer">2</span></div><div class="zn zc teal"><div class='rowline'><span class='pe s'>🍫</span><span><span class='pill w'>SOLVE</span><div class='zb'>5 ingredients. All food. 🍫</div></span></div><span class="zpin product">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the pain, stated flat</b> — a question the buyer can't unhear</span></div><div class="krow"><span class="knum offer">2</span><span><span class="chip offer">Offer</span> <b>the twist</b> — specific numbers make it sting</span></div><div class="krow"><span class="knum product">3</span><span><span class="chip product">Product</span> <b>earns its entrance</b> — appears only in the solve band</span></div></div>
+        <p class="use"><b>Use it for:</b> The workhorse. Top-of-funnel where the pain is real but unspoken.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Read the label. Then read ours.</li><li>17 ingredients vs 5.</li><li>No lies. Just food.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"pas","funnel":"cold","zones":["problem/top","agitate/mid","solve-product/bottom"],"device":"darkening_then_relief"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f8">
+    <div class="fmt-head">
+      <span class="fmt-no">08</span>
+      <h3>Problem-First Hook</h3>
+      <span class="brand-chip">boAt · audio</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark tall"><div class='povl'>POV:</div><div class='zhXL'>your buds die<br>mid-<span class='rd'>workout</span><br>again.</div><span class="zpin hook">1</span></div><div class="zn zc dark2"><div class='rowline'><span class='pe s'>🎧</span><span class='zb'>never again. <b>boAt · 40hr</b></span></div><span class="zpin product">2</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>fills 70% of the frame</b> — the copy IS the creative; a 'that's me' moment</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>small, at the base</b> — the quiet answer to the loud problem</span></div></div>
+        <p class="use"><b>Use it for:</b> Pattern interrupt. Stops the scroll with pure relatability.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>POV: your buds die mid-set.</li><li>nobody warns you about this.</li><li>the ₹300 earphone cycle ends here.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"problem_first","funnel":"cold","zones":["big-pain-copy/top-70","product-answer/bottom-30"],"device":"text_is_creative"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f9">
+    <div class="fmt-head">
+      <span class="fmt-no">09</span>
+      <h3>Myth vs Truth</h3>
+      <span class="brand-chip">Wakefit · sleep</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag price">Price</span><span class="tag proof">Proof</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dim2"><span class='pill'>MYTH</span><div class='zb strike'>Good mattresses cost ₹80,000</div><span class="zpin hook">1</span></div><div class="zn zc teal"><span class='pill w'>TRUTH</span><div class='zh'>₹9,990. Certified ortho support.</div><span class="zpin price">2</span></div><div class="zn zc teal2"><div class='zb'>3 lakh+ sleepers switched 😴</div><span class="zpin proof">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the myth, struck through</b> — the false belief, crossed out on top</span></div><div class="krow"><span class="knum price">2</span><span><span class="chip price">Price</span> <b>the truth in bold</b> — the real number busts it</span></div><div class="krow"><span class="knum proof">3</span><span><span class="chip proof">Proof</span> <b>the crowd</b> — volume of switchers proves it</span></div></div>
+        <p class="use"><b>Use it for:</b> Price-objection killer for premium-perception categories.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Myth: good sleep is ₹80k.</li><li>Busted: ₹9,990.</li><li>You've been overpaying to sleep.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"myth_truth","funnel":"mid","zones":["myth-strike/top","truth-price/mid","proof/bottom"],"device":"strikethrough_flip"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f10">
+    <div class="fmt-head">
+      <span class="fmt-no">10</span>
+      <h3>Stop Doing This</h3>
+      <span class="brand-chip">mCaffeine · skincare</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark tall"><div class='bigemoji'>✋</div><div class='zhL'>STOP using soap<br>on your face.</div><span class="zpin hook">1</span></div><div class="zn zc dark2"><div class='rowline'><span class='pe s'>🧴</span><span class='zb'>pH-balanced coffee cleanser. ☕</span></div><span class="zpin product">2</span></div><div class="zn zc red"><div class='ctab'>Switch today →</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>a blunt command</b> — 'STOP' + the bad habit; authority tone</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>the smarter swap</b> — the fix, named specifically</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>the switch</b> — action verb matches the command energy</span></div></div>
+        <p class="use"><b>Use it for:</b> Habit-interrupt. Works when buyers don't know they're doing it wrong.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Stop. Your face isn't laundry.</li><li>Soap is for dishes.</li><li>Your skin called. It wants better.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"stop_doing","funnel":"cold","zones":["command/top-60","swap-product/mid","cta/bottom"],"device":"hand_emoji_command"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f11">
+    <div class="fmt-head">
+      <span class="fmt-no">11</span>
+      <h3>Pain-Point Callouts</h3>
+      <span class="brand-chip">Lenskart · eyewear</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>Sound familiar? 🙄</div><span class="zpin hook">1</span></div><div class="zn zlist"><div class='pl-r'>😤 Slips down your nose</div><div class='pl-r'>💢 Pinches behind the ears</div><div class='pl-r'>😮‍💨 Fogs up with your mask</div><div class='pl-r ok2'>✅ Lenskart Air: 11g. None of that.</div><span class="zpin product">2</span></div><div class="zn zc light"><div class='ctab ink'>Feel the difference</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the recognition prompt</b> — invites the eye-roll of familiarity</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>pains as a list, fix as the last row</b> — three specific pains, then your one-line answer</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>sensory close</b> — 'feel' sells the 11g weight claim</span></div></div>
+        <p class="use"><b>Use it for:</b> Specific, visual pain. Human-led and instantly relatable.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Sound familiar?</li><li>3 things your frames do wrong.</li><li>11 grams. Zero complaints.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"pain_callouts","funnel":"cold","zones":["prompt/top","pain-list+fix/mid","cta/bottom"],"device":"emoji_pain_rows"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f12">
+    <div class="fmt-head">
+      <span class="fmt-no">12</span>
+      <h3>Relatable Meme / Native</h3>
+      <span class="brand-chip">Liquid Death · beverage</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc light"><div class='zb ink bold'>nobody:</div><span class="zpin hook">1</span></div><div class="zn zmeme">💀<span class="zpin product">2</span></div><div class="zn zc light"><div class='zb ink bold'>me, drinking water like it's a felony:</div><span class="zpin hook">3</span></div><div class="zn zc light"><div class='zb faint'>…it's just water. murder your thirst. 🥫</div><span class="zpin product">4</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>meme top-text</b> — reads like an organic shitpost, not an ad</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>the reaction image</b> — one absurd visual carries it</span></div><div class="krow"><span class="knum hook">3</span><span><span class="chip hook">Hook</span> <b>meme bottom-text</b> — the punchline names the behaviour</span></div><div class="krow"><span class="knum product">4</span><span><span class="chip product">Product</span> <b>brand whisper</b> — tagline only — softest possible sell</span></div></div>
+        <p class="use"><b>Use it for:</b> Highest thumb-stop. Native to feed — disguised as content.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>nobody: … me:</li><li>it's just water. calm down.</li><li>hydrate or die-drate.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"meme_native","funnel":"cold","zones":["toptext","image","bottomtext","brand-caption"],"device":"meme_format_softsell"}</code></div>
+      </div>
+    </div>
+  </li></ul><p class="section-label">C · Product &amp; Feature</p><p class="cat-sub">Show the craft. Consideration + spec buyers.</p><ul class="fmts">
+  <li class="fmt" id="f13">
+    <div class="fmt-head">
+      <span class="fmt-no">13</span>
+      <h3>Hero Product Shot</h3>
+      <span class="brand-chip">SKIMS · apparel</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag hook">Hook</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zheroimg">🩱<span class="zpin product">1</span></div><div class="zn zc dark"><div class='zh'>The sexiest push-up that lifts, supports, smooths.</div><span class="zpin hook">2</span></div><div class="zn zc light"><div class='ctab ink'>Shop now</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum product">1</span><span><span class="chip product">Product</span> <b>owns 60% of the frame</b> — one product, premium ground, nothing else</span></div><div class="krow"><span class="knum hook">2</span><span><span class="chip hook">Hook</span> <b>one benefit line</b> — verbatim SKIMS-style triple-verb claim</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>clean close</b> — standard shop-now, high contrast</span></div></div>
+        <p class="use"><b>Use it for:</b> When the product is the beauty. Warm + retargeting.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Lifts. Supports. Smooths.</li><li>The one that went viral.</li><li>Your new everyday.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"hero_shot","funnel":"warm","zones":["product-60/top","benefit-line/mid","cta/bottom"],"device":"single_hero_premium_bg"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f14">
+    <div class="fmt-head">
+      <span class="fmt-no">14</span>
+      <h3>Feature Callouts</h3>
+      <span class="brand-chip">boAt · audio</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag proof">Proof</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>Engineered to out-spec ₹3k buds</div><span class="zpin hook">1</span></div><div class="zn zlist"><div class='pl-r'>◆ 10mm titanium drivers</div><div class='pl-r'>◆ 42-hour battery</div><div class='pl-r'>◆ ENx clear-call mic</div><div class='pl-r'>◆ IPX4 sweat-proof</div><span class="zpin product">2</span></div><div class="zn zc red"><div class='ctab'>All this. ₹1,299.</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the spec claim</b> — positions against pricier rivals</span></div><div class="krow"><span class="knum proof">2</span><span><span class="chip proof">Proof</span> <b>labelled features</b> — clean rows, one spec each — no crowding</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>price-punch close</b> — the sum lands with the price</span></div></div>
+        <p class="use"><b>Use it for:</b> Consideration + spec-driven buyers. Educates and justifies price.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Every spec that matters.</li><li>Out-specs buds twice its price.</li><li>The tech, decoded.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"feature_callouts","funnel":"mid","zones":["claim/top","spec-rows/mid","price-cta/bottom"],"device":"clean_spec_rows"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f15">
+    <div class="fmt-head">
+      <span class="fmt-no">15</span>
+      <h3>Ingredient / Spec Breakdown</h3>
+      <span class="brand-chip">AG1 · supplement</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag proof">Proof</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc green"><div class='zh'>One scoop. 75 ingredients.</div><span class="zpin hook">1</span></div><div class="zn zsplitv"><div class='pe'>🥤</div><div class='ilist'><div class='il-r'>◆ Vitamins &amp; minerals · 24</div><div class='il-r'>◆ Probiotics · 7.2B CFU</div><div class='il-r'>◆ Adaptogens &amp; herbs · 21</div><div class='il-r'>◆ Wholefood extracts · 30</div></div><span class="zpin product">2</span></div><div class="zn zc light"><div class='ctab ink'>See the full label →</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the density claim</b> — one scoop = everything, stated as a number</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>product beside its 'ingredients'</b> — the nutrition-panel device — full transparency</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>label-forward close</b> — invites scrutiny; scrutiny builds trust</span></div></div>
+        <p class="use"><b>Use it for:</b> The transparency play. Turns contents into a proof list.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>What's actually inside.</li><li>75 ingredients. Zero shortcuts.</li><li>Read our label. Please.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"ingredient_breakdown","funnel":"mid","zones":["density-claim/top","product+panel/mid","label-cta/bottom"],"device":"nutrition_panel"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f16">
+    <div class="fmt-head">
+      <span class="fmt-no">16</span>
+      <h3>Exploded View</h3>
+      <span class="brand-chip">boAt · audio</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>BUILT DIFFERENT</div><span class="zpin hook">1</span></div><div class="zn zexplode"><div class='ex'>🔘<span>mesh grille</span></div><div class='ex big'>🎧<span>titanium driver</span></div><div class='ex'>🔋<span>800mAh cell</span></div><span class="zpin product">2</span></div><div class="zn zc light"><div class='ctab ink'>See the build</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the craft claim</b> — two words, letter-spaced, engineering pride</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>parts on a centre axis</b> — floating components, each labelled</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>curiosity close</b> — 'see the build' rewards the interest</span></div></div>
+        <p class="use"><b>Use it for:</b> Signals build quality. Great for premium SKUs.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Every layer, engineered.</li><li>Built. Not assembled.</li><li>See what ₹999 buys.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"exploded_view","funnel":"mid","zones":["craft-claim/top","parts-stack/mid","cta/bottom"],"device":"vertical_component_stack"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f17">
+    <div class="fmt-head">
+      <span class="fmt-no">17</span>
+      <h3>Size / Scale Comparison</h3>
+      <span class="brand-chip">Lenskart · eyewear</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>11 grams. Lighter than your keys.</div><span class="zpin hook">1</span></div><div class="zn zscale"><div class='sc'><div class='pe s'>👓</div><span>Lenskart Air</span></div><div class='vs'>vs</div><div class='sc'><div class='pe s'>🔑</div><span>your keys · 40g</span></div><span class="zpin product">2</span></div><div class="zn zc light"><div class='ctab ink'>Forget you're wearing them</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the weight claim</b> — anchored to a familiar object</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>side-by-side scale</b> — product vs everyday item makes 'light' tangible</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>benefit-as-close</b> — the CTA restates the payoff</span></div></div>
+        <p class="use"><b>Use it for:</b> Makes an abstract spec (weight/size) physically believable.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Lighter than your keys.</li><li>11g on your face.</li><li>You'll check twice if they're on.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"scale_comparison","funnel":"mid","zones":["claim/top","object-vs-object/mid","benefit-cta/bottom"],"device":"familiar_object_anchor"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f18">
+    <div class="fmt-head">
+      <span class="fmt-no">18</span>
+      <h3>In-Use Lifestyle</h3>
+      <span class="brand-chip">SKIMS · apparel</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag hook">Hook</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zheroimg warm">🤸<span class="zpin product">1</span></div><div class="zn zc dark3"><div class='cl'>ALL-DAY SHAPE</div><div class='zh'>Moves when you move.</div><div class='zb faint'>Fits Everybody collection</div><span class="zpin hook">2</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum product">1</span><span><span class="chip product">Product</span> <b>worn in a real moment</b> — movement shot — sells the life, not the fabric</span></div><div class="krow"><span class="knum hook">2</span><span><span class="chip hook">Hook</span> <b>lower-third band</b> — label + one kinetic line + collection name</span></div></div>
+        <p class="use"><b>Use it for:</b> Aspiration. The identity sell.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Moves when you move.</li><li>Worn from 6am to midnight.</li><li>Your body. Your fit.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"lifestyle_inuse","funnel":"cold","zones":["life-image/top-70","label+line/bottom-30"],"device":"lower_third_band"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f19">
+    <div class="fmt-head">
+      <span class="fmt-no">19</span>
+      <h3>Macro / Detail Close-up</h3>
+      <span class="brand-chip">Glossier · beauty</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag hook">Hook</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zheroimg pinkg">💄<span class="zpin product">1</span></div><div class="zn zc dark3"><div class='cl'>CLOUD PAINT</div><div class='zh'>Blush like the sky at sunset.</div><span class="zpin hook">2</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum product">1</span><span><span class="chip product">Product</span> <b>extreme close-up</b> — one texture fills the frame — the swatch is the star</span></div><div class="krow"><span class="knum hook">2</span><span><span class="chip hook">Hook</span> <b>one poetic line</b> — verbatim Glossier: 'Blush like the sky at sunset'</span></div></div>
+        <p class="use"><b>Use it for:</b> Premium texture flex. Minimal copy, maximal product.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Blush like the sky at sunset.</li><li>The swatch says it all.</li><li>Colour, up close.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"macro_detail","funnel":"warm","zones":["texture-full/top-75","poetic-line/bottom-25"],"device":"texture_as_hero"}</code></div>
+      </div>
+    </div>
+  </li></ul><p class="section-label">D · Social Proof</p><p class="cat-sub">Let others sell for you. Warm + trust.</p><ul class="fmts">
+  <li class="fmt" id="f20">
+    <div class="fmt-head">
+      <span class="fmt-no">20</span>
+      <h3>Star-Rating Hero</h3>
+      <span class="brand-chip">Mamaearth · skincare</span>
+      <span class="tags"><span class="tag proof">Proof</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark tall"><div class='stars'>★★★★★</div><div class='ratebig'>4.6<span>/5</span></div><div class='zb'>from <b>3,20,000+</b> reviews</div><span class="zpin proof">1</span></div><div class="zn zc dark2"><div class='rowline'><span class='pe s'>🧴</span><span class='zb'>Ubtan Face Wash · the one everyone means</span></div><span class="zpin product">2</span></div><div class="zn zc teal"><div class='ctab'>Join them →</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum proof">1</span><span><span class="chip proof">Proof</span> <b>giant rating + count</b> — the fastest credibility signal there is</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>named below</b> — the rating leads; the SKU rides it</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>join-the-crowd</b> — social framing on the button</span></div></div>
+        <p class="use"><b>Use it for:</b> Warm audiences + first-purchase trust.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Rated 4.6 by 3.2 lakh people.</li><li>The reviews wrote this ad.</li><li>Join 3,20,000 happy faces.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"star_hero","funnel":"warm","zones":["rating-60/top","sku-line/mid","join-cta/bottom"],"device":"number_as_hero"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f21">
+    <div class="fmt-head">
+      <span class="fmt-no">21</span>
+      <h3>Testimonial Quote</h3>
+      <span class="brand-chip">SKIMS · apparel</span>
+      <span class="tags"><span class="tag proof">Proof</span><span class="tag product">Product</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark tall"><div class='qmark'>&ldquo;</div><div class='zhL'>I hate wearing bras. There's always a gap. Then SKIMS changed everything.</div><div class='zb faint'>— verified buyer ✔</div><span class="zpin proof">1</span></div><div class="zn zc dark2"><div class='rowline'><span class='pe s'>🩱</span><span class='stars sm'>★★★★★</span><span class='zb'>Ultimate Bra</span></div><span class="zpin product">2</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum proof">1</span><span><span class="chip proof">Proof</span> <b>one human voice, big</b> — verbatim from SKIMS' real 2026 static — pain → discovery arc in 12 words</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>anchors the base</b> — SKU + stars, small and quiet</span></div></div>
+        <p class="use"><b>Use it for:</b> Words do the selling. High-consideration purchases.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>I hate wearing bras. Then this.</li><li>“Changed everything.”</li><li>Real buyer. Real words.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"testimonial_quote","funnel":"mid","zones":["quote-75/top","sku-stars/bottom"],"device":"pain_discovery_arc"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f22">
+    <div class="fmt-head">
+      <span class="fmt-no">22</span>
+      <h3>Review Screenshot</h3>
+      <span class="brand-chip">Glossier · beauty</span>
+      <span class="tags"><span class="tag proof">Proof</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zrev"><div class='rev-top'><span class='av'></span><span><b>jess.m</b><div class='stars sm'>★★★★★</div></span><span class='rd2'>2d</span></div><div class='rev-b'>“Ordered one. Came back for three. It's the only blush that looks like skin.”</div><div class='rev-v'>✔ Verified · Cloud Paint</div><span class="zpin proof">1</span></div><div class="zn zc light"><div class='ctab ink'>1,000s more like this →</div><span class="zpin cta">2</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum proof">1</span><span><span class="chip proof">Proof</span> <b>native review card</b> — avatar + stars + verified line reads as proof, not marketing</span></div><div class="krow"><span class="knum cta">2</span><span><span class="chip cta">CTA</span> <b>the volume tease</b> — implies a wall of equals behind it</span></div></div>
+        <p class="use"><b>Use it for:</b> Feels ripped from the store. Authenticity does the work.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Came back for three.</li><li>Screenshotted, not scripted.</li><li>The reviews are the ad.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"review_screenshot","funnel":"warm","zones":["review-card/top-80","volume-cta/bottom"],"device":"app_ui_replica"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f23">
+    <div class="fmt-head">
+      <span class="fmt-no">23</span>
+      <h3>Social-Proof Wall</h3>
+      <span class="brand-chip">AG1 · supplement</span>
+      <span class="tags"><span class="tag proof">Proof</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc green"><div class='zh'>What subscribers say 👇</div><span class="zpin hook">1</span></div><div class="zn zwall"><div class='wc'>★★★★★<br>“mornings feel different”</div><div class='wc'>★★★★★<br>“replaced 6 pills”</div><div class='wc'>★★★★★<br>“actually tastes fine”</div><div class='wc'>★★★★★<br>“3 years running”</div><span class="zpin proof">2</span></div><div class="zn zc light"><div class='ctab ink'>Read all reviews</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the crowd frame</b> — subscribers, not customers — implies retention</span></div><div class="krow"><span class="knum proof">2</span><span><span class="chip proof">Proof</span> <b>a grid of snippets</b> — volume is the message; each quote is specific</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>the deep-dive door</b> — 'all' implies thousands more</span></div></div>
+        <p class="use"><b>Use it for:</b> FOMO + warm audiences. Volume as proof.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>The wall of 5 stars.</li><li>Subscribers don't lie.</li><li>3 years running.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"proof_wall","funnel":"warm","zones":["frame/top","quote-grid/mid","cta/bottom"],"device":"grid_of_stars"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f24">
+    <div class="fmt-head">
+      <span class="fmt-no">24</span>
+      <h3>UGC Selfie / Handheld</h3>
+      <span class="brand-chip">mCaffeine · skincare</span>
+      <span class="tags"><span class="tag proof">Proof</span><span class="tag product">Product</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zheroimg warm">🤳<span class="zpin product">1</span></div><div class="zn zc dark3"><div class='zh'>“ok this scrub is actually it 🔥”</div><div class='zb faint'>@skincarewithria · paid partnership</div><span class="zpin proof">2</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum product">1</span><span><span class="chip product">Product</span> <b>held to camera</b> — phone-shot feel; product in-hand mid-routine</span></div><div class="krow"><span class="knum proof">2</span><span><span class="chip proof">Proof</span> <b>creator caption</b> — casual, lowercase, disclosed — a friend's rec</span></div></div>
+        <p class="use"><b>Use it for:</b> The single best-converting static in DTC. Native to feed.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>ok this is actually it</li><li>run don't walk</li><li>my honest 30-day review</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"ugc_selfie","funnel":"cold","zones":["selfie-image/top-75","caption/bottom-25"],"device":"handheld_authenticity"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f25">
+    <div class="fmt-head">
+      <span class="fmt-no">25</span>
+      <h3>As Seen In / #1 Badge</h3>
+      <span class="brand-chip">boAt · audio</span>
+      <span class="tags"><span class="tag proof">Proof</span><span class="tag hook">Hook</span><span class="tag product">Product</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='pressl'>GADGETS360 · 91MOBILES · IDC</div><span class="zpin proof">1</span></div><div class="zn zc dark tall"><div class='badge-r'>#1 IN INDIA</div><div class='zhL'>India's most-loved audio brand.</div><div class='zb faint'>Source: IDC Q1 2026</div><span class="zpin hook">2</span></div><div class="zn zc dark2"><div class='rowline'><span class='pe s'>🎧</span><span class='zb'>2 crore+ ears and counting</span></div><span class="zpin product">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum proof">1</span><span><span class="chip proof">Proof</span> <b>authority strip</b> — press + analyst names borrow trust</span></div><div class="krow"><span class="knum hook">2</span><span><span class="chip hook">Hook</span> <b>the leadership claim</b> — badge + claim + source line — always cite it</span></div><div class="krow"><span class="knum product">3</span><span><span class="chip product">Product</span> <b>the scale line</b> — users as the closing proof</span></div></div>
+        <p class="use"><b>Use it for:</b> Cold audiences. Borrowed authority for instant legitimacy.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>#1 in India. Officially.</li><li>The brand India hears.</li><li>2 crore ears strong.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"authority_badge","funnel":"cold","zones":["press-strip/top","claim+source/mid","scale-line/bottom"],"device":"cited_leadership"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f26">
+    <div class="fmt-head">
+      <span class="fmt-no">26</span>
+      <h3>Text-Message Screenshot</h3>
+      <span class="brand-chip">The Whole Truth · protein</span>
+      <span class="tags"><span class="tag proof">Proof</span><span class="tag product">Product</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zchat"><div class='cb l'>which protein bar doesn't taste like chalk</div><div class='cb r'>the whole truth. read the label, it's just food</div><div class='cb r'>🍫 12g protein · 5 ingredients</div><div class='cb l'>adding to cart rn</div><span class="zpin proof">1</span></div><div class="zn zc light"><div class='zb ink center'>The group-chat-approved bar 🍫</div><span class="zpin product">2</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum proof">1</span><span><span class="chip proof">Proof</span> <b>a peer referral</b> — chat UI = eavesdropping on a genuine rec</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>the caption seal</b> — names the product the chat was about</span></div></div>
+        <p class="use"><b>Use it for:</b> The eavesdrop format. Reads as a referral, not a pitch.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>“adding to cart rn”</li><li>group-chat approved.</li><li>the rec you'd send a friend.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"chat_screenshot","funnel":"cold","zones":["chat-thread/top-80","brand-caption/bottom"],"device":"imessage_replica"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f27">
+    <div class="fmt-head">
+      <span class="fmt-no">27</span>
+      <h3>Rating Face-off</h3>
+      <span class="brand-chip">Wakefit · sleep</span>
+      <span class="tags"><span class="tag proof">Proof</span><span class="tag product">Product</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>The ratings don't lie</div><span class="zpin hook">1</span></div><div class="zn zsplit"><div class='cell win2'><div class='cl'>WAKEFIT</div><div class='ratebig s'>4.5</div><div class='stars sm'>★★★★★</div></div><div class='cell dim'><div class='cl'>OTHERS</div><div class='ratebig s dim2t'>3.1</div><div class='stars sm dimt'>★★★☆☆</div></div><span class="zpin proof">2</span></div><div class="zn zc teal"><div class='zb center'>🛏️ Same price. Different sleep.</div><span class="zpin product">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the numbers frame</b> — invites the comparison before showing it</span></div><div class="krow"><span class="knum proof">2</span><span><span class="chip proof">Proof</span> <b>rating vs rating</b> — the visual gap between 4.5 and 3.1 is the argument</span></div><div class="krow"><span class="knum product">3</span><span><span class="chip product">Product</span> <b>the kicker line</b> — price parity + outcome difference</span></div></div>
+        <p class="use"><b>Use it for:</b> Proof-based comparison. Wins trust with numbers, not claims.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>4.5 vs 3.1. Pick.</li><li>The stars settle it.</li><li>Same price. Better sleep.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"rating_faceoff","funnel":"mid","zones":["frame/top","rating-split/mid","kicker/bottom"],"device":"score_gap"}</code></div>
+      </div>
+    </div>
+  </li></ul><p class="section-label">E · Offer &amp; Conversion</p><p class="cat-sub">Close the sale. Bottom-funnel + retargeting.</p><ul class="fmts">
+  <li class="fmt" id="f28">
+    <div class="fmt-head">
+      <span class="fmt-no">28</span>
+      <h3>Price Anchor</h3>
+      <span class="brand-chip">boAt · audio</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag price">Price</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zheroimg">🎧<span class="zpin product">1</span></div><div class="zn zc dark tall"><div class='was'>₹2,990</div><div class='now'>₹999</div><div class='badge-r'>67% OFF · TODAY</div><span class="zpin price">2</span></div><div class="zn zc red"><div class='ctab'>Grab the deal</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum product">1</span><span><span class="chip product">Product</span> <b>above the deal</b> — small hero; the price does the talking</span></div><div class="krow"><span class="knum price">2</span><span><span class="chip price">Price</span> <b>was → now</b> — struck original beside a huge red now-price</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>urgency close</b> — matched to the TODAY badge</span></div></div>
+        <p class="use"><b>Use it for:</b> Bottom-of-funnel + retargeting. The most direct converter.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>₹2,990 → ₹999.</li><li>67% off. Today.</li><li>Half price. Full bass.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"price_anchor","funnel":"bottom","zones":["product/top","strike+now+badge/mid","cta/bottom"],"device":"strikethrough_contrast"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f29">
+    <div class="fmt-head">
+      <span class="fmt-no">29</span>
+      <h3>Bundle / What's Included</h3>
+      <span class="brand-chip">mCaffeine · skincare</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag offer">Offer</span><span class="tag price">Price</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>Everything in the kit 📦</div><span class="zpin hook">1</span></div><div class="zn zwall"><div class='wc c'>🧴<br>Face wash</div><div class='wc c'>🧖<br>Scrub</div><div class='wc c'>🎭<br>Face mask</div><div class='wc c'>💧<br>Serum</div><span class="zpin product">2</span></div><div class="zn zc red"><div class='ctab'>All 4 · ₹999</div><span class="zpin price">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the unbox promise</b> — 'everything' frames generosity</span></div><div class="krow"><span class="knum offer">2</span><span><span class="chip offer">Offer</span> <b>items as a grid</b> — each product labelled; count = perceived value</span></div><div class="krow"><span class="knum price">3</span><span><span class="chip price">Price</span> <b>one price for all</b> — the bundle price feels like a steal</span></div></div>
+        <p class="use"><b>Use it for:</b> Makes the price feel generous. Kits + starter packs.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>4 products. One price.</li><li>The complete ritual.</li><li>Everything. ₹999.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"bundle","funnel":"bottom","zones":["promise/top","item-grid/mid","bundle-price/bottom"],"device":"flatlay_grid"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f30">
+    <div class="fmt-head">
+      <span class="fmt-no">30</span>
+      <h3>Value Stack</h3>
+      <span class="brand-chip">Wakefit · sleep</span>
+      <span class="tags"><span class="tag offer">Offer</span><span class="tag price">Price</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>Here's what you get:</div><span class="zpin hook">1</span></div><div class="zn zlist"><div class='pl-r vs2'>✓ Ortho mattress <span>₹18,000</span></div><div class='pl-r vs2'>✓ 100-night trial <span>₹0 risk</span></div><div class='pl-r vs2'>✓ 12-yr warranty <span>₹3,000</span></div><div class='pl-r vs2'>✓ Free delivery <span>₹800</span></div><span class="zpin offer">2</span></div><div class="zn zc teal"><div class='zb center'>Worth <span class='strike'>₹21,800</span> → <b>Pay ₹9,990</b></div><span class="zpin price">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum offer">1</span><span><span class="chip offer">Offer</span> <b>the itemised list</b> — each line carries its own rupee value</span></div><div class="krow"><span class="knum price">2</span><span><span class="chip price">Price</span> <b>total vs pay</b> — the stacked worth dwarfs the ask</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>the reframe</b> — cost becomes a bargain, not a spend</span></div></div>
+        <p class="use"><b>Use it for:</b> Reframes price as a bargain. Fence-sitter retargeting.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>₹21,800 of value. Pay ₹9,990.</li><li>Add it up yourself.</li><li>You save more than you spend.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"value_stack","funnel":"bottom","zones":["frame/top","value-rows/mid","total-vs-pay/bottom"],"device":"itemised_worth"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f31">
+    <div class="fmt-head">
+      <span class="fmt-no">31</span>
+      <h3>Guarantee / Risk Reversal</h3>
+      <span class="brand-chip">AG1 · supplement</span>
+      <span class="tags"><span class="tag offer">Offer</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc green tall"><div class='seal'>🛡️</div><div class='zhL'>Love it in 90 days,<br>or every rupee back.</div><div class='zb faint'>No return shipping. No questions.</div><span class="zpin offer">1</span></div><div class="zn zc light"><div class='ctab ink'>Try risk-free</div><span class="zpin cta">2</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum offer">1</span><span><span class="chip offer">Offer</span> <b>the guarantee, whole-frame</b> — seal + promise + the fine print made friendly</span></div><div class="krow"><span class="knum cta">2</span><span><span class="chip cta">CTA</span> <b>'try', not 'buy'</b> — the verb lowers commitment to zero</span></div></div>
+        <p class="use"><b>Use it for:</b> Kills the last objection right before the click.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>90 days. Money back.</li><li>Zero risk. All upside.</li><li>Try it. Keep it. Or don't.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"guarantee","funnel":"bottom","zones":["seal+promise/top-75","try-cta/bottom"],"device":"risk_reversal"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f32">
+    <div class="fmt-head">
+      <span class="fmt-no">32</span>
+      <h3>Limited-Time Urgency</h3>
+      <span class="brand-chip">Mamaearth · skincare</span>
+      <span class="tags"><span class="tag offer">Offer</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc red tall"><div class='badge-w'>⚡ SALE ENDS TONIGHT</div><div class='zhXL'>B1G1<br>FREE</div><span class="zpin offer">1</span></div><div class="zn zc red2"><div class='rowline'><span class='pe s'>🧴</span><span class='zb'>Sitewide · everything included</span></div><span class="zpin product">2</span></div><div class="zn zc dark"><div class='ctab'>Shop before midnight</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum offer">1</span><span><span class="chip offer">Offer</span> <b>the deal, huge</b> — B1G1 owns the frame; deadline on top</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>scope line</b> — 'sitewide' widens the net</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>deadline-matched</b> — midnight in the button repeats the clock</span></div></div>
+        <p class="use"><b>Use it for:</b> Sale events + retargeting. Compresses the decision.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Ends tonight. B1G1.</li><li>Midnight. Then it's gone.</li><li>Everything. Buy 1 Get 1.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"urgency","funnel":"bottom","zones":["deadline+deal/top-70","scope/mid","cta/bottom"],"device":"deadline_pressure"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f33">
+    <div class="fmt-head">
+      <span class="fmt-no">33</span>
+      <h3>Discount Code</h3>
+      <span class="brand-chip">Lenskart · eyewear</span>
+      <span class="tags"><span class="tag offer">Offer</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>Your code is inside 👀</div><span class="zpin hook">1</span></div><div class="zn zcoupon"><div class='cp-l'>EXTRA 20% OFF</div><div class='cp-c'>AIR20</div><span class="zpin offer">2</span></div><div class="zn zc red"><div class='ctab'>Apply &amp; save →</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the tease</b> — 'inside' makes the ad itself the envelope</span></div><div class="krow"><span class="knum offer">2</span><span><span class="chip offer">Offer</span> <b>the coupon</b> — dashed ticket + a short memorable code</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>redeem verb</b> — apply-and-save completes the loop</span></div></div>
+        <p class="use"><b>Use it for:</b> A reason to buy today — and a trackable one.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Code: AIR20.</li><li>20% off, on us.</li><li>Copy. Paste. Save.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"discount_code","funnel":"bottom","zones":["tease/top","coupon/mid","apply-cta/bottom"],"device":"dashed_ticket"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f34">
+    <div class="fmt-head">
+      <span class="fmt-no">34</span>
+      <h3>Perks Bar</h3>
+      <span class="brand-chip">boAt · audio</span>
+      <span class="tags"><span class="tag product">Product</span><span class="tag offer">Offer</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zheroimg">🎧<span class="zpin product">1</span></div><div class="zn zperks"><div class='pk'>🚚<span>Free ship</span></div><div class='pk'>💵<span>COD</span></div><div class='pk'>🛡️<span>1-yr wty</span></div><div class='pk'>↩️<span>7-day</span></div><span class="zpin offer">2</span></div><div class="zn zc dark"><div class='ctab'>Add to cart · ₹999</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum product">1</span><span><span class="chip product">Product</span> <b>clean hero on top</b> — product + nothing else</span></div><div class="krow"><span class="knum offer">2</span><span><span class="chip offer">Offer</span> <b>the perk row</b> — four friction-killers in one strip</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>the safe close</b> — everything above makes the click feel safe</span></div></div>
+        <p class="use"><b>Use it for:</b> Removes purchase friction. Cart + checkout retargeting.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Free ship. COD. 1-yr warranty.</li><li>Everything's on us but ₹999.</li><li>Zero-worry checkout.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"perks_bar","funnel":"bottom","zones":["product/top-60","perk-icons/mid","cart-cta/bottom"],"device":"icon_perk_strip"}</code></div>
+      </div>
+    </div>
+  </li></ul><p class="section-label">F · Education &amp; Authority</p><p class="cat-sub">Teach and lead. Mid-funnel nurture.</p><ul class="fmts">
+  <li class="fmt" id="f35">
+    <div class="fmt-head">
+      <span class="fmt-no">35</span>
+      <h3>3-Reasons Listicle</h3>
+      <span class="brand-chip">The Whole Truth · protein</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>3 reasons we print the truth 👇</div><span class="zpin hook">1</span></div><div class="zn zlist"><div class='pl-r n'><span class='rnum'>1</span> Every ingredient, front of pack</div><div class='pl-r n'><span class='rnum'>2</span> No 'natural flavouring' hiding sugar</div><div class='pl-r n'><span class='rnum'>3</span> 12g protein you can pronounce</div><span class="zpin product">2</span></div><div class="zn zc teal"><div class='ctab'>Reason enough →</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the numbered promise</b> — '3 reasons' sets up a scannable read</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>reasons = brand strengths</b> — each point is a differentiator, not a feature</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>light close</b> — 'reason enough' winks at the format</span></div></div>
+        <p class="use"><b>Use it for:</b> Mid-funnel nurture. Easy to read, easy to believe.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>3 reasons. Zero excuses.</li><li>Why we print everything.</li><li>Read 1. You'll want 3.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"listicle","funnel":"mid","zones":["promise/top","numbered-rows/mid","cta/bottom"],"device":"numbered_list"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f36">
+    <div class="fmt-head">
+      <span class="fmt-no">36</span>
+      <h3>How It Works</h3>
+      <span class="brand-chip">Lenskart · eyewear</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='zh'>Glasses at home, in 3 steps</div><span class="zpin hook">1</span></div><div class="zn zlist"><div class='pl-r n'><span class='rnum'>1</span> Book a free home eye test 🏠</div><div class='pl-r n'><span class='rnum'>2</span> Try 100+ frames at your door 👓</div><div class='pl-r n'><span class='rnum'>3</span> Delivered in 3 days 📦</div><span class="zpin product">2</span></div><div class="zn zc light"><div class='ctab ink'>Book the home visit</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the simplicity promise</b> — '3 steps' + 'at home' removes effort</span></div><div class="krow"><span class="knum product">2</span><span><span class="chip product">Product</span> <b>the process, numbered</b> — each step one line, one emoji, zero jargon</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>step-1 close</b> — the button IS the first step</span></div></div>
+        <p class="use"><b>Use it for:</b> Removes 'sounds complicated'. Service-led products.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>3 steps. Zero showroom.</li><li>Eye test at your sofa.</li><li>Booked in 30 seconds.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"how_it_works","funnel":"mid","zones":["promise/top","steps/mid","step1-cta/bottom"],"device":"numbered_steps"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f37">
+    <div class="fmt-head">
+      <span class="fmt-no">37</span>
+      <h3>Buyer's Checklist</h3>
+      <span class="brand-chip">Wakefit · sleep</span>
+      <span class="tags"><span class="tag proof">Proof</span><span class="tag product">Product</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc light"><div class='zh ink'>Before you buy any mattress:</div><span class="zpin hook">1</span></div><div class="zn zlist light"><div class='pl-r ink2'>☑ 100+ night trial</div><div class='pl-r ink2'>☑ 10-yr+ warranty</div><div class='pl-r ink2'>☑ Certified foam</div><div class='pl-r ink2'>☑ No-question returns</div><span class="zpin proof">2</span></div><div class="zn zc teal"><div class='zb center'>Wakefit ticks all 4. 🛏️</div><span class="zpin product">3</span></div><div class="zn zc light"><div class='ctab ink'>Check us yourself →</div><span class="zpin cta">4</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the rules frame</b> — 'before you buy' positions you as the honest advisor</span></div><div class="krow"><span class="knum proof">2</span><span><span class="chip proof">Proof</span> <b>the checklist</b> — 4 things to demand from any brand in the category</span></div><div class="krow"><span class="knum product">3</span><span><span class="chip product">Product</span> <b>passes every rule</b> — the one that ticks the list it just taught</span></div><div class="krow"><span class="knum cta">4</span><span><span class="chip cta">CTA</span> <b>verify close</b> — invites scrutiny — confidence signal</span></div></div>
+        <p class="use"><b>Use it for:</b> Positions you as the smart guide. Mid-funnel education.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>The mattress checklist.</li><li>Demand these 4 things.</li><li>We wrote the test. We pass it.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"buyers_checklist","funnel":"mid","zones":["rules-frame/top","checklist/mid","pass-line/low","verify-cta/bottom"],"device":"teach_then_pass"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f38">
+    <div class="fmt-head">
+      <span class="fmt-no">38</span>
+      <h3>FAQ / Objection Handling</h3>
+      <span class="brand-chip">AG1 · supplement</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag proof">Proof</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc green"><span class='pill w'>FAQ</span><div class='zhL'>“Isn't it just an expensive multivitamin?”</div><span class="zpin hook">1</span></div><div class="zn zc green2"><div class='zb'>No — 75 ingredients spanning vitamins, probiotics, and adaptogens. A multi covers ~20. One scoop replaces the whole shelf.</div><span class="zpin proof">2</span></div><div class="zn zc light"><div class='ctab ink'>Compare the labels</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the top objection, quoted</b> — the exact doubt in the buyer's head, in quotes</span></div><div class="krow"><span class="knum proof">2</span><span><span class="chip proof">Proof</span> <b>the numbers answer</b> — specifics defuse it: 75 vs ~20</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>evidence close</b> — 'compare' hands them the proof</span></div></div>
+        <p class="use"><b>Use it for:</b> Defuses the #1 doubt. Mid-to-bottom funnel.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>“Just a multivitamin?” No.</li><li>Your top doubt, answered.</li><li>Compare labels. We'll wait.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"faq_objection","funnel":"mid","zones":["objection-quote/top","evidence-answer/mid","compare-cta/bottom"],"device":"quote_the_doubt"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f39">
+    <div class="fmt-head">
+      <span class="fmt-no">39</span>
+      <h3>Founder Note</h3>
+      <span class="brand-chip">The Whole Truth · protein</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag proof">Proof</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zcream tall"><div class='fn-l'>A NOTE FROM OUR FOUNDER</div><div class='fn-t'>“I started this company because I couldn't read my protein bar's label. You shouldn't need a chemistry degree to eat clean.”</div><span class="zpin hook">1</span></div><div class="zn zcream2"><div class='fn-sign'>Shashank</div><div class='fn-by'>Shashank Mehta · Founder, The Whole Truth</div><span class="zpin proof">2</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the founder's why</b> — origin story in two sentences, letter-styled</span></div><div class="krow"><span class="knum proof">2</span><span><span class="chip proof">Proof</span> <b>the signature</b> — real name + title humanises the brand</span></div></div>
+        <p class="use"><b>Use it for:</b> Brand trust + story. Warm audiences and brand-lift.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>Why we started.</li><li>A promise, signed.</li><li>From our founder's desk.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"founder_note","funnel":"warm","zones":["letter/top-75","signature/bottom"],"device":"handwritten_letter"}</code></div>
+      </div>
+    </div>
+  </li>
+  <li class="fmt" id="f40">
+    <div class="fmt-head">
+      <span class="fmt-no">40</span>
+      <h3>Big Stat / Number</h3>
+      <span class="brand-chip">boAt · audio</span>
+      <span class="tags"><span class="tag hook">Hook</span><span class="tag proof">Proof</span><span class="tag cta">CTA</span></span>
+    </div>
+    <div class="spread">
+      <div class="ad-col"><div class="ad"><div class="zn zc dark"><div class='cl'>ONE CHARGE.</div><span class="zpin hook">1</span></div><div class="zn zc dark tall"><div class='statn'>40</div><div class='statu'>HOURS</div><span class="zpin proof">2</span></div><div class="zn zc red"><div class='ctab'>Never charge daily again</div><span class="zpin cta">3</span></div></div></div>
+      <div class="brk">
+        <div class="key"><div class="krow"><span class="knum hook">1</span><span><span class="chip hook">Hook</span> <b>the context line</b> — 'one charge' frames the number</span></div><div class="krow"><span class="knum proof">2</span><span><span class="chip proof">Proof</span> <b>one giant number</b> — 40 HOURS owns the frame — memorable, remixable</span></div><div class="krow"><span class="knum cta">3</span><span><span class="chip cta">CTA</span> <b>benefit close</b> — the CTA is the payoff of the stat</span></div></div>
+        <p class="use"><b>Use it for:</b> Punchy, memorable, endlessly remixable. Any funnel stage.</p>
+        <div class="swipe"><span class="swipe-lbl">Swipe copy</span><ul><li>40 hours. One charge.</li><li>2 crore users. One brand.</li><li>52dB of silence.</li></ul></div>
+        <div class="specbox"><span class="spec-lbl">LLM spec</span><code>{"format":"big_stat","funnel":"any","zones":["context/top","giant-number/mid-60","benefit-cta/bottom"],"device":"single_number_hero"}</code></div>
+      </div>
+    </div>
+  </li></ul>
+<p class="section-label">Appendix · Real ads, verbatim</p>
+<p class="cat-sub">Actual static-ad copy running on Meta, documented in published 2026 teardowns. Quoted as-is, with sources. (The Meta Ad Library connector is disconnected in this session, so ad images can't be embedded — these are the exact words from the live ads, verifiable at each source.)</p>
+<ul class="sources">
+<li class="source"><div class="src-head"><span class="domain">gomarble.ai · SKIMS library</span><span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span></span></div>
+<h3>SKIMS — static headlines running 2026</h3>
+<blockquote>“A boob job in a bra. Get the perfect shape, lift, and fullness in the SKIMS viral Ultimate Bra.”</blockquote>
+<blockquote>“I hate wearing bras. There's always a gap. Then SKIMS changed everything.”</blockquote>
+<blockquote>“Watch your waist shrink up to two inches. Shop new additions to our SKIMS Ultimate Body collection.”</blockquote>
+<p class="takeaway">Three archetypes in one brand: shock-benefit hook, testimonial pain-arc, measurable-outcome claim. Formats 13 &amp; 21 above are modelled on these.</p>
+<a class="src-link" href="https://www.gomarble.ai/library/brands/skims/">gomarble.ai/library/brands/skims</a></li>
+<li class="source"><div class="src-head"><span class="domain">gomarble.ai · guides</span><span class="tags"><span class="tag hook">Hook</span></span></div>
+<h3>Glossier — Cloud Paint static</h3>
+<blockquote>“Blush like the sky at sunset” — headline between product and proof, logo + “Shop now” anchoring the bottom.</blockquote>
+<p class="takeaway">Poetic single-line hook over a texture hero — format 19 above is modelled on this exact layout.</p>
+<a class="src-link" href="https://www.gomarble.ai/library/guides/best-facebook-ad-examples/">gomarble.ai/library/guides/best-facebook-ad-examples</a></li>
+<li class="source"><div class="src-head"><span class="domain">gomarble.ai · guides</span><span class="tags"><span class="tag hook">Hook</span><span class="tag offer">Offer</span></span></div>
+<h3>Bonobos — founder-story carousel</h3>
+<blockquote>Frame 1: a guy in the pants with a first-person caption — “I spent 12 years fixing pants that didn't fit…” Frames 2–4: fit details. Last frame: the offer + free-shipping threshold.</blockquote>
+<p class="takeaway">Story first, offer as payoff — the sequencing rule behind formats 7 and 39.</p>
+<a class="src-link" href="https://www.gomarble.ai/library/guides/best-facebook-ad-examples/">gomarble.ai/library/guides/best-facebook-ad-examples</a></li>
+<li class="source"><div class="src-head"><span class="domain">brandmov.com</span><span class="tags"><span class="tag proof">Proof</span></span></div>
+<h3>Testimonial statics — the specificity rule</h3>
+<blockquote>“'Lost 11 lbs in 6 weeks' beats 'I love this product!' — the specificity matters.” Testimonial statics are among the cheapest-to-produce and most durable formats for mid-funnel conversion.</blockquote>
+<p class="takeaway">Every proof-format above (20–27) uses specific numbers, never generic praise.</p>
+<a class="src-link" href="https://brandmov.com/blog/dtc-static-meta-ads/">brandmov.com/blog/dtc-static-meta-ads</a></li>
+<li class="source"><div class="src-head"><span class="domain">adlibrary.com</span><span class="tags"><span class="tag product">Product</span></span></div>
+<h3>The longevity rule — how to find real winners</h3>
+<blockquote>“Longevity in Meta Ad Library is your best proxy for what's actually profitable… Ads running 30+ days are meaningful; 90+ days are proven winners.” Static images still drive 60–70% of conversions.</blockquote>
+<p class="takeaway">When Imagive's Ad Library connector is live, filter every reference pull by 30d+/90d+ longevity before treating it as a winner.</p>
+<a class="src-link" href="https://adlibrary.com/posts/best-dtc-meta-ads-examples-2026">adlibrary.com/posts/best-dtc-meta-ads-examples-2026</a></li>
+</ul>
+<footer>
+<p><b>The rules every frame follows:</b> one element per zone · hook in the top third · product ~55% when hero · CTA a high-contrast band at the bottom · price as strikethrough-beside-sale · offer as a badge in clear space, never over the product. In Imagive: pick a format → Bulk Ad Maker pulls the product, Brand Kit locks colours &amp; fonts, Image Generator fills the zones, Smart Resizer adapts to 1:1 &amp; 9:16. The 40 LLM-spec lines above are the training corpus for that generator.</p>
+</footer>
+</div>
+</body>
+</html>

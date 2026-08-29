@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="en-IN" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Creative Analytics Report</title>
+<style>
+  /* ============================================================
+     SPECTRA — Creative Analytics presentation theme
+     Two-accent system: IRIS (violet) = creative intelligence,
+     CYAN = data / links. Semantic green/amber/red = scale/watch/pause.
+     ============================================================ */
+  :root[data-theme="dark"] {
+    --ink:        #0a0d14;
+    --panel:      #11151e;
+    --panel2:     #171d29;
+    --elevated:   #1d2433;
+    --border:     #283041;
+    --border-soft:#1d2433;
+    --text:       #e8eef6;
+    --muted:      #8a94a7;
+    --faint:      #5b6577;
+    --iris:       #8f8aff;
+    --iris-soft:  rgba(143,138,255,0.14);
+    --cyan:       #41c8de;
+    --cyan-soft:  rgba(65,200,222,0.13);
+    --green:      #43c46a;
+    --green-soft: rgba(67,196,106,0.14);
+    --amber:      #e3a017;
+    --amber-soft: rgba(227,160,23,0.14);
+    --red:        #f0566b;
+    --red-soft:   rgba(240,86,107,0.14);
+    --chip:       #1c2740;
+    --chip-bd:    #2c3c5c;
+    --code-bg:    #0c1018;
+    --shadow:     0 1px 0 rgba(255,255,255,0.02), 0 8px 24px rgba(0,0,0,0.32);
+    --hero-grad:  radial-gradient(120% 120% at 12% 0%, #161d2e 0%, #0a0d14 55%);
+  }
+  :root[data-theme="light"] {
+    --ink:        #f5f6fb;
+    --panel:      #ffffff;
+    --panel2:     #f0f2f8;
+    --elevated:   #ffffff;
+    --border:     #dde2ee;
+    --border-soft:#e9edf5;
+    --text:       #16203a;
+    --muted:      #5a6478;
+    --faint:      #97a0b2;
+    --iris:       #5a52e0;
+    --iris-soft:  rgba(90,82,224,0.10);
+    --cyan:       #0f8fa6;
+    --cyan-soft:  rgba(15,143,166,0.10);
+    --green:      #1f9d4f;
+    --green-soft: rgba(31,157,79,0.12);
+    --amber:      #b87708;
+    --amber-soft: rgba(184,119,8,0.13);
+    --red:        #d63a52;
+    --red-soft:   rgba(214,58,82,0.12);
+    --chip:       #eef1f8;
+    --chip-bd:    #d4dcec;
+    --code-bg:    #f0f2f8;
+    --shadow:     0 1px 2px rgba(16,24,40,0.06), 0 8px 24px rgba(16,24,40,0.06);
+    --hero-grad:  radial-gradient(120% 120% at 12% 0%, #eef1fb 0%, #f5f6fb 55%);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--cyan); }
+
+  /* ---------- header / sticky nav ---------- */
+  header {
+    padding: 14px 26px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    position: sticky; top: 0; z-index: 60;
+  }
+  .head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .glyph {
+    width: 30px; height: 30px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--iris), var(--cyan));
+    border-radius: 8px;
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2 L20 8 L17 21 L7 21 L4 8 Z' fill='black'/></svg>") center/72% no-repeat;
+            mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 2 L20 8 L17 21 L7 21 L4 8 Z' fill='black'/></svg>") center/72% no-repeat;
+  }
+  header h1 { font-size: 16px; font-weight: 650; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
+  .head-tools { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .pill {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.03em;
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--cyan-soft); color: var(--cyan); border: 1px solid transparent;
+  }
+  .iconbtn {
+    background: var(--panel2); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 6px 11px; cursor: pointer; font-size: 12.5px; font-weight: 500;
+  }
+  .iconbtn:hover { color: var(--text); border-color: var(--faint); }
+
+  nav#sectionNav {
+    display: flex; gap: 2px; flex-wrap: wrap; margin-top: 12px;
+    overflow-x: auto; scrollbar-width: thin;
+  }
+  nav#sectionNav a {
+    color: var(--muted); text-decoration: none; font-size: 12.5px; font-weight: 500;
+    padding: 9px 12px; border-bottom: 2px solid transparent; white-space: nowrap;
+  }
+  nav#sectionNav a:hover { color: var(--text); }
+  nav#sectionNav a.active { color: var(--text); border-bottom-color: var(--iris); }
+
+  main { padding: 0 26px 90px; max-width: 1360px; margin: 0 auto; }
+
+  /* ---------- loader ---------- */
+  #loader { max-width: 660px; margin: 70px auto; text-align: center; }
+  #dropzone {
+    border: 1.5px dashed var(--border); border-radius: 16px;
+    padding: 52px 26px; background: var(--panel); cursor: pointer; transition: .15s;
+  }
+  #dropzone.dragover { border-color: var(--cyan); background: var(--panel2); }
+  #dropzone strong { color: var(--text); font-size: 16px; display: block; }
+  #dropzone p { color: var(--muted); margin-top: 8px; font-size: 13px; }
+  #dropzone code { font-family: ui-monospace, Consolas, monospace; color: var(--cyan); font-size: 12px; }
+  #loadError { color: var(--red); margin-top: 14px; }
+
+  /* ---------- narrative section scaffolding ---------- */
+  section.story { padding-top: 30px; scroll-margin-top: 96px; }
+  .eyebrow {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 6px;
+  }
+  .eyebrow .num {
+    font-family: ui-monospace, Consolas, monospace; font-size: 12px; font-weight: 600;
+    color: var(--iris); letter-spacing: 0.06em;
+  }
+  .eyebrow .spectra-line {
+    flex: 1; height: 2px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--iris), var(--cyan) 60%, transparent);
+    opacity: 0.7;
+  }
+  .eyebrow .aud {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--faint); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px;
+  }
+  section.story > h2 {
+    font-size: 23px; font-weight: 680; letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1.2;
+  }
+  section.story > .lede { color: var(--muted); font-size: 13.5px; max-width: 760px; margin-bottom: 18px; }
+  h3 { font-size: 14px; font-weight: 640; margin: 26px 0 10px; letter-spacing: -0.01em; }
+  h3:first-child { margin-top: 0; }
+  .hint { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+  .note { color: var(--muted); font-size: 12px; }
+
+  /* ---------- cover hero ---------- */
+  #hero {
+    background: var(--hero-grad); border: 1px solid var(--border);
+    border-radius: 18px; padding: 26px 28px; margin-top: 26px; box-shadow: var(--shadow);
+  }
+  .hero-top { display: flex; flex-wrap: wrap; gap: 18px 28px; justify-content: space-between; align-items: flex-start; }
+  .hero-title { font-size: 28px; font-weight: 720; letter-spacing: -0.025em; line-height: 1.12; }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; }
+  .hero-meta .mi { font-size: 12px; color: var(--muted); }
+  .hero-meta .mi b { color: var(--text); font-weight: 600; }
+  .hero-meta .mi .mono { font-family: ui-monospace, Consolas, monospace; }
+
+  /* funnel signature */
+  .funnel { margin-top: 22px; }
+  .funnel .stage { margin: 0 auto 5px; text-align: center; }
+  .funnel .bar {
+    margin: 0 auto; border-radius: 8px; padding: 9px 14px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    border: 1px solid var(--border); background: var(--panel2);
+    font-size: 12.5px; transition: width .2s;
+  }
+  .funnel .bar .n { font-size: 17px; font-weight: 720; letter-spacing: -0.02em; }
+  .funnel .bar .lbl { color: var(--muted); }
+  .funnel .conn { width: 1px; height: 12px; margin: 0 auto; background: var(--border); }
+  .funnel .split { display: flex; gap: 8px; justify-content: center; max-width: 560px; margin: 0 auto; }
+  .funnel .split .bar { flex: 1; }
+  .funnel .bar.scale { border-color: var(--green); background: var(--green-soft); }
+  .funnel .bar.scale .n { color: var(--green); }
+  .funnel .bar.watch { border-color: var(--amber); background: var(--amber-soft); }
+  .funnel .bar.watch .n { color: var(--amber); }
+  .funnel .bar.pause { border-color: var(--red); background: var(--red-soft); }
+  .funnel .bar.pause .n { color: var(--red); }
+  .funnel .bar.iris { border-color: var(--iris); }
+  .funnel .bar.iris .n { color: var(--iris); }
+
+  /* ---------- cards ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px;
+  }
+  .card .k { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .card .v { font-size: 20px; font-weight: 700; margin-top: 3px; letter-spacing: -0.02em; }
+  .card.accent-iris { border-left: 3px solid var(--iris); }
+  .card.accent-cyan { border-left: 3px solid var(--cyan); }
+
+  /* ---------- digest / callouts ---------- */
+  .digest {
+    background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--iris);
+    border-radius: 12px; padding: 16px 20px; white-space: pre-wrap; color: var(--text); font-size: 13px; line-height: 1.65;
+  }
+  .warn {
+    background: var(--amber-soft); border: 1px solid var(--amber); color: var(--amber);
+    border-radius: 10px; padding: 11px 16px; margin-bottom: 10px; font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .warn a { color: inherit; font-weight: 700; text-decoration: underline; }
+  .infobox {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 15px 18px; margin-bottom: 16px; font-size: 13px; color: var(--text); line-height: 1.6;
+  }
+  .infobox p { color: var(--muted); }
+  .infobox p + p { margin-top: 8px; }
+  .infobox b, .infobox strong { color: var(--text); }
+  code, .mono { font-family: ui-monospace, Consolas, monospace; }
+  .infobox code, .codechip {
+    font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+    background: var(--code-bg); padding: 1px 6px; border-radius: 5px; color: var(--cyan);
+  }
+  .currency-note {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 9px 15px; color: var(--muted); font-size: 12px; margin-bottom: 14px;
+  }
+
+  /* ---------- pipeline ---------- */
+  .pipeline { display: flex; flex-direction: column; gap: 0; }
+  .pstep { display: grid; grid-template-columns: 46px 1fr; gap: 0 16px; }
+  .pstep .rail { display: flex; flex-direction: column; align-items: center; }
+  .pstep .dot {
+    width: 30px; height: 30px; border-radius: 9px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, Consolas, monospace; font-weight: 700; font-size: 13px;
+    background: var(--iris-soft); color: var(--iris); border: 1px solid var(--iris);
+  }
+  .pstep .line { width: 2px; flex: 1; min-height: 14px; background: linear-gradient(180deg, var(--iris), var(--cyan)); opacity: .5; margin: 4px 0; }
+  .pstep:last-child .line { display: none; }
+  .pstep .pbody {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 14px;
+  }
+  .pstep .pbody h4 { font-size: 14px; font-weight: 640; }
+  .pstep .pbody p { color: var(--muted); font-size: 12.5px; margin: 5px 0 9px; }
+  .iolabel { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin-right: 6px; }
+  .io-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: baseline; }
+  .pexample {
+    margin-top: 9px; padding: 7px 11px; border-radius: 8px; background: var(--cyan-soft);
+    color: var(--text); font-size: 12px; border: 1px solid transparent;
+  }
+  .pexample b { color: var(--cyan); }
+
+  /* ---------- chips / tags ---------- */
+  .chip {
+    display: inline-block; background: var(--chip); border: 1px solid var(--chip-bd);
+    color: var(--text); border-radius: 999px; padding: 1px 10px; font-size: 12px;
+    margin: 2px 3px 2px 0; font-family: ui-monospace, Consolas, monospace;
+  }
+  .chip.key { background: var(--iris-soft); border-color: transparent; color: var(--iris); }
+  .chip.dim { color: var(--muted); }
+  .tag {
+    font-size: 11px; border-radius: 6px; padding: 2px 8px; font-weight: 600;
+    background: var(--chip); color: var(--muted); border: 1px solid var(--border);
+  }
+  .tag.scale { background: var(--green-soft); color: var(--green); border-color: transparent; }
+  .tag.watch { background: var(--amber-soft); color: var(--amber); border-color: transparent; }
+  .tag.pause { background: var(--red-soft); color: var(--red); border-color: transparent; }
+  .tag.elig  { background: var(--cyan-soft); color: var(--cyan); border-color: transparent; }
+  .tag.excl  { background: var(--chip); color: var(--faint); }
+
+  /* ---------- tables ---------- */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; min-width: 760px; background: var(--panel); }
+  th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  tr:last-child td { border-bottom: none; }
+  th {
+    background: var(--panel2); color: var(--muted); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.05em; cursor: default; user-select: none; position: sticky; top: 0;
+  }
+  th[data-sort] { cursor: pointer; }
+  th .arrow { color: var(--iris); }
+  tbody tr:hover td { background: var(--panel2); }
+  td.good { color: var(--green); font-weight: 650; }
+  td.bad  { color: var(--red); font-weight: 650; }
+  .subrow td { background: var(--code-bg) !important; color: var(--muted); }
+  .subrow table { min-width: 0; }
+  .subrow th { background: var(--panel2); }
+  .expander { cursor: pointer; color: var(--iris); font-weight: 700; user-select: none; margin-right: 4px; }
+  .adlink { color: var(--cyan); cursor: pointer; text-decoration: none; }
+  .adlink:hover { text-decoration: underline; }
+  .inr { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ---------- filters / inputs ---------- */
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  input[type="text"] {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 9px; padding: 8px 13px; width: 300px; font-size: 13px;
+  }
+  input[type="text"]:focus { outline: none; border-color: var(--cyan); }
+  select {
+    background: var(--panel); border: 1px solid var(--border); color: var(--text);
+    border-radius: 9px; padding: 8px 11px; font-size: 13px;
+  }
+
+  /* ---------- patterns split (winners/losers) ---------- */
+  .split2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .split2 { grid-template-columns: 1fr; } }
+  .panelcard { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .panelcard > .ph { padding: 12px 16px; font-weight: 640; font-size: 13.5px; border-bottom: 1px solid var(--border); }
+  .panelcard.win > .ph { color: var(--green); }
+  .panelcard.lose > .ph { color: var(--red); }
+  .panelcard table { min-width: 0; }
+
+  /* ---------- recommendation candidate cards ---------- */
+  .candidates { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; }
+  @media (max-width: 560px) { .candidates { grid-template-columns: 1fr; } }
+  .cand {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; display: flex; box-shadow: var(--shadow);
+  }
+  .cand.scale { border-left: 4px solid var(--green); }
+  .cand.watch { border-left: 4px solid var(--amber); }
+  .cand.pause { border-left: 4px solid var(--red); }
+  .cand .media { width: 158px; flex-shrink: 0; background: #000; position: relative; cursor: pointer; }
+  .cand .media img, .cand .media video { width: 100%; height: 100%; object-fit: cover; display: block; min-height: 210px; }
+  .cand .body { padding: 14px 16px; flex: 1; min-width: 0; }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    border-radius: 6px; padding: 2px 9px; letter-spacing: 0.04em;
+  }
+  .badge.scale { background: var(--green-soft); color: var(--green); }
+  .badge.watch { background: var(--amber-soft); color: var(--amber); }
+  .badge.pause { background: var(--red-soft); color: var(--red); }
+  .cand .adid { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; margin: 7px 0 2px; }
+  .metricgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px 14px; margin: 10px 0; }
+  .metricgrid .m .k { color: var(--muted); font-size: 10.5px; }
+  .metricgrid .m .v { font-weight: 650; font-size: 14px; }
+  .reason { font-size: 12.5px; color: var(--text); margin-top: 7px; }
+  .playbtn {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.22); cursor: pointer; border: none; width: 100%;
+  }
+  .playbtn span {
+    width: 42px; height: 42px; border-radius: 50%; background: rgba(10,13,20,0.82); border: 2px solid #fff;
+    color: #fff; display: flex; align-items: center; justify-content: center; font-size: 15px; padding-left: 3px;
+  }
+
+  /* ---------- crystal QA / creative-library grid ---------- */
+  .dsgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(580px, 1fr)); gap: 16px; }
+  @media (max-width: 700px) { .dsgrid { grid-template-columns: 1fr; } }
+  .ds {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+    display: flex; overflow: hidden; scroll-margin-top: 110px;
+  }
+  .ds.flash { box-shadow: 0 0 0 2px var(--iris); }
+  .ds .media { width: 210px; flex-shrink: 0; background: #000; position: relative; cursor: pointer; }
+  .ds .media img, .ds .media video { width: 100%; height: 100%; min-height: 280px; object-fit: cover; display: block; }
+  .ds .body { padding: 14px 18px; flex: 1; min-width: 0; }
+  .ds .head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ds .adid { font-family: ui-monospace, Consolas, monospace; font-size: 13px; font-weight: 650; }
+  .crystals { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 5px 14px; margin: 11px 0; }
+  .crystals .c { border-left: 2px solid var(--iris-soft); padding-left: 8px; }
+  .crystals .c .k { color: var(--iris); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .crystals .c .v { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; word-break: break-word; }
+  .vision {
+    font-size: 12.5px; color: var(--text); background: var(--iris-soft); border-radius: 8px;
+    padding: 8px 11px; margin: 8px 0; line-height: 1.5;
+  }
+  details.tr summary { cursor: pointer; color: var(--cyan); font-size: 12.5px; }
+  details.tr p {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; margin-top: 6px; font-size: 12.5px; color: var(--text);
+  }
+  .perfline { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 11px; border-top: 1px dashed var(--border); padding-top: 11px; }
+  .perfline .m .k { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+  .perfline .m .v { font-weight: 650; font-size: 13.5px; }
+  .extlink { color: var(--cyan); font-size: 12px; }
+
+  /* ---------- all-ads gallery ---------- */
+  .adgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .adcard {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; cursor: pointer; transition: .12s; display: flex; flex-direction: column;
+  }
+  .adcard:hover { border-color: var(--faint); transform: translateY(-2px); }
+  .adcard .media { aspect-ratio: 1/1; background: #000; position: relative; }
+  .adcard .media img, .adcard .media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .adcard .ab { padding: 10px 12px; }
+  .adcard .row { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .adcard .aid { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--cyan); }
+  .adcard .meta { color: var(--muted); font-size: 11.5px; margin-top: 4px; }
+  .adcard .hl { font-size: 12px; margin-top: 5px; color: var(--text); max-height: 32px; overflow: hidden; }
+  .adcard .why { font-size: 11px; color: var(--red); margin-top: 5px; }
+  .adcard .corner {
+    position: absolute; top: 7px; left: 7px;
+  }
+
+  /* ---------- cross patterns ---------- */
+  .xgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .xcard { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .xcard .score { font-size: 24px; font-weight: 740; letter-spacing: -0.02em; }
+  .xcard .score.good { color: var(--green); }
+  .xcard .score.bad { color: var(--red); }
+  .xcard .score.na { color: var(--muted); }
+  .xcard .cnt { color: var(--muted); font-size: 12px; margin: 4px 0 9px; }
+
+  /* ---------- glossary ---------- */
+  .gloss { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+  .gloss .g { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; }
+  .gloss .g .t { font-family: ui-monospace, Consolas, monospace; color: var(--iris); font-size: 12.5px; font-weight: 650; }
+  .gloss .g .d { color: var(--muted); font-size: 12px; margin-top: 3px; }
+
+  /* ---------- explorer ---------- */
+  details.explore {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px;
+  }
+  details.explore > summary {
+    cursor: pointer; padding: 11px 16px; font-weight: 600; font-size: 13px;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  details.explore > summary::-webkit-details-marker { display: none; }
+  details.explore > summary .meta { color: var(--faint); font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; font-weight: 500; }
+  details.explore pre {
+    margin: 0; padding: 14px 16px; border-top: 1px solid var(--border); overflow-x: auto;
+    font-family: ui-monospace, Consolas, monospace; font-size: 12px; line-height: 1.55;
+    color: var(--text); max-height: 460px; background: var(--code-bg);
+  }
+  .jk { color: var(--iris); }     /* json key */
+  .js { color: var(--green); }    /* json string */
+  .jn { color: var(--cyan); }     /* json number */
+  .jb { color: var(--amber); }    /* json bool/null */
+
+  /* ---------- ad detail standalone page ---------- */
+  body.ad-detail { padding-bottom: 40px; }
+  .detail-wrap { max-width: 1080px; margin: 0 auto; padding: 24px 26px; }
+  .detail-back { color: var(--cyan); font-size: 13px; text-decoration: none; display: inline-block; margin-bottom: 16px; }
+  .detail-back:hover { text-decoration: underline; }
+  .detail-hero {
+    display: grid; grid-template-columns: 300px 1fr; gap: 24px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 18px;
+  }
+  .detail-hero .media { min-height: 340px; background:#000; position: relative; }
+  .detail-hero .media img, .detail-hero .media video { width: 100%; height: 100%; object-fit: cover; display:block; min-height: 340px; }
+  .detail-hero .body { padding: 22px 24px; }
+  .detail-hero h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; }
+  .detail-section {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px;
+  }
+  .detail-section h3 { font-size: 12px; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .elig-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border-soft); font-size: 13px; }
+  .elig-row:last-child { border-bottom: none; }
+  .elig-row .gate { width: 150px; color: var(--muted); }
+  .elig-row .verdict.pass { color: var(--green); font-weight: 650; }
+  .elig-row .verdict.fail { color: var(--red); font-weight: 650; }
+  @media (max-width: 800px) { .detail-hero { grid-template-columns: 1fr; } }
+
+  /* ---------- responsive + print ---------- */
+  @media (max-width: 760px) {
+    main { padding: 0 16px 70px; }
+    .ds { flex-direction: column; }
+    .ds .media { width: 100%; }
+    .cand { flex-direction: column; }
+    .cand .media { width: 100%; }
+    .hero-title { font-size: 22px; }
+  }
+  @media print {
+    header { position: static; }
+    nav#sectionNav, .head-tools, #dropzone, .playbtn, .controls { display: none !important; }
+    body { background: #fff; color: #000; }
+    details.explore[open] pre, details.tr p { max-height: none; }
+    details.explore:not([open]) > *:not(summary),
+    details.tr:not([open]) > *:not(summary) { display: block !important; }
+    .cand, .ds, .card, .panelcard, #hero { box-shadow: none; break-inside: avoid; }
+    section.story { break-inside: avoid-page; }
+  }
+  :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-row">
+    <div class="brand">
+      <div class="glyph" aria-hidden="true"></div>
+      <div>
+        <h1>Creative Analytics Report</h1>
+        <div class="sub" id="runMeta">Load a <code>creative_analytics</code> run to begin</div>
+      </div>
+    </div>
+    <div class="head-tools">
+      <span class="pill" title="All monetary values shown in Indian Rupees">INR &#8377;</span>
+      <button class="iconbtn" id="themeToggle" title="Toggle light / dark">&#9789; Light</button>
+    </div>
+  </div>
+  <nav id="sectionNav" style="display:none">
+    <a href="#summary">Summary</a>
+    <a href="#how">How it works</a>
+    <a href="#rules">Rules &amp; terms</a>
+    <a href="#filtered">Filtered out</a>
+    <a href="#patterns">Winners &amp; losers</a>
+    <a href="#recommendations">Recommendations</a>
+    <a href="#creative">Creative intelligence</a>
+    <a href="#ads">All ads &amp; media</a>
+    <a href="#performance">Performance</a>
+    <a href="#explorer">Data explorer</a>
+  </nav>
+</header>
+
+<main>
+  <div id="loader">
+    <div id="dropzone">
+      <strong>Drop the workflow response JSON here, or click to browse</strong>
+      <p>Expected: a <code>creative_analytics</code> run export (e.g. <code>response_1782280465443.json</code>).<br>
+      Everything renders in your browser — nothing is uploaded.</p>
+      <input type="file" id="fileInput" accept=".json,application/json" style="display:none" />
+    </div>
+    <div id="loadError"></div>
+  </div>
+
+  <div id="app" style="display:none"></div>
+</main>
+
+<script>
+"use strict";
+
+/* ====================================================================
+   STATE
+   ==================================================================== */
+var DATA = null, OUT = null;
+var adBase = {};      /* ad_id -> output.ads entry (all 52) */
+var adIndex = {};     /* ad_id -> analysis_dataset entry (eligible) */
+var libIndex = {};    /* ad_id -> creative_library entry (all) */
+var fetchIndex = {};  /* ad_id -> media_fetch_results entry */
+var bundleIndex = {}; /* ad_id -> media_bundles entry */
+var perfByAd = {};    /* ad_id -> aggregated performance + weekly rows */
+var groupsByAd = {};  /* ad_id -> [{crystal_name, crystal_value, performance_index}] */
+var recByAd = {};     /* ad_id -> {bucket, item} */
+var scaleIds = {}, watchIds = {}, pauseIds = {};
+var acct = {};        /* account baselines from ranked_groups[0] */
+var STORAGE_KEY = "creative_analytics_run_v1";
+var SELF = (location.pathname.split("/").pop() || "creative_analytics_report.html");
+
+var CRYSTAL_ORDER = ["visual","colors","hook","offer","mode","mood","pace","talent","environment","audio","music","copy"];
+var GLOSSARY = {
+  visual: "Dominant shot type — product_closeup, lifestyle, demo, etc.",
+  colors: "Dominant colour palette detected in the creative.",
+  hook: "Opening angle that grabs attention — aspirational, urgency, curiosity.",
+  offer: "Type of offer surfaced — discount, benefit_led, new_collection.",
+  mode: "Production style — studio, UGC, animation, screen-capture.",
+  mood: "Emotional tone — energetic, elegant, calm, playful.",
+  pace: "Editing pace — static, moderate, fast.",
+  talent: "People on screen — single_person, group, no_people.",
+  environment: "Setting where the creative takes place.",
+  audio: "Audio characteristics — voiceover, ambient, none.",
+  music: "Music style or presence in the creative.",
+  copy: "Inferred theme of the on-screen / caption copy.",
+  transcript: "Speech-to-text of any spoken words in the video."
+};
+var PIPELINE = [
+  { t: "Pull Meta data", p: "Connects to the Meta Ads account and pulls every ad in the selected campaigns plus its delivery insights for the reporting window.",
+    reads: ["input.meta_account_id","input.campaign_ids","input.reporting_window"], writes: ["ads","performance","date_range"] },
+  { t: "Fetch media bundles", p: "Downloads each ad's image, video, and audio to a temporary worker folder so the creative can be analysed.",
+    reads: ["ads"], writes: ["media_fetch_results","media_bundles"] },
+  { t: "Extract the creative library", p: "An LLM watches/looks at each creative and describes it — shot type, colours, hook, mood, pace, transcript — turning pixels into structured 'crystals'.",
+    reads: ["media_bundles"], writes: ["creative_library"] },
+  { t: "Build & filter crystal groups", p: "Applies the eligibility gate (minimum impressions and spend), keeps only ads with enough data, and groups the survivors by each crystal value.",
+    reads: ["creative_library","performance","thresholds"], writes: ["analysis_dataset","crystal_groups","filtered_groups","ads_checked","warnings"] },
+  { t: "Rank patterns & pick candidates", p: "Scores each group against the account average to get a performance index, then sorts ads into Scale, Watch, and Pause buckets.",
+    reads: ["crystal_groups","analysis_dataset"], writes: ["ranked_groups","winning_patterns","losing_patterns","cross_crystal_patterns","ads_to_scale","ads_to_watch","ads_to_pause"] },
+  { t: "Write the weekly digest", p: "Summarises the winning and losing patterns and the recommended actions into a plain-language brief for the team.",
+    reads: ["winning_patterns","losing_patterns","ads_to_scale"], writes: ["digest","digest_text"] }
+];
+
+/* ====================================================================
+   FORMATTING (INR, en-IN)
+   ==================================================================== */
+var INR_MONEY  = new Intl.NumberFormat("en-IN", { style:"currency", currency:"INR", minimumFractionDigits:2, maximumFractionDigits:2 });
+var INR_COST   = new Intl.NumberFormat("en-IN", { style:"currency", currency:"INR", minimumFractionDigits:2, maximumFractionDigits:4 });
+var INR_NUMBER = new Intl.NumberFormat("en-IN", { minimumFractionDigits:0, maximumFractionDigits:2 });
+
+function isNum(v){ return typeof v === "number" && isFinite(v); }
+function metricValue(){
+  for (var i=0;i<arguments.length;i++){
+    var raw = arguments[i];
+    if (raw === null || raw === undefined || raw === "") continue;
+    var num = typeof raw === "number" ? raw : Number(raw);
+    if (isFinite(num)) return num;
+  }
+  return null;
+}
+function dataMetricValue(){ var v = metricValue.apply(null, arguments); return v === null ? "" : v; }
+function fmt(v, dec){ if (!isNum(v)) return "\u2014"; return INR_NUMBER.format(v); }
+function fmtInt(v){ return isNum(v) ? v.toLocaleString("en-IN") : "\u2014"; }
+function fmtPct(v){ return isNum(v) ? fmt(v,2) + "%" : "\u2014"; }
+function fmtMoney(v){ return !isNum(v) ? "\u2014" : "<span class=\"inr\">" + INR_MONEY.format(v) + "</span>"; }
+function fmtCost(v){ return !isNum(v) ? "\u2014" : "<span class=\"inr\">" + INR_COST.format(v) + "</span>"; }
+function esc(s){
+  return String(s === null || s === undefined ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function truncate(s, n){ s = String(s||""); return s.length > n ? s.slice(0,n) + "\u2026" : s; }
+
+/* ====================================================================
+   LOADING
+   ==================================================================== */
+var dropzone = document.getElementById("dropzone");
+var fileInput = document.getElementById("fileInput");
+var loadError = document.getElementById("loadError");
+
+dropzone.addEventListener("click", function(){ fileInput.click(); });
+fileInput.addEventListener("change", function(){ if (fileInput.files.length) readFile(fileInput.files[0]); });
+dropzone.addEventListener("dragover", function(e){ e.preventDefault(); dropzone.classList.add("dragover"); });
+dropzone.addEventListener("dragleave", function(){ dropzone.classList.remove("dragover"); });
+dropzone.addEventListener("drop", function(e){
+  e.preventDefault(); dropzone.classList.remove("dragover");
+  if (e.dataTransfer.files.length) readFile(e.dataTransfer.files[0]);
+});
+function readFile(file){
+  var reader = new FileReader();
+  reader.onload = function(){
+    try { boot(JSON.parse(reader.result)); }
+    catch (err){ loadError.textContent = "Could not parse JSON: " + err.message; }
+  };
+  reader.readAsText(file);
+}
+
+/* theme toggle */
+var themeToggle = document.getElementById("themeToggle");
+themeToggle.addEventListener("click", function(){
+  var cur = document.documentElement.getAttribute("data-theme");
+  var next = cur === "light" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", next);
+  themeToggle.innerHTML = next === "light" ? "\u263D Dark" : "\u263C Light";
+});
+
+function getQueryAdId(){ try { return new URLSearchParams(location.search).get("ad_id"); } catch(e){ return null; } }
+
+function tryBootAdDetailPage(){
+  var adId = getQueryAdId();
+  if (!adId) return false;
+  var raw = sessionStorage.getItem(STORAGE_KEY);
+  if (!raw){
+    document.querySelector("header h1").textContent = "Ad detail";
+    document.getElementById("runMeta").textContent = "Load the main report first, then click an ad.";
+    document.getElementById("sectionNav").style.display = "none";
+    document.getElementById("loader").innerHTML =
+      "<p class=\"note\">No run data in this browser session. Open <a class=\"adlink\" href=\"" + esc(SELF) + "\">" + esc(SELF) + "</a>, load the workflow JSON, then click an ad.</p>";
+    return true;
+  }
+  try { boot(JSON.parse(raw), { adDetailOnly: adId }); }
+  catch (err){ loadError.textContent = "Could not read saved run: " + err.message; }
+  return true;
+}
+
+if (!tryBootAdDetailPage()){
+  /* Auto-load if a JSON is co-located (served over http) — falls back to dropzone silently. */
+  ["response_1782280465443.json","creative_analytics_response.json"].reduce(function(chain, name){
+    return chain.catch(function(){
+      return fetch(name).then(function(r){ if (!r.ok) throw 0; return r.json(); }).then(function(j){ if (!DATA) boot(j); });
+    });
+  }, Promise.reject()).catch(function(){ /* manual load */ });
+}
+
+/* ====================================================================
+   BOOT + INDEXING
+   ==================================================================== */
+function boot(json, opts){
+  opts = opts || {};
+  DATA = json;
+  OUT = json.output || json;
+
+  adBase = {}; adIndex = {}; libIndex = {}; fetchIndex = {}; bundleIndex = {};
+  perfByAd = {}; groupsByAd = {}; recByAd = {}; scaleIds = {}; watchIds = {}; pauseIds = {};
+
+  (OUT.ads || []).forEach(function(a){ adBase[a.ad_id] = a; });
+  (OUT.analysis_dataset || []).forEach(function(e){ adIndex[e.ad_id] = e; });
+  (OUT.creative_library || []).forEach(function(e){ libIndex[e.ad_id] = e; });
+  (OUT.media_fetch_results || []).forEach(function(e){ fetchIndex[e.ad_id] = e; });
+  (OUT.media_bundles || []).forEach(function(e){ bundleIndex[e.ad_id] = e; });
+
+  (OUT.performance || []).forEach(function(r){
+    var a = perfByAd[r.ad_id] || (perfByAd[r.ad_id] = {
+      ad_id: r.ad_id, impressions:0, reach:0, clicks:0, spend:0,
+      conversions:0, conversion_value:0, add_to_cart:0, weekly:[]
+    });
+    a.impressions += r.impressions || 0;
+    a.reach       += r.reach || 0;
+    a.clicks      += r.clicks || 0;
+    a.spend       += r.spend || 0;
+    a.conversions += metricValue(r.purchases, r.conversions) || 0;
+    a.conversion_value += metricValue(r.purchase_revenue, r.conversion_value) || 0;
+    a.add_to_cart += r.add_to_cart || 0;
+    a.weekly.push(r);
+  });
+  Object.keys(perfByAd).forEach(function(k){
+    var a = perfByAd[k];
+    a.ctr = a.impressions ? (a.clicks / a.impressions) * 100 : null;
+    a.cpc = a.clicks ? a.spend / a.clicks : null;
+    a.cpm = a.impressions ? (a.spend / a.impressions) * 1000 : null;
+    a.cpa = a.conversions ? a.spend / a.conversions : null;
+    a.roas = a.spend ? a.conversion_value / a.spend : null;
+    a.frequency = a.reach ? a.impressions / a.reach : null;
+  });
+
+  (OUT.crystal_groups || []).forEach(function(g){
+    (g.ad_ids || []).forEach(function(id){
+      (groupsByAd[id] || (groupsByAd[id] = [])).push(g);
+    });
+  });
+
+  indexRecs(OUT.ads_to_scale, "scale", scaleIds);
+  indexRecs(OUT.ads_to_watch, "watch", watchIds);
+  indexRecs(OUT.ads_to_pause, "pause", pauseIds);
+
+  if (OUT.ranked_groups && OUT.ranked_groups.length){
+    var g0 = OUT.ranked_groups[0];
+    acct = { roas: g0.account_avg_roas, cpa: g0.account_avg_cpa, ctr: g0.account_avg_ctr };
+  }
+
+  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(json)); } catch(e){}
+
+  if (opts.adDetailOnly){
+    document.body.classList.add("ad-detail");
+    document.querySelector("header h1").textContent = "Ad " + opts.adDetailOnly;
+    document.getElementById("sectionNav").style.display = "none";
+    document.getElementById("loader").style.display = "none";
+    var appEl = document.getElementById("app"); appEl.style.display = "block";
+    renderAdDetailPage(opts.adDetailOnly);
+    return;
+  }
+
+  document.getElementById("loader").style.display = "none";
+  var app = document.getElementById("app"); app.style.display = "block";
+  document.getElementById("sectionNav").style.display = "flex";
+
+  var dr = OUT.date_range || {};
+  document.getElementById("runMeta").innerHTML =
+    "Run <span class=\"mono\">" + esc(DATA.id || OUT.run_id || "") + "</span>" +
+    " &middot; <strong>" + esc(DATA.status || OUT.status || "") + "</strong>" +
+    " &middot; " + esc(OUT.reporting_window || "") +
+    (dr.since ? " (" + esc(dr.since) + " \u2192 " + esc(dr.until) + ")" : "");
+
+  app.innerHTML =
+    section("summary","01","Everyone","Executive summary","What this run found, at a glance.") +
+    section("how","02","Everyone","How this report was built","Six steps turn raw Meta ads into ranked creative recommendations.") +
+    section("rules","03","Everyone","Rules &amp; definitions","The thresholds, scores, and creative vocabulary used throughout.") +
+    section("filtered","04","Everyone","What got filtered out","Ads that did not have enough delivery to be ranked, and why.") +
+    section("patterns","05","Analysts","Winners &amp; losers","Creative attributes that beat — and trailed — the account average.") +
+    section("recommendations","06","Marketers","Recommendations","Scale, watch, and pause calls for every eligible ad.") +
+    section("creative","07","Analysts","Creative intelligence","Crystals, groups, cross-patterns, and the full extracted library.") +
+    section("ads","08","Everyone","All ads &amp; media QA","Every ad pulled from Meta and how its media downloaded.") +
+    section("performance","09","Technical","Performance","Aggregated and weekly delivery for every ad with data.") +
+    section("explorer","10","Technical","Full data explorer","Run configuration plus the raw value of every output key.");
+
+  renderSummary();
+  renderHow();
+  renderRules();
+  renderFiltered();
+  renderPatterns();
+  renderRecommendations();
+  renderCreative();
+  renderAds();
+  renderPerformance();
+  renderExplorer();
+
+  wireScrollSpy();
+}
+
+function indexRecs(list, bucket, idMap){
+  (list || []).forEach(function(a){ idMap[a.ad_id] = true; recByAd[a.ad_id] = { bucket: bucket, item: a }; });
+}
+function section(id, num, aud, title, lede){
+  return "<section class=\"story\" id=\"" + id + "\">" +
+    "<div class=\"eyebrow\"><span class=\"num\">" + num + "</span><span class=\"spectra-line\"></span><span class=\"aud\">" + aud + "</span></div>" +
+    "<h2>" + title + "</h2><p class=\"lede\">" + lede + "</p>" +
+    "<div class=\"body\" id=\"body-" + id + "\"></div></section>";
+}
+
+function getThresholds(){
+  var fromInput = DATA && DATA.input && DATA.input.thresholds;
+  return fromInput || (OUT && OUT.thresholds) || {};
+}
+function minImpressions(){ var t = getThresholds(); return t.min_impressions !== undefined ? t.min_impressions : 100; }
+function minSpend(){ var t = getThresholds(); return t.min_spend !== undefined ? t.min_spend : 1000; }
+
+/* eligibility verdict for any ad_id */
+function eligibilityOf(adId){
+  var p = perfByAd[adId] || { impressions:0, spend:0 };
+  var failImp = p.impressions < minImpressions();
+  var failSpend = p.spend < minSpend();
+  var eligible = !!adIndex[adId];
+  return { impressions: p.impressions, spend: p.spend, failImp: failImp, failSpend: failSpend, eligible: eligible, hasData: !!perfByAd[adId] };
+}
+function exclusionReason(adId){
+  var e = eligibilityOf(adId);
+  var parts = [];
+  if (e.failImp) parts.push("impressions " + fmtInt(e.impressions) + " < " + fmtInt(minImpressions()));
+  if (e.failSpend) parts.push("spend " + (e.hasData ? INR_MONEY.format(e.spend) : "\u20B90.00") + " < " + INR_MONEY.format(minSpend()));
+  return parts.join(" &amp; ") || "did not meet thresholds";
+}
+function bucketTag(adId){
+  if (scaleIds[adId]) return "<span class=\"tag scale\">scale</span>";
+  if (watchIds[adId]) return "<span class=\"tag watch\">watch</span>";
+  if (pauseIds[adId]) return "<span class=\"tag pause\">pause</span>";
+  return "";
+}
+function statusTag(adId){
+  if (scaleIds[adId]) return "<span class=\"tag scale\">scale</span>";
+  if (watchIds[adId]) return "<span class=\"tag watch\">watch</span>";
+  if (pauseIds[adId]) return "<span class=\"tag pause\">pause</span>";
+  if (adIndex[adId]) return "<span class=\"tag elig\">eligible</span>";
+  return "<span class=\"tag excl\">excluded</span>";
+}
+function bucketLabel(adId){
+  if (scaleIds[adId]) return "Scale";
+  if (watchIds[adId]) return "Watch";
+  if (pauseIds[adId]) return "Pause";
+  return adIndex[adId] ? "Eligible" : "Excluded";
+}
+
+/* ====================================================================
+   MEDIA + LINKS (work for ALL ads, not just eligible)
+   ==================================================================== */
+function mediaUrlCandidates(ad){
+  var seen = {}, urls = [];
+  function push(u){ u = String(u||"").trim(); if (!u || seen[u]) return; seen[u] = true; urls.push(u); }
+  push(ad.image_url); push(ad.media_url); push(ad.thumbnail_url);
+  return urls;
+}
+function mediaBlock(adId, clickable){
+  var ad = adBase[adId] || (adIndex[adId] ? adIndex[adId].ad : {}) || {};
+  var urls = mediaUrlCandidates(ad);
+  var video = ad.video_source_url || "";
+  var clickAttr = clickable ? " data-ad=\"" + esc(adId) + "\"" : "";
+  var html = "<div class=\"media\"" + clickAttr + " data-video=\"" + esc(video) + "\">";
+  if (urls.length){
+    html += "<img src=\"" + esc(urls[0]) + "\" loading=\"lazy\" alt=\"Creative preview for ad " + esc(adId) + "\" " +
+      "data-fallbacks=\"" + esc(urls.slice(1).join("|")) + "\" " +
+      "onerror=\"var f=this.dataset.fallbacks?this.dataset.fallbacks.split('|').filter(Boolean):[];" +
+      "if(f.length){this.src=f.shift();this.dataset.fallbacks=f.join('|');}else{this.style.display='none';this.parentNode.classList.add('nomedia');}\" />";
+  } else {
+    html += "<div style=\"padding:12px;color:var(--faint);font-size:12px;min-height:200px;display:flex;align-items:center;justify-content:center\">No preview URL</div>";
+  }
+  if (video) html += "<button class=\"playbtn\" title=\"Play video\" aria-label=\"Play video\"><span>\u25B6</span></button>";
+  html += "</div>";
+  return html;
+}
+function adLink(adId){
+  var href = SELF + "?ad_id=" + encodeURIComponent(adId);
+  return "<a class=\"adlink mono\" href=\"" + href + "\" target=\"_blank\" rel=\"noopener\">" + esc(adId) + "</a>";
+}
+function gotoAd(adId){ window.open(SELF + "?ad_id=" + encodeURIComponent(adId), "_blank", "noopener"); }
+
+/* delegated clicks: media play + clickable ad cards/media */
+document.addEventListener("click", function(e){
+  var play = e.target.closest(".playbtn");
+  if (play){
+    e.stopPropagation();
+    var media = play.parentElement;
+    var url = media.dataset.video;
+    if (!url) return;
+    media.innerHTML = "<video controls autoplay src=\"" + esc(url) + "\"" +
+      " onerror=\"this.outerHTML='<div style=&quot;padding:12px;color:var(--faint);font-size:12px&quot;>Video blocked by CDN. <a class=&quot;extlink&quot; target=&quot;_blank&quot; href=&quot;" + esc(url) + "&quot;>Open in new tab</a></div>'\"></video>";
+    return;
+  }
+  var clickable = e.target.closest("[data-ad]");
+  if (clickable && !e.target.closest("a")){
+    gotoAd(clickable.dataset.ad);
+  }
+});
+
+/* linkify Meta ad ids (>=10 digits) inside free text */
+function linkifyDigest(text){
+  return esc(text).replace(/\b\d{10,}\b/g, function(m){ return adLink(m); });
+}
+
+/* ====================================================================
+   SORTABLE TABLES
+   ==================================================================== */
+function makeSortable(table){
+  var ths = table.querySelectorAll("th[data-sort]");
+  ths.forEach(function(th){
+    th.addEventListener("click", function(){
+      var idx = Array.prototype.indexOf.call(th.parentElement.children, th);
+      var dir = th.dataset.dir === "asc" ? "desc" : "asc";
+      ths.forEach(function(t){ delete t.dataset.dir; var a=t.querySelector(".arrow"); if(a) a.remove(); });
+      th.dataset.dir = dir;
+      th.insertAdjacentHTML("beforeend", " <span class=\"arrow\">" + (dir==="asc"?"\u25B2":"\u25BC") + "</span>");
+      var tbody = table.querySelector("tbody");
+      var rows = Array.prototype.filter.call(tbody.querySelectorAll("tr"), function(r){ return !r.classList.contains("subrow"); });
+      rows.sort(function(a,b){
+        var av = a.children[idx].dataset.v, bv = b.children[idx].dataset.v;
+        var an = parseFloat(av), bn = parseFloat(bv), cmp;
+        if (!isNaN(an) && !isNaN(bn)) cmp = an - bn; else cmp = String(av).localeCompare(String(bv));
+        return dir === "asc" ? cmp : -cmp;
+      });
+      rows.forEach(function(r){
+        tbody.appendChild(r);
+        var sub = tbody.querySelector("tr.subrow[data-parent=\"" + r.dataset.key + "\"]");
+        if (sub) tbody.appendChild(sub);
+      });
+    });
+  });
+}
+
+/* ====================================================================
+   01 — EXECUTIVE SUMMARY
+   ==================================================================== */
+function renderSummary(){
+  var el = document.getElementById("body-summary");
+  var totalAds = (OUT.ads || []).length;
+  var withData = Object.keys(perfByAd).length;
+  var eligible = OUT.ads_checked != null ? OUT.ads_checked : (OUT.analysis_dataset || []).length;
+  var nScale = (OUT.ads_to_scale||[]).length, nWatch = (OUT.ads_to_watch||[]).length, nPause = (OUT.ads_to_pause||[]).length;
+  var dr = OUT.date_range || {};
+  var input = (DATA && DATA.input) || {};
+
+  var html = "<div id=\"hero\">";
+  html += "<div class=\"hero-top\"><div>";
+  html += "<div class=\"hero-title\">" + fmtInt(totalAds) + " ads in, " + fmtInt(nScale + nWatch + nPause) + " calls out.</div>";
+  html += "<div class=\"hero-meta\">" +
+    mi("Account", "<span class=\"mono\">" + esc(OUT.meta_account_id || input.meta_account_id || "\u2014") + "</span>") +
+    mi("Window", esc(OUT.reporting_window || "") + (dr.since ? " \u00B7 " + esc(dr.since) + " \u2192 " + esc(dr.until) : "")) +
+    mi("Campaigns", fmtInt((OUT.campaign_ids || input.campaign_ids || []).length)) +
+    mi("Generated", esc((DATA.created_at||"").slice(0,10))) +
+    "</div></div></div>";
+
+  /* funnel signature */
+  var maxN = Math.max(totalAds, 1);
+  function w(n){ return Math.max(28, Math.round(n / maxN * 100)); }
+  html += "<div class=\"funnel\">";
+  html += stage("<span class=\"n\">" + fmtInt(totalAds) + "</span><span class=\"lbl\">ads pulled from Meta</span>", w(totalAds), "");
+  html += "<div class=\"conn\"></div>";
+  html += stage("<span class=\"n\">" + fmtInt(withData) + "</span><span class=\"lbl\">had delivery data</span>", w(withData), "");
+  html += "<div class=\"conn\"></div>";
+  html += stage("<span class=\"n\">" + fmtInt(eligible) + "</span><span class=\"lbl\">eligible &amp; analysed</span>", w(eligible), "iris");
+  html += "<div class=\"conn\"></div>";
+  html += "<div class=\"split\">" +
+    "<div class=\"bar scale\"><span class=\"n\">" + nScale + "</span>&nbsp;<span class=\"lbl\">scale</span></div>" +
+    "<div class=\"bar watch\"><span class=\"n\">" + nWatch + "</span>&nbsp;<span class=\"lbl\">watch</span></div>" +
+    "<div class=\"bar pause\"><span class=\"n\">" + nPause + "</span>&nbsp;<span class=\"lbl\">pause</span></div>" +
+    "</div>";
+  html += "</div></div>"; /* funnel + hero */
+
+  /* key cards */
+  html += "<h3>Key numbers</h3><div class=\"cards\">";
+  html += card("Eligible ads", fmtInt(eligible), "accent-cyan");
+  html += card("Scale", fmtInt(nScale));
+  html += card("Watch", fmtInt(nWatch));
+  html += card("Pause", fmtInt(nPause));
+  html += card("Crystal groups", fmtInt((OUT.crystal_groups||[]).length), "accent-iris");
+  html += card("Winning patterns", fmtInt((OUT.winning_patterns||[]).length));
+  html += card("Losing patterns", fmtInt((OUT.losing_patterns||[]).length));
+  if (isNum(acct.roas)) html += card("Account avg ROAS", fmt(acct.roas) + "x");
+  html += "</div>";
+
+  /* warnings */
+  (OUT.warnings || []).forEach(function(w){
+    var linked = esc(w).replace(/Excluded\s+(\d+)\s+ads/i, "Excluded $1 ads");
+    html += "<div class=\"warn\" style=\"margin-top:16px\"><span>\u26A0</span><span>" + linked +
+      " &nbsp;<a href=\"#filtered\">See which ads &rarr;</a></span></div>";
+  });
+
+  /* digest */
+  html += "<h3>Weekly digest</h3>";
+  html += "<div class=\"digest\">" + linkifyDigest(OUT.digest_text || OUT.digest || "No digest generated.") + "</div>";
+  html += "<p class=\"note\" style=\"margin-top:8px\">Ad IDs in the digest are clickable.</p>";
+
+  el.innerHTML = html;
+
+  function mi(k,v){ return "<span class=\"mi\">" + k + " &nbsp;<b>" + v + "</b></span>"; }
+  function stage(inner, width, cls){ return "<div class=\"stage\"><div class=\"bar " + cls + "\" style=\"width:" + width + "%\">" + inner + "</div></div>"; }
+  function card(k,v,cls){ return "<div class=\"card " + (cls||"") + "\"><div class=\"k\">" + esc(k) + "</div><div class=\"v\">" + v + "</div></div>"; }
+}
+
+/* ====================================================================
+   02 — HOW IT WORKS (pipeline)
+   ==================================================================== */
+function renderHow(){
+  var el = document.getElementById("body-how");
+  var totalAds = (OUT.ads||[]).length, withData = Object.keys(perfByAd).length;
+  var eligible = OUT.ads_checked != null ? OUT.ads_checked : (OUT.analysis_dataset||[]).length;
+  var examples = [
+    fmtInt(totalAds) + " ads pulled with " + fmtInt((OUT.performance||[]).length) + " insight rows over " + esc(OUT.reporting_window||"the window") + ".",
+    fmtInt((OUT.media_bundles||[]).length) + " media bundles downloaded \u00B7 " + fmtInt((OUT.media_fetch_results||[]).filter(function(r){return r.download_status==="ok";}).length) + " succeeded.",
+    fmtInt((OUT.creative_library||[]).length) + " creatives described by the LLM into structured crystals.",
+    fmtInt(totalAds) + " ads \u2192 " + fmtInt(withData) + " with data \u2192 " + fmtInt(eligible) + " eligible, grouped into " + fmtInt((OUT.crystal_groups||[]).length) + " crystal groups.",
+    fmtInt(eligible) + " ads ranked \u2192 " + fmtInt((OUT.ads_to_scale||[]).length) + " scale, " + fmtInt((OUT.ads_to_watch||[]).length) + " watch, " + fmtInt((OUT.ads_to_pause||[]).length) + " pause.",
+    "Digest written covering " + fmtInt((OUT.winning_patterns||[]).length) + " winning and " + fmtInt((OUT.losing_patterns||[]).length) + " losing patterns."
+  ];
+  var html = "<div class=\"pipeline\">";
+  PIPELINE.forEach(function(s, i){
+    html += "<div class=\"pstep\"><div class=\"rail\"><div class=\"dot\">" + (i+1) + "</div><div class=\"line\"></div></div>";
+    html += "<div class=\"pbody\"><h4>" + esc(s.t) + "</h4><p>" + esc(s.p) + "</p>";
+    html += "<div class=\"io-row\"><span class=\"iolabel\">Reads</span>" + s.reads.map(function(k){ return "<span class=\"chip dim\">" + esc(k) + "</span>"; }).join("") + "</div>";
+    html += "<div class=\"io-row\"><span class=\"iolabel\">Writes</span>" + s.writes.map(function(k){ return "<span class=\"chip key\">" + esc(k) + "</span>"; }).join("") + "</div>";
+    html += "<div class=\"pexample\"><b>This run:</b> " + examples[i] + "</div>";
+    html += "</div></div>";
+  });
+  html += "</div>";
+  html += "<p class=\"note\" style=\"margin-top:14px\">The workflow is read-only — it analyses and recommends, but never changes anything in your Meta account.</p>";
+  el.innerHTML = html;
+}
+
+/* ====================================================================
+   03 — RULES & DEFINITIONS
+   ==================================================================== */
+function renderRules(){
+  var el = document.getElementById("body-rules");
+  var minI = minImpressions(), minS = minSpend();
+
+  var html = "";
+  html += "<h3>Eligibility thresholds</h3>";
+  html += "<div class=\"infobox\"><p>To be ranked, an ad must clear <b>both</b> gates within the reporting window:</p>" +
+    "<p>&bull; at least <code>" + esc(fmtInt(minI)) + "</code> impressions &nbsp; <b>and</b> &nbsp; at least <code>" + esc(INR_MONEY.format(minS)) + "</code> spend.</p>" +
+    "<p>Ads below either gate are set aside (see <a href=\"#filtered\">What got filtered out</a>). The reason is simple: too little delivery makes a ranking statistically unreliable — a handful of impressions can swing ROAS wildly.</p></div>";
+
+  html += "<h3>Performance index</h3>";
+  html += "<div class=\"infobox\"><p>Every group and ad gets a single composite score versus the <b>account average</b> across ROAS, CPA, CTR, CPC, and conversion rate.</p>" +
+    "<p><code>1.0</code> means exactly account-average. Above <code>1.0</code> beats the account; below trails it.</p>";
+  if (isNum(acct.roas) || isNum(acct.cpa) || isNum(acct.ctr)){
+    html += "<p style=\"margin-top:10px\">Account baselines this run: " +
+      (isNum(acct.roas) ? "<span class=\"codechip\">ROAS " + fmt(acct.roas) + "x</span> " : "") +
+      (isNum(acct.cpa) ? "<span class=\"codechip\">CPA " + INR_MONEY.format(acct.cpa) + "</span> " : "") +
+      (isNum(acct.ctr) ? "<span class=\"codechip\">CTR " + fmt(acct.ctr) + "%</span>" : "") + "</p>";
+  }
+  html += "</div>";
+
+  html += "<h3>Recommendation buckets</h3>";
+  html += "<div class=\"tablewrap\"><table><thead><tr><th>Bucket</th><th style=\"text-align:left\">Percentile of performance index</th><th style=\"text-align:left\">Meaning</th></tr></thead><tbody>" +
+    "<tr><td><span class=\"badge scale\">Scale</span></td><td style=\"text-align:left\">Top 50% (above the 50th)</td><td style=\"text-align:left\">Strongest candidates to increase budget.</td></tr>" +
+    "<tr><td><span class=\"badge watch\">Watch</span></td><td style=\"text-align:left\">20th to 50th percentile</td><td style=\"text-align:left\">Middle tier — monitor before acting.</td></tr>" +
+    "<tr><td><span class=\"badge pause\">Pause</span></td><td style=\"text-align:left\">Bottom 20%</td><td style=\"text-align:left\">Review creative; consider pausing or cutting spend.</td></tr>" +
+    "</tbody></table></div>";
+  html += "<p class=\"note\" style=\"margin-top:8px\">Every eligible ad lands in exactly one bucket. Recommendations are advisory only.</p>";
+
+  html += "<h3>Creative crystals</h3>";
+  html += "<p class=\"hint\">An LLM watches each creative and converts it into these structured attributes (\u201Ccrystals\u201D). They power every group and pattern below.</p>";
+  html += "<div class=\"gloss\">";
+  CRYSTAL_ORDER.concat(["transcript"]).forEach(function(k){
+    html += "<div class=\"g\"><div class=\"t\">" + esc(k) + "</div><div class=\"d\">" + esc(GLOSSARY[k] || "") + "</div></div>";
+  });
+  html += "</div>";
+
+  html += "<div class=\"currency-note\" style=\"margin-top:16px\">All monetary metrics use <b>Indian Rupees</b> with lakh/crore grouping (e.g. &#8377;43,88,231.13). ROAS and performance index are unitless ratios.</div>";
+  el.innerHTML = html;
+}
+
+/* ====================================================================
+   04 — WHAT GOT FILTERED OUT
+   ==================================================================== */
+function renderFiltered(){
+  var el = document.getElementById("body-filtered");
+  var excluded = (OUT.ads || []).filter(function(a){ return !adIndex[a.ad_id]; });
+  var nImp = 0, nSpend = 0;
+  excluded.forEach(function(a){ var e = eligibilityOf(a.ad_id); if (e.failImp) nImp++; else if (e.failSpend) nSpend++; });
+
+  var html = "<div class=\"cards\" style=\"margin-bottom:16px\">" +
+    "<div class=\"card\"><div class=\"k\">Excluded ads</div><div class=\"v\">" + fmtInt(excluded.length) + "</div></div>" +
+    "<div class=\"card\"><div class=\"k\">Below impressions</div><div class=\"v\">" + fmtInt(nImp) + "</div></div>" +
+    "<div class=\"card\"><div class=\"k\">Below spend</div><div class=\"v\">" + fmtInt(nSpend) + "</div></div>" +
+    "</div>";
+
+  if (!excluded.length){ el.innerHTML = html + "<p class=\"note\">No ads were excluded — every pulled ad met the thresholds.</p>"; return; }
+
+  html += "<div class=\"controls\"><input type=\"text\" id=\"exFilter\" placeholder=\"Filter excluded ads by id\u2026\" />" +
+    "<span class=\"note\">Click a row to open the ad. Every excluded ad still has a detail page.</span></div>";
+  html += "<div class=\"tablewrap\"><table id=\"exTable\"><thead><tr>" +
+    "<th data-sort style=\"text-align:left\">Ad</th><th data-sort>Type</th><th data-sort>Impr.</th><th data-sort>Spend (INR)</th>" +
+    "<th data-sort style=\"text-align:left\">Failed gate</th></tr></thead><tbody>";
+  excluded.forEach(function(a){
+    var e = eligibilityOf(a.ad_id);
+    html += "<tr data-key=\"" + esc(a.ad_id) + "\" data-ad=\"" + esc(a.ad_id) + "\" style=\"cursor:pointer\">" +
+      "<td data-v=\"" + esc(a.ad_id) + "\">" + adLink(a.ad_id) + "</td>" +
+      "<td data-v=\"" + esc(a.asset_type) + "\"><span class=\"tag\">" + esc(a.asset_type || "?") + "</span></td>" +
+      "<td data-v=\"" + e.impressions + "\" class=\"" + (e.failImp?"bad":"") + "\">" + (e.hasData ? fmtInt(e.impressions) : "0") + "</td>" +
+      "<td data-v=\"" + e.spend + "\" class=\"" + (e.failSpend?"bad":"") + "\">" + (e.hasData ? fmtMoney(e.spend) : fmtMoney(0)) + "</td>" +
+      "<td data-v=\"" + (e.failImp?"impressions":"spend") + "\" style=\"text-align:left\">" + exclusionReason(a.ad_id) + "</td>" +
+      "</tr>";
+  });
+  html += "</tbody></table></div>";
+  el.innerHTML = html;
+  makeSortable(document.getElementById("exTable"));
+  document.getElementById("exFilter").addEventListener("input", function(){
+    var q = this.value.trim();
+    el.querySelectorAll("#exTable tbody tr").forEach(function(r){ r.style.display = !q || r.dataset.key.indexOf(q)!==-1 ? "" : "none"; });
+  });
+}
+
+/* ====================================================================
+   05 — WINNERS & LOSERS
+   ==================================================================== */
+function renderPatterns(){
+  var el = document.getElementById("body-patterns");
+  var win = OUT.winning_patterns || [], lose = OUT.losing_patterns || [];
+  var html = "<div class=\"split2\">";
+  html += patternCard("Winning patterns", win, "win", true);
+  html += patternCard("Losing patterns", lose, "lose", false);
+  html += "</div>";
+  html += "<p class=\"note\" style=\"margin-top:10px\">Each row is a single crystal value (e.g. <span class=\"codechip\">colors = silver</span>) and how the ads sharing it performed. Index above 1.0 beats the account average.</p>";
+  el.innerHTML = html;
+
+  function patternCard(title, rows, cls, good){
+    var h = "<div class=\"panelcard " + cls + "\"><div class=\"ph\">" + esc(title) + " (" + rows.length + ")</div>";
+    if (!rows.length){ return h + "<div style=\"padding:14px 16px\" class=\"note\">None detected.</div></div>"; }
+    h += "<div class=\"tablewrap\" style=\"border:none;border-radius:0\"><table><thead><tr>" +
+      "<th style=\"text-align:left\">Crystal</th><th style=\"text-align:left\">Value</th><th>Ads</th><th>Index</th><th>ROAS</th><th>CPA</th><th>CTR</th>" +
+      "</tr></thead><tbody>";
+    rows.forEach(function(p){
+      h += "<tr>" +
+        "<td style=\"text-align:left\">" + esc(p.crystal_name) + "</td>" +
+        "<td style=\"text-align:left\"><span class=\"chip\">" + esc(p.crystal_value) + "</span></td>" +
+        "<td>" + fmtInt(p.ad_count) + "</td>" +
+        "<td class=\"" + (good?"good":"bad") + "\">" + fmt(p.performance_index, 4) + "</td>" +
+        "<td>" + fmt(p.avg_roas) + "x</td>" +
+        "<td>" + fmtCost(p.avg_cpa) + "</td>" +
+        "<td>" + fmtPct(p.avg_ctr) + "</td>" +
+        "</tr>";
+    });
+    h += "</tbody></table></div></div>";
+    return h;
+  }
+}
+
+/* ====================================================================
+   06 — RECOMMENDATIONS
+   ==================================================================== */
+function renderRecommendations(){
+  var el = document.getElementById("body-recommendations");
+  var html = "";
+  html += group("Scale", "scale", OUT.ads_to_scale || [], "var(--green)", "Above the 50th percentile — strongest candidates to increase budget.");
+  html += group("Watch", "watch", OUT.ads_to_watch || [], "var(--amber)", "Middle tier. Monitor before scaling or pausing.");
+  html += group("Pause", "pause", OUT.ads_to_pause || [], "var(--red)", "Bottom 20% versus account averages. Review creative or cut spend.");
+  el.innerHTML = html;
+
+  function group(label, kind, list, color, blurb){
+    var h = "<h3 style=\"color:" + color + ";margin-top:28px\">" + label + " &mdash; " + list.length + "</h3>";
+    h += "<p class=\"hint\">" + esc(blurb) + "</p>";
+    if (!list.length) return h + "<p class=\"note\">None in this bucket.</p>";
+    h += "<div class=\"candidates\">";
+    list.forEach(function(a){
+      h += "<div class=\"cand " + kind + "\">";
+      h += mediaBlock(a.ad_id, true);
+      h += "<div class=\"body\">";
+      h += "<span class=\"badge " + kind + "\">" + label + "</span>";
+      h += "<div class=\"adid\">" + adLink(a.ad_id) + "</div>";
+      h += "<div class=\"metricgrid\">" +
+        m("Perf. index", fmt(a.performance_index, 4)) +
+        m("ROAS", fmt(a.roas) + "x") +
+        m("CPA", fmtCost(a.cpa)) +
+        m("CTR", fmtPct(a.ctr)) +
+        m("Spend", fmtMoney(a.spend)) +
+        m("Impr.", fmtInt(a.impressions)) +
+        "</div>";
+      if (a.crystals_summary){
+        h += "<div>";
+        String(a.crystals_summary).split("+").forEach(function(c){ c = c.trim(); if (c) h += "<span class=\"chip\">" + esc(c) + "</span>"; });
+        h += "</div>";
+      }
+      h += "<div class=\"reason\">" + esc(a.reason || "") + "</div>";
+      h += "</div></div>";
+    });
+    h += "</div>";
+    return h;
+    function m(k,v){ return "<div class=\"m\"><div class=\"k\">" + k + "</div><div class=\"v\">" + v + "</div></div>"; }
+  }
+}
+
+/* ====================================================================
+   07 — CREATIVE INTELLIGENCE
+   ==================================================================== */
+function renderCreative(){
+  var el = document.getElementById("body-creative");
+  var html = "";
+
+  /* ranked groups */
+  var ranked = OUT.ranked_groups || [];
+  html += "<h3>Ranked crystal groups (" + ranked.length + ")</h3>";
+  html += "<p class=\"hint\">Groups of eligible ads sharing one crystal value, scored against account averages. Click \u25B8 to see member ads.</p>";
+  html += groupTable(ranked, "rankedTable", true);
+
+  /* crystal groups */
+  var groups = OUT.crystal_groups || [];
+  html += "<h3>All crystal groups (" + groups.length + ")</h3>";
+  html += "<p class=\"hint\">The same groups before ranking — raw averages only, no performance index. <span class=\"codechip\">filtered_groups</span> in the data is an identical snapshot of this list.</p>";
+  html += groupTable(groups, "groupsTable", false);
+
+  /* cross patterns */
+  var pats = OUT.cross_crystal_patterns || [];
+  html += "<h3>Cross-crystal patterns (" + pats.length + ")</h3>";
+  html += "<p class=\"hint\">Combinations that co-occur among top performers. Some are scored by performance; others (like embedding similarity) describe creative cohesion rather than a score.</p>";
+  if (!pats.length){ html += "<p class=\"note\">None detected.</p>"; }
+  else {
+    html += "<div class=\"xgrid\">";
+    pats.forEach(function(p){
+      var s = p.avg_performance_score;
+      var cls = isNum(s) ? (s >= 1 ? "good" : "bad") : "na";
+      html += "<div class=\"xcard\"><div class=\"score " + cls + "\">" + (isNum(s) ? fmt(s,4) : "\u2014") + "</div>";
+      html += "<div class=\"cnt\">" + fmtInt(p.ad_count) + " ads share this combination</div>";
+      var combo = p.combination || {};
+      Object.keys(combo).forEach(function(k){
+        html += "<div style=\"margin:3px 0\"><span class=\"chip key\">" + esc(k) + "</span> <span class=\"chip\">" + esc(combo[k]) + "</span></div>";
+      });
+      if (!isNum(s)) html += "<p class=\"note\" style=\"margin-top:6px\">No performance score \u2014 this pattern reflects creative similarity, not ranked output.</p>";
+      html += "</div>";
+    });
+    html += "</div>";
+  }
+
+  /* crystal QA / creative library combined grid */
+  var lib = OUT.creative_library || [];
+  html += "<h3>Creative library &amp; crystal QA (" + lib.length + ")</h3>";
+  html += "<p class=\"hint\">Every extracted creative, eligible or not. Eligible ads also show their joined performance. Click any preview to open the ad.</p>";
+  html += "<div class=\"controls\">" +
+    "<input type=\"text\" id=\"libFilter\" placeholder=\"Filter by ad id or crystal value\u2026\" />" +
+    "<select id=\"libScope\"><option value=\"all\">All ads</option><option value=\"elig\">Eligible only</option><option value=\"excl\">Excluded only</option></select></div>";
+  html += "<div class=\"dsgrid\" id=\"libGrid\">";
+  lib.forEach(function(entry){
+    html += creativeCard(entry);
+  });
+  html += "</div>";
+
+  el.innerHTML = html;
+  makeSortable(document.getElementById("rankedTable"));
+  makeSortable(document.getElementById("groupsTable"));
+  wireGroupExpanders(el);
+
+  function applyLibFilter(){
+    var q = document.getElementById("libFilter").value.trim().toLowerCase();
+    var scope = document.getElementById("libScope").value;
+    document.querySelectorAll("#libGrid .ds").forEach(function(c){
+      var matchQ = !q || c.dataset.search.indexOf(q) !== -1;
+      var matchScope = scope === "all" || c.dataset.scope === scope;
+      c.style.display = (matchQ && matchScope) ? "" : "none";
+    });
+  }
+  document.getElementById("libFilter").addEventListener("input", applyLibFilter);
+  document.getElementById("libScope").addEventListener("change", applyLibFilter);
+}
+
+function creativeCard(entry){
+  var adId = entry.ad_id;
+  var cr = entry.crystals || (adIndex[adId] ? adIndex[adId].crystals : {}) || {};
+  var ds = adIndex[adId];
+  var rec = recByAd[adId];
+  var scope = ds ? "elig" : "excl";
+  var searchable = (adId + " " + JSON.stringify(cr) + " " + (entry.vision_summary||"")).toLowerCase();
+
+  var h = "<div class=\"ds\" id=\"ad-" + esc(adId) + "\" data-search=\"" + esc(searchable) + "\" data-scope=\"" + scope + "\">";
+  h += mediaBlock(adId, true);
+  h += "<div class=\"body\">";
+  h += "<div class=\"head\"><span class=\"adid\">" + adLink(adId) + "</span><span>" +
+    "<span class=\"tag\">" + esc(entry.asset_type || "?") + "</span> " +
+    (entry.extraction_source ? "<span class=\"tag\">src: " + esc(entry.extraction_source) + "</span> " : "") +
+    statusTag(adId) + "</span></div>";
+  if (entry.vision_summary) h += "<div class=\"vision\">" + esc(entry.vision_summary) + "</div>";
+  h += "<div class=\"crystals\">";
+  CRYSTAL_ORDER.forEach(function(k){
+    if (!(k in cr)) return;
+    var v = cr[k];
+    if (Array.isArray(v)) v = v.join(", ");
+    if (v === "" || v === null || v === undefined) v = "\u2014";
+    h += "<div class=\"c\"><div class=\"k\">" + esc(k) + "</div><div class=\"v\">" + esc(v) + "</div></div>";
+  });
+  h += "</div>";
+  var transcript = (cr.transcript || entry.transcript || "").trim();
+  if (transcript) h += "<details class=\"tr\"><summary>Transcript</summary><p>" + esc(transcript) + "</p></details>";
+
+  if (rec && rec.item){
+    h += "<div class=\"reason\"><strong>" + bucketLabel(adId) + ":</strong> " + esc(rec.item.reason || "") + "</div>";
+  }
+  if (ds){
+    var perf = ds.performance || {};
+    h += "<div class=\"perfline\">" +
+      pm("Impr.", fmtInt(perf.impressions)) + pm("CTR", fmtPct(perf.ctr)) +
+      pm("Spend", fmtMoney(perf.spend)) + pm("CPA", fmtCost(perf.cpa)) + pm("ROAS", fmt(perf.roas)+"x") + "</div>";
+  } else {
+    h += "<div class=\"perfline\"><div class=\"m\"><div class=\"k\">Status</div><div class=\"v\" style=\"color:var(--faint)\">Excluded \u2014 " + exclusionReason(adId) + "</div></div></div>";
+  }
+  h += "</div></div>";
+  return h;
+  function pm(k,v){ return "<div class=\"m\"><div class=\"k\">" + k + "</div><div class=\"v\">" + v + "</div></div>"; }
+}
+
+function groupTable(groups, id, ranked){
+  if (!groups.length) return "<p class=\"note\">None.</p>";
+  var html = "<div class=\"tablewrap\"><table id=\"" + id + "\"><thead><tr>" +
+    "<th data-sort style=\"text-align:left\">Crystal</th><th data-sort style=\"text-align:left\">Value</th><th data-sort>Ads</th>" +
+    (ranked ? "<th data-sort>Index</th>" : "") +
+    "<th data-sort>Impr.</th><th data-sort>Spend</th><th data-sort>CTR</th><th data-sort>CPC</th><th data-sort>CPA</th><th data-sort>ROAS</th><th data-sort>Conv. rate</th>" +
+    "</tr></thead><tbody>";
+  groups.forEach(function(g, i){
+    var key = id + "-" + i;
+    var idxCls = ranked && isNum(g.performance_index) ? (g.performance_index >= 1 ? "good" : "bad") : "";
+    html += "<tr data-key=\"" + key + "\">" +
+      "<td data-v=\"" + esc(g.crystal_name) + "\" style=\"text-align:left\"><span class=\"expander\" data-gexpand=\"" + key + "\">\u25B8</span>" + esc(g.crystal_name) + "</td>" +
+      "<td data-v=\"" + esc(g.crystal_value) + "\" style=\"text-align:left\"><span class=\"chip\">" + esc(g.crystal_value) + "</span></td>" +
+      "<td data-v=\"" + (g.count||0) + "\">" + fmtInt(g.count) + "</td>" +
+      (ranked ? "<td class=\"" + idxCls + "\" data-v=\"" + (isNum(g.performance_index)?g.performance_index:"") + "\">" + fmt(g.performance_index,4) + "</td>" : "") +
+      "<td data-v=\"" + (g.total_impressions||0) + "\">" + fmtInt(g.total_impressions) + "</td>" +
+      "<td data-v=\"" + (g.total_spend||0) + "\">" + fmtMoney(g.total_spend) + "</td>" +
+      "<td data-v=\"" + (isNum(g.avg_ctr)?g.avg_ctr:"") + "\">" + fmtPct(g.avg_ctr) + "</td>" +
+      "<td data-v=\"" + (isNum(g.avg_cpc)?g.avg_cpc:"") + "\">" + fmtCost(g.avg_cpc) + "</td>" +
+      "<td data-v=\"" + (isNum(g.avg_cpa)?g.avg_cpa:"") + "\">" + fmtCost(g.avg_cpa) + "</td>" +
+      "<td data-v=\"" + (isNum(g.avg_roas)?g.avg_roas:"") + "\">" + fmt(g.avg_roas) + "x</td>" +
+      "<td data-v=\"" + dataMetricValue(g.avg_purchase_rate, g.avg_conversion_rate) + "\">" + fmt(metricValue(g.avg_purchase_rate, g.avg_conversion_rate)) + "</td>" +
+      "</tr>";
+    var links = (g.ad_ids || []).map(function(a){ return "<span style=\"margin-right:14px;display:inline-block\">" + adLink(a) + " " + bucketTag(a) + "</span>"; }).join("");
+    html += "<tr class=\"subrow\" data-parent=\"" + key + "\" style=\"display:none\"><td colspan=\"" + (ranked?11:10) + "\" style=\"white-space:normal;text-align:left\">" + (links||"<span class=\"note\">No member ids.</span>") + "</td></tr>";
+  });
+  html += "</tbody></table></div>";
+  return html;
+}
+function wireGroupExpanders(el){
+  el.addEventListener("click", function(e){
+    var ex = e.target.closest("[data-gexpand]");
+    if (!ex) return;
+    var sub = el.querySelector("tr.subrow[data-parent=\"" + ex.dataset.gexpand + "\"]");
+    if (!sub) return;
+    var open = sub.style.display !== "none";
+    sub.style.display = open ? "none" : "";
+    ex.textContent = open ? "\u25B8" : "\u25BE";
+  });
+}
+
+/* ====================================================================
+   08 — ALL ADS & MEDIA QA
+   ==================================================================== */
+function renderAds(){
+  var el = document.getElementById("body-ads");
+  var ads = OUT.ads || [];
+  var html = "<h3>All ads pulled (" + ads.length + ")</h3>";
+  html += "<p class=\"hint\">Every ad in the campaigns, eligible or not. Click a card to open its detail page.</p>";
+  html += "<div class=\"controls\">" +
+    "<input type=\"text\" id=\"adFilter\" placeholder=\"Filter by ad id, headline, campaign\u2026\" />" +
+    "<select id=\"adScope\"><option value=\"all\">All</option><option value=\"elig\">Eligible</option><option value=\"excl\">Excluded</option><option value=\"scale\">Scale</option><option value=\"watch\">Watch</option><option value=\"pause\">Pause</option></select>" +
+    "<select id=\"adType\"><option value=\"all\">All types</option><option value=\"image\">Image</option><option value=\"video\">Video</option><option value=\"carousel\">Carousel</option></select></div>";
+  html += "<div class=\"adgrid\" id=\"adGrid\">";
+  ads.forEach(function(a){
+    var scope = scaleIds[a.ad_id] ? "scale" : watchIds[a.ad_id] ? "watch" : pauseIds[a.ad_id] ? "pause" : adIndex[a.ad_id] ? "elig" : "excl";
+    var searchable = (a.ad_id + " " + (a.headline||"") + " " + (a.caption||"") + " " + (a.campaign_id||"")).toLowerCase();
+    html += "<div class=\"adcard\" data-ad=\"" + esc(a.ad_id) + "\" data-search=\"" + esc(searchable) + "\" data-scope=\"" + scope + "\" data-type=\"" + esc(a.asset_type||"") + "\">";
+    html += "<div class=\"media\" data-video=\"" + esc(a.video_source_url||"") + "\">";
+    var urls = mediaUrlCandidates(a);
+    if (urls.length){
+      html += "<img src=\"" + esc(urls[0]) + "\" loading=\"lazy\" alt=\"ad " + esc(a.ad_id) + "\" data-fallbacks=\"" + esc(urls.slice(1).join("|")) + "\" " +
+        "onerror=\"var f=this.dataset.fallbacks?this.dataset.fallbacks.split('|').filter(Boolean):[];if(f.length){this.src=f.shift();this.dataset.fallbacks=f.join('|');}else{this.style.display='none';}\" />";
+    } else { html += "<div style=\"min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:11px\">No preview</div>"; }
+    html += "<div class=\"corner\">" + statusTag(a.ad_id) + "</div>";
+    if (a.video_source_url) html += "<button class=\"playbtn\" aria-label=\"Play video\"><span>\u25B6</span></button>";
+    html += "</div>";
+    html += "<div class=\"ab\"><div class=\"row\"><span class=\"aid\">" + esc(a.ad_id) + "</span><span class=\"tag\">" + esc(a.asset_type||"?") + "</span></div>";
+    html += "<div class=\"meta mono\">campaign " + esc(a.campaign_id||"\u2014") + "</div>";
+    if (a.headline) html += "<div class=\"hl\">" + esc(truncate(a.headline, 80)) + "</div>";
+    if (scope === "excl") html += "<div class=\"why\">Excluded \u2014 " + exclusionReason(a.ad_id) + "</div>";
+    html += "</div></div>";
+  });
+  html += "</div>";
+
+  /* media QA */
+  var fr = OUT.media_fetch_results || [], mb = OUT.media_bundles || [];
+  var okN = fr.filter(function(r){ return r.download_status === "ok"; }).length;
+  html += "<h3>Media download QA (" + fr.length + ")</h3>";
+  html += "<p class=\"hint\">" + fmtInt(okN) + " of " + fmtInt(fr.length) + " media files downloaded successfully. Frame/audio paths live on the worker (server-side) and are listed for traceability only \u2014 not viewable in the browser.</p>";
+  html += "<div class=\"tablewrap\"><table id=\"mqaTable\"><thead><tr>" +
+    "<th data-sort style=\"text-align:left\">Ad</th><th data-sort>Type</th><th data-sort>Status</th><th data-sort>Frames</th><th data-sort>Duration</th><th style=\"text-align:left\">Error</th><th style=\"text-align:left\">Media hash</th>" +
+    "</tr></thead><tbody>";
+  fr.forEach(function(r){
+    var b = bundleIndex[r.ad_id] || {};
+    var frames = Array.isArray(b.frame_paths) ? b.frame_paths.length : 0;
+    html += "<tr>" +
+      "<td data-v=\"" + esc(r.ad_id) + "\" style=\"text-align:left\">" + adLink(r.ad_id) + "</td>" +
+      "<td data-v=\"" + esc(b.asset_type||"") + "\"><span class=\"tag\">" + esc(b.asset_type||(adBase[r.ad_id]||{}).asset_type||"?") + "</span></td>" +
+      "<td data-v=\"" + esc(r.download_status) + "\">" + (r.download_status==="ok" ? "<span class=\"tag scale\">ok</span>" : "<span class=\"tag pause\">"+esc(r.download_status)+"</span>") + "</td>" +
+      "<td data-v=\"" + frames + "\">" + (frames || "\u2014") + "</td>" +
+      "<td data-v=\"" + (isNum(b.duration_seconds)?b.duration_seconds:"") + "\">" + (isNum(b.duration_seconds)? fmt(b.duration_seconds,1)+"s" : "\u2014") + "</td>" +
+      "<td style=\"text-align:left\">" + (r.error ? "<span style=\"color:var(--red)\">"+esc(r.error)+"</span>" : "\u2014") + "</td>" +
+      "<td style=\"text-align:left\" class=\"mono\" title=\"" + esc(r.media_url_hash||"") + "\">" + esc(truncate(r.media_url_hash||"\u2014", 16)) + "</td>" +
+      "</tr>";
+  });
+  html += "</tbody></table></div>";
+
+  el.innerHTML = html;
+  makeSortable(document.getElementById("mqaTable"));
+
+  function applyAdFilter(){
+    var q = document.getElementById("adFilter").value.trim().toLowerCase();
+    var scope = document.getElementById("adScope").value;
+    var type = document.getElementById("adType").value;
+    document.querySelectorAll("#adGrid .adcard").forEach(function(c){
+      var mq = !q || c.dataset.search.indexOf(q) !== -1;
+      var ms = scope === "all" || c.dataset.scope === scope || (scope === "elig" && ["scale","watch","pause","elig"].indexOf(c.dataset.scope)!==-1);
+      var mt = type === "all" || c.dataset.type === type;
+      c.style.display = (mq && ms && mt) ? "" : "none";
+    });
+  }
+  document.getElementById("adFilter").addEventListener("input", applyAdFilter);
+  document.getElementById("adScope").addEventListener("change", applyAdFilter);
+  document.getElementById("adType").addEventListener("change", applyAdFilter);
+}
+
+/* ====================================================================
+   09 — PERFORMANCE
+   ==================================================================== */
+function renderPerformance(){
+  var el = document.getElementById("body-performance");
+  var rows = OUT.performance || [];
+  var ads = Object.keys(perfByAd).map(function(k){ return perfByAd[k]; });
+  ads.sort(function(x,y){ return y.spend - x.spend; });
+  var roasBaseline = isNum(acct.roas) ? acct.roas : null;
+
+  var html = "<p class=\"hint\">" + ads.length + " ads with delivery, aggregated from " + rows.length + " Meta insight rows. Click \u25B8 for the weekly breakdown, an ad id to open detail, or a header to sort. ROAS is coloured against the account average" + (roasBaseline ? " (" + fmt(roasBaseline) + "x)" : "") + ".</p>";
+  html += "<div class=\"currency-note\">Spend, CPC, CPM, CPA, and conversion value are in <b>INR (&#8377;)</b> as reported by Meta.</div>";
+  html += "<div class=\"controls\"><input type=\"text\" id=\"perfFilter\" placeholder=\"Filter by ad id\u2026\" /></div>";
+  html += "<div class=\"tablewrap\"><table id=\"perfTable\"><thead><tr>" +
+    "<th data-sort style=\"text-align:left\">Ad</th><th data-sort>Status</th><th data-sort>Impr.</th><th data-sort>Reach</th><th data-sort>Freq.</th>" +
+    "<th data-sort>Clicks</th><th data-sort>CTR</th><th data-sort>CPC</th><th data-sort>CPM</th><th data-sort>Spend</th>" +
+    "<th data-sort>ATC</th><th data-sort>Conv.</th><th data-sort>CPA</th><th data-sort>Conv. value</th><th data-sort>ROAS</th>" +
+    "</tr></thead><tbody>";
+  ads.forEach(function(a){
+    var entry = adIndex[a.ad_id], base = adBase[a.ad_id] || {};
+    var status = statusTag(a.ad_id);
+    var roasCls = roasBaseline && isNum(a.roas) ? (a.roas >= roasBaseline ? "good" : "bad") : "";
+    html += "<tr data-key=\"" + esc(a.ad_id) + "\">" +
+      cell("<span class=\"expander\" data-expand=\"" + esc(a.ad_id) + "\">\u25B8</span>" + adLink(a.ad_id), a.ad_id, "left") +
+      cell(status, bucketLabel(a.ad_id)) +
+      cell(fmtInt(a.impressions), a.impressions) +
+      cell(fmtInt(a.reach), a.reach) +
+      cell(isNum(a.frequency)?fmt(a.frequency):"\u2014", a.frequency) +
+      cell(fmtInt(a.clicks), a.clicks) +
+      cell(fmtPct(a.ctr), a.ctr) +
+      cell(fmtCost(a.cpc), a.cpc) +
+      cell(fmtCost(a.cpm), a.cpm) +
+      cell(fmtMoney(a.spend), a.spend) +
+      cell(fmtInt(a.add_to_cart), a.add_to_cart) +
+      cell(fmtInt(a.conversions), a.conversions) +
+      cell(fmtCost(a.cpa), a.cpa) +
+      cell(fmtMoney(a.conversion_value), a.conversion_value) +
+      classedCell(fmt(a.roas) + "x", a.roas, roasCls) +
+      "</tr>";
+    var sub = "<table><thead><tr><th style=\"text-align:left\">Period</th><th>Impr.</th><th>Clicks</th><th>CTR</th><th>CPC</th><th>CPM</th><th>Spend</th><th>Conv.</th><th>CPA</th><th>ROAS</th></tr></thead><tbody>";
+    a.weekly.slice().sort(function(x,y){ return String(x.date_start).localeCompare(String(y.date_start)); }).forEach(function(w){
+      sub += "<tr><td style=\"text-align:left\">" + esc(w.date_start||"\u2014") + (w.date_stop ? " \u2192 " + esc(w.date_stop) : "") + "</td>" +
+        "<td>" + fmtInt(w.impressions) + "</td><td>" + fmtInt(w.clicks) + "</td><td>" + fmtPct(w.ctr) + "</td>" +
+        "<td>" + fmtCost(w.cpc) + "</td><td>" + fmtCost(w.cpm) + "</td><td>" + fmtMoney(w.spend) + "</td>" +
+        "<td>" + fmtInt(metricValue(w.purchases, w.conversions)) + "</td><td>" + fmtCost(metricValue(w.cpa)) + "</td><td>" + fmt(metricValue(w.roas)) + "x</td></tr>";
+    });
+    sub += "</tbody></table>";
+    html += "<tr class=\"subrow\" data-parent=\"" + esc(a.ad_id) + "\" style=\"display:none\"><td colspan=\"15\">" + sub + "</td></tr>";
+  });
+  html += "</tbody></table></div>";
+  el.innerHTML = html;
+  makeSortable(document.getElementById("perfTable"));
+
+  el.addEventListener("click", function(e){
+    var ex = e.target.closest("[data-expand]");
+    if (!ex) return;
+    var sub = el.querySelector("tr.subrow[data-parent=\"" + ex.dataset.expand + "\"]");
+    if (!sub) return;
+    var open = sub.style.display !== "none";
+    sub.style.display = open ? "none" : "";
+    ex.textContent = open ? "\u25B8" : "\u25BE";
+  });
+  document.getElementById("perfFilter").addEventListener("input", function(){
+    var q = this.value.trim();
+    el.querySelectorAll("#perfTable tbody tr:not(.subrow)").forEach(function(r){
+      var show = !q || r.dataset.key.indexOf(q) !== -1;
+      r.style.display = show ? "" : "none";
+      var sub = el.querySelector("tr.subrow[data-parent=\"" + r.dataset.key + "\"]");
+      if (sub && !show) sub.style.display = "none";
+    });
+  });
+
+  function cell(h, v, align){ return "<td data-v=\"" + esc(v==null?"":v) + "\"" + (align==="left"?" style=\"text-align:left\"":"") + ">" + h + "</td>"; }
+  function classedCell(h, v, cls){ return "<td class=\"" + cls + "\" data-v=\"" + esc(v==null?"":v) + "\">" + h + "</td>"; }
+}
+
+/* ====================================================================
+   10 — FULL DATA EXPLORER
+   ==================================================================== */
+function syntaxHighlight(obj){
+  var json = JSON.stringify(obj, null, 2);
+  json = json.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    function(match){
+      var cls = "jn";
+      if (/^"/.test(match)) cls = /:$/.test(match) ? "jk" : "js";
+      else if (/true|false|null/.test(match)) cls = "jb";
+      return "<span class=\"" + cls + "\">" + match + "</span>";
+    });
+}
+function renderExplorer(){
+  var el = document.getElementById("body-explorer");
+  var input = (DATA && DATA.input) || {};
+  var html = "";
+
+  /* run config */
+  html += "<h3>Run configuration</h3>";
+  html += "<div class=\"tablewrap\"><table><thead><tr><th style=\"text-align:left\">Field</th><th style=\"text-align:left\">Value</th></tr></thead><tbody>";
+  var meta = [
+    ["id", DATA.id], ["workflow_key", DATA.workflow_key], ["status", DATA.status || OUT.status],
+    ["created_at", DATA.created_at], ["updated_at", DATA.updated_at],
+    ["agent_key", OUT.agent_key], ["temp_dir", OUT.temp_dir],
+    ["meta_account_id", input.meta_account_id || OUT.meta_account_id],
+    ["reporting_window", input.reporting_window || OUT.reporting_window],
+    ["include_paused_campaigns", String(input.include_paused_campaigns != null ? input.include_paused_campaigns : OUT.include_paused_campaigns)],
+    ["min_impressions", minImpressions()], ["min_spend", INR_MONEY.format(minSpend())],
+    ["campaign_ids", (input.campaign_ids || OUT.campaign_ids || []).join(", ")]
+  ];
+  meta.forEach(function(r){
+    html += "<tr><td style=\"text-align:left\" class=\"mono\">" + esc(r[0]) + "</td><td style=\"text-align:left\" class=\"mono\">" + esc(r[1] != null && r[1] !== "" ? r[1] : "\u2014") + "</td></tr>";
+  });
+  html += "</tbody></table></div>";
+
+  /* raw output keys */
+  html += "<h3 style=\"margin-top:26px\">Raw output keys</h3>";
+  html += "<p class=\"hint\">Every key in <span class=\"codechip\">output</span>. Expand to see the raw JSON value.</p>";
+  var keys = Object.keys(OUT).sort();
+  keys.forEach(function(k){
+    var v = OUT[k];
+    var meta2 = Array.isArray(v) ? "array \u00B7 " + v.length + " items" : (v && typeof v === "object" ? "object" : typeof v);
+    html += "<details class=\"explore\"><summary><span>" + esc(k) + "</span><span class=\"meta\">" + meta2 + "</span></summary>" +
+      "<pre>" + syntaxHighlight(v) + "</pre></details>";
+  });
+  el.innerHTML = html;
+}
+
+/* ====================================================================
+   SCROLL SPY
+   ==================================================================== */
+function wireScrollSpy(){
+  var links = Array.prototype.slice.call(document.querySelectorAll("#sectionNav a"));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute("href").slice(1)] = a; });
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if (en.isIntersecting){
+        links.forEach(function(l){ l.classList.remove("active"); });
+        if (map[en.target.id]) map[en.target.id].classList.add("active");
+      }
+    });
+  }, { rootMargin: "-40% 0px -55% 0px", threshold: 0 });
+  document.querySelectorAll("section.story").forEach(function(s){ obs.observe(s); });
+}
+
+/* ====================================================================
+   AD DETAIL PAGE  (works for eligible AND excluded ads)
+   ==================================================================== */
+function renderAdDetailPage(adId){
+  var base = adBase[adId] || {};
+  var ds = adIndex[adId];
+  var lib = libIndex[adId];
+  var rec = recByAd[adId];
+  var fr = fetchIndex[adId];
+  var bundle = bundleIndex[adId];
+  var perfRows = (OUT.performance || []).filter(function(r){ return String(r.ad_id) === String(adId); });
+  var agg = perfByAd[adId];
+  var elig = eligibilityOf(adId);
+  var ad = (ds && ds.ad) ? ds.ad : base;
+  var cr = (ds && ds.crystals) ? ds.crystals : (lib ? lib.crystals : {}) || {};
+
+  var html = "<div class=\"detail-wrap\">";
+  html += "<a class=\"detail-back\" href=\"" + esc(SELF) + "\">&larr; Back to full report</a>";
+
+  /* eligibility banner for excluded */
+  if (!ds){
+    html += "<div class=\"warn\"><span>\u26A0</span><span><b>Excluded from analysis</b> &mdash; this ad did not meet the eligibility thresholds, so it has no bucket or ranking. Its creative and delivery are still shown below.</span></div>";
+  }
+
+  html += "<div class=\"detail-hero\">";
+  html += mediaBlock(adId, false);
+  html += "<div class=\"body\">";
+  html += "<h1>Ad " + esc(adId) + "</h1>";
+  html += "<p class=\"note\" style=\"margin:4px 0 12px\">Run <span class=\"mono\">" + esc(DATA.id || OUT.run_id || "") + "</span> &middot; " + esc(OUT.reporting_window || "") + "</p>";
+  html += "<div>" + statusTag(adId);
+  if (rec && isNum(rec.item.performance_index)) html += " <span class=\"tag\">index " + fmt(rec.item.performance_index, 4) + "</span>";
+  html += "</div>";
+  if (rec && rec.item.reason) html += "<div class=\"reason\" style=\"margin:10px 0\">" + esc(rec.item.reason) + "</div>";
+
+  var P = ds ? (ds.performance || {}) : (agg || {});
+  html += "<div class=\"metricgrid\" style=\"margin-top:12px\">" +
+    pm("ROAS", isNum(P.roas)? fmt(P.roas)+"x" : "\u2014") +
+    pm("CPA", fmtCost(P.cpa)) + pm("CTR", fmtPct(P.ctr)) +
+    pm("Spend", fmtMoney(P.spend)) + pm("Impr.", fmtInt(P.impressions)) + pm("Clicks", fmtInt(P.clicks)) +
+    "</div>";
+  html += "<div class=\"note\" style=\"margin-top:8px\"><span class=\"tag\">" + esc(ad.asset_type||"?") + "</span> <span class=\"tag\">" + esc(ad.status||"?") + "</span>" +
+    " &middot; campaign <span class=\"mono\">" + esc(ad.campaign_id||"\u2014") + "</span>" +
+    (ad.adset_id ? " &middot; adset <span class=\"mono\">" + esc(ad.adset_id) + "</span>" : "") +
+    (ad.creative_id ? " &middot; creative <span class=\"mono\">" + esc(ad.creative_id) + "</span>" : "") + "</div>";
+  if (ad.headline || ad.caption){
+    html += "<div style=\"margin-top:12px;font-size:13px\">";
+    if (ad.headline) html += "<div><b>Headline:</b> " + esc(ad.headline) + "</div>";
+    if (ad.caption) html += "<div style=\"margin-top:6px\"><b>Caption:</b> " + esc(ad.caption) + "</div>";
+    html += "</div>";
+  }
+  /* external media links */
+  var ext = [];
+  if (ad.image_url) ext.push("<a class=\"extlink\" target=\"_blank\" rel=\"noopener\" href=\"" + esc(ad.image_url) + "\">Image \u2197</a>");
+  if (ad.video_source_url) ext.push("<a class=\"extlink\" target=\"_blank\" rel=\"noopener\" href=\"" + esc(ad.video_source_url) + "\">Video \u2197</a>");
+  if (ad.media_url && ad.media_url !== ad.image_url) ext.push("<a class=\"extlink\" target=\"_blank\" rel=\"noopener\" href=\"" + esc(ad.media_url) + "\">Media \u2197</a>");
+  if (ext.length) html += "<div style=\"margin-top:12px\">" + ext.join(" &nbsp;&middot;&nbsp; ") + "</div>";
+  html += "</div></div>";
+
+  /* eligibility breakdown */
+  html += "<div class=\"detail-section\"><h3>Eligibility</h3>";
+  html += "<div class=\"elig-row\"><span class=\"gate\">Min impressions</span><span class=\"mono\">" + fmtInt(elig.impressions) + " / " + fmtInt(minImpressions()) + "</span>" +
+    "<span class=\"verdict " + (elig.failImp?"fail":"pass") + "\">" + (elig.failImp?"FAIL":"PASS") + "</span></div>";
+  html += "<div class=\"elig-row\"><span class=\"gate\">Min spend</span><span class=\"mono\">" + (elig.hasData?INR_MONEY.format(elig.spend):"\u20B90.00") + " / " + INR_MONEY.format(minSpend()) + "</span>" +
+    "<span class=\"verdict " + (elig.failSpend?"fail":"pass") + "\">" + (elig.failSpend?"FAIL":"PASS") + "</span></div>";
+  html += "<div class=\"elig-row\"><span class=\"gate\">Verdict</span><span>" + (elig.eligible ? "Entered the analysis dataset" : "Excluded \u2014 " + exclusionReason(adId)) + "</span></div>";
+  if (ds && ds.eligibility) html += "<p class=\"note\" style=\"margin-top:8px\">Recorded flags: " + esc(JSON.stringify(ds.eligibility)) + "</p>";
+  html += "</div>";
+
+  /* crystals */
+  if (cr && Object.keys(cr).length){
+    html += "<div class=\"detail-section\"><h3>Creative crystals (LLM extraction)</h3>";
+    if (lib && lib.vision_summary) html += "<div class=\"vision\">" + esc(lib.vision_summary) + "</div>";
+    html += "<div class=\"crystals\">";
+    CRYSTAL_ORDER.forEach(function(k){
+      if (!(k in cr)) return;
+      var v = cr[k]; if (Array.isArray(v)) v = v.join(", ");
+      if (v === "" || v == null) v = "\u2014";
+      html += "<div class=\"c\"><div class=\"k\">" + esc(k) + "</div><div class=\"v\">" + esc(v) + "</div></div>";
+    });
+    html += "</div>";
+    var tr = (cr.transcript || (lib && lib.transcript) || "").trim();
+    if (tr) html += "<details class=\"tr\" open><summary>Transcript</summary><p>" + esc(tr) + "</p></details>";
+    if (lib && lib.extraction_source) html += "<p class=\"note\" style=\"margin-top:8px\">Extraction source: <span class=\"mono\">" + esc(lib.extraction_source) + "</span></p>";
+    html += "</div>";
+  }
+
+  /* crystal group membership */
+  var mg = groupsByAd[adId] || [];
+  if (mg.length){
+    html += "<div class=\"detail-section\"><h3>Crystal groups this ad belongs to</h3><div>";
+    mg.forEach(function(g){
+      html += "<span class=\"chip\"><span class=\"chip key\" style=\"margin:0\">" + esc(g.crystal_name) + "</span> " + esc(g.crystal_value) +
+        (isNum(g.performance_index) ? " \u00B7 idx " + fmt(g.performance_index,3) : "") + "</span> ";
+    });
+    html += "</div></div>";
+  }
+
+  /* weekly performance */
+  if (perfRows.length){
+    html += "<div class=\"detail-section\"><h3>Weekly performance (" + perfRows.length + " rows)</h3>";
+    html += "<div class=\"tablewrap\"><table><thead><tr><th style=\"text-align:left\">Period</th><th>Impr.</th><th>Reach</th><th>Clicks</th><th>CTR</th><th>CPC</th><th>CPM</th><th>Spend</th><th>ATC</th><th>Conv.</th><th>CPA</th><th>Conv. value</th><th>ROAS</th></tr></thead><tbody>";
+    perfRows.slice().sort(function(a,b){ return String(a.date_start).localeCompare(String(b.date_start)); }).forEach(function(w){
+      html += "<tr><td style=\"text-align:left\">" + esc(w.date_start||"\u2014") + (w.date_stop?" \u2192 "+esc(w.date_stop):"") + "</td>" +
+        "<td>" + fmtInt(w.impressions) + "</td><td>" + fmtInt(w.reach) + "</td><td>" + fmtInt(w.clicks) + "</td><td>" + fmtPct(w.ctr) + "</td>" +
+        "<td>" + fmtCost(w.cpc) + "</td><td>" + fmtCost(w.cpm) + "</td><td>" + fmtMoney(w.spend) + "</td>" +
+        "<td>" + fmtInt(w.add_to_cart) + "</td><td>" + fmtInt(metricValue(w.purchases,w.conversions)) + "</td>" +
+        "<td>" + fmtCost(metricValue(w.cpa)) + "</td><td>" + fmtMoney(metricValue(w.purchase_revenue,w.conversion_value)) + "</td><td>" + fmt(metricValue(w.roas)) + "x</td></tr>";
+    });
+    html += "</tbody></table></div></div>";
+  } else {
+    html += "<div class=\"detail-section\"><h3>Weekly performance</h3><p class=\"note\">No insight rows were returned for this ad in the reporting window \u2014 a common reason for exclusion.</p></div>";
+  }
+
+  /* media QA */
+  if (fr || bundle){
+    html += "<div class=\"detail-section\"><h3>Media QA</h3>";
+    if (fr) html += "<p style=\"font-size:13px\">Download: <span class=\"tag " + (fr.download_status==="ok"?"scale":"pause") + "\">" + esc(fr.download_status) + "</span>" +
+      (fr.error ? " &middot; <span style=\"color:var(--red)\">" + esc(fr.error) + "</span>" : "") +
+      (fr.media_url_hash ? " &middot; hash <span class=\"mono\">" + esc(truncate(fr.media_url_hash,20)) + "</span>" : "") + "</p>";
+    if (bundle){
+      html += "<p class=\"note\" style=\"margin-top:8px\">Worker temp paths (server-side, not viewable in browser):</p>";
+      ["image_path","audio_path"].forEach(function(k){ if (bundle[k]) html += "<div class=\"mono\" style=\"font-size:11.5px;color:var(--muted)\">" + esc(k) + ": " + esc(bundle[k]) + "</div>"; });
+      if (Array.isArray(bundle.frame_paths) && bundle.frame_paths.length) html += "<div class=\"mono\" style=\"font-size:11.5px;color:var(--muted)\">frame_paths: " + bundle.frame_paths.length + " frames</div>";
+      if (isNum(bundle.duration_seconds)) html += "<div class=\"note\">duration: " + fmt(bundle.duration_seconds,1) + "s</div>";
+    }
+    html += "</div>";
+  }
+
+  html += "</div>";
+  document.getElementById("runMeta").innerHTML = "Run <span class=\"mono\">" + esc(DATA.id || OUT.run_id || "") + "</span> &middot; <a class=\"detail-back\" style=\"margin:0\" href=\"" + esc(SELF) + "\">Full report</a>";
+  document.getElementById("app").innerHTML = html;
+  document.title = "Ad " + adId + " \u2014 Creative Analytics";
+
+  function pm(k,v){ return "<div class=\"m\"><div class=\"k\">" + k + "</div><div class=\"v\">" + v + "</div></div>"; }
+}
+</script>
+</body>
+</html>

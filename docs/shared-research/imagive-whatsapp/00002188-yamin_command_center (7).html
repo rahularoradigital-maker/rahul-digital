@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yāmin · Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --indigo:#1A1F3A;--gold:#D4A24C;--gold-soft:#F5E4BC;
+  --cream:#F5EFE0;--cream-deep:#EDE5D2;--cream-lite:#FBF7EC;
+  --purple:#5B1FA0;
+  --warm-grey:#6B6557;--verm:#C8453A;--green:#2E7D5B;--amber:#A06310;
+  --sev-crit:#B91C1C;--sev-high:#92400E;--sev-med:#1D4ED8;--sev-low:#15803D;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--indigo);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.serif{font-family:'DM Serif Display',Georgia,serif;font-weight:400}
+.mono{font-family:'Fira Code',monospace}
+button{font-family:inherit;cursor:pointer}
+svg{display:block}
+
+/* ══ SHELL ══ */
+.shell{display:flex;min-height:100vh}
+
+/* ══ SIDEBAR ══ */
+.sidebar{width:236px;flex-shrink:0;background:var(--indigo);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{padding:20px 18px 5px}
+.brand-mark{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:20px;color:var(--gold)}
+.brand-sub{font-family:'Fira Code',monospace;font-size:9px;letter-spacing:1.6px;color:rgba(255,255,255,0.34);text-transform:uppercase;margin-top:3px}
+.nav{padding:15px 18px;flex:1;overflow-y:auto}
+.nav-item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;background:none;border:none;width:100%;text-align:left;color:rgba(255,255,255,0.34);font-size:15px;font-weight:500;transition:color 120ms ease}
+.nav-item .lbl{display:flex;align-items:center;gap:9px}
+.nav-item .ic{width:17px;height:17px;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0.7}
+.nav-item.active{color:#fff;font-weight:600}
+.nav-item.active .ic{opacity:1}
+.nav-item:not(.active):not(.disabled):hover{color:rgba(255,255,255,0.75)}
+.nav-item.disabled{cursor:default}
+.nav-count{font-family:'Fira Code',monospace;font-size:11px;color:rgba(255,255,255,0.35)}
+.nav-group-lbl{font-family:'Fira Code',monospace;font-size:9.5px;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,0.26);padding:20px 0 3px}
+.nav-divider{height:1px;background:rgba(255,255,255,0.08);margin:10px 0}
+.conn-item{padding:7px 0;font-size:14px;color:rgba(255,255,255,0.32)}
+.sidebar-foot{padding:12px 18px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:7px}
+.foot-settings{width:30px;height:30px;border-radius:8px;background:none;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;margin-left:auto;flex-shrink:0}
+.foot-settings:hover{color:#fff;border-color:rgba(255,255,255,0.3)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--indigo);font-family:'DM Serif Display',Georgia,serif;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar-foot .who{font-size:12.5px;font-weight:600;color:#fff}
+.sidebar-foot .role{font-family:'Fira Code',monospace;font-size:9px;color:rgba(255,255,255,0.38);text-transform:uppercase;letter-spacing:0.5px;margin-top:1px}
+
+/* ══ WORKSPACE SWITCHER ══ */
+.workspace-switch{padding:16px 18px 3px;position:relative}
+.workspace-btn{display:flex;align-items:center;justify-content:space-between;width:100%;background:none;border:none;color:#fff;padding:0}
+.workspace-name{font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:18px;color:#fff;text-align:left}
+.workspace-sub{font-family:'Fira Code',monospace;font-size:9px;color:rgba(255,255,255,0.34);text-transform:uppercase;letter-spacing:1.4px;margin-top:3px;text-align:left}
+.workspace-caret{color:rgba(255,255,255,0.4);font-size:11px}
+.workspace-menu{display:none;position:absolute;top:100%;left:26px;right:26px;background:#fff;border-radius:8px;box-shadow:0 14px 34px rgba(26,31,58,0.28);z-index:150;padding:4px;margin-top:5px}
+.workspace-menu.show{display:block}
+.workspace-item{padding:6px 7px;border-radius:6px;font-size:12.5px;color:var(--indigo);cursor:pointer}
+.workspace-item:hover{background:var(--cream-lite)}
+.workspace-item.add{color:var(--purple);font-weight:600;border-top:1px solid var(--cream-deep);margin-top:3px;padding-top:7px}
+
+/* ══ ONBOARDING, CHROME-FREE ══ */
+.onboard-topbar{padding:22px 27px 4px;display:flex;align-items:center;gap:11px}
+.onboard-topbar .mark{font-family:'DM Serif Display',Georgia,serif;font-style:italic;color:var(--gold);font-size:19px}
+.onboard-exit{margin-left:auto;font-size:12.5px;color:var(--warm-grey);background:none;border:none}
+.onboard-exit:hover{color:var(--indigo)}
+.onboard-sub{text-align:center;font-size:13px;color:var(--warm-grey);margin-bottom:19px}
+
+
+/* ══ MAIN ══ */
+main{flex:1;min-width:0}
+.view{display:none}
+.view.active{display:block}
+.topbar{padding:22px 27px 16px;display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.topbar h1{font-family:'DM Serif Display',Georgia,serif;font-size:28px;letter-spacing:-0.4px}
+.topbar .sub{font-size:13px;color:var(--warm-grey);margin-top:4px}
+.topbar-actions{display:flex;gap:7px;flex-shrink:0}
+.tb-btn{font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:6px;border:1px solid var(--cream-deep);background:#fff;color:var(--indigo)}
+.tb-btn.primary{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+.content{padding:0 27px 44px}
+
+/* ══ TOP STAT ROW ══ */
+.stat-row{display:flex;align-items:stretch;border:1px solid var(--cream-deep);border-radius:10px;margin-bottom:22px;background:#fff;overflow:hidden;flex-wrap:wrap}
+.stat-row .cell{flex:1;min-width:180px;padding:14px 16px;border-right:1px solid var(--cream-deep)}
+.stat-row .cell:last-child{border-right:none}
+.stat-row .num{font-family:'DM Serif Display',Georgia,serif;font-size:30px;letter-spacing:-0.5px;line-height:1}
+.stat-row .lbl{font-size:12px;color:var(--warm-grey);margin-top:4px}
+.stat-row .num.accent{color:var(--sev-crit)}
+.stat-row .num.good{color:var(--green)}
+
+/* ══ PIPELINE STEPPER ══ */
+.pipeline{border:1px solid var(--cream-deep);border-radius:10px;padding:12px 16px;margin-bottom:19px;background:#fff}
+.pipeline-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:5px}
+.pipeline-lbl{font-size:12.5px;color:var(--warm-grey)}
+.pipeline-lbl b{color:var(--indigo)}
+.pipeline-steps{display:flex;align-items:center}
+.pstep{flex:1;display:flex;flex-direction:column;gap:4px}
+.pstep .bar{height:3px;border-radius:2px;background:var(--cream-deep);margin-right:5px}
+.pstep.done .bar{background:var(--warm-grey)}
+.pstep.active .bar{background:var(--gold)}
+.pstep .name{font-family:'Fira Code',monospace;font-size:9.5px;letter-spacing:0.6px;text-transform:uppercase;color:var(--warm-grey)}
+.pstep.active .name{color:var(--indigo);font-weight:600}
+
+/* ══ LAYOUT ══ */
+.grid{display:grid;grid-template-columns:1.4fr 1fr;gap:27px}
+.grid.even{grid-template-columns:1fr 1fr}
+.stack{display:flex;flex-direction:column;gap:24px}
+.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;gap:8px}
+.section-head h2{font-family:'DM Serif Display',Georgia,serif;font-size:19px;font-weight:400}
+.section-head .link{font-size:12px;color:var(--purple);background:none;border:none;flex-shrink:0}
+.section-head .link:hover{text-decoration:underline}
+.section-sub{font-size:12.5px;color:var(--warm-grey);margin-top:-5px;margin-bottom:11px}
+.panel{background:#fff;border:1px solid var(--cream-deep);border-radius:10px;padding:15px 16px}
+
+/* ══ CHART CONTAINERS ══ */
+.chart-box{position:relative;height:180px}
+.chart-box.tall{height:230px}
+.chart-box.donut{height:190px}
+.spark-box{position:relative;height:28px;margin-top:5px}
+.insight-spark{position:relative;height:26px;margin-top:7px;max-width:240px}
+
+/* ══ ATTENTION LIST ══ */
+.attn-item{display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid var(--cream-deep)}
+.attn-item:first-child{padding-top:0}
+.attn-item:last-child{border-bottom:none}
+.attn-dot{width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.attn-dot.critical{background:var(--sev-crit)}
+.attn-dot.high{background:var(--sev-high)}
+.attn-body{flex:1}
+.attn-title{font-size:13.5px;font-weight:600;color:var(--indigo)}
+.attn-meta{font-size:12px;color:var(--warm-grey);margin-top:3px}
+.attn-cta{font-size:12px;color:var(--purple);background:none;border:none;white-space:nowrap;flex-shrink:0}
+.attn-cta:hover{text-decoration:underline}
+
+/* ══ COVERAGE ══ */
+.health-legend{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.health-legend span{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--warm-grey)}
+.health-legend .sw{width:7px;height:7px;border-radius:50%;display:inline-block}
+.health-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-bottom:10px}
+.health-tile{aspect-ratio:1;border-radius:3px}
+.health-tile.running{background:var(--green);opacity:0.85}
+.health-tile.idle{background:var(--cream-deep)}
+.health-tile.setup{background:var(--amber);opacity:0.85}
+.health-tile.error{background:var(--verm)}
+
+/* ══ ACTIVITY ══ */
+.log-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--cream-deep);align-items:baseline}
+.log-row:first-child{padding-top:0}
+.log-row:last-child{border-bottom:none}
+.log-time{font-family:'Fira Code',monospace;font-size:11px;color:var(--warm-grey);flex-shrink:0;width:44px}
+.log-text{font-size:13px;color:var(--indigo);flex:1}
+.log-actor{font-size:11px;color:var(--warm-grey);flex-shrink:0;white-space:nowrap}
+
+/* ══ STAT GRID ══ */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--cream-deep);border:1px solid var(--cream-deep);border-radius:10px;overflow:hidden}
+.stat{background:#fff;padding:11px 12px}
+.stat-lbl{font-size:11.5px;color:var(--warm-grey);margin-bottom:4px}
+.stat-val{font-family:'Fira Code',monospace;font-size:20px;font-weight:600;color:var(--indigo)}
+.stat-trend{font-size:11px;margin-top:3px;color:var(--warm-grey)}
+.trend-up{color:var(--green)}
+.trend-down{color:var(--verm)}
+
+/* ══ FILTERS ══ */
+.filter-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:11px;margin-bottom:5px}
+.tabs{display:flex;gap:14px;border-bottom:1px solid var(--cream-deep)}
+.tab{padding:0 0 7px;font-size:13px;font-weight:600;color:var(--warm-grey);background:none;border:none;border-bottom:2px solid transparent}
+.tab.active{color:var(--indigo);border-bottom-color:var(--indigo)}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.fchip{padding:4px 8px;border-radius:20px;font-size:12px;background:none;border:1px solid var(--cream-deep);color:var(--warm-grey)}
+.fchip.active{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+.queue-meta{font-size:12px;color:var(--warm-grey)}
+.queue-meta b{color:var(--indigo)}
+.severity-panel{display:flex;align-items:center;gap:18px;margin-bottom:16px;flex-wrap:wrap}
+.severity-legend{display:flex;flex-direction:column;gap:6px}
+.severity-legend .row{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--warm-grey)}
+.severity-legend .sw{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.severity-legend b{color:var(--indigo);width:16px;display:inline-block;text-align:right}
+
+/* ══ BULK GROUP ══ */
+.bulk{background:var(--cream-lite);border:1px solid var(--cream-deep);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.bulk summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.bulk summary::-webkit-details-marker{display:none}
+.bulk-title{font-size:13.5px;font-weight:600;color:var(--indigo)}
+.bulk-sub{font-size:12px;color:var(--warm-grey);margin-top:3px}
+.bulk-items{margin-top:10px;border-top:1px solid var(--cream-deep);padding-top:8px}
+.bulk-row{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:12.5px;color:var(--indigo)}
+.bulk-row input{accent-color:var(--indigo)}
+.bulk-actions{margin-top:8px;display:flex;gap:11px;align-items:center}
+
+/* ══ QUEUE CARD ══ */
+.qcard{background:#fff;border:1px solid var(--cream-deep);border-left:3px solid var(--sev-low);border-radius:10px;padding:14px 15px;margin-bottom:8px}
+.qcard[data-severity="critical"]{border-left-color:var(--sev-crit)}
+.qcard[data-severity="high"]{border-left-color:var(--sev-high)}
+.qcard[data-severity="medium"]{border-left-color:var(--sev-med)}
+.qcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:11px;margin-bottom:4px}
+.qcard-eyebrow{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--warm-grey);margin-bottom:3px}
+.sev-label{font-weight:700;text-transform:uppercase;letter-spacing:0.4px;font-size:10.5px}
+.sev-label.critical{color:var(--sev-crit)}
+.sev-label.high{color:var(--sev-high)}
+.sev-label.medium{color:var(--sev-med)}
+.sev-label.low{color:var(--sev-low)}
+.qcard-title{font-size:15px;font-weight:600;color:var(--indigo);line-height:1.4}
+.qcard-confidence{font-family:'Fira Code',monospace;font-size:12px;color:var(--warm-grey);white-space:nowrap;flex-shrink:0;padding-top:2px}
+.qcard-confidence b{color:var(--gold);font-weight:600}
+.qcard-reason{font-size:13px;color:var(--warm-grey);line-height:1.6;margin:8px 0}
+.qcard-meta-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:5px}
+.qcard-meta{font-size:12px;color:var(--warm-grey)}
+.qcard-meta b{color:var(--green);font-weight:600}
+.sla{font-size:12px;color:var(--warm-grey)}
+.sla.aging{color:var(--amber)}
+.sla.overdue{color:var(--verm);font-weight:600}
+.qcard-actions{display:flex;gap:14px;align-items:center}
+.btn-primary{font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:6px;background:var(--indigo);color:#fff;border:none}
+.link-action{font-size:12.5px;font-weight:600;background:none;border:none;color:var(--indigo)}
+.link-action:hover{text-decoration:underline}
+.link-action.danger{color:var(--verm)}
+.reasoning{margin-top:8px;padding-top:8px;border-top:1px solid var(--cream-deep)}
+.reasoning summary{list-style:none;cursor:pointer;font-size:12px;color:var(--purple);font-weight:600}
+.reasoning summary::-webkit-details-marker{display:none}
+.reasoning summary::before{content:'Why this? ';font-weight:600}
+.reasoning[open] summary::before{content:'Hide reasoning ';font-weight:600}
+.reasoning-body{margin-top:8px;font-size:12.5px;color:var(--indigo);line-height:1.75}
+.reasoning-body .rline{display:flex;gap:7px;margin-bottom:5px}
+.reasoning-body .rline:last-child{margin-bottom:0}
+.reasoning-body .rline b{color:var(--warm-grey);font-weight:600;flex-shrink:0;width:84px;font-size:11px;text-transform:uppercase;letter-spacing:0.3px;padding-top:1px}
+
+/* ══ DIAGNOSTIC CARD ══ */
+.dcard{background:#fff;border:1px solid var(--cream-deep);border-left:3px solid var(--sev-crit);border-radius:10px;padding:14px 15px;margin-bottom:8px}
+.dcard[data-severity="high"]{border-left-color:var(--sev-high)}
+.dcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:11px;margin-bottom:7px}
+.dcard-eyebrow{font-size:11.5px;margin-bottom:3px}
+.dcard-title{font-size:15px;font-weight:600;color:var(--indigo);line-height:1.4}
+.dcard-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 14px;margin:10px 0;font-size:13px}
+.dcard-field b{display:block;font-size:11px;color:var(--warm-grey);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:3px;font-weight:600}
+.dcard-field span{color:var(--indigo);line-height:1.55}
+
+/* ══ EMPTY STATE ══ */
+.empty-state{display:none;flex-direction:column;align-items:center;text-align:center;padding:41px 14px}
+.empty-state.show{display:flex}
+.empty-ic{color:var(--warm-grey);margin-bottom:10px}
+.empty-title{font-family:'DM Serif Display',Georgia,serif;font-size:18px;color:var(--indigo);margin-bottom:4px}
+.empty-body{font-size:13px;color:var(--warm-grey);max-width:320px;line-height:1.6;margin-bottom:11px}
+.empty-cta{font-size:12.5px;color:var(--purple);background:none;border:none;font-weight:600}
+.empty-cta:hover{text-decoration:underline}
+
+/* ══ SKELETON ══ */
+.skel{background:var(--cream-deep);border-radius:4px;color:transparent!important;animation:skelpulse 1.3s ease-in-out infinite}
+@keyframes skelpulse{0%,100%{opacity:1}50%{opacity:0.45}}
+
+/* ══ CREATIVE INTEL ══ */
+.fatigue-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--cream-deep)}
+.fatigue-row:first-child{padding-top:0}
+.fatigue-row:last-child{border-bottom:none}
+.creative-thumb{width:40px;height:52px;border-radius:6px;background:var(--cream-deep);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Fira Code',monospace;font-size:9px;color:var(--warm-grey);text-align:center;line-height:1.3}
+.fatigue-body{flex:1;min-width:0}
+.fatigue-title{font-size:13.5px;font-weight:600;color:var(--indigo)}
+.fatigue-meta{font-size:12px;color:var(--warm-grey);margin-top:3px}
+.fatigue-risk{font-size:12px;font-weight:600;white-space:nowrap;text-align:right;flex-shrink:0}
+.risk-days{font-size:11px;color:var(--warm-grey);margin-top:2px}
+.brief-row{padding:10px 0;border-bottom:1px solid var(--cream-deep)}
+.brief-row:first-child{padding-top:0}
+.brief-row:last-child{border-bottom:none}
+.brief-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.brief-title{font-size:13.5px;font-weight:600;color:var(--indigo)}
+.brief-status{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;flex-shrink:0}
+.status-draft{color:var(--warm-grey)}
+.status-review{color:var(--amber)}
+.status-approved{color:var(--green)}
+.brief-desc{font-size:12.5px;color:var(--warm-grey);margin-top:4px;line-height:1.6}
+.brief-tags{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.brief-tag{font-family:'Fira Code',monospace;font-size:10px;color:var(--warm-grey);background:var(--cream-lite);border:1px solid var(--cream-deep);padding:2px 5px;border-radius:4px}
+
+/* ══ INSIGHTS ══ */
+.insight-card{padding:15px 0;border-bottom:1px solid var(--cream-deep)}
+.insight-card:first-child{padding-top:0}
+.insight-card:last-child{border-bottom:none}
+.insight-eyebrow{font-size:11.5px;color:var(--warm-grey);margin-bottom:5px}
+.insight-eyebrow b{color:var(--purple);font-weight:600}
+.insight-title{font-size:14.5px;font-weight:600;color:var(--indigo);line-height:1.55;margin-bottom:5px}
+.insight-stat{font-size:12.5px;color:var(--warm-grey)}
+.insight-stat b{color:var(--green)}
+.insight-meta{font-size:11.5px;color:var(--warm-grey);margin-top:7px}
+
+/* ══ REPORTS ══ */
+.report-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--cream-deep);gap:11px}
+.report-row:first-child{padding-top:0}
+.report-row:last-child{border-bottom:none}
+.report-name{font-size:13.5px;font-weight:600;color:var(--indigo)}
+.report-meta{font-size:12px;color:var(--warm-grey);margin-top:3px}
+.report-actions{display:flex;gap:11px;flex-shrink:0;align-items:center}
+
+/* ══ AGENT LIBRARY ══ */
+.area-group{border:1px solid var(--cream-deep);border-radius:10px;margin-bottom:8px;overflow:hidden;background:#fff}
+.area-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;list-style:none}
+.area-head::-webkit-details-marker{display:none}
+.area-head-l{display:flex;align-items:center;gap:10px}
+.area-name{font-size:14px;font-weight:600;color:var(--indigo)}
+.area-count{font-size:12px;color:var(--warm-grey)}
+.area-chevron{color:var(--warm-grey);transition:transform 150ms ease}
+details[open] .area-chevron{transform:rotate(90deg)}
+.area-body{border-top:1px solid var(--cream-deep);padding:10px 14px 4px}
+.area-bar{display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--cream-deep);margin-bottom:10px}
+.area-bar span{display:block;height:100%}
+.agent-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--cream-deep)}
+.agent-row:last-child{border-bottom:none}
+.agent-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.agent-dot.running{background:var(--green)}
+.agent-dot.idle{background:var(--cream-deep);border:1px solid var(--warm-grey)}
+.agent-dot.setup{background:var(--amber)}
+.agent-dot.error{background:var(--verm)}
+.agent-name{font-size:13px;color:var(--indigo);flex:1;min-width:0}
+.agent-meta{font-size:11px;color:var(--warm-grey);flex-shrink:0;white-space:nowrap}
+.toggle{width:32px;height:18px;border-radius:20px;background:var(--cream-deep);position:relative;flex-shrink:0;border:none;cursor:pointer}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform 150ms ease}
+.toggle.on{background:var(--green)}
+.toggle.on::after{transform:translateX(14px)}
+.search-row{display:flex;gap:7px;margin-bottom:14px}
+.search-input{flex:1;padding:7px 10px;border:1px solid var(--cream-deep);border-radius:8px;font-family:inherit;font-size:13px;color:var(--indigo);background:#fff}
+.search-input:focus{outline:none;border-color:var(--purple)}
+.search-input::placeholder{color:var(--warm-grey)}
+
+.stat-grid.exec{grid-template-columns:repeat(4,1fr)}
+
+/* ══ COMMAND PALETTE ══ */
+.cmdk-trigger{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 8px;color:rgba(255,255,255,0.45);font-size:12.5px;margin:11px 18px 0;width:calc(100% - 52px)}
+.cmdk-trigger .key{margin-left:auto;font-family:'Fira Code',monospace;font-size:9.5px;background:rgba(255,255,255,0.12);padding:2px 4px;border-radius:4px;color:rgba(255,255,255,0.6)}
+.cmdk-overlay{display:none;position:fixed;inset:0;background:rgba(26,31,58,0.5);z-index:200;align-items:flex-start;justify-content:center;padding-top:12vh}
+.cmdk-overlay.show{display:flex}
+.cmdk-box{background:#fff;border-radius:12px;width:560px;max-width:90vw;box-shadow:0 20px 60px rgba(26,31,58,0.3);overflow:hidden}
+.cmdk-box input{width:100%;border:none;padding:12px 14px;font-size:15px;font-family:inherit;color:var(--indigo);border-bottom:1px solid var(--cream-deep)}
+.cmdk-box input:focus{outline:none}
+.cmdk-results{max-height:320px;overflow-y:auto;padding:5px}
+.cmdk-result{display:flex;justify-content:space-between;padding:7px 10px;border-radius:7px;font-size:13.5px;color:var(--indigo);cursor:pointer}
+.cmdk-result:hover{background:var(--cream-lite)}
+.cmdk-result .tag{font-family:'Fira Code',monospace;font-size:10px;color:var(--warm-grey)}
+.cmdk-empty{padding:16px 10px;text-align:center;font-size:12.5px;color:var(--warm-grey)}
+
+/* ══ NOTIFICATIONS ══ */
+.notif-bell{position:fixed;top:26px;right:40px;z-index:90;width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid var(--cream-deep);display:flex;align-items:center;justify-content:center;color:var(--indigo)}
+.notif-badge{position:absolute;top:-3px;right:-3px;background:var(--verm);color:#fff;font-size:9px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fira Code',monospace}
+.notif-panel{display:none;position:fixed;top:70px;right:40px;width:300px;background:#fff;border:1px solid var(--cream-deep);border-radius:10px;box-shadow:0 10px 30px rgba(26,31,58,0.15);z-index:90;padding:5px}
+.notif-panel.show{display:block}
+.notif-row{padding:7px 8px;border-bottom:1px solid var(--cream-deep);font-size:12.5px;color:var(--indigo)}
+.notif-row:last-child{border-bottom:none}
+.notif-row .t{font-size:11px;color:var(--warm-grey);margin-top:3px}
+
+/* ══ TOAST ══ */
+.toast{position:fixed;bottom:26px;right:26px;background:var(--indigo);color:#fff;padding:9px 12px;border-radius:8px;font-size:12.5px;box-shadow:0 10px 30px rgba(26,31,58,0.3);z-index:300;opacity:0;transform:translateY(8px);transition:all 200ms ease;max-width:280px}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* ══ REJECT WITH REASON ══ */
+.reason-overlay{display:none;position:fixed;inset:0;background:rgba(26,31,58,0.5);z-index:200;align-items:center;justify-content:center}
+.reason-overlay.show{display:flex}
+.reason-box{background:#fff;border-radius:12px;width:420px;max-width:90vw;padding:16px;box-shadow:0 20px 60px rgba(26,31,58,0.3)}
+.reason-title{font-size:15px;font-weight:600;color:var(--indigo);margin-bottom:10px}
+.reason-chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.rchip{padding:5px 9px;border-radius:20px;font-size:12px;border:1px solid var(--cream-deep);background:#fff;color:var(--warm-grey)}
+.rchip.active{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+.reason-box textarea{width:100%;border:1px solid var(--cream-deep);border-radius:8px;padding:7px 8px;font-family:inherit;font-size:12.5px;color:var(--indigo);resize:vertical;min-height:64px;margin-bottom:11px}
+.reason-box textarea:focus{outline:none;border-color:var(--purple)}
+.reason-actions{display:flex;gap:11px;align-items:center}
+.rejected-banner{font-size:12.5px;color:var(--warm-grey);font-style:italic}
+
+.undo-link{font-size:11px;color:var(--purple);background:none;border:none;flex-shrink:0}
+.undo-link:hover{text-decoration:underline}
+.log-row.undone{opacity:0.4}
+.log-row.undone .log-text{text-decoration:line-through}
+
+/* ══ ONBOARDING WIZARD ══ */
+.wizard-wrap{max-width:640px;margin:0 auto}
+.stepper{display:flex;align-items:flex-start;margin-bottom:24px}
+.step-unit{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.step-dot{width:26px;height:26px;border-radius:50%;background:var(--cream-deep);color:var(--warm-grey);display:flex;align-items:center;justify-content:center;font-family:'Fira Code',monospace;font-size:11px;font-weight:600}
+.step-dot.done{background:var(--green);color:#fff}
+.step-dot.current{background:var(--indigo);color:#fff}
+.step-line{flex:1;height:2px;background:var(--cream-deep);margin-top:9px}
+.step-line.done{background:var(--green)}
+.step-label{font-size:9.5px;color:var(--warm-grey);text-align:center;margin-top:5px;font-family:'Fira Code',monospace;text-transform:uppercase;letter-spacing:0.3px;width:70px}
+.wizard-step{display:none}
+.wizard-step.active{display:block}
+.wizard-card{background:#fff;border:1px solid var(--cream-deep);border-radius:12px;padding:22px}
+.wizard-card h3{font-family:'DM Serif Display',Georgia,serif;font-size:21px;margin-bottom:5px}
+.wizard-card .desc{font-size:13px;color:var(--warm-grey);margin-bottom:15px;line-height:1.6}
+.connect-box{background:var(--cream-lite);border:1px solid var(--cream-deep);border-radius:10px;padding:12px 14px;margin-top:12px}
+.connect-line{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--indigo);padding:4px 0}
+.connect-line .ck{color:var(--green);flex-shrink:0}
+.field-row{margin-bottom:11px}
+.field-row label{display:block;font-size:11px;color:var(--warm-grey);text-transform:uppercase;letter-spacing:0.3px;margin-bottom:4px;font-family:'Fira Code',monospace}
+.field-row input, .field-row textarea{width:100%;border:1px solid var(--cream-deep);border-radius:7px;padding:7px 8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--indigo)}
+.field-row textarea{min-height:60px;resize:vertical}
+.field-row input:focus, .field-row textarea:focus{outline:none;border-color:var(--purple)}
+.field-hint{font-size:11px;color:var(--purple);margin-top:3px}
+.wizard-actions{display:flex;justify-content:space-between;margin-top:18px}
+
+/* ══ SETTINGS ══ */
+.settings-tabs{display:flex;gap:16px;border-bottom:1px solid var(--cream-deep);margin-bottom:18px}
+.stab{padding:0 0 7px;font-size:13px;font-weight:600;color:var(--warm-grey);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-1px}
+.stab.active{color:var(--indigo);border-bottom-color:var(--indigo)}
+.settings-pane{display:none}
+.settings-pane.active{display:block}
+.platform-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--cream-deep)}
+.platform-row:last-child{border-bottom:none}
+.platform-icon{width:36px;height:36px;border-radius:8px;background:var(--indigo);color:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:15px;flex-shrink:0}
+.platform-info{flex:1}
+.platform-name{font-size:13.5px;font-weight:600;color:var(--indigo)}
+.platform-meta{font-size:11.5px;color:var(--warm-grey);margin-top:3px}
+.platform-status{font-size:11px;font-weight:600;padding:3px 6px;border-radius:12px;flex-shrink:0}
+.status-ok{background:#F0FDF4;color:var(--sev-low)}
+.status-warn{background:#FEF3C7;color:var(--sev-high)}
+.notif-matrix{width:100%;border-collapse:collapse}
+.notif-matrix th{font-family:'Fira Code',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:0.4px;color:var(--warm-grey);text-align:center;padding:0 7px 8px;font-weight:600}
+.notif-matrix th:first-child{text-align:left}
+.notif-matrix td{padding:8px 7px;border-top:1px solid var(--cream-deep);font-size:13px;color:var(--indigo);text-align:center}
+.notif-matrix td:first-child{text-align:left;font-weight:600}
+.notif-matrix input[type=checkbox]{width:15px;height:15px;accent-color:var(--indigo)}
+.plan-card{display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--cream-deep)}
+.plan-name{font-family:'DM Serif Display',serif;font-size:20px;color:var(--indigo)}
+.plan-meta{font-size:12px;color:var(--warm-grey);margin-top:3px}
+.invoice-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--cream-deep);font-size:12.5px}
+.invoice-row:last-child{border-bottom:none}
+.invoice-status{color:var(--sev-low);font-weight:600;font-size:11px}
+.audit-row{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--cream-deep);align-items:baseline}
+.audit-row:last-child{border-bottom:none}
+.audit-time{font-family:'Fira Code',monospace;font-size:11px;color:var(--warm-grey);flex-shrink:0;width:120px}
+.audit-text{font-size:12.5px;color:var(--indigo);flex:1}
+.audit-text b{font-weight:600}
+
+@media (max-width:1080px){
+  .grid,.grid.even{grid-template-columns:1fr}
+  .stat-row{flex-direction:column}
+  .stat-row .cell{border-right:none;border-bottom:1px solid var(--cream-deep)}
+  .stat-row .cell:last-child{border-bottom:none}
+  .stat-grid.exec{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ══ NOTIFICATION BELL (feature: priority alerts, in-app badge) ══ -->
+  <button class="notif-bell" onclick="toggleNotif(event)">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    <span class="notif-badge">2</span>
+  </button>
+  <div class="notif-panel" id="notifPanel">
+    <div class="notif-row"><b>Critical</b> &middot; Brand CPC spike detected on Google<div class="t">1 hour ago</div></div>
+    <div class="notif-row"><b>High</b> &middot; Merchant Center feed has 14 disapproved products<div class="t">5 hours ago</div></div>
+    <div class="notif-row"><b>Critical</b> &middot; Pixel and CAPI gap on Diwali Bundle<div class="t">3 days ago</div></div>
+  </div>
+
+  <!-- ══ COMMAND PALETTE (feature 63) ══ -->
+  <div class="cmdk-overlay" id="cmdkOverlay" onclick="if(event.target===this) closeCmdK()">
+    <div class="cmdk-box">
+      <input id="cmdkInput" placeholder="Search agents, campaigns, reports..." oninput="renderCmdk(this.value)">
+      <div class="cmdk-results" id="cmdkResults"></div>
+    </div>
+  </div>
+
+  <!-- ══ REJECT WITH REASON (feature 46) ══ -->
+  <div class="reason-overlay" id="reasonOverlay" onclick="if(event.target===this) closeReason()">
+    <div class="reason-box">
+      <div class="reason-title">Why are you rejecting this?</div>
+      <div class="reason-chips">
+        <button class="rchip" data-r="Wrong context" onclick="pickReason(this)">Wrong context</button>
+        <button class="rchip" data-r="Too risky" onclick="pickReason(this)">Too risky</button>
+        <button class="rchip" data-r="Already handled" onclick="pickReason(this)">Already handled</button>
+        <button class="rchip" data-r="Other" onclick="pickReason(this)">Other</button>
+      </div>
+      <textarea id="reasonText" placeholder="Add detail (optional). Yāmin uses this to learn."></textarea>
+      <div class="reason-actions"><button class="btn-primary" onclick="submitReason()">Submit and reject</button><button class="link-action" onclick="closeReason()">Cancel</button></div>
+    </div>
+  </div>
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar">
+    <div class="workspace-switch">
+      <button class="workspace-btn" onclick="toggleWorkspaceMenu(event)">
+        <div><div class="workspace-name">YourBrand</div><div class="workspace-sub">Yāmin workspace</div></div>
+        <span class="workspace-caret">&#9662;</span>
+      </button>
+      <div class="workspace-menu" id="workspaceMenu">
+        <div class="workspace-item">&#10003;&nbsp;&nbsp;YourBrand</div>
+        <div class="workspace-item add" onclick="enterOnboarding()">+ Add new client</div>
+      </div>
+    </div>
+    <button class="cmdk-trigger" onclick="openCmdK()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      Search
+      <span class="key">&#8984;K</span>
+    </button>
+    <nav class="nav">
+      <button class="nav-item" data-view="view-command">
+        <span class="lbl"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/></svg></span> Command Center</span>
+      </button>
+      <button class="nav-item active" data-view="view-queue">
+        <span class="lbl"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/></svg></span> Approval Queue</span>
+        <span class="nav-count" id="queueNavCount">8</span>
+      </button>
+
+      <div class="nav-divider"></div>
+
+      <button class="nav-item" data-view="view-creative">
+        <span class="lbl"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="12,3 21,12 12,21 3,12"/></svg></span> Creative Intel</span>
+      </button>
+      <button class="nav-item" data-view="view-insights">
+        <span class="lbl"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="2.6"/></svg></span> Insights</span>
+      </button>
+      <button class="nav-item" data-view="view-learning">
+        <span class="lbl"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 4h12v16l-6-3-6 3z"/></svg></span> Learning</span>
+      </button>
+
+      <div class="nav-divider"></div>
+
+      <button class="nav-item" data-view="view-reports">
+        <span class="lbl"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg></span> Reports</span>
+      </button>
+      <button class="nav-item" data-view="view-executive">
+        <span class="lbl"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg></span> Executive</span>
+      </button>
+      <button class="nav-item" data-view="view-library">
+        <span class="lbl"><span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg></span> Library</span>
+      </button>
+
+      <div class="nav-group-lbl">Connected</div>
+      <div class="conn-item">Meta</div>
+      <div class="conn-item">Google</div>
+      <div class="conn-item">GA4</div>
+      <div class="conn-item">Shopify</div>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="avatar">R</div>
+      <div><div class="who">Ritika</div><div class="role">Media Team</div></div>
+      <button class="foot-settings" onclick="switchView('view-settings')" title="Settings">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 0 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 0 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 0 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 0 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <main>
+
+    <!-- ═══════════════ VIEW: COMMAND CENTER ═══════════════ -->
+    <section id="view-command" class="view">
+      <div class="topbar">
+        <div><h1>Good morning, Ritika.</h1><div class="sub">Here's what needs you today, and what moved overnight.</div></div>
+      </div>
+
+      <div class="content">
+        <div class="stat-row">
+          <div class="cell"><div class="num">&#8377;4.2L</div><div class="lbl">Impact routed for approval this week</div></div>
+          <div class="cell"><div class="num accent">8</div><div class="lbl">Items waiting on you, 2 critical</div></div>
+          <div class="cell"><div class="num">7.2 hrs</div><div class="lbl">Median time you take to clear the queue</div></div>
+        </div>
+
+        <div class="pipeline">
+          <div class="pipeline-top">
+            <div class="pipeline-lbl">Right now, Yāmin is detecting creative fatigue across <b>44 active ad sets</b></div>
+            <div class="pipeline-lbl"><b>96%</b> confident</div>
+          </div>
+          <div class="pipeline-steps">
+            <div class="pstep done"><div class="bar"></div><div class="name">Read</div></div>
+            <div class="pstep done"><div class="bar"></div><div class="name">Score</div></div>
+            <div class="pstep active"><div class="bar"></div><div class="name">Detect</div></div>
+            <div class="pstep"><div class="bar"></div><div class="name">Rank</div></div>
+            <div class="pstep"><div class="bar"></div><div class="name">Draft</div></div>
+            <div class="pstep"><div class="bar"></div><div class="name">Propose</div></div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="stack">
+            <div>
+              <div class="section-head"><h2>Needs your attention</h2><button class="link" onclick="switchView('view-queue')">Open queue</button></div>
+              <div id="attnList">
+                <div class="attn-item"><div class="attn-dot critical"></div><div class="attn-body"><div class="attn-title">Brand CPC inflation guard flagged a competitor spike</div><div class="attn-meta">Google &middot; Brand terms &middot; Waiting 1d 4h</div></div><button class="attn-cta" onclick="switchView('view-queue')">Review</button></div>
+                <div class="attn-item"><div class="attn-dot critical"></div><div class="attn-body"><div class="attn-title">Pixel and CAPI gap detected, conversions undercounted</div><div class="attn-meta">Meta &middot; Diwali Bundle &middot; Waiting 3d</div></div><button class="attn-cta" onclick="switchView('view-queue')">Review</button></div>
+                <div class="attn-item"><div class="attn-dot high"></div><div class="attn-body"><div class="attn-title">Pause 3 fatigued creatives, Diwali Bundle</div><div class="attn-meta">Meta &middot; 92% confident &middot; Waiting 6h</div></div><button class="attn-cta" onclick="switchView('view-queue')">Review</button></div>
+              </div>
+            </div>
+            <div>
+              <div class="section-head"><h2>Coverage across 71 agents</h2><button class="link" onclick="switchView('view-library')">Open library</button></div>
+              <div class="health-legend">
+                <span><span class="sw" style="background:var(--green)"></span> Running (64)</span>
+                <span><span class="sw" style="background:var(--cream-deep)"></span> Idle (4)</span>
+                <span><span class="sw" style="background:var(--amber)"></span> Needs setup (2)</span>
+                <span><span class="sw" style="background:var(--verm)"></span> Error (1)</span>
+              </div>
+              <div class="health-grid" id="healthGrid"></div>
+            </div>
+            <div>
+              <div class="section-head"><h2>Activity</h2><button class="link">View all</button></div>
+              <div class="log-row"><div class="log-time">09:14</div><div class="log-text">Detected a frequency spike on the Diwali Bundle ad set. Flagged for review.</div><div class="log-actor">Yāmin</div><button class="undo-link" onclick="undoAction(this)">Undo</button></div>
+              <div class="log-row"><div class="log-time">08:52</div><div class="log-text">Approved the budget shift to PMax, Wedding Edit campaign.</div><div class="log-actor">Media Team</div></div>
+              <div class="log-row"><div class="log-time">08:30</div><div class="log-text">Drafted a festive UGC brief to close the diversity gap in feed placements.</div><div class="log-actor">Yāmin</div><button class="undo-link" onclick="undoAction(this)">Undo</button></div>
+            </div>
+          </div>
+          <div class="stack">
+            <div>
+              <div class="section-head"><h2>Performance</h2><button class="link">Full view</button></div>
+              <div class="stat-grid">
+                <div class="stat"><div class="stat-lbl">ROAS, blended</div><div class="stat-val">4.8x</div><div class="spark-box"><canvas id="sparkRoas"></canvas></div><div class="stat-trend trend-up">&#8593; 0.3 vs last wk</div></div>
+                <div class="stat"><div class="stat-lbl">CPA</div><div class="stat-val">&#8377;486</div><div class="spark-box"><canvas id="sparkCpa"></canvas></div><div class="stat-trend trend-down">&#8595; &#8377;22 vs last wk</div></div>
+                <div class="stat"><div class="stat-lbl">CTR</div><div class="stat-val">1.9%</div><div class="spark-box"><canvas id="sparkCtr"></canvas></div><div class="stat-trend trend-down">&#8595; 0.2pt vs last wk</div></div>
+                <div class="stat"><div class="stat-lbl">Spend, MTD</div><div class="stat-val">&#8377;6.1L</div><div class="spark-box"><canvas id="sparkSpend"></canvas></div><div class="stat-trend">On pace</div></div>
+              </div>
+            </div>
+            <div>
+              <div class="section-head"><h2>Spend pacing</h2></div>
+              <div class="section-sub">Actual vs forecast vs the monthly cap.</div>
+              <div class="panel"><div class="chart-box"><canvas id="spendPacingChart"></canvas></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ VIEW: APPROVAL QUEUE ═══════════════ -->
+    <section id="view-queue" class="view active">
+      <div class="topbar">
+        <div><h1>Approval queue</h1><div class="sub">Everything Yāmin is proposing or flagging, sorted by severity.</div></div>
+      </div>
+
+      <div class="content">
+        <div class="panel severity-panel">
+          <div class="chart-box" style="width:130px;height:130px;flex-shrink:0"><canvas id="severityDonut"></canvas></div>
+          <div class="severity-legend">
+            <div class="row"><span class="sw" style="background:var(--sev-crit)"></span> <b>2</b> Critical, act today</div>
+            <div class="row"><span class="sw" style="background:var(--sev-high)"></span> <b>2</b> High, act this week</div>
+            <div class="row"><span class="sw" style="background:var(--sev-med)"></span> <b>1</b> Medium</div>
+            <div class="row"><span class="sw" style="background:var(--sev-low)"></span> <b>3</b> Low, bulk eligible</div>
+          </div>
+          <div style="margin-left:auto;text-align:right">
+            <div class="queue-meta"><b>8</b> items waiting</div>
+            <div class="queue-meta" style="margin-top:4px">Median wait <b>7.2 hrs</b></div>
+          </div>
+        </div>
+
+        <details class="area-group" style="margin-bottom:24px">
+          <summary class="area-head"><div class="area-head-l"><svg class="area-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg><span class="area-name">Auto-approve rules</span></div><span class="area-count">2 active, reviewed monthly</span></summary>
+          <div class="area-body">
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Sitelink and asset refreshes, confidence &ge; 90%, wait under 24h</span><span class="agent-meta">12 auto-approved this month</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Negative keywords, spend at risk under &#8377;500 / wk</span><span class="agent-meta">4 auto-approved this month</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot idle"></span><span class="agent-name">Bid cap changes, any confidence</span><span class="agent-meta">Not enabled, flagged as high risk</span><button class="toggle"></button></div>
+          </div>
+          <div style="padding:0 20px 18px"><button class="link-action">+ Add a rule</button></div>
+        </details>
+
+        <div class="filter-bar">
+          <div class="tabs">
+            <button class="tab active" data-filter="all">All &middot; 8</button>
+            <button class="tab" data-filter="rec">Recommendations &middot; 6</button>
+            <button class="tab" data-filter="diag">Diagnostics &middot; 2</button>
+          </div>
+          <div class="chips">
+            <button class="fchip active" data-sev="all">All severity</button>
+            <button class="fchip" data-sev="critical">Critical</button>
+            <button class="fchip" data-sev="high">High</button>
+            <button class="fchip" data-sev="medium">Medium</button>
+            <button class="fchip" data-sev="low">Low</button>
+          </div>
+        </div>
+        <div style="margin-bottom:14px"></div>
+
+        <div id="queueList">
+
+        <div class="dcard" data-severity="critical" data-type="diag">
+          <div class="dcard-top">
+            <div><div class="dcard-eyebrow"><span class="sev-label critical">Critical</span> &middot; Detected 3d ago</div><div class="dcard-title">Pixel and CAPI gap on Diwali Bundle, conversions undercounted</div></div>
+            <span class="sla overdue">Waiting 3d</span>
+          </div>
+          <div class="dcard-grid">
+            <div class="dcard-field"><b>What broke</b><span>Meta Pixel stopped firing on the checkout confirmation step 3 days ago. Conversions API is only partially compensating.</span></div>
+            <div class="dcard-field"><b>Affected</b><span>All Meta campaigns for Diwali Bundle. Attribution is understated by an estimated 18 to 24 percent.</span></div>
+            <div class="dcard-field"><b>Suspected cause</b><span>A recent Shopify theme update likely removed the Pixel script from the confirmation page template.</span></div>
+            <div class="dcard-field"><b>Suggested fix</b><span>Reinstall the Pixel snippet on the confirmation template, or route the event through server side CAPI only.</span></div>
+          </div>
+          <div class="qcard-actions"><button class="btn-primary">Assign to dev team</button><button class="link-action">Acknowledge</button></div>
+        </div>
+
+        <div class="qcard" data-severity="critical" data-type="rec">
+          <div class="qcard-top">
+            <div class="qcard-title-wrap">
+              <div class="qcard-eyebrow"><span class="sev-label critical">Critical</span> Brand CPC inflation guard &middot; Google</div>
+              <div class="qcard-title">Competitor bidding on brand terms, CPC up 2.4x overnight</div>
+            </div>
+            <div class="qcard-confidence"><b>95%</b> confident</div>
+          </div>
+          <div class="qcard-reason">A competitor started bidding on the client's exact brand term at 6 AM. Brand CPC has held 2.4x above the 30 day average for 9 hours straight.</div>
+          <div class="qcard-meta-row"><div class="qcard-meta">Est. impact <b>+&#8377;6,200 / day if unresolved</b></div><span class="sla aging">Waiting 1d 4h</span></div>
+          <div class="qcard-actions"><button class="btn-primary">Authorise bid response</button><button class="link-action">Send takedown notice</button><button class="link-action danger" onclick="openReason(this)">Dismiss</button></div>
+          <details class="reasoning"><summary></summary>
+            <div class="reasoning-body">
+              <div class="rline"><b>Data</b> Brand CPC time series, auction insights delta, competitor account fingerprint.</div>
+              <div class="rline"><b>Trigger</b> 2 sigma deviation from the 30 day rolling brand CPC baseline, sustained over 3 consecutive hours.</div>
+              <div class="rline"><b>Culprit</b> New advertiser identified via auction insights overlap, first seen bidding at 06:04 IST.</div>
+              <div class="rline"><b>Options</b> Raise brand bid to defend top position, or file a trademark takedown notice if this is a policy violation.</div>
+            </div>
+          </details>
+        </div>
+
+        <div class="qcard" data-severity="high" data-type="rec">
+          <div class="qcard-top">
+            <div class="qcard-title-wrap">
+              <div class="qcard-eyebrow"><span class="sev-label high">High</span> Creative fatigue predictor &middot; Meta</div>
+              <div class="qcard-title">Pause 3 fatigued creatives, Diwali Bundle</div>
+            </div>
+            <div class="qcard-confidence"><b>92%</b> confident</div>
+          </div>
+          <div class="qcard-reason">Frequency crossed 4.1 with CTR down 38 percent over 6 days. Two near duplicate variants are splitting spend against each other.</div>
+          <div class="qcard-meta-row"><div class="qcard-meta">Est. impact <b>+&#8377;18,400 / wk</b></div><span class="sla">Waiting 6h</span></div>
+          <div class="qcard-actions"><button class="btn-primary">Approve</button><button class="link-action">Edit</button><button class="link-action danger" onclick="openReason(this)">Reject</button></div>
+          <details class="reasoning"><summary></summary>
+            <div class="reasoning-body">
+              <div class="rline"><b>Data</b> Frequency curve, CTR decay, first 3 second retention, duplicate detection score.</div>
+              <div class="rline"><b>Trigger</b> Fatigue predicted 3 to 7 days ahead of actual burnout using retention decay slope.</div>
+              <div class="rline"><b>Duplicates</b> Creatives B and D score 91 percent visually similar, currently splitting the same audience.</div>
+              <div class="rline"><b>Recommendation</b> Pause B and D, keep A and C running, route budget to the highest performing variant.</div>
+            </div>
+          </details>
+        </div>
+
+        <div class="dcard" data-severity="high" data-type="diag">
+          <div class="dcard-top">
+            <div><div class="dcard-eyebrow"><span class="sev-label high">High</span> &middot; Detected this morning</div><div class="dcard-title">Merchant Center feed has 14 disapproved products</div></div>
+            <span class="sla aging">Waiting 5h</span>
+          </div>
+          <div class="dcard-grid">
+            <div class="dcard-field"><b>What broke</b><span>14 SKUs were disapproved overnight for missing GTIN and low resolution images, weekly feed audit.</span></div>
+            <div class="dcard-field"><b>Affected</b><span>Shopping campaigns for the festive collection, roughly &#8377;9,000 in weekly spend at risk of pausing.</span></div>
+            <div class="dcard-field"><b>Suspected cause</b><span>New products were added to Shopify without GTIN fields populated in the product template.</span></div>
+            <div class="dcard-field"><b>Suggested fix</b><span>Backfill GTINs from the supplier catalog and re upload product images at 800px minimum.</span></div>
+          </div>
+          <div class="qcard-actions"><button class="btn-primary">Assign to catalog team</button><button class="link-action">Acknowledge</button></div>
+        </div>
+
+        <div class="qcard" data-severity="medium" data-type="rec">
+          <div class="qcard-top">
+            <div class="qcard-title-wrap">
+              <div class="qcard-eyebrow"><span class="sev-label medium">Medium</span> Negative keyword recommender &middot; Google</div>
+              <div class="qcard-title">Add 12 negative keywords, Wedding Edit campaign</div>
+            </div>
+            <div class="qcard-confidence"><b>88%</b> confident</div>
+          </div>
+          <div class="qcard-reason">These 12 search terms generated 340 clicks and zero conversions over the last 30 days, all outside the intended audience.</div>
+          <div class="qcard-meta-row"><div class="qcard-meta">Est. impact <b>+&#8377;9,100 / wk saved</b></div><span class="sla">Waiting 2h</span></div>
+          <div class="qcard-actions"><button class="btn-primary">Approve</button><button class="link-action">Edit list</button><button class="link-action danger" onclick="openReason(this)">Reject</button></div>
+          <details class="reasoning"><summary></summary>
+            <div class="reasoning-body">
+              <div class="rline"><b>Data</b> Search term report, spend and CVR analysis, last 30 days.</div>
+              <div class="rline"><b>Trigger</b> Zero conversions with spend above the account's per term waste threshold.</div>
+              <div class="rline"><b>Recommendation</b> Add all 12 terms as campaign level negatives, exact match.</div>
+            </div>
+          </details>
+        </div>
+
+        <details class="bulk" data-severity="low" data-type="rec">
+          <summary><div><div class="bulk-title">3 similar recommendations, sitelink and asset refresher</div><div class="bulk-sub">Meta &middot; Low severity &middot; 71 to 84% confident &middot; Waiting under 24h</div></div><span class="link-action">Expand</span></summary>
+          <div class="bulk-items">
+            <div class="bulk-row"><input type="checkbox" checked> Refresh 3 stale sitelinks, Wedding Edit campaign &middot; 84% confident</div>
+            <div class="bulk-row"><input type="checkbox" checked> Refresh 2 stale sitelinks, Festive Sale campaign &middot; 79% confident</div>
+            <div class="bulk-row"><input type="checkbox" checked> Refresh 4 stale asset extensions, Brand campaign &middot; 71% confident</div>
+          </div>
+          <div class="bulk-actions"><button class="btn-primary">Approve all 3</button><button class="link-action">Review individually</button></div>
+        </details>
+
+        </div>
+
+        <div class="empty-state" id="queueEmpty">
+          <div class="empty-ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg></div>
+          <div class="empty-title">Nothing here.</div>
+          <div class="empty-body">No items match this filter combination. Everything at this severity has already been cleared, or nothing has been flagged yet.</div>
+          <button class="empty-cta" onclick="resetFilters()">Clear filters</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ VIEW: CREATIVE INTEL ═══════════════ -->
+    <section id="view-creative" class="view">
+      <div class="topbar">
+        <div><h1>Creative Intel</h1><div class="sub">Diversity, fatigue, and what to brief next.</div></div>
+        <div class="topbar-actions"><button class="tb-btn primary">New brief</button></div>
+      </div>
+
+      <div class="content">
+        <div class="stat-row">
+          <div class="cell"><div class="num">68</div><div class="lbl">Diversity score, out of 100, across the active library</div></div>
+          <div class="cell"><div class="num accent">14</div><div class="lbl">Creatives predicted to fatigue within 7 days</div></div>
+          <div class="cell"><div class="num">184</div><div class="lbl">Videos decoded this week, all 30 crystals extracted</div></div>
+        </div>
+
+        <div class="grid">
+          <div class="stack">
+            <div>
+              <div class="section-head"><h2>Why this one's flagged</h2></div>
+              <div class="section-sub">Diwali Bundle, hook A. CTR decaying against a rising frequency curve.</div>
+              <div class="panel"><div class="chart-box"><canvas id="fatigueChart"></canvas></div></div>
+            </div>
+
+            <div>
+              <div class="section-head"><h2>Refresh before they burn out</h2><button class="link" onclick="switchView('view-queue')">Open queue</button></div>
+              <div class="panel">
+                <div class="fatigue-row">
+                  <div class="creative-thumb">UGC<br>Reel</div>
+                  <div class="fatigue-body"><div class="fatigue-title">Diwali Bundle, hook A, UGC talent 1</div><div class="fatigue-meta">Meta &middot; Frequency 4.3 &middot; CTR down 41% in 6 days</div></div>
+                  <div class="fatigue-risk"><span style="color:var(--verm)">High risk</span><div class="risk-days">Burns out in ~2 days</div></div>
+                </div>
+                <div class="fatigue-row">
+                  <div class="creative-thumb">Static<br>1:1</div>
+                  <div class="fatigue-body"><div class="fatigue-title">Wedding Edit, carousel, offer frame</div><div class="fatigue-meta">Meta &middot; Frequency 3.8 &middot; CTR down 26% in 5 days</div></div>
+                  <div class="fatigue-risk"><span style="color:var(--amber)">Medium risk</span><div class="risk-days">Burns out in ~4 days</div></div>
+                </div>
+                <div class="fatigue-row">
+                  <div class="creative-thumb">UGC<br>Reel</div>
+                  <div class="fatigue-body"><div class="fatigue-title">Festive Sale, hook C, problem-solution</div><div class="fatigue-meta">Meta &middot; Frequency 3.1 &middot; CTR down 14% in 4 days</div></div>
+                  <div class="fatigue-risk"><span style="color:var(--amber)">Medium risk</span><div class="risk-days">Burns out in ~6 days</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-head"><h2>Brief studio</h2><button class="link">Open studio</button></div>
+              <div class="panel">
+                <div class="brief-row">
+                  <div class="brief-top"><div class="brief-title">Festive gifting, curiosity hook, UGC format</div><span class="brief-status status-review">Needs review</span></div>
+                  <div class="brief-desc">Library is short on curiosity-framed hooks for the festive collection. Draft covers hook, angle, format, and one talent option.</div>
+                  <div class="brief-tags"><span class="brief-tag">HOOK: CURIOSITY</span><span class="brief-tag">FORMAT: UGC REEL</span><span class="brief-tag">TALENT: OPTION B</span></div>
+                </div>
+                <div class="brief-row">
+                  <div class="brief-top"><div class="brief-title">Wedding Edit, problem-solution angle, studio format</div><span class="brief-status status-draft">Draft</span></div>
+                  <div class="brief-desc">Closes the format gap flagged by the diversity agent. Studio shoot, no talent required.</div>
+                  <div class="brief-tags"><span class="brief-tag">HOOK: PROBLEM</span><span class="brief-tag">FORMAT: STUDIO</span></div>
+                </div>
+                <div class="brief-row">
+                  <div class="brief-top"><div class="brief-title">Brand campaign, 20 hook variants from winning base</div><span class="brief-status status-approved">Approved, in production</span></div>
+                  <div class="brief-desc">Rewrites of the top-performing hook across curiosity, shock, and problem frameworks for A/B testing.</div>
+                  <div class="brief-tags"><span class="brief-tag">HOOK VARIATION x20</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div>
+              <div class="section-head"><h2>Diversity, 8 dimensions</h2></div>
+              <div class="section-sub">Where the library is balanced, and where it isn't.</div>
+              <div class="panel"><div class="chart-box tall"><canvas id="diversityRadar"></canvas></div></div>
+            </div>
+            <div>
+              <div class="section-head"><h2>Compliance</h2></div>
+              <div class="panel">
+                <div class="stat-grid" style="grid-template-columns:1fr">
+                  <div class="stat"><div class="stat-lbl">Ads pre-flight checked this week</div><div class="stat-val">37</div><div class="stat-trend trend-up">All cleared ASCI, Meta, Google policy</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ VIEW: INSIGHTS ═══════════════ -->
+    <section id="view-insights" class="view">
+      <div class="topbar">
+        <div><h1>Insights</h1><div class="sub">What Yāmin found this week, beyond the queue.</div></div>
+      </div>
+
+      <div class="content">
+        <div class="panel">
+          <div class="insight-card">
+            <div class="insight-eyebrow"><b>Auction insights digest</b> &middot; Google + Meta</div>
+            <div class="insight-title">A new competitor entered the festive category and now holds 18 percent impression share on your top 12 keywords.</div>
+            <div class="insight-stat">Your overlap rate with them rose from <b>6%</b> to <b>22%</b> in three weeks.</div>
+            <div class="insight-spark"><canvas id="sparkInsight1"></canvas></div>
+            <div class="insight-meta">Published Monday &middot; Feeds into brand CPC inflation guard</div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-eyebrow"><b>Brand share of voice monitor</b> &middot; Category</div>
+            <div class="insight-title">Brand share of voice held steady at 34 percent this week, unchanged from last month.</div>
+            <div class="insight-stat">Two competitors gained share, both from increased Meta spend, not Google.</div>
+            <div class="insight-spark"><canvas id="sparkInsight2"></canvas></div>
+            <div class="insight-meta">Published Monday</div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-eyebrow"><b>Brand cannibalisation detector</b> &middot; Google</div>
+            <div class="insight-title">Generic campaigns are capturing 9 percent of brand-intent clicks that should route through the cheaper brand campaign.</div>
+            <div class="insight-stat">Estimated brand-tax waste is <b>&#8377;14,200 / month</b> at current spend.</div>
+            <div class="insight-spark"><canvas id="sparkInsight3"></canvas></div>
+            <div class="insight-meta">Published last Thursday &middot; A segmentation recommendation is in the queue</div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-eyebrow"><b>Landing page continuity checker</b> &middot; Meta</div>
+            <div class="insight-title">The Wedding Edit ad promises "under &#8377;2,000" but the linked collection's median price is &#8377;2,650.</div>
+            <div class="insight-stat">Continuity score <b>61 / 100</b>, below the 80 threshold that predicts drop-off.</div>
+            <div class="insight-spark"><canvas id="sparkInsight4"></canvas></div>
+            <div class="insight-meta">Published last Thursday</div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-eyebrow"><b>Segment discovery</b> &middot; GA4</div>
+            <div class="insight-title">A cluster of repeat gifting buyers, average order value 2.1x the account mean, is not yet a saved audience.</div>
+            <div class="insight-stat">Estimated addressable size is <b>41,000</b> users across Meta and Google.</div>
+            <div class="insight-spark"><canvas id="sparkInsight5"></canvas></div>
+            <div class="insight-meta">Published two weeks ago &middot; Waiting on approval to build</div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-eyebrow"><b>Winning pattern surfacing</b> &middot; Creative Intelligence</div>
+            <div class="insight-title">Curiosity-framed hooks under 3 seconds are outperforming problem-solution hooks by 1.6x on CTR this month.</div>
+            <div class="insight-stat">Correlation holds across all three active campaigns.</div>
+            <div class="insight-spark"><canvas id="sparkInsight6"></canvas></div>
+            <div class="insight-meta">Published this week &middot; Fed into this week's briefs</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ VIEW: REPORTS ═══════════════ -->
+    <section id="view-reports" class="view">
+      <div class="topbar">
+        <div><h1>Reports</h1><div class="sub">Everything sent to the client, and everything you can build.</div></div>
+        <div class="topbar-actions"><button class="tb-btn primary">Build custom report</button></div>
+      </div>
+
+      <div class="content">
+        <div class="grid even">
+          <div>
+            <div class="section-head"><h2>ROAS and spend, last 8 weeks</h2></div>
+            <div class="panel"><div class="chart-box tall"><canvas id="reportsTrendChart"></canvas></div></div>
+          </div>
+          <div>
+            <div class="section-head"><h2>Spend by channel</h2></div>
+            <div class="panel"><div class="chart-box donut"><canvas id="channelDonut"></canvas></div></div>
+          </div>
+        </div>
+
+        <div class="grid even" style="margin-top:36px">
+          <div>
+            <div class="section-head"><h2>Scheduled</h2></div>
+            <div class="panel">
+              <div class="report-row"><div><div class="report-name">Weekly performance digest</div><div class="report-meta">Auto-sent every Monday, 9 AM &middot; Last sent 2 days ago</div></div><div class="report-actions"><button class="link-action">Preview</button></div></div>
+              <div class="report-row"><div><div class="report-name">Monthly business review</div><div class="report-meta">Draft ready for July &middot; Needs your edit before it goes to the client</div></div><div class="report-actions"><button class="btn-primary">Edit draft</button></div></div>
+              <div class="report-row"><div><div class="report-name">Digest email</div><div class="report-meta">Daily and weekly summary &middot; Sends automatically</div></div><div class="report-actions"><button class="link-action">Preview</button></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-head"><h2>On demand</h2></div>
+            <div class="panel">
+              <div class="report-row"><div><div class="report-name">COGS-aware ROAS report</div><div class="report-meta">Profit-ROAS after COGS and shipping &middot; Last run 4 days ago</div></div><div class="report-actions"><button class="link-action">Run again</button></div></div>
+              <div class="report-row"><div><div class="report-name">Discount code impact analysis</div><div class="report-meta">Incrementality vs baseline &middot; Last run after Festive Sale</div></div><div class="report-actions"><button class="link-action">Run again</button></div></div>
+              <div class="report-row"><div><div class="report-name">Attribution health check</div><div class="report-meta">Model, path length, dark traffic audit &middot; Runs every Monday</div></div><div class="report-actions"><button class="link-action">View last run</button></div></div>
+              <div class="report-row"><div><div class="report-name">Consent and privacy audit</div><div class="report-meta">GA4 consent mode and cookie compliance &middot; Runs monthly</div></div><div class="report-actions"><button class="link-action">View last run</button></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ VIEW: LIBRARY ═══════════════ -->
+    <section id="view-library" class="view">
+      <div class="topbar">
+        <div><h1>Library</h1><div class="sub">Browse all 71 agents. See status. Enable or pause.</div></div>
+      </div>
+
+      <div class="content">
+        <div class="search-row"><input class="search-input" type="text" placeholder="Search agents by name or area"></div>
+
+        <details class="area-group" open>
+          <summary class="area-head"><div class="area-head-l"><svg class="area-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg><span class="area-name">Google Ads</span></div><span class="area-count">9 agents &middot; 1 needs setup</span></summary>
+          <div class="area-body">
+            <div class="area-bar"><span style="width:89%;background:var(--green)"></span><span style="width:11%;background:var(--amber)"></span></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Search term classifier</span><span class="agent-meta">Ran 2h ago</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Negative keyword recommender</span><span class="agent-meta">Ran 2h ago</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Brand CPC inflation guard</span><span class="agent-meta">Running now</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot setup"></span><span class="agent-name">Bid strategy tuner</span><span class="agent-meta">Needs target confirmation</span><button class="toggle"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Shopping feed quality auditor</span><span class="agent-meta">Ran this morning</span><button class="toggle on"></button></div>
+          </div>
+        </details>
+
+        <details class="area-group">
+          <summary class="area-head"><div class="area-head-l"><svg class="area-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg><span class="area-name">Meta Ads</span></div><span class="area-count">6 agents &middot; all running</span></summary>
+          <div class="area-body">
+            <div class="area-bar"><span style="width:100%;background:var(--green)"></span></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Creative Diversity Agent</span><span class="agent-meta">Ran this week</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Creative fatigue predictor</span><span class="agent-meta">Running now</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Ad set exhaustion detector</span><span class="agent-meta">Ran 4h ago</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Bid cap tuner</span><span class="agent-meta">Ran 4h ago</span><button class="toggle on"></button></div>
+          </div>
+        </details>
+
+        <details class="area-group">
+          <summary class="area-head"><div class="area-head-l"><svg class="area-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg><span class="area-name">GA4</span></div><span class="area-count">5 agents &middot; 1 idle</span></summary>
+          <div class="area-body">
+            <div class="area-bar"><span style="width:80%;background:var(--green)"></span><span style="width:20%;background:var(--cream-deep)"></span></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Conversion funnel analysis</span><span class="agent-meta">Ran this week</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot idle"></span><span class="agent-name">Attribution health check</span><span class="agent-meta">Runs Monday</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Event tracking QA</span><span class="agent-meta">Monitoring 24x7</span><button class="toggle on"></button></div>
+          </div>
+        </details>
+
+        <details class="area-group">
+          <summary class="area-head"><div class="area-head-l"><svg class="area-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg><span class="area-name">Shopify</span></div><span class="area-count">5 agents &middot; 1 error</span></summary>
+          <div class="area-body">
+            <div class="area-bar"><span style="width:80%;background:var(--green)"></span><span style="width:20%;background:var(--verm)"></span></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Product performance triage</span><span class="agent-meta">Ran this morning</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Inventory-driven ad throttle</span><span class="agent-meta">Monitoring live</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot error"></span><span class="agent-name">COGS-aware ROAS reporter</span><span class="agent-meta">Failed, missing cost field</span><button class="toggle on"></button></div>
+          </div>
+        </details>
+
+        <details class="area-group">
+          <summary class="area-head"><div class="area-head-l"><svg class="area-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg><span class="area-name">Creative Intelligence</span></div><span class="area-count">7 agents &middot; all running</span></summary>
+          <div class="area-body">
+            <div class="area-bar"><span style="width:100%;background:var(--green)"></span></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Video decoding pipeline</span><span class="agent-meta">184 videos this week</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Brief generation</span><span class="agent-meta">3 drafts pending review</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Compliance guardrail</span><span class="agent-meta">37 checks this week</span><button class="toggle on"></button></div>
+          </div>
+        </details>
+
+        <details class="area-group">
+          <summary class="area-head"><div class="area-head-l"><svg class="area-chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg><span class="area-name">Approvals, Learning, Reporting</span></div><span class="area-count">14 agents &middot; all running</span></summary>
+          <div class="area-body">
+            <div class="area-bar"><span style="width:100%;background:var(--green)"></span></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Approval queue</span><span class="agent-meta">8 items waiting</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Learning journal</span><span class="agent-meta">Publishes weekly</span><button class="toggle on"></button></div>
+            <div class="agent-row"><span class="agent-dot running"></span><span class="agent-name">Weekly performance digest</span><span class="agent-meta">Sends Monday 9 AM</span><button class="toggle on"></button></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ═══════════════ VIEW: LEARNING ═══════════════ -->
+    <!-- grounded in feature map rows 50-53: client memory/brand rules, learning journal, correction tracking, winning-play library -->
+    <section id="view-learning" class="view">
+      <div class="topbar">
+        <div><h1>Learning</h1><div class="sub">What Yāmin has learned, and the rules it follows.</div></div>
+      </div>
+
+      <div class="content">
+        <div class="stat-row">
+          <div class="cell"><div class="num">12</div><div class="lbl">Brand rules active in memory</div></div>
+          <div class="cell"><div class="num">6</div><div class="lbl">Corrections applied this week</div></div>
+          <div class="cell"><div class="num good">9</div><div class="lbl">Winning plays catalogued</div></div>
+        </div>
+
+        <div class="grid">
+          <div class="stack">
+            <div>
+              <div class="section-head"><h2>Brand rules and memory</h2><button class="link">+ Add a rule</button></div>
+              <div class="section-sub">Taught once. Yāmin applies these to every recommendation automatically.</div>
+              <div class="panel">
+                <div class="report-row"><div><div class="report-name">Never pause an ad set with under &#8377;500/day in spend without confirmation</div></div><button class="toggle on"></button></div>
+                <div class="report-row"><div><div class="report-name">Brand voice: confident and warm, never salesy or urgent</div></div><button class="toggle on"></button></div>
+                <div class="report-row"><div><div class="report-name">Tag UGC creators as "Talent Option A/B/C" in briefs, never by real name</div></div><button class="toggle on"></button></div>
+                <div class="report-row"><div><div class="report-name">During festive season, require 85%+ confidence before flagging creative fatigue</div></div><button class="toggle on"></button></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-head"><h2>Learning journal</h2><button class="link">View all</button></div>
+              <div class="section-sub">A running log of what changed and why, written weekly.</div>
+              <div class="panel">
+                <div class="insight-card">
+                  <div class="insight-eyebrow"><b>Week of 30 June</b></div>
+                  <div class="insight-title">Media Team rejected fatigue calls below 85% confidence during festive campaigns, twice this month.</div>
+                  <div class="insight-stat">Confidence threshold for Diwali Bundle raised from 78% to 85%.</div>
+                </div>
+                <div class="insight-card">
+                  <div class="insight-eyebrow"><b>Week of 23 June</b></div>
+                  <div class="insight-title">Two rejected sitelink refreshes both cited "too soon after last refresh" as the reason.</div>
+                  <div class="insight-stat">Added a minimum 10 day cooldown before proposing a refresh again.</div>
+                </div>
+                <div class="insight-card">
+                  <div class="insight-eyebrow"><b>Week of 16 June</b></div>
+                  <div class="insight-title">Approved budget shift recommendations landed within 2 percent of predicted lift, three weeks running.</div>
+                  <div class="insight-stat">Confidence threshold for this agent lowered from 90% to 85%.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stack">
+            <div>
+              <div class="section-head"><h2>Correction tracking</h2></div>
+              <div class="section-sub">What you edited, and what Yāmin now does differently.</div>
+              <div class="panel">
+                <div class="brief-row">
+                  <div class="brief-top"><div class="brief-title">Pause ad set entirely</div></div>
+                  <div class="brief-desc">You edited to: reduce budget by 40% instead of a full pause.</div>
+                  <div class="brief-tags"><span class="brief-tag">APPLIED TO 3 SIMILAR CASES SINCE</span></div>
+                </div>
+                <div class="brief-row">
+                  <div class="brief-top"><div class="brief-title">Generic negative keyword list</div></div>
+                  <div class="brief-desc">You edited to: removed 2 terms that were seasonal, not wasteful.</div>
+                  <div class="brief-tags"><span class="brief-tag">NOW CHECKS SEASONALITY FIRST</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="section-head"><h2>Winning play library</h2></div>
+              <div class="panel">
+                <div class="brief-row">
+                  <div class="brief-top"><div class="brief-title">Curiosity hook + UGC talent, Diwali 2025</div></div>
+                  <div class="brief-desc">CTR 3.8%, 2.1x the category average. Reused across 4 campaigns since.</div>
+                </div>
+                <div class="brief-row">
+                  <div class="brief-top"><div class="brief-title">10 day cooldown before re-proposing a refresh</div></div>
+                  <div class="brief-desc">Cut the rejection rate on sitelink recommendations from 34% to 6%.</div>
+                </div>
+                <div class="brief-row">
+                  <div class="brief-top"><div class="brief-title">Segmenting brand vs generic budgets</div></div>
+                  <div class="brief-desc">Recovered &#8377;14,200/month in brand-tax waste within 2 weeks.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ VIEW: EXECUTIVE ═══════════════ -->
+    <!-- grounded in feature map row 57: Executive dashboard, KPI cards + trend sparklines, refreshes hourly, read-only -->
+    <section id="view-executive" class="view">
+      <div class="topbar">
+        <div><h1>Executive</h1><div class="sub">The numbers your founders and clients see. Refreshes hourly.</div></div>
+      </div>
+
+      <div class="content">
+        <div class="stat-grid exec">
+          <div class="stat"><div class="stat-lbl">ROAS, blended</div><div class="stat-val">4.8x</div><div class="spark-box"><canvas id="execSparkRoas"></canvas></div></div>
+          <div class="stat"><div class="stat-lbl">Revenue attributed, MTD</div><div class="stat-val">&#8377;29.4L</div><div class="spark-box"><canvas id="execSparkRev"></canvas></div></div>
+          <div class="stat"><div class="stat-lbl">Spend, MTD</div><div class="stat-val">&#8377;6.1L</div><div class="spark-box"><canvas id="execSparkSpend"></canvas></div></div>
+          <div class="stat"><div class="stat-lbl">Approval SLA</div><div class="stat-val">7.2 hrs</div><div class="spark-box"><canvas id="execSparkSla"></canvas></div></div>
+        </div>
+
+        <div class="grid even" style="margin-top:32px">
+          <div>
+            <div class="section-head"><h2>Revenue and spend, last 6 months</h2></div>
+            <div class="panel"><div class="chart-box tall"><canvas id="execTrendChart"></canvas></div></div>
+          </div>
+          <div>
+            <div class="section-head"><h2>Spend by channel</h2></div>
+            <div class="panel"><div class="chart-box donut"><canvas id="execChannelDonut"></canvas></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ VIEW: SETTINGS ═══════════════ -->
+    <!-- grounded in feature map rows 66-70: connector management, team/permissions, notifications, billing, audit log -->
+    <section id="view-settings" class="view">
+      <div class="topbar">
+        <div><h1>Settings</h1><div class="sub">Connections, team, alerts, plan, and the full audit trail.</div></div>
+      </div>
+
+      <div class="content">
+        <div class="settings-tabs">
+          <button class="stab active" data-pane="pane-connectors">Connectors</button>
+          <button class="stab" data-pane="pane-team">Team</button>
+          <button class="stab" data-pane="pane-notif">Notifications</button>
+          <button class="stab" data-pane="pane-billing">Billing</button>
+          <button class="stab" data-pane="pane-audit">Audit log</button>
+        </div>
+
+        <div class="settings-pane active" id="pane-connectors">
+          <div class="section-head"><h2>Connected accounts</h2></div>
+          <div class="panel">
+            <div class="platform-row">
+              <div class="platform-icon">G</div>
+              <div class="platform-info"><div class="platform-name">Google Ads</div><div class="platform-meta">MCC 738-291-4402 &middot; Read + write scopes confirmed</div></div>
+              <span class="platform-status status-ok">Connected</span>
+              <button class="link-action">Reauthorise</button>
+            </div>
+            <div class="platform-row">
+              <div class="platform-icon">M</div>
+              <div class="platform-info"><div class="platform-name">Meta Business Manager</div><div class="platform-meta">Token expires in 6 days</div></div>
+              <span class="platform-status status-warn">Renew soon</span>
+              <button class="link-action">Reauthorise</button>
+            </div>
+            <div class="platform-row">
+              <div class="platform-icon">A</div>
+              <div class="platform-info"><div class="platform-name">GA4</div><div class="platform-meta">Property: yourbrand.com &middot; Primary event: Purchase</div></div>
+              <span class="platform-status status-ok">Connected</span>
+              <button class="link-action">Reauthorise</button>
+            </div>
+            <div class="platform-row">
+              <div class="platform-icon">S</div>
+              <div class="platform-info"><div class="platform-name">Shopify</div><div class="platform-meta">yourbrand.myshopify.com &middot; INR</div></div>
+              <span class="platform-status status-ok">Connected</span>
+              <button class="link-action">Disconnect</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-pane" id="pane-team">
+          <div class="section-head"><h2>Team and permissions</h2><button class="link">+ Invite teammate</button></div>
+          <div class="panel">
+            <div class="report-row"><div><div class="report-name">Ritika Bhatia</div><div class="report-meta">Admin &middot; All accounts</div></div><span class="link-action" style="opacity:0.4">You</span></div>
+            <div class="report-row"><div><div class="report-name">Aman Verma</div><div class="report-meta">Media Team &middot; 3 accounts assigned</div></div><button class="link-action">Edit role</button></div>
+            <div class="report-row"><div><div class="report-name">Priya Nair</div><div class="report-meta">Media Team &middot; 2 accounts assigned</div></div><button class="link-action">Edit role</button></div>
+            <div class="report-row"><div><div class="report-name">founder@yourbrand.com</div><div class="report-meta">Viewer &middot; Read only, all accounts</div></div><button class="link-action">Edit role</button></div>
+          </div>
+        </div>
+
+        <div class="settings-pane" id="pane-notif">
+          <div class="section-head"><h2>Notification preferences</h2></div>
+          <div class="section-sub">Choose which alerts go where. Critical items always show in-app regardless.</div>
+          <div class="panel">
+            <table class="notif-matrix">
+              <tr><th>Alert type</th><th>In-app</th><th>Email</th><th>Slack</th></tr>
+              <tr><td>Critical alerts</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td></tr>
+              <tr><td>Daily digest</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td></td></tr>
+              <tr><td>Weekly performance report</td><td><input type="checkbox" checked></td><td><input type="checkbox" checked></td><td></td></tr>
+              <tr><td>Learning journal</td><td><input type="checkbox" checked></td><td></td><td></td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="settings-pane" id="pane-billing">
+          <div class="section-head"><h2>Plan and billing</h2></div>
+          <div class="panel">
+            <div class="plan-card">
+              <div><div class="plan-name">Growth plan</div><div class="plan-meta">4 of 5 seats used &middot; Next invoice 1 August</div></div>
+              <button class="tb-btn primary">Manage plan</button>
+            </div>
+            <div class="invoice-row"><span>1 July 2026</span><span>&#8377;24,000</span><span class="invoice-status">Paid</span></div>
+            <div class="invoice-row"><span>1 June 2026</span><span>&#8377;24,000</span><span class="invoice-status">Paid</span></div>
+            <div class="invoice-row"><span>1 May 2026</span><span>&#8377;24,000</span><span class="invoice-status">Paid</span></div>
+          </div>
+        </div>
+
+        <div class="settings-pane" id="pane-audit">
+          <div class="section-head"><h2>Audit log</h2></div>
+          <div class="section-sub">Every change, and who made it. Immutable.</div>
+          <div class="search-row"><input class="search-input" type="text" placeholder="Search by person, agent, or account"></div>
+          <div class="panel">
+            <div class="audit-row"><div class="audit-time">08:52 today</div><div class="audit-text"><b>Ritika</b> approved the budget shift, Wedding Edit campaign</div></div>
+            <div class="audit-row"><div class="audit-time">07:10 today</div><div class="audit-text"><b>Yāmin</b> auto-approved a sitelink refresh, Festive Sale, per active auto-approve rule</div></div>
+            <div class="audit-row"><div class="audit-time">Yesterday, 4:30 PM</div><div class="audit-text"><b>Ritika</b> invited Priya Nair as Media Team</div></div>
+            <div class="audit-row"><div class="audit-time">Yesterday, 11:02 AM</div><div class="audit-text"><b>Aman</b> rejected a fatigue recommendation, reason: too risky</div></div>
+            <div class="audit-row"><div class="audit-time">2 days ago</div><div class="audit-text"><b>Yāmin</b> reauthorised Google Ads token automatically</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════ VIEW: ONBOARDING WIZARD ═══════════════ -->
+    <!-- grounded in feature map rows 1-6: connect Google Ads, Meta, GA4, Shopify, business profile, nomenclature -->
+    <section id="view-onboarding" class="view">
+      <div class="onboard-topbar">
+        <span class="mark">Yāmin</span>
+        <button class="onboard-exit" onclick="switchView('view-command')">Exit to Command Center</button>
+      </div>
+
+      <div class="content">
+        <div class="wizard-wrap">
+          <div class="onboard-sub">Six steps. Yāmin does most of the reading, you confirm the rest.</div>
+
+          <div class="stepper" id="stepper"></div>
+
+          <div class="wizard-step active" data-step="1">
+            <div class="wizard-card">
+              <h3>Connect Google Ads</h3>
+              <div class="desc">Links the account so Yāmin can read spend, search terms, and campaign performance, and act on them.</div>
+              <button class="btn-primary" onclick="simulateConnect(this,'g')">Sign in with Google</button>
+              <div class="connect-box" id="connect-g" style="display:none">
+                <div class="connect-line"><span class="ck">&#10003;</span> Found 3 accounts under one MCC</div>
+                <div class="connect-line"><span class="ck">&#10003;</span> Read and write scopes validated</div>
+                <div class="connect-line"><span class="ck">&#10003;</span> Nickname pre-filled: "YourBrand India"</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="2">
+            <div class="wizard-card">
+              <h3>Connect Meta Ad Account</h3>
+              <div class="desc">Links Business Manager so Yāmin can pull ads, ad sets, insights, and the creative library.</div>
+              <button class="btn-primary" onclick="simulateConnect(this,'m')">Sign in with Meta</button>
+              <div class="connect-box" id="connect-m" style="display:none">
+                <div class="connect-line"><span class="ck">&#10003;</span> Business Manager found: YourBrand Pvt Ltd</div>
+                <div class="connect-line"><span class="ck">&#10003;</span> Pixel is firing correctly</div>
+                <div class="connect-line" style="color:var(--amber)"><span style="color:var(--amber)">&#9888;</span> CAPI gap detected on the checkout confirmation event</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="3">
+            <div class="wizard-card">
+              <h3>Connect GA4</h3>
+              <div class="desc">Links the property so Yāmin can read events, conversions, funnels, and audiences.</div>
+              <button class="btn-primary" onclick="simulateConnect(this,'a')">Sign in with Google Analytics</button>
+              <div class="connect-box" id="connect-a" style="display:none">
+                <div class="connect-line"><span class="ck">&#10003;</span> Property found: yourbrand.com</div>
+                <div class="connect-line"><span class="ck">&#10003;</span> Primary conversion event identified: Purchase</div>
+                <div class="connect-line"><span class="ck">&#10003;</span> Checkout funnel mapped, 4 steps</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="4">
+            <div class="wizard-card">
+              <h3>Connect Shopify</h3>
+              <div class="desc">Links the storefront so Yāmin can read products, orders, discount codes, and inventory.</div>
+              <button class="btn-primary" onclick="simulateConnect(this,'s')">Install Yāmin app</button>
+              <div class="connect-box" id="connect-s" style="display:none">
+                <div class="connect-line"><span class="ck">&#10003;</span> 347 products found</div>
+                <div class="connect-line"><span class="ck">&#10003;</span> Top 12 revenue SKUs tagged</div>
+                <div class="connect-line"><span class="ck">&#10003;</span> Currency detected: INR</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="5">
+            <div class="wizard-card">
+              <h3>Business profile</h3>
+              <div class="desc">Pre-filled from yourbrand.com. Review, then lock it in.</div>
+              <div class="field-row"><label>Brand name</label><input type="text" value="YourBrand"></div>
+              <div class="field-row"><label>Category</label><input type="text" value="Fashion, gifting and home decor"><div class="field-hint">Read from your website</div></div>
+              <div class="field-row"><label>Competitors</label><input type="text" value="Competitor A, Competitor B, Competitor C"></div>
+              <div class="field-row"><label>Ideal customer</label><textarea>Urban, 24 to 38, gifting-occasion buyers, moderate to high AOV, shops mobile-first.</textarea><div class="field-hint">Drafted by Yāmin, edit freely</div></div>
+              <div class="field-row"><label>Brand voice and guardrails</label><textarea>Confident and warm, never salesy. Never discount language in headlines. No AI-generated talent without disclosure.</textarea></div>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="6">
+            <div class="wizard-card" style="text-align:center">
+              <h3>You're all set.</h3>
+              <div class="desc">Nomenclature applied automatically across all 71 agents. Nothing else to do here.</div>
+              <div class="connect-box" style="text-align:left">
+                <div class="connect-line"><span class="ck">&#10003;</span> Google Ads, Meta, GA4, and Shopify connected</div>
+                <div class="connect-line"><span class="ck">&#10003;</span> Business profile locked</div>
+                <div class="connect-line"><span class="ck">&#10003;</span> All agents named to the YMN_PLATFORM_VerbThing_V1 standard</div>
+              </div>
+              <button class="btn-primary" style="margin-top:22px" onclick="switchView('view-command')">Enter Command Center</button>
+            </div>
+          </div>
+
+          <div class="wizard-actions" id="wizardActions">
+            <button class="link-action" onclick="wizGo(-1)" id="wizBack" style="visibility:hidden">Back</button>
+            <button class="btn-primary" onclick="wizGo(1)" id="wizNext">Continue</button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+function switchView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  var navBtn = document.querySelector('.nav-item[data-view="'+id+'"]');
+  if(navBtn){ navBtn.classList.add('active'); }
+
+  var sidebar = document.querySelector('.sidebar');
+  var bell = document.querySelector('.notif-bell');
+  var isOnboarding = (id === 'view-onboarding');
+  sidebar.style.display = isOnboarding ? 'none' : '';
+  bell.style.display = isOnboarding ? 'none' : '';
+  if(isOnboarding){ document.getElementById('notifPanel').classList.remove('show'); }
+
+  requestAnimationFrame(function(){
+    if(window.Chart && Chart.instances){
+      Object.keys(Chart.instances).forEach(function(k){ Chart.instances[k].resize(); });
+    }
+  });
+}
+document.querySelectorAll('.nav-item[data-view]').forEach(function(btn){
+  btn.addEventListener('click', function(){ switchView(btn.getAttribute('data-view')); });
+});
+
+/* ══ WORKSPACE SWITCHER ══ */
+function toggleWorkspaceMenu(e){
+  e.stopPropagation();
+  document.getElementById('workspaceMenu').classList.toggle('show');
+}
+document.addEventListener('click', function(e){
+  var m = document.getElementById('workspaceMenu');
+  if(m.classList.contains('show') && !m.contains(e.target) && !e.target.closest('.workspace-btn')){ m.classList.remove('show'); }
+});
+function enterOnboarding(){
+  document.getElementById('workspaceMenu').classList.remove('show');
+  wizStep = 1;
+  document.querySelectorAll('.wizard-step').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelector('.wizard-step[data-step="1"]').classList.add('active');
+  document.getElementById('wizardActions').style.display = 'flex';
+  document.getElementById('wizBack').style.visibility = 'hidden';
+  renderStepper();
+  switchView('view-onboarding');
+}
+
+var healthGrid = document.getElementById('healthGrid');
+for(var i=0;i<24;i++){ var s=document.createElement('div'); s.className='health-tile skel'; healthGrid.appendChild(s); }
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    healthGrid.innerHTML = '';
+    var states = [];
+    for(var i=0;i<19;i++) states.push('running');
+    for(var i=0;i<4;i++) states.push('idle');
+    for(var i=0;i<2;i++) states.push('setup');
+    states.push('error');
+    states.forEach(function(s){ var t=document.createElement('div'); t.className='health-tile '+s; healthGrid.appendChild(t); });
+  }, 500);
+});
+
+var tabs = document.querySelectorAll('.tab');
+var chips = document.querySelectorAll('.fchip');
+function applyFilters(){
+  var type = document.querySelector('.tab.active').getAttribute('data-filter');
+  var sev = document.querySelector('.fchip.active').getAttribute('data-sev');
+  var visible = 0;
+  document.querySelectorAll('#queueList [data-type]').forEach(function(card){
+    var okType = (type==='all') || (type==='rec' && card.getAttribute('data-type')==='rec') || (type==='diag' && card.getAttribute('data-type')==='diag');
+    var okSev = (sev==='all') || card.getAttribute('data-severity')===sev;
+    var show = okType && okSev;
+    card.style.display = show ? '' : 'none';
+    if(show) visible++;
+  });
+  document.getElementById('queueEmpty').classList.toggle('show', visible===0);
+}
+function resetFilters(){
+  tabs.forEach(function(x){ x.classList.remove('active'); });
+  document.querySelector('.tab[data-filter="all"]').classList.add('active');
+  chips.forEach(function(x){ x.classList.remove('active'); });
+  document.querySelector('.fchip[data-sev="all"]').classList.add('active');
+  applyFilters();
+}
+tabs.forEach(function(t){ t.addEventListener('click', function(){ tabs.forEach(x=>x.classList.remove('active')); t.classList.add('active'); applyFilters(); }); });
+chips.forEach(function(c){ c.addEventListener('click', function(){ chips.forEach(x=>x.classList.remove('active')); c.classList.add('active'); applyFilters(); }); });
+
+document.querySelectorAll('.toggle').forEach(function(t){
+  t.addEventListener('click', function(e){ e.preventDefault(); t.classList.toggle('on'); });
+});
+
+/* ══ CHARTS ══ */
+window.addEventListener('load', function(){
+
+  var C_INDIGO='#1A1F3A', C_GOLD='#D4A24C', C_PURPLE='#5B1FA0', C_GREEN='#2E7D5B',
+      C_VERM='#C8453A', C_AMBER='#A06310', C_GREY='#6B6557', C_GRID='#EDE5D2',
+      C_CRIT='#B91C1C', C_HIGH='#92400E', C_MED='#1D4ED8', C_LOW='#15803D';
+
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.color = C_GREY;
+
+  function sparkline(id, data, color){
+    var el = document.getElementById(id); if(!el) return;
+    new Chart(el, {
+      type:'line',
+      data:{ labels:data.map(function(_,i){return i;}), datasets:[{ data:data, borderColor:color, borderWidth:2, pointRadius:0, tension:0.35, fill:true, backgroundColor:color+'1A' }] },
+      options:{ responsive:true, maintainAspectRatio:false,
+        scales:{ x:{display:false}, y:{display:false} },
+        plugins:{ legend:{display:false}, tooltip:{enabled:false} } }
+    });
+  }
+  sparkline('sparkRoas', [4.3,4.4,4.5,4.6,4.7,4.75,4.8], C_GREEN);
+  sparkline('sparkCpa',  [520,512,506,499,494,490,486], C_GREEN);
+  sparkline('sparkCtr',  [2.3,2.2,2.15,2.05,2.0,1.95,1.9], C_VERM);
+  sparkline('sparkSpend',[180000,205000,230000,262000,300000,340000,380000], C_INDIGO);
+
+  var axisTick = { font:{family:"'Fira Code', monospace", size:9.5}, color:C_GREY };
+  var axisGrid = { color:C_GRID };
+
+  new Chart(document.getElementById('spendPacingChart'), {
+    type:'line',
+    data:{ labels:['Day 1','Day 5','Day 10','Day 15','Day 20','Day 25','Day 30'],
+      datasets:[
+        { label:'Actual', data:[0,92000,188000,286000,380000,null,null], borderColor:C_INDIGO, backgroundColor:C_INDIGO+'14', fill:true, tension:0.3, pointRadius:0, borderWidth:2, spanGaps:false },
+        { label:'Forecast', data:[0,92000,188000,286000,380000,470000,565000], borderColor:C_GOLD, borderDash:[5,4], pointRadius:0, borderWidth:2, fill:false },
+        { label:'Budget cap', data:[600000,600000,600000,600000,600000,600000,600000], borderColor:C_VERM, borderDash:[2,3], pointRadius:0, borderWidth:1.5, fill:false }
+      ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ x:{ ticks:axisTick, grid:{display:false} }, y:{ ticks:{ font:axisTick.font, color:C_GREY, callback:function(v){ return '\u20B9'+(v/100000).toFixed(1)+'L'; } }, grid:axisGrid } },
+      plugins:{ legend:{ display:true, position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{family:"'Fira Code',monospace",size:9.5}, color:C_GREY, padding:14 } },
+                tooltip:{ backgroundColor:C_INDIGO, titleFont:{family:"'Fira Code',monospace",size:10}, bodyFont:{family:"'DM Sans'",size:11}, padding:10, cornerRadius:6 } } }
+  });
+
+  new Chart(document.getElementById('severityDonut'), {
+    type:'doughnut',
+    data:{ labels:['Critical','High','Medium','Low'], datasets:[{ data:[2,2,1,3], backgroundColor:[C_CRIT,C_HIGH,C_MED,C_LOW], borderColor:'#fff', borderWidth:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:C_INDIGO, bodyFont:{family:"'DM Sans'",size:11}, padding:10, cornerRadius:6 } } }
+  });
+
+  new Chart(document.getElementById('diversityRadar'), {
+    type:'radar',
+    data:{ labels:['Hook','Format','Talent','Angle','Funnel stage','Pacing','Language','LP promise'],
+      datasets:[{ data:[81,52,64,73,44,69,78,58], backgroundColor:C_GOLD+'33', borderColor:C_GOLD, borderWidth:2, pointBackgroundColor:C_INDIGO, pointRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ r:{ min:0, max:100, ticks:{ display:false, stepSize:25 }, grid:{color:C_GRID}, angleLines:{color:C_GRID}, pointLabels:{ font:{family:"'DM Sans'",size:11}, color:C_INDIGO } } },
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:C_INDIGO, bodyFont:{family:"'DM Sans'",size:11}, padding:10, cornerRadius:6 } } }
+  });
+
+  new Chart(document.getElementById('fatigueChart'), {
+    type:'line',
+    data:{ labels:['Day 1','Day 2','Day 3','Day 4','Day 5','Day 6'],
+      datasets:[
+        { label:'CTR %', data:[3.4,3.1,2.8,2.4,2.1,2.0], borderColor:C_VERM, backgroundColor:C_VERM+'14', fill:true, tension:0.3, pointRadius:3, borderWidth:2, yAxisID:'y' },
+        { label:'Frequency', data:[1.8,2.4,2.9,3.4,3.9,4.3], borderColor:C_GOLD, borderDash:[5,4], pointRadius:0, borderWidth:2, fill:false, yAxisID:'y1' }
+      ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ x:{ ticks:axisTick, grid:{display:false} },
+        y:{ position:'left', ticks:{ font:axisTick.font, color:C_VERM, callback:function(v){return v+'%';} }, grid:axisGrid, title:{display:true,text:'CTR',font:{family:"'Fira Code',monospace",size:9.5},color:C_VERM} },
+        y1:{ position:'right', ticks:{ font:axisTick.font, color:C_AMBER }, grid:{display:false}, title:{display:true,text:'Frequency',font:{family:"'Fira Code',monospace",size:9.5},color:C_AMBER} } },
+      plugins:{ legend:{ display:true, position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{family:"'Fira Code',monospace",size:9.5}, color:C_GREY, padding:14 } },
+                tooltip:{ backgroundColor:C_INDIGO, bodyFont:{family:"'DM Sans'",size:11}, padding:10, cornerRadius:6 } } }
+  });
+
+  function insightSpark(id, data, up){
+    sparkline(id, data, up ? C_GREEN : C_VERM);
+  }
+  insightSpark('sparkInsight1', [4,6,9,13,18], false);
+  insightSpark('sparkInsight2', [35,34,35,34,34], true);
+  insightSpark('sparkInsight3', [8000,9500,11200,12800,14200], false);
+  insightSpark('sparkInsight4', [78,74,69,64,61], false);
+  insightSpark('sparkInsight5', [22000,28000,33000,37000,41000], true);
+  insightSpark('sparkInsight6', [1.1,1.2,1.35,1.5,1.6], true);
+
+  new Chart(document.getElementById('reportsTrendChart'), {
+    data:{ labels:['W1','W2','W3','W4','W5','W6','W7','W8'],
+      datasets:[
+        { type:'bar', label:'Spend, \u20B9L', data:[5.2,5.4,5.6,5.8,5.9,6.0,6.05,6.1], backgroundColor:C_GRID, order:2, yAxisID:'y1', borderRadius:3 },
+        { type:'line', label:'ROAS', data:[4.1,4.2,4.3,4.5,4.6,4.65,4.75,4.8], borderColor:C_GOLD, backgroundColor:C_GOLD, pointRadius:3, borderWidth:2, tension:0.3, order:1, yAxisID:'y' }
+      ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ x:{ ticks:axisTick, grid:{display:false} },
+        y:{ position:'left', ticks:{ font:axisTick.font, color:C_GOLD, callback:function(v){return v+'x';} }, grid:axisGrid },
+        y1:{ position:'right', ticks:{ font:axisTick.font, color:C_GREY }, grid:{display:false} } },
+      plugins:{ legend:{ display:true, position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{family:"'Fira Code',monospace",size:9.5}, color:C_GREY, padding:14 } },
+                tooltip:{ backgroundColor:C_INDIGO, bodyFont:{family:"'DM Sans'",size:11}, padding:10, cornerRadius:6 } } }
+  });
+
+  new Chart(document.getElementById('channelDonut'), {
+    type:'doughnut',
+    data:{ labels:['Meta','Google','Shopify direct'], datasets:[{ data:[58,34,8], backgroundColor:[C_PURPLE,C_INDIGO,C_GOLD], borderColor:'#fff', borderWidth:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{ display:true, position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{family:"'Fira Code',monospace",size:9.5}, color:C_GREY, padding:14 } },
+                tooltip:{ backgroundColor:C_INDIGO, bodyFont:{family:"'DM Sans'",size:11}, padding:10, cornerRadius:6, callbacks:{ label:function(ctx){ return ctx.label+': '+ctx.parsed+'%'; } } } } }
+  });
+
+  sparkline('execSparkRoas', [4.2,4.3,4.5,4.6,4.7,4.8], C_GREEN);
+  sparkline('execSparkRev', [22,24,26,27,28,29.4], C_GREEN);
+  sparkline('execSparkSpend', [5.2,5.4,5.6,5.8,6.0,6.1], C_INDIGO);
+  sparkline('execSparkSla', [9.1,8.4,7.9,7.6,7.4,7.2], C_GREEN);
+
+  new Chart(document.getElementById('execTrendChart'), {
+    data:{ labels:['Feb','Mar','Apr','May','Jun','Jul'],
+      datasets:[
+        { type:'bar', label:'Revenue, \u20B9L', data:[22,24,26,27,28,29.4], backgroundColor:C_GRID, order:2, yAxisID:'y1', borderRadius:3 },
+        { type:'line', label:'ROAS', data:[4.2,4.3,4.5,4.6,4.7,4.8], borderColor:C_GOLD, backgroundColor:C_GOLD, pointRadius:3, borderWidth:2, tension:0.3, order:1, yAxisID:'y' }
+      ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      scales:{ x:{ ticks:axisTick, grid:{display:false} },
+        y:{ position:'left', ticks:{ font:axisTick.font, color:C_GOLD, callback:function(v){return v+'x';} }, grid:axisGrid },
+        y1:{ position:'right', ticks:{ font:axisTick.font, color:C_GREY }, grid:{display:false} } },
+      plugins:{ legend:{ display:true, position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{family:"'Fira Code',monospace",size:9.5}, color:C_GREY, padding:14 } },
+                tooltip:{ backgroundColor:C_INDIGO, bodyFont:{family:"'DM Sans'",size:11}, padding:10, cornerRadius:6 } } }
+  });
+
+  new Chart(document.getElementById('execChannelDonut'), {
+    type:'doughnut',
+    data:{ labels:['Meta','Google','Shopify direct'], datasets:[{ data:[58,34,8], backgroundColor:[C_PURPLE,C_INDIGO,C_GOLD], borderColor:'#fff', borderWidth:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{ display:true, position:'bottom', labels:{ boxWidth:8, boxHeight:8, font:{family:"'Fira Code',monospace",size:9.5}, color:C_GREY, padding:14 } },
+                tooltip:{ backgroundColor:C_INDIGO, bodyFont:{family:"'DM Sans'",size:11}, padding:10, cornerRadius:6, callbacks:{ label:function(ctx){ return ctx.label+': '+ctx.parsed+'%'; } } } } }
+  });
+
+});
+
+/* ══ TOAST (feature 62, in-app toast) ══ */
+function showToast(msg){
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(function(){ t.classList.add('show'); });
+  setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.remove(); }, 250); }, 3200);
+}
+window.addEventListener('load', function(){
+  setTimeout(function(){ showToast('New critical alert: brand CPC spike detected. Check the Approval Queue.'); }, 3500);
+});
+
+/* ══ NOTIFICATIONS (feature 60, priority alerts) ══ */
+function toggleNotif(e){
+  e.stopPropagation();
+  document.getElementById('notifPanel').classList.toggle('show');
+}
+document.addEventListener('click', function(e){
+  var panel = document.getElementById('notifPanel');
+  if(panel.classList.contains('show') && !panel.contains(e.target)){ panel.classList.remove('show'); }
+});
+
+/* ══ UNDO / ROLLBACK (feature 48) ══ */
+function undoAction(btn){
+  var row = btn.closest('.log-row');
+  row.classList.add('undone');
+  btn.remove();
+  showToast('Action undone. Reverted to the prior state.');
+}
+
+/* ══ REJECT WITH REASON (feature 46) ══ */
+var currentRejectBtn = null, selectedReason = null;
+function openReason(btn){
+  currentRejectBtn = btn;
+  selectedReason = null;
+  document.querySelectorAll('.rchip').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('reasonText').value = '';
+  document.getElementById('reasonOverlay').classList.add('show');
+}
+function closeReason(){
+  document.getElementById('reasonOverlay').classList.remove('show');
+}
+function pickReason(chip){
+  document.querySelectorAll('.rchip').forEach(function(c){ c.classList.remove('active'); });
+  chip.classList.add('active');
+  selectedReason = chip.getAttribute('data-r');
+}
+function submitReason(){
+  if(currentRejectBtn){
+    var actionsEl = currentRejectBtn.closest('.qcard-actions');
+    if(actionsEl){
+      actionsEl.innerHTML = '<span class="rejected-banner">Rejected' + (selectedReason ? ' \u00b7 ' + selectedReason : '') + '. Y\u0101min will learn from this.</span>';
+    }
+  }
+  closeReason();
+  showToast('Rejection saved. Y\u0101min will factor this in going forward.');
+}
+
+/* ══ COMMAND PALETTE (feature 63) ══ */
+var cmdkIndex = [
+  {label:'Command Center', view:'view-command', tag:'View'},
+  {label:'Approval Queue', view:'view-queue', tag:'View'},
+  {label:'Creative Intel', view:'view-creative', tag:'View'},
+  {label:'Insights', view:'view-insights', tag:'View'},
+  {label:'Reports', view:'view-reports', tag:'View'},
+  {label:'Library', view:'view-library', tag:'View'},
+  {label:'Learning', view:'view-learning', tag:'View'},
+  {label:'Executive', view:'view-executive', tag:'View'},
+  {label:'Brand CPC inflation guard', view:'view-queue', tag:'Agent'},
+  {label:'Creative fatigue predictor', view:'view-creative', tag:'Agent'},
+  {label:'Search term classifier', view:'view-library', tag:'Agent'},
+  {label:'COGS-aware ROAS reporter', view:'view-library', tag:'Agent'},
+  {label:'Diwali Bundle campaign', view:'view-queue', tag:'Campaign'},
+  {label:'Wedding Edit campaign', view:'view-queue', tag:'Campaign'},
+  {label:'Festive Sale campaign', view:'view-creative', tag:'Campaign'},
+  {label:'Weekly performance digest', view:'view-reports', tag:'Report'},
+  {label:'Monthly business review', view:'view-reports', tag:'Report'},
+  {label:'Auto-approve rules', view:'view-queue', tag:'Settings'}
+];
+function openCmdK(){
+  document.getElementById('cmdkOverlay').classList.add('show');
+  var input = document.getElementById('cmdkInput');
+  input.value = '';
+  renderCmdk('');
+  setTimeout(function(){ input.focus(); }, 50);
+}
+function closeCmdK(){
+  document.getElementById('cmdkOverlay').classList.remove('show');
+}
+function renderCmdk(q){
+  var results = document.getElementById('cmdkResults');
+  var query = q.trim().toLowerCase();
+  var matches = cmdkIndex.filter(function(item){ return item.label.toLowerCase().indexOf(query) !== -1; });
+  if(matches.length === 0){
+    results.innerHTML = '<div class="cmdk-empty">No matches. Try a different term.</div>';
+    return;
+  }
+  results.innerHTML = matches.map(function(item){
+    return '<div class="cmdk-result" onclick="switchView(\'' + item.view + '\'); closeCmdK();"><span>' + item.label + '</span><span class="tag">' + item.tag + '</span></div>';
+  }).join('');
+}
+document.addEventListener('keydown', function(e){
+  if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'){ e.preventDefault(); openCmdK(); }
+  if(e.key === 'Escape'){ closeCmdK(); closeReason(); }
+});
+
+/* ══ SETTINGS TABS ══ */
+document.querySelectorAll('.stab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.stab').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.settings-pane').forEach(function(p){ p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById(btn.getAttribute('data-pane')).classList.add('active');
+  });
+});
+
+/* ══ ONBOARDING WIZARD ══ */
+var wizStep = 1;
+var wizLabels = ['Google','Meta','GA4','Shopify','Profile','Ready'];
+function renderStepper(){
+  var el = document.getElementById('stepper');
+  var html = '';
+  for(var i=1;i<=6;i++){
+    var state = i < wizStep ? 'done' : (i === wizStep ? 'current' : '');
+    html += '<div class="step-unit"><div class="step-dot ' + state + '">' + (i < wizStep ? '\u2713' : i) + '</div><div class="step-label">' + wizLabels[i-1] + '</div></div>';
+    if(i < 6){ html += '<div class="step-line ' + (i < wizStep ? 'done' : '') + '"></div>'; }
+  }
+  el.innerHTML = html;
+}
+function wizGo(dir){
+  var next = wizStep + dir;
+  if(next < 1 || next > 6) return;
+  document.querySelector('.wizard-step[data-step="' + wizStep + '"]').classList.remove('active');
+  wizStep = next;
+  document.querySelector('.wizard-step[data-step="' + wizStep + '"]').classList.add('active');
+  renderStepper();
+  document.getElementById('wizBack').style.visibility = wizStep === 1 ? 'hidden' : 'visible';
+  document.getElementById('wizardActions').style.display = wizStep === 6 ? 'none' : 'flex';
+}
+function simulateConnect(btn, key){
+  btn.textContent = 'Connected';
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  document.getElementById('connect-' + key).style.display = 'block';
+}
+renderStepper();
+</script>
+
+</body>
+</html>

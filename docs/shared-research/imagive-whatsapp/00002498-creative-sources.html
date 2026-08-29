@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CTA, Price &amp; Offer — Ad Creative Source Dossier</title>
+<style>
+  :root {
+    --ground: #f6f5f1;
+    --raise: #ffffff;
+    --ink: #211f1a;
+    --ink-soft: #55514a;
+    --ink-faint: #8a857b;
+    --line: #e2ded3;
+    --line-soft: #eeebe3;
+    --accent: #b8791b;
+    --accent-soft: #f3e6cf;
+    --tag-cta: #2f6f5e;
+    --tag-price: #b8791b;
+    --tag-offer: #a63d4e;
+    --tag-hook: #3a5a9b;
+    --tag-product: #6b5aa6;
+    --shadow: 0 1px 2px rgba(33, 31, 26, .04), 0 8px 24px rgba(33, 31, 26, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #17161a;
+      --raise: #201e22;
+      --ink: #efece4;
+      --ink-soft: #b3afa5;
+      --ink-faint: #837e75;
+      --line: #322f34;
+      --line-soft: #292730;
+      --accent: #e0a545;
+      --accent-soft: #3a2f1c;
+      --tag-cta: #6fc0a8;
+      --tag-price: #e0a545;
+      --tag-offer: #e08b98;
+      --tag-hook: #8aa8e0;
+      --tag-product: #b3a3e0;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 10px 30px rgba(0, 0, 0, .35);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f6f5f1; --raise: #ffffff; --ink: #211f1a; --ink-soft: #55514a;
+    --ink-faint: #8a857b; --line: #e2ded3; --line-soft: #eeebe3; --accent: #b8791b;
+    --accent-soft: #f3e6cf; --tag-cta: #2f6f5e; --tag-price: #b8791b; --tag-offer: #a63d4e;
+    --tag-hook: #3a5a9b; --tag-product: #6b5aa6;
+    --shadow: 0 1px 2px rgba(33,31,26,.04), 0 8px 24px rgba(33,31,26,.05);
+  }
+  :root[data-theme="dark"] {
+    --ground: #17161a; --raise: #201e22; --ink: #efece4; --ink-soft: #b3afa5;
+    --ink-faint: #837e75; --line: #322f34; --line-soft: #292730; --accent: #e0a545;
+    --accent-soft: #3a2f1c; --tag-cta: #6fc0a8; --tag-price: #e0a545; --tag-offer: #e08b98;
+    --tag-hook: #8aa8e0; --tag-product: #b3a3e0;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 6vw, 5rem) clamp(1.15rem, 5vw, 2rem) 5rem;
+  }
+
+  /* ---- masthead ---- */
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .72rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+  }
+  .eyebrow::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  h1 {
+    font-size: clamp(2rem, 6vw, 3.05rem);
+    line-height: 1.04;
+    letter-spacing: -.025em;
+    font-weight: 800;
+    margin: 0 0 .9rem;
+    text-wrap: balance;
+  }
+  .lede {
+    font-size: 1.12rem;
+    color: var(--ink-soft);
+    margin: 0 0 1.5rem;
+    max-width: 40ch;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem 1.4rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .74rem;
+    letter-spacing: .04em;
+    color: var(--ink-faint);
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .meta-row b { color: var(--ink); font-weight: 600; }
+
+  /* ---- key finding ---- */
+  .finding {
+    background: var(--raise);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 1.4rem 1.5rem;
+    margin: 2.2rem 0 2.6rem;
+    box-shadow: var(--shadow);
+  }
+  .finding h2 {
+    font-size: .78rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 .6rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  .finding p { margin: 0; font-size: 1.02rem; }
+  .finding strong { color: var(--ink); }
+
+  /* ---- legend ---- */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .7rem 1.3rem;
+    margin: 0 0 2.8rem;
+    font-size: .9rem;
+    color: var(--ink-soft);
+  }
+  .legend div { display: flex; align-items: center; gap: .5rem; }
+
+  .tag {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .66rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: .16rem .5rem;
+    border-radius: 3px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .tag.cta     { color: var(--tag-cta); }
+  .tag.price   { color: var(--tag-price); }
+  .tag.offer   { color: var(--tag-offer); }
+  .tag.hook    { color: var(--tag-hook); }
+  .tag.product { color: var(--tag-product); }
+
+  /* ---- sources ---- */
+  .section-label {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .72rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 .4rem;
+  }
+  .sources { list-style: none; margin: 0; padding: 0; }
+  .source {
+    padding: 1.9rem 0;
+    border-top: 1px solid var(--line);
+  }
+  .source:first-child { border-top: none; padding-top: .5rem; }
+
+  .src-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .5rem .9rem;
+    margin-bottom: .55rem;
+  }
+  .domain {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .74rem;
+    color: var(--ink-faint);
+    letter-spacing: .02em;
+  }
+  .tags { display: flex; gap: .35rem; flex-wrap: wrap; }
+
+  .source h3 {
+    font-size: 1.24rem;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+    margin: 0 0 .8rem;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+  .source h3 a {
+    color: var(--ink);
+    text-decoration: none;
+    background-image: linear-gradient(var(--accent), var(--accent));
+    background-size: 0% 1.5px;
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    transition: background-size .25s ease;
+  }
+  .source h3 a:hover,
+  .source h3 a:focus-visible {
+    background-size: 100% 1.5px;
+    color: var(--accent);
+    outline: none;
+  }
+
+  blockquote {
+    margin: 0 0 .85rem;
+    padding-left: 1.05rem;
+    border-left: 2px solid var(--line);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.05rem;
+    line-height: 1.62;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  blockquote + blockquote { margin-top: -.2rem; }
+  blockquote em { color: var(--ink); font-style: italic; font-weight: 400; }
+
+  .takeaway {
+    font-size: .93rem;
+    color: var(--ink);
+    margin: 0;
+    display: flex;
+    gap: .55rem;
+  }
+  .takeaway::before {
+    content: "\2192";
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .src-link {
+    display: inline-block;
+    margin-top: .7rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .72rem;
+    color: var(--ink-faint);
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .src-link:hover, .src-link:focus-visible { color: var(--accent); outline: none; }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1.6rem;
+    border-top: 2px solid var(--ink);
+    font-size: .86rem;
+    color: var(--ink-faint);
+  }
+  footer b { color: var(--ink-soft); font-weight: 600; }
+  footer code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .82em;
+    color: var(--ink-soft);
+  }
+
+  a:focus-visible, h3 a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Research Dossier</p>
+    <h1>How ads actually show CTA, price &amp; offer</h1>
+    <p class="lede">The source articles behind the creative rules — with the exact text each one contributes, grouped by the element it governs.</p>
+    <div class="meta-row">
+      <span><b>12</b> sources</span>
+      <span>Compiled Jul 2026</span>
+      <span>Scope <b>static &amp; catalog paid-social</b></span>
+      <span>For <b>Hook Generator · generateImage</b></span>
+    </div>
+  </header>
+
+  <section class="finding">
+    <h2>Two rules that cover all five elements</h2>
+    <p><strong>Hero elements (hook + product)</strong> are the composition: the product fills the frame as a single in-use hero (~55%), the hook is the largest text in the top third (~20%) — no boxes, contrast carries them.
+    <strong>Copy &amp; offer elements (CTA, price, offer)</strong> are small self-contained badges/buttons in clear space — <strong>never a box around the whole ad, never over the product</strong> (Meta flags overlapping auto-badges as a failure mode).</p>
+  </section>
+
+  <div class="legend">
+    <div><span class="tag product">Product</span> hero image</div>
+    <div><span class="tag hook">Hook</span> headline</div>
+    <div><span class="tag cta">CTA</span> button</div>
+    <div><span class="tag price">Price</span> price / strikethrough</div>
+    <div><span class="tag offer">Offer</span> discount / urgency</div>
+  </div>
+
+  <p class="section-label">Hero elements · hook &amp; product image</p>
+  <ul class="sources">
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">pixc.com</span>
+        <span class="tags"><span class="tag product">Product</span></span>
+      </div>
+      <h3><a href="https://pixc.com/blog/white-background-vs-lifestyle-product-photos/">White Background vs Lifestyle Product Photos: What Sells</a></h3>
+      <blockquote>On Instagram, <em>a white-background image looks like an ad, while a lifestyle image looks like content</em> — lifestyle shows scale, real-world use and context, so shoppers picture using the product, and that emotional connection lifts conversions.</blockquote>
+      <p class="takeaway">The <b>show-the-outcome, in-use hero</b> rule for social; white background is for catalog, not feed.</p>
+      <a class="src-link" href="https://pixc.com/blog/white-background-vs-lifestyle-product-photos/">pixc.com/blog/white-background-vs-lifestyle-product-photos</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">tryvizup.com</span>
+        <span class="tags"><span class="tag product">Product</span><span class="tag hook">Hook</span></span>
+      </div>
+      <h3><a href="https://www.tryvizup.com/blog/meta-ad-specs-2026-every-dimension-size-you-need">Meta Ad Specs 2026: Every Dimension &amp; Size You Need</a></h3>
+      <blockquote>Leave roughly the top <em>250 px (~14%) clear of logos and text</em>, or native UI covers it. The <em>4:5 ratio consistently outperforms square</em> on mobile-heavy campaigns thanks to the extra vertical space.</blockquote>
+      <p class="takeaway">Fixes the <b>top-third safe zone</b> for the hook and the <b>4:5 mobile-first</b> frame for the hero.</p>
+      <a class="src-link" href="https://www.tryvizup.com/blog/meta-ad-specs-2026-every-dimension-size-you-need">tryvizup.com/blog/meta-ad-specs-2026-every-dimension-size-you-need</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">cropink.com</span>
+        <span class="tags"><span class="tag hook">Hook</span></span>
+      </div>
+      <h3><a href="https://cropink.com/facebook-ad-headline">How to Write a Facebook Ad Headline That Gets Clicks</a></h3>
+      <blockquote>Effective headlines stay <em>under ~40 characters and ~10 words</em>, with roughly <em>two words per line</em> so the eye reads straight through; <em>front-load the benefit</em> in the first few words and give the first word high contrast.</blockquote>
+      <p class="takeaway">Backs the hook being <b>short, front-loaded and the largest text</b> — the single headline, nothing stacked.</p>
+      <a class="src-link" href="https://cropink.com/facebook-ad-headline">cropink.com/facebook-ad-headline</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">nogood.io</span>
+        <span class="tags"><span class="tag hook">Hook</span><span class="tag product">Product</span></span>
+      </div>
+      <h3><a href="https://nogood.io/blog/stop-the-scroll/">Stop The Scroll: 10 Tips to Create Thumb-Stopping Ads</a></h3>
+      <blockquote>Keep overlay text to <em>a single headline or offer</em> and let the ad-copy fields do the rest; creative featuring <em>real people, expressive reactions, or simple product-demo motion</em> tends to outperform plain static images.</blockquote>
+      <p class="takeaway">One headline only, and the hero earns attention through real in-use context, not clutter.</p>
+      <a class="src-link" href="https://nogood.io/blog/stop-the-scroll/">nogood.io/blog/stop-the-scroll</a>
+    </li>
+  </ul>
+
+  <p class="section-label" style="margin-top:2.6rem;">Copy &amp; offer elements · CTA, price &amp; offer</p>
+  <ul class="sources">
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">socialmediatoday.com</span>
+        <span class="tags"><span class="tag price">Price</span><span class="tag offer">Offer</span></span>
+      </div>
+      <h3><a href="https://www.socialmediatoday.com/news/facebook-advantage-plus-catalog-ads-overlay-offers/746337/">Meta Updates Dynamic Labels for Advantage+ Catalog Ads</a></h3>
+      <blockquote>Meta displays pricing as <em>&ldquo;a sticker-type element on the product image.&rdquo;</em> The four overlay types are current price, strikethrough price, percentage-off, and free shipping &mdash; each toggled individually and customizable in <em>shape, font, position, and colour</em>.</blockquote>
+      <p class="takeaway">Establishes price/offer as customizable <b>sticker labels</b>, and strikethrough as a first-class price treatment.</p>
+      <a class="src-link" href="https://www.socialmediatoday.com/news/facebook-advantage-plus-catalog-ads-overlay-offers/746337/">socialmediatoday.com/news/facebook-advantage-plus-catalog-ads-overlay-offers</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">searchengineland.com</span>
+        <span class="tags"><span class="tag price">Price</span><span class="tag offer">Offer</span></span>
+      </div>
+      <h3><a href="https://searchengineland.com/meta-dynamic-overlays-advantage-catalog-ads-454657">Meta adds dynamic overlays to Advantage+ Catalog ads</a></h3>
+      <blockquote>Dynamic overlays display key product information &mdash; <em>price, discounts, and shipping offers</em> &mdash; directly on ad images. Formerly called &ldquo;labels,&rdquo; now &ldquo;dynamic overlays,&rdquo; currently limited to the Facebook Feed.</blockquote>
+      <p class="takeaway">Confirms the overlay direction is on-image, feed-only, and info-dense (price + discount + shipping together).</p>
+      <a class="src-link" href="https://searchengineland.com/meta-dynamic-overlays-advantage-catalog-ads-454657">searchengineland.com/meta-dynamic-overlays-advantage-catalog-ads-454657</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">adsuploader.com</span>
+        <span class="tags"><span class="tag price">Price</span><span class="tag offer">Offer</span></span>
+      </div>
+      <h3><a href="https://adsuploader.com/blog/advantage-plus-creative-enhancements">Advantage+ Creative Enhancements: The Complete 2026 Guide</a></h3>
+      <blockquote>Advantage+ can <em>add price, discount or urgency badges</em> to catalog items automatically &mdash; auto-adding discount labels, product-info badges, and image overlays for Shopping ads.</blockquote>
+      <p class="takeaway">Shows the badge vocabulary (price / discount / urgency) that the platform itself generates.</p>
+      <a class="src-link" href="https://adsuploader.com/blog/advantage-plus-creative-enhancements">adsuploader.com/blog/advantage-plus-creative-enhancements</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">hyperfx.ai</span>
+        <span class="tags"><span class="tag price">Price</span><span class="tag offer">Offer</span></span>
+      </div>
+      <h3><a href="https://www.hyperfx.ai/blog/meta-advantage-creative-enhancements-issues">Meta Advantage+ Creative Enhancements Issues (2026)</a></h3>
+      <blockquote>Auto-badges <em>can stack on top of carefully designed product photography</em>, and discounts can be shown when discounts aren&rsquo;t actually running.</blockquote>
+      <p class="takeaway">The counter-example &mdash; why badges must sit in <b>clear space, never over the product</b>. Directly backs the render rule.</p>
+      <a class="src-link" href="https://www.hyperfx.ai/blog/meta-advantage-creative-enhancements-issues">hyperfx.ai/blog/meta-advantage-creative-enhancements-issues</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">sovran.ai</span>
+        <span class="tags"><span class="tag cta">CTA</span><span class="tag offer">Offer</span></span>
+      </div>
+      <h3><a href="https://sovran.ai/blog/static-ads-examples">8 High-Converting Static Ad Examples for 2026</a></h3>
+      <blockquote>Make the offer the visual centerpiece using <em>bold colors, &ldquo;sticker&rdquo; or &ldquo;badge&rdquo; elements, and prominent typography</em> for the discount and deadline.</blockquote>
+      <blockquote>The <em>bottom 20% is typically reserved for the brand logo or a call-to-action button</em>, as this is where users naturally look to take action.</blockquote>
+      <p class="takeaway">Sources both the <b>offer-as-sticker</b> and the <b>CTA-in-the-bottom-band</b> rules.</p>
+      <a class="src-link" href="https://sovran.ai/blog/static-ads-examples">sovran.ai/blog/static-ads-examples</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">zeely.ai</span>
+        <span class="tags"><span class="tag offer">Offer</span></span>
+      </div>
+      <h3><a href="https://zeely.ai/blog/static-ads-examples/">Static Ad Examples to Inspire Your Next Campaign</a></h3>
+      <blockquote>A simple countdown timer or a bold <em>&ldquo;ENDS FRIDAY&rdquo;</em> graphic can dramatically increase perceived urgency; layer a clean product visual with a hard deadline like <em>&ldquo;Today only.&rdquo;</em></blockquote>
+      <p class="takeaway">Urgency is a bold graphic element paired with &mdash; not over &mdash; a clean product shot.</p>
+      <a class="src-link" href="https://zeely.ai/blog/static-ads-examples/">zeely.ai/blog/static-ads-examples</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">amplifymarketers.com</span>
+        <span class="tags"><span class="tag price">Price</span><span class="tag offer">Offer</span></span>
+      </div>
+      <h3><a href="https://www.amplifymarketers.com/meta-ads-creative-best-practices">Meta &amp; Facebook Ads Creative Best Practices Guide</a></h3>
+      <blockquote>The discount-focused layout uses a prominent discount badge like <em>&ldquo;Save 30%&rdquo;</em> or <em>&ldquo;-$20&rdquo;</em> with <em>strike-through original pricing next to the sale price</em>.</blockquote>
+      <p class="takeaway">The exact strikethrough treatment: original crossed out, <b>beside</b> the sale price. Matches the current render rule verbatim.</p>
+      <a class="src-link" href="https://www.amplifymarketers.com/meta-ads-creative-best-practices">amplifymarketers.com/meta-ads-creative-best-practices</a>
+    </li>
+
+    <li class="source">
+      <div class="src-head">
+        <span class="domain">creativeos.com</span>
+        <span class="tags"><span class="tag cta">CTA</span></span>
+      </div>
+      <h3><a href="https://creativeos.com/blog/guides/facebook-ad-design-guide/">Facebook Ad Design Guide: Best Practices (2026)</a></h3>
+      <blockquote>Even the most persuasive CTA won&rsquo;t matter if it&rsquo;s buried &mdash; the button must <em>stand out visually</em>. Keep one primary message, one focal point, one clear CTA; mind the safe zones where profile icons or CTA buttons obscure the creative.</blockquote>
+      <p class="takeaway">Backs the <b>high-contrast, un-buried button</b> and the single-focal-point hierarchy.</p>
+      <a class="src-link" href="https://creativeos.com/blog/guides/facebook-ad-design-guide/">creativeos.com/blog/guides/facebook-ad-design-guide</a>
+    </li>
+
+  </ul>
+
+  <footer>
+    <p>Compiled to justify the creative rules in <b>HookGeneratorController::generateImage</b>. <b>Hero elements</b> are applied in <code>IMAGE_PROMPT_SYSTEM</code>: product = single in-use hero filling the frame (~55%) &middot; hook = largest text, top third, single headline. <b>Copy &amp; offer elements</b> are applied in <code>$renderRules</code>: CTA as a high-contrast button in the bottom band &middot; price as a small tag/badge &middot; offer as a bold badge &middot; original price struck through beside the sale price &mdash; all in clear space, never over the product, and stepped aside when a style reference drives the layout.</p>
+  </footer>
+
+</div>
+</body>
+</html>

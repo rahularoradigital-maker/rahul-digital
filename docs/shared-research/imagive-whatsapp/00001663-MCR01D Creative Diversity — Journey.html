@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCR01D — Creative Diversity Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F2EFF8;font-family:'DM Sans',sans-serif;overflow:hidden}
+#topbar{position:fixed;top:0;left:0;right:0;height:50px;background:#5B1FA0;display:flex;align-items:center;padding:0 20px;gap:16px;z-index:100;box-shadow:0 2px 12px rgba(91,31,160,0.35)}
+.tb-title{color:#fff;font-size:14px;font-weight:700;letter-spacing:-0.2px}
+.tb-sub{color:rgba(255,255,255,0.55);font-size:11.5px}
+.tb-sep{width:1px;height:18px;background:rgba(255,255,255,0.2)}
+.tb-tag{background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.85);font-size:10.5px;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'Fira Code',monospace}
+#controls{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:6px;z-index:100}
+.ctrl{width:38px;height:38px;border-radius:9px;background:#fff;border:none;cursor:pointer;font-size:17px;font-weight:700;color:#5B1FA0;box-shadow:0 2px 8px rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ctrl:hover{background:#5B1FA0;color:#fff}
+#zlabel{text-align:center;font-size:10px;color:#9B8EB0;font-family:'Fira Code',monospace}
+#canvas{width:100vw;height:100vh;overflow:hidden;cursor:grab;position:relative;padding-top:50px}
+#canvas.drag{cursor:grabbing}
+#board{position:absolute;width:1100px;height:1400px;transform-origin:0 0}
+#arrows{position:absolute;top:0;left:0;width:1100px;height:1400px;pointer-events:none}
+.node{position:absolute;border-radius:12px;overflow:hidden}
+.nd-start{background:linear-gradient(135deg,#5B1FA0 0%,#E07B00 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(91,31,160,0.4)}
+.nd-start .s-title{font-size:15px;font-weight:700;color:#fff;letter-spacing:-0.2px}
+.nd-start .s-sub{font-size:11px;color:rgba(255,255,255,0.7);margin-top:3px}
+.nd-dec{background:#fff;border:1.5px solid #D8C8F0;box-shadow:0 2px 10px rgba(91,31,160,0.1)}
+.dec-hdr{background:#5B1FA0;padding:12px 18px}
+.dec-q{font-size:13.5px;font-weight:700;color:#fff;line-height:1.3}
+.dec-hint{font-size:11px;color:rgba(255,255,255,0.72);margin-top:4px;line-height:1.4}
+.dec-paths{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #EDE0FF}
+.dp-yes{padding:9px 14px;background:#F0FDF4;border-right:1px solid #C6F0D8}
+.dp-no{padding:9px 14px;background:#FEF2F2}
+.dp-label{font-size:10.5px;font-weight:700;font-family:'Fira Code',monospace;margin-bottom:3px}
+.dp-yes .dp-label{color:#16A34A}
+.dp-no .dp-label{color:#B91C1C}
+.dp-text{font-size:11px;color:#374151;line-height:1.45}
+.nd-skip{background:#fff;border:1.5px solid #D1D5DB;box-shadow:0 1px 6px rgba(0,0,0,0.07)}
+.nd-p1{background:#fff;border:1.5px solid #EA580C;box-shadow:0 2px 10px rgba(234,88,12,0.15)}
+.nd-healthy{background:#fff;border:1.5px solid #16A34A;box-shadow:0 2px 10px rgba(22,163,74,0.15)}
+.branch-hdr{padding:11px 16px;font-size:13px;font-weight:700}
+.skip-hdr{background:#F3F4F6;color:#374151;border-bottom:1px solid #E5E7EB}
+.p1-hdr{background:#FFF4EE;color:#9A3412;border-bottom:1px solid #FED7AA}
+.healthy-hdr{background:#F0FDF4;color:#15803D;border-bottom:1px solid #BBF7D0}
+.branch-body{padding:11px 16px;font-size:11.5px;color:#4B5563;line-height:1.6}
+.fix-line{margin-top:8px;padding:7px 10px;border-radius:6px;font-size:11px;font-weight:700;line-height:1.4}
+.p1-fix{background:#FFF4EE;color:#9A3412;border:1px solid #FED7AA}
+.bullet{display:flex;gap:6px;margin-top:4px}
+.bullet::before{content:'•';color:inherit;flex-shrink:0}
+.nd-p2{background:#fff;border:1.5px solid #EA580C;box-shadow:0 2px 12px rgba(234,88,12,0.18)}
+.p2-hdr{background:#EA580C;padding:12px 18px}
+.p2-title{font-size:14px;font-weight:700;color:#fff}
+.p2-sub{font-size:11px;color:rgba(255,255,255,0.8);margin-top:4px}
+.p2-body{padding:12px 18px;background:#FFF7F0;border-bottom:1px solid #FED7AA}
+.p2-body-text{font-size:12px;color:#7C2D12;line-height:1.6}
+.p2-fix{padding:12px 18px;background:#F0FDF4;border-bottom:1px solid #BBF7D0}
+.p2-fix-label{font-size:10.5px;font-weight:700;color:#15803D;font-family:'Fira Code',monospace;margin-bottom:5px}
+.p2-fix-text{font-size:12px;color:#15803D;line-height:1.6}
+.nd-end{background:linear-gradient(135deg,#0D9B6C,#16A34A);display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(13,155,108,0.35)}
+.nd-end .e-text{font-size:14px;font-weight:700;color:#fff}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div>
+    <div class="tb-title">MCR01D — Creative Diversity</div>
+    <div class="tb-sub">Daily check: are too many ads showing or saying the same thing?</div>
+  </div>
+  <div class="tb-sep"></div>
+  <span class="tb-tag">Meta · Creative</span>
+  <span class="tb-tag">Daily · 02:00</span>
+  <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,0.4)">Drag to pan · Scroll to zoom</div>
+</div>
+
+<div id="controls">
+  <button class="ctrl" onclick="doZoom(1.2)">+</button>
+  <div id="zlabel">75%</div>
+  <button class="ctrl" onclick="doZoom(0.8)">−</button>
+  <button class="ctrl" onclick="resetView()" title="Reset">⊙</button>
+</div>
+
+<div id="canvas">
+<div id="board" style="transform: translate(80px, 60px) scale(0.75);">
+
+<svg id="arrows" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ma" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#C4A8E8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="mg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#86EFAC" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    <marker id="mr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#FCA5A5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  </defs>
+
+  <!-- vertical spine -->
+  <line x1="410" y1="100" x2="410" y2="128" stroke="#C4A8E8" stroke-width="2" marker-end="url(#ma)"/>
+  <line x1="410" y1="234" x2="410" y2="262" stroke="#C4A8E8" stroke-width="2" marker-end="url(#ma)"/>
+  <line x1="410" y1="378" x2="410" y2="406" stroke="#C4A8E8" stroke-width="2" marker-end="url(#ma)"/>
+  <line x1="410" y1="522" x2="410" y2="550" stroke="#C4A8E8" stroke-width="2" marker-end="url(#ma)"/>
+  <line x1="410" y1="666" x2="410" y2="694" stroke="#C4A8E8" stroke-width="2" marker-end="url(#ma)"/>
+  <line x1="410" y1="810" x2="410" y2="838" stroke="#C4A8E8" stroke-width="2" marker-end="url(#ma)"/>
+  <line x1="410" y1="954" x2="410" y2="982" stroke="#C4A8E8" stroke-width="2" marker-end="url(#ma)"/>
+  <line x1="410" y1="1154" x2="410" y2="1182" stroke="#86EFAC" stroke-width="2" marker-end="url(#mg)"/>
+
+  <!-- right branches -->
+  <line x1="630" y1="175" x2="666" y2="175" stroke="#D1D5DB" stroke-width="2" marker-end="url(#ma)"/>
+  <line x1="630" y1="313" x2="666" y2="313" stroke="#D1D5DB" stroke-width="2" marker-end="url(#ma)"/>
+  <line x1="630" y1="457" x2="666" y2="457" stroke="#FCA5A5" stroke-width="2" marker-end="url(#mr)"/>
+  <line x1="630" y1="601" x2="666" y2="601" stroke="#FCA5A5" stroke-width="2" marker-end="url(#mr)"/>
+  <line x1="630" y1="745" x2="666" y2="745" stroke="#FCA5A5" stroke-width="2" marker-end="url(#mr)"/>
+  <line x1="630" y1="889" x2="666" y2="889" stroke="#FCA5A5" stroke-width="2" marker-end="url(#mr)"/>
+  <line x1="630" y1="1033" x2="666" y2="1033" stroke="#86EFAC" stroke-width="2" marker-end="url(#mg)"/>
+
+  <!-- labels -->
+  <text x="418" y="118" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#16A34A">YES ↓</text>
+  <text x="418" y="252" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#16A34A">YES ↓</text>
+  <text x="418" y="396" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#16A34A">NO ↓</text>
+  <text x="418" y="540" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#16A34A">NO ↓</text>
+  <text x="418" y="684" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#16A34A">NO ↓</text>
+  <text x="418" y="828" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#16A34A">NO ↓</text>
+  <text x="418" y="972" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#16A34A">NO ↓</text>
+  <text x="418" y="1172" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#16A34A">SEND ↓</text>
+
+  <text x="634" y="168" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#6B7280">NO →</text>
+  <text x="634" y="306" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#6B7280">NO →</text>
+  <text x="634" y="450" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#B91C1C">YES →</text>
+  <text x="634" y="594" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#B91C1C">YES →</text>
+  <text x="634" y="738" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#B91C1C">YES →</text>
+  <text x="634" y="882" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#B91C1C">YES →</text>
+  <text x="634" y="1026" font-size="10" font-family="Fira Code, monospace" font-weight="500" fill="#16A34A">NONE →</text>
+</svg>
+
+<!-- START -->
+<div class="node nd-start" style="left:190px;top:28px;width:440px;height:72px">
+  <div class="s-title">MCR01D — Creative Diversity Check</div>
+  <div class="s-sub">Every day at 2 AM · checks every running Meta ad</div>
+</div>
+
+<!-- D1: Has the reading agent finished? -->
+<div class="node nd-dec" style="left:190px;top:128px;width:440px">
+  <div class="dec-hdr">
+    <div class="dec-q">Has the agent that reads every ad finished today?</div>
+    <div class="dec-hint">This agent (MCI01D) opens each ad first and notes the colours, mood, voice, and offer — we need its notes to compare ads</div>
+  </div>
+  <div class="dec-paths">
+    <div class="dp-yes">
+      <div class="dp-label">YES ↓ Continue</div>
+      <div class="dp-text">Notes are ready · let's pull the list of ads</div>
+    </div>
+    <div class="dp-no">
+      <div class="dp-label">NO → Wait + alert</div>
+      <div class="dp-text">No notes to compare yet · skip today, try tomorrow</div>
+    </div>
+  </div>
+</div>
+
+<!-- SKIP -->
+<div class="node nd-skip" style="left:668px;top:128px;width:340px">
+  <div class="branch-hdr skip-hdr">Reading agent still running — wait</div>
+  <div class="branch-body">The first agent hasn't finished its rounds. Without its notes, we can't compare ads to each other. Send a quiet alert to the tech team and try again tomorrow.</div>
+</div>
+
+<!-- D2: Ads running long enough? -->
+<div class="node nd-dec" style="left:190px;top:262px;width:440px">
+  <div class="dec-hdr">
+    <div class="dec-q">Are there ads that have been running for at least a week?</div>
+    <div class="dec-hint">Brand-new ads change every day · we need at least 7 days of running time before checking</div>
+  </div>
+  <div class="dec-paths">
+    <div class="dp-yes">
+      <div class="dp-label">YES ↓ Continue</div>
+      <div class="dp-text">Enough older ads to check · move on</div>
+    </div>
+    <div class="dp-no">
+      <div class="dp-label">NO → Save + wait</div>
+      <div class="dp-text">Everything is brand-new · re-check tomorrow when ads have settled</div>
+    </div>
+  </div>
+</div>
+
+<div class="node nd-skip" style="left:668px;top:262px;width:340px">
+  <div class="branch-hdr skip-hdr">All ads still in launch week — quiet today</div>
+  <div class="branch-body">Every active ad was launched less than 7 days ago. Too early to tell if they're repeating. Skip the report today. Re-check tomorrow when the ads have been running longer.</div>
+</div>
+
+<!-- D3: Headlines repeating inside one ad? -->
+<div class="node nd-dec" style="left:190px;top:406px;width:440px">
+  <div class="dec-hdr">
+    <div class="dec-q">Inside any single ad — are the headlines saying the same thing?</div>
+    <div class="dec-hint">An ad has up to 10 headlines · if 6 of them mean the same thing in different words ("Buy", "Shop", "Get"), it counts as one</div>
+  </div>
+  <div class="dec-paths">
+    <div class="dp-no" style="background:#FEF2F2">
+      <div class="dp-label" style="color:#B91C1C">YES → Mark it</div>
+      <div class="dp-text">Multiple headlines mean the same · note it down</div>
+    </div>
+    <div class="dp-yes" style="background:#F0FDF4">
+      <div class="dp-label" style="color:#16A34A">NO ↓ Continue</div>
+      <div class="dp-text">Headlines are varied · check the visuals next</div>
+    </div>
+  </div>
+</div>
+
+<div class="node nd-p1" style="left:668px;top:406px;width:340px">
+  <div class="branch-hdr p1-hdr">Problem — same words, different ways</div>
+  <div class="branch-body">
+    Several headlines inside one ad say the same thing. Meta can't show the real variety to customers — it wastes the headline slots.
+    <div class="fix-line p1-fix">Suggested fix: rewrite a few headlines to talk about different reasons to buy (price, comfort, speed)</div>
+  </div>
+</div>
+
+<!-- D4: Visuals repeating inside one ad? -->
+<div class="node nd-dec" style="left:190px;top:550px;width:440px">
+  <div class="dec-hdr">
+    <div class="dec-q">Inside any single ad — do the images or video shots look too similar?</div>
+    <div class="dec-hint">For a video ad with 5 shots, are 3 of them basically the same camera angle and lighting?</div>
+  </div>
+  <div class="dec-paths">
+    <div class="dp-no" style="background:#FEF2F2">
+      <div class="dp-label" style="color:#B91C1C">YES → Mark it</div>
+      <div class="dp-text">Visuals are too similar · note it down</div>
+    </div>
+    <div class="dp-yes" style="background:#F0FDF4">
+      <div class="dp-label" style="color:#16A34A">NO ↓ Continue</div>
+      <div class="dp-text">Visual variety inside the ad is fine · compare across ads</div>
+    </div>
+  </div>
+</div>
+
+<div class="node nd-p1" style="left:668px;top:550px;width:340px">
+  <div class="branch-hdr p1-hdr">Problem — same shot, different cuts</div>
+  <div class="branch-body">
+    Most shots in this video are the same angle, lighting, or person. The ad has no visual variety inside it.
+    <div class="fix-line p1-fix">Suggested fix: re-cut the video with different angles, or shoot new B-roll for variety</div>
+  </div>
+</div>
+
+<!-- D5: Same look across many ads? -->
+<div class="node nd-dec" style="left:190px;top:694px;width:440px">
+  <div class="dec-hdr">
+    <div class="dec-q">Across all the ads — is one look repeating in most of them?</div>
+    <div class="dec-hint">Same colour palette, same environment (kitchen, gym, outdoors), same kind of person on screen in 7+ out of 10 ads</div>
+  </div>
+  <div class="dec-paths">
+    <div class="dp-no" style="background:#FEF2F2">
+      <div class="dp-label" style="color:#B91C1C">YES → Mark it</div>
+      <div class="dp-text">Library is too uniform · note the dominant look</div>
+    </div>
+    <div class="dp-yes" style="background:#F0FDF4">
+      <div class="dp-label" style="color:#16A34A">NO ↓ Continue</div>
+      <div class="dp-text">Visual variety across the library is healthy · check sounds next</div>
+    </div>
+  </div>
+</div>
+
+<div class="node nd-p1" style="left:668px;top:694px;width:340px">
+  <div class="branch-hdr p1-hdr">Problem — library all looks the same</div>
+  <div class="branch-body">
+    Across the active ads, one look dominates — same colour palette or same setting in 7 out of 10. You're missing customers who respond to different vibes.
+    <div class="fix-line p1-fix">Suggested fix: brief 3 ads in a different environment or with a different colour palette</div>
+  </div>
+</div>
+
+<!-- D6: Same voice across many ads? -->
+<div class="node nd-dec" style="left:190px;top:838px;width:440px">
+  <div class="dec-hdr">
+    <div class="dec-q">Across all ads — is the same voice, music, or offer repeating?</div>
+    <div class="dec-hint">Same voiceover artist in 6 ads · same background music style · same "20% off" offer in every variation</div>
+  </div>
+  <div class="dec-paths">
+    <div class="dp-no" style="background:#FEF2F2">
+      <div class="dp-label" style="color:#B91C1C">YES → Mark it</div>
+      <div class="dp-text">Audio or offer is being overused · note it down</div>
+    </div>
+    <div class="dp-yes" style="background:#F0FDF4">
+      <div class="dp-label" style="color:#16A34A">NO ↓ Continue</div>
+      <div class="dp-text">Audio and offer variety is healthy · score the findings next</div>
+    </div>
+  </div>
+</div>
+
+<div class="node nd-p1" style="left:668px;top:838px;width:340px">
+  <div class="branch-hdr p1-hdr">Problem — same sound or same deal</div>
+  <div class="branch-body">
+    One voiceover artist, music style, or offer is in too many ads. Customers are hearing the same thing across all of them.
+    <div class="fix-line p1-fix">Suggested fix: try a different voice, swap the music, or test a benefit-led offer instead of the discount</div>
+  </div>
+</div>
+
+<!-- D7: How big is the money at stake? -->
+<div class="node nd-dec" style="left:190px;top:982px;width:440px">
+  <div class="dec-hdr">
+    <div class="dec-q">For each problem found — how much money is on the line?</div>
+    <div class="dec-hint">If the ads with the problem are spending ₹50K+ per month, treat as serious · less than that is a nice-to-fix</div>
+  </div>
+  <div class="dec-paths">
+    <div class="dp-no" style="background:#FEF2F2">
+      <div class="dp-label" style="color:#B91C1C">BIG → WhatsApp + Slack</div>
+      <div class="dp-text">High-spend ads affected · urgent message</div>
+    </div>
+    <div class="dp-yes" style="background:#F0FDF4">
+      <div class="dp-label" style="color:#16A34A">SMALL → Slack only</div>
+      <div class="dp-text">Lower-spend ads · daily summary is enough</div>
+    </div>
+  </div>
+</div>
+
+<div class="node nd-healthy" style="left:668px;top:982px;width:340px">
+  <div class="branch-hdr healthy-hdr">No problems found today — library is healthy</div>
+  <div class="branch-body">All checks passed. Headlines vary, visuals vary, library has variety, voice and offer are mixed. Save a clean entry on the dashboard. Don't send a Slack message — only speak up when something is wrong.</div>
+</div>
+
+<!-- BUILD + SEND -->
+<div class="node nd-p2" style="left:190px;top:1116px;width:440px">
+  <div class="p2-hdr">
+    <div class="p2-title">Build today's summary for the creative team</div>
+    <div class="p2-sub">Each problem becomes one line: what was repeated + a clear suggestion</div>
+  </div>
+  <div class="p2-body">
+    <div class="p2-body-text">
+      Example lines in the summary:
+      <div class="bullet" style="color:#7C2D12;margin-top:6px">URGENT — 6 of 10 headlines in Ad #8842 mean the same thing. Rewrite 3 with different reasons to buy.</div>
+      <div class="bullet" style="color:#7C2D12">URGENT — 8 out of 10 active ads are filmed outdoors at dawn. Brief 3 ads in a kitchen or studio.</div>
+      <div class="bullet" style="color:#7C2D12">MEDIUM — Same female voiceover in 7 video ads. Try a different voice on the next 3.</div>
+    </div>
+  </div>
+  <div class="p2-fix">
+    <div class="p2-fix-label">Where it goes →</div>
+    <div class="p2-fix-text">
+      Slack #creative-team — full summary at 6 AM
+      <div class="bullet" style="color:#15803D;margin-top:4px">WhatsApp to the creative lead — only the urgent ones</div>
+      <div class="bullet" style="color:#15803D">Dashboard — full details for anyone who wants to dig in</div>
+    </div>
+  </div>
+</div>
+
+<!-- END -->
+<div class="node nd-end" style="left:190px;top:1262px;width:440px;height:54px">
+  <div class="e-text">Summary delivered · creative team has clear next moves</div>
+</div>
+
+</div></div>
+
+<script>
+const canvas=document.getElementById('canvas');const board=document.getElementById('board');
+let scale=0.75,tx=80,ty=60,drag=false,lx=0,ly=0;
+function apply(){board.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;document.getElementById('zlabel').textContent=Math.round(scale*100)+'%'}
+function doZoom(f){const cx=window.innerWidth/2,cy=window.innerHeight/2;const bx=(cx-tx)/scale,by=(cy-ty)/scale;scale=Math.min(2,Math.max(0.2,scale*f));tx=cx-bx*scale;ty=cy-by*scale;apply()}
+function resetView(){scale=0.75;tx=80;ty=60;apply()}
+canvas.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY;canvas.classList.add('drag')});
+window.addEventListener('mouseup',()=>{drag=false;canvas.classList.remove('drag')});
+window.addEventListener('mousemove',e=>{if(!drag)return;tx+=e.clientX-lx;ty+=e.clientY-ly;lx=e.clientX;ly=e.clientY;apply()});
+canvas.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.1:0.9;const bx=(e.clientX-tx)/scale,by=(e.clientY-ty)/scale;scale=Math.min(2,Math.max(0.2,scale*f));tx=e.clientX-bx*scale;ty=e.clientY-by*scale;apply()},{passive:false});
+apply();
+</script>
+
+</body></html>

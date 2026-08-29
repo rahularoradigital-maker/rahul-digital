@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Imagive — Workspace Information Architecture</title>
+<style>
+:root{
+  --bg:#F3F4F7; --canvas-bg:#FFFFFF; --ink:#14151A; --body:#4B5058; --muted:#868B95; --faint:#B0B4BB;
+  --line:#E4E5EA; --line-soft:#EFF0F3;
+  --accent:#6366F1; --accent-dk:#4A4DD6; --accent-wash:#EEEEFE;
+  --warn:#B45309; --warn-w:#FEF3E2; --warn-b:#FBE1B0;
+  --sys:#8A8F99; --sys-w:#F1F2F4;
+  --all:#2563EB; --all-w:#EAF2FF;
+  --good:#0E8A5F; --good-w:#DEF2EA;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--body);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;color:var(--ink);letter-spacing:-.01em}
+
+/* ---------- topbar ---------- */
+.topbar{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line);padding:18px 36px;display:flex;flex-wrap:wrap;align-items:center;gap:18px 28px}
+.topbar h1{font-size:18px;font-weight:750}
+.topbar .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+.topbar .titlewrap{margin-right:auto}
+.legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.legend .lg{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--body);font-weight:600}
+.legend .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.legend .dot.all{background:var(--all)}
+.legend .dot.admin{background:var(--warn)}
+.legend .dot.sys{background:var(--sys)}
+.legend .ln{width:22px;height:0;border-top:1.6px solid var(--ink);display:inline-block}
+.legend .ln.dash{border-top:1.6px dashed var(--sys)}
+
+/* ---------- canvas ---------- */
+.canvas-wrap{overflow-x:auto;padding:44px 50px 90px}
+.canvas{position:relative;min-width:1940px}
+svg.connectors{position:absolute;top:0;left:0;pointer-events:none;z-index:1;overflow:visible}
+.flow{position:relative;z-index:2;display:flex;flex-direction:column;gap:64px}
+
+.row-center{display:flex;justify-content:flex-start}
+.branch-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-left:110px}
+
+.row-tops{display:flex;gap:56px}
+.columns{display:flex;align-items:flex-start;gap:56px}
+.col{display:flex;flex-direction:column;gap:36px}
+.subrow{display:flex;gap:46px;align-items:flex-start}
+.subcol{display:flex;flex-direction:column;gap:36px}
+.settings-row{display:flex;gap:64px;align-items:flex-start}
+
+/* ---------- node cards ---------- */
+.node{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;position:relative;box-shadow:0 1px 2px rgba(20,21,26,.04)}
+.node.plain{width:190px;text-align:center;padding:11px 16px}
+.node.hub{background:var(--accent);border-color:var(--accent);width:270px;text-align:center;box-shadow:0 6px 20px rgba(99,102,241,.28)}
+.node.hub .node-h{color:#fff;font-size:15.5px}
+.node.hub .node-sub{color:rgba(255,255,255,.88);font-size:11px;margin-top:5px}
+.node.top{width:250px}
+.node.dashed{border-style:dashed;border-color:var(--sys);background:var(--sys-w)}
+.node.dashed .node-h{color:var(--sys)}
+.node.dashed .body-txt{color:#7d8290}
+
+.node-h{font-weight:750;font-size:14px;color:var(--ink)}
+.node-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.body-txt{font-size:12px;color:var(--body);margin-top:6px;line-height:1.55}
+
+.badge{display:inline-block;margin-top:9px;font-size:9.5px;font-weight:750;padding:3px 9px;border-radius:20px;letter-spacing:.03em;text-transform:uppercase}
+.badge.all{background:var(--all-w);color:var(--all)}
+.badge.admin{background:var(--warn-w);color:var(--warn)}
+.badge.sys{background:var(--sys-w);color:var(--sys)}
+
+.section-label{font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:750;margin:12px 0 6px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.input-row{font-size:12px;color:var(--ink);padding:6px 0;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;gap:10px}
+.input-row:first-of-type{border-top:none}
+.input-row .tag{font-size:10px;color:var(--muted);font-weight:600;white-space:nowrap}
+
+.canvas-action{margin-top:12px;padding-top:11px;border-top:1px dashed var(--line)}
+.ca-label{color:var(--accent);font-weight:750;font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+.ca-list{margin:7px 0 0;padding-left:15px;font-size:11.5px;color:var(--body);line-height:1.65}
+.ca-list li{margin-bottom:2px}
+
+.gate-note{margin-top:11px;background:var(--warn-w);border:1px solid var(--warn-b);color:var(--warn);font-size:11px;padding:8px 10px;border-radius:8px;line-height:1.5;font-weight:600}
+.sys-note{margin-top:11px;background:#fff;border:1px solid var(--line);color:var(--sys);font-size:11px;padding:8px 10px;border-radius:8px;line-height:1.5}
+
+.chip-list{display:flex;flex-direction:column;gap:9px;margin-top:11px}
+.chip{border:1px solid var(--line);border-radius:9px;padding:9px 12px;font-size:12px;font-weight:650;color:var(--ink);display:flex;justify-content:space-between;align-items:center;background:var(--accent-wash)}
+.chip small{font-weight:600;color:var(--muted);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
+
+/* ---------- legend table ---------- */
+.legend-table-wrap{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 26px;max-width:920px}
+.legend-table-wrap .node-h{font-size:15px;margin-bottom:2px}
+.legend-table-wrap .node-sub{margin-bottom:14px}
+table.legend-table{border-collapse:collapse;width:100%;font-size:12px}
+table.legend-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:750;padding:8px 10px;border-bottom:1px solid var(--line)}
+table.legend-table th:not(:first-child){text-align:center}
+table.legend-table td{padding:9px 10px;border-bottom:1px solid var(--line-soft);color:var(--body)}
+table.legend-table td:not(:first-child){text-align:center;font-weight:750}
+table.legend-table td:first-child{color:var(--ink);font-weight:600}
+.yes{color:var(--good)}
+.no{color:var(--faint)}
+
+/* fixed widths per node */
+#n-orglist,#n-brandlist{width:300px}
+#n-addbrand{width:300px}
+#n-invite{width:310px}
+#n-continue{width:260px}
+#n-settingschips{width:260px}
+#n-orgprofile,#n-members,#n-brandsmgmt,#n-permmatrix,#n-billing{width:320px}
+#n-createorg-inputs{width:320px}
+#n-sysnote{width:320px}
+#n-switchbrand{width:220px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="titlewrap">
+    <h1>Imagive — Workspace Information Architecture</h1>
+    <div class="sub">Organizations → Brands · entry points, field-level inputs &amp; role gating for the new Workspace feature</div>
+  </div>
+  <div class="legend">
+    <span class="lg"><i class="dot all"></i> Open to all members</span>
+    <span class="lg"><i class="dot admin"></i> Org Admin only</span>
+    <span class="lg"><i class="dot sys"></i> System / sales-assisted</span>
+    <span class="lg"><i class="ln"></i> Flow forward</span>
+    <span class="lg"><i class="ln dash"></i> Return / linked flow</span>
+  </div>
+</div>
+
+<div class="canvas-wrap">
+  <div class="canvas" id="canvas">
+    <svg class="connectors" id="svg"></svg>
+
+    <div class="flow">
+
+      <!-- Dashboard -->
+      <div class="row-center">
+        <div class="node plain" id="n-dash"><div class="node-h">Dashboard</div></div>
+      </div>
+
+      <!-- Workspace switcher hub -->
+      <div class="row-center">
+        <div class="node hub" id="n-switch">
+          <div class="node-h">Workspace Switcher</div>
+          <div class="node-sub">Sidebar avatar pill — e.g. "Ekaleido Org · boAt ▾"</div>
+        </div>
+      </div>
+      <!-- Row of 4 top branches -->
+      <div class="row-tops">
+        <div class="node top" id="n-selectorg">
+          <div class="node-h">Select Organization</div>
+          <div class="body-txt">Switch between organizations you're a member of.</div>
+          <span class="badge all">All members</span>
+        </div>
+        <div class="node top" id="n-joinorg">
+          <div class="node-h">Join Organization</div>
+          <div class="body-txt">Redeem an invite to join an org you don't yet belong to.</div>
+          <span class="badge all">All members</span>
+        </div>
+        <div class="node top" id="n-orgsettings">
+          <div class="node-h">Organization Settings</div>
+          <div class="body-txt">Profile, members, brands, permissions &amp; billing.</div>
+          <span class="badge admin">🔒 Org Admin only</span>
+        </div>
+        <div class="node top" id="n-createorg">
+          <div class="node-h">Create Organization</div>
+          <div class="body-txt">One-time setup for a brand-new organization.</div>
+          <span class="badge admin">🔒 Org Admin only</span>
+        </div>
+      </div>
+
+      <!-- Columns -->
+      <div class="columns">
+
+        <!-- Column A: Select Organization -->
+        <div class="col" id="col-selectorg">
+          <div class="node" id="n-orglist">
+            <div class="node-h">Organization List</div>
+            <div class="section-label">Inputs</div>
+            <div class="input-row">Organization name <span class="tag">text</span></div>
+            <div class="input-row">Org logo <span class="tag">image</span></div>
+            <div class="input-row">Plan badge <span class="tag">Free / Pro / Scale</span></div>
+            <div class="input-row">Your role in this org <span class="tag">Admin / Manager / Viewer</span></div>
+            <div class="input-row">Brand count <span class="tag">e.g. "4 brands"</span></div>
+            <div class="input-row">Member count <span class="tag">read-only</span></div>
+            <div class="canvas-action">
+              <div class="ca-label">Canvas action</div>
+              <ul class="ca-list">
+                <li>Selecting an org sets it as the active context app-wide</li>
+                <li>Brand List below refreshes to that org's brands</li>
+                <li>If the user belongs to only 1 org, this list is skipped</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="node" id="n-brandlist">
+            <div class="node-h">Brand List <span style="font-weight:500;color:var(--muted)">(active org)</span></div>
+            <div class="section-label">Inputs</div>
+            <div class="input-row">Brand name <span class="tag">text</span></div>
+            <div class="input-row">Brand logo <span class="tag">image</span></div>
+            <div class="input-row">Category / industry <span class="tag">tag</span></div>
+            <div class="input-row">Ad account status <span class="tag">Meta / Google / none</span></div>
+            <div class="input-row">Your brand access <span class="tag">inherited or overridden</span></div>
+            <div class="canvas-action">
+              <div class="ca-label">Canvas action</div>
+              <ul class="ca-list">
+                <li>Clicking a brand tile sets it active across Create, Ads, Intelligence…</li>
+                <li>Sidebar pill updates to "Org · Brand"</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="subrow">
+            <div class="subcol">
+              <div class="node" id="n-switchbrand">
+                <div class="node-h">Switch Brand</div>
+                <div class="body-txt">Sets brand active, closes the panel.</div>
+              </div>
+              <div class="node dashed" id="n-continue">
+                <div class="node-h">→ Continues into Brand Workspace</div>
+                <div class="body-txt">Hooks &amp; Angles generate → Product details → Generate Hooks &amp; Angles → AI Response (existing Imagive flow).</div>
+              </div>
+            </div>
+
+            <div class="node" id="n-addbrand">
+              <div class="node-h">+ Add Brand</div>
+              <div class="section-label">Inputs</div>
+              <div class="input-row">Brand website URL <span class="tag">required</span></div>
+              <div class="input-row">Brand name <span class="tag">auto-filled, editable</span></div>
+              <div class="input-row">Category / industry <span class="tag">dropdown</span></div>
+              <div class="input-row">Logo <span class="tag">auto-fetched or upload</span></div>
+              <div class="input-row">Connect ad account <span class="tag">optional · Meta / Google</span></div>
+              <div class="canvas-action">
+                <div class="ca-label">Canvas action</div>
+                <ul class="ca-list">
+                  <li>Imagive scrapes the site and infers brand DNA (tone, palette, products)</li>
+                  <li>New brand tile is created under the active organization</li>
+                  <li>Brand inherits the org's default permission template unless overridden</li>
+                </ul>
+              </div>
+              <div class="gate-note">Visible only to Org Admin &amp; Brand Manager roles — hidden for Viewers.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column B: Join Organization -->
+        <div class="col" id="col-joinorg">
+          <div class="node" id="n-invite">
+            <div class="node-h">Accept Invite</div>
+            <div class="section-label">Inputs</div>
+            <div class="input-row">Invite method <span class="tag">Email link / Manual code</span></div>
+            <div class="input-row">Invite code or Organization ID <span class="tag">text</span></div>
+            <div class="input-row">Email confirmation <span class="tag">must match invite</span></div>
+            <div class="input-row">Assigned role <span class="tag">read-only, set by inviter</span></div>
+            <div class="input-row">Brand access scope <span class="tag">read-only · "All" or specific brands</span></div>
+            <div class="canvas-action">
+              <div class="ca-label">Canvas action</div>
+              <ul class="ca-list">
+                <li>On accept, org is appended to the user's Organization List</li>
+                <li>Role &amp; brand scope are inherited from the invite — not user-editable</li>
+                <li>No public org directory — membership is invite-only</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column C: Organization Settings (admin only) -->
+        <div class="col" id="col-orgsettings">
+          <div class="settings-row">
+            <div class="node" id="n-settingschips">
+              <div class="node-h">Settings Sections</div>
+              <div class="chip-list">
+                <div class="chip" id="n-chip-profile">Organization Profile</div>
+                <div class="chip" id="n-chip-members">Members &amp; Roles</div>
+                <div class="chip" id="n-chip-brands">Brands Management</div>
+                <div class="chip" id="n-chip-perm">Permissions Matrix</div>
+                <div class="chip" id="n-chip-billing">Billing &amp; Plan</div>
+              </div>
+              <div class="canvas-action">
+                <div class="ca-label">Canvas action — all sections</div>
+                <ul class="ca-list">
+                  <li>Rendered only when role = Org Admin</li>
+                  <li>Managers &amp; Viewers see a read-only "About this org" card instead</li>
+                  <li>Changes apply instantly across every member's session</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="col" style="gap:26px">
+              <div class="node dashed" id="n-sysnote">
+                <div class="node-h">Org provisioning (system)</div>
+                <div class="body-txt">New organizations are provisioned by Imagive — sales-assisted / enterprise onboarding. A reserved Organization ID is issued before setup; it can't be self-generated by users or Org Admins.</div>
+              </div>
+
+              <div class="node" id="n-orgprofile">
+                <div class="node-h">Organization Profile</div>
+                <div class="section-label">Inputs</div>
+                <div class="input-row">Organization name <span class="tag">text</span></div>
+                <div class="input-row">Organization ID <span class="tag">read-only, system-assigned</span></div>
+                <div class="input-row">Logo <span class="tag">image</span></div>
+                <div class="input-row">Industry / category <span class="tag">dropdown</span></div>
+                <div class="input-row">Billing owner email <span class="tag">text</span></div>
+              </div>
+
+              <div class="node" id="n-members">
+                <div class="node-h">Members &amp; Roles</div>
+                <div class="section-label">Inputs</div>
+                <div class="input-row">Invite by email <span class="tag">multi-add</span></div>
+                <div class="input-row">Role per invite <span class="tag">Admin / Manager / Viewer</span></div>
+                <div class="input-row">Brand access scope <span class="tag">All brands / checklist</span></div>
+                <div class="input-row">Pending invites <span class="tag">resend / revoke</span></div>
+                <div class="input-row">Existing members <span class="tag">change role / remove</span></div>
+              </div>
+
+              <div class="node" id="n-brandsmgmt">
+                <div class="node-h">Brands Management</div>
+                <div class="section-label">Inputs</div>
+                <div class="input-row">Brand list <span class="tag">reorder / rename / archive</span></div>
+                <div class="input-row">Transfer brand to another org <span class="tag">Admin → Admin only</span></div>
+                <div class="input-row">Default permission template <span class="tag">applies to new brands</span></div>
+              </div>
+
+              <div class="node" id="n-permmatrix">
+                <div class="node-h">Permissions Matrix</div>
+                <div class="section-label">Inputs</div>
+                <div class="input-row">Role definitions <span class="tag">Admin / Manager / Viewer</span></div>
+                <div class="input-row">Per-capability toggles <span class="tag">see legend below</span></div>
+                <div class="input-row">Brand-level overrides <span class="tag">e.g. Viewer → Editor on 1 brand</span></div>
+              </div>
+
+              <div class="node" id="n-billing">
+                <div class="node-h">Billing &amp; Plan</div>
+                <div class="section-label">Inputs</div>
+                <div class="input-row">Current plan <span class="tag">Free / Pro / Scale</span></div>
+                <div class="input-row">Seats used / limit <span class="tag">counter</span></div>
+                <div class="input-row">Upgrade / downgrade <span class="tag">action</span></div>
+                <div class="input-row">Invoice &amp; payment method <span class="tag">form</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column D: Create Organization (admin only) -->
+        <div class="col" id="col-createorg">
+          <div class="node" id="n-createorg-inputs">
+            <div class="node-h">Create Organization</div>
+            <div class="section-label">Inputs</div>
+            <div class="input-row">Organization name <span class="tag">required</span></div>
+            <div class="input-row">Organization ID <span class="tag">required · pre-reserved by Imagive</span></div>
+            <div class="input-row">Billing owner email <span class="tag">text</span></div>
+            <div class="input-row">Plan tier <span class="tag">Free / Pro / Scale</span></div>
+            <div class="input-row">Industry / category <span class="tag">dropdown</span></div>
+            <div class="input-row">Default permission template <span class="tag">Standard / Strict / Open</span></div>
+            <div class="canvas-action">
+              <div class="ca-label">Canvas action</div>
+              <ul class="ca-list">
+                <li>Validates the Organization ID against Imagive's registry — can't be freely typed</li>
+                <li>On success, org is created and the admin becomes its first Org Admin member</li>
+                <li>Admin can now invite members and add brands</li>
+              </ul>
+            </div>
+            <div class="gate-note">Not accessible to Manager/Viewer roles, or without a reserved Organization ID. A rare, one-time action — typically done once during enterprise onboarding.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Legend table -->
+      <div class="row-center">
+        <div class="legend-table-wrap">
+          <div class="node-h">Roles &amp; Permissions</div>
+          <div class="node-sub">What each role can do inside a Workspace</div>
+          <table class="legend-table">
+            <thead>
+              <tr><th>Capability</th><th>Org Admin</th><th>Brand Manager</th><th>Viewer</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Create organization <span style="color:var(--muted);font-weight:500">(reserved Org ID)</span></td><td class="yes">✓</td><td class="no">–</td><td class="no">–</td></tr>
+              <tr><td>Join organization via invite</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+              <tr><td>Add / archive a brand</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">–</td></tr>
+              <tr><td>Invite / remove members</td><td class="yes">✓</td><td class="no">–</td><td class="no">–</td></tr>
+              <tr><td>Edit brand DNA, connections &amp; creative</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">–</td></tr>
+              <tr><td>View analytics, reports &amp; intelligence</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+              <tr><td>Manage billing &amp; plan</td><td class="yes">✓</td><td class="no">–</td><td class="no">–</td></tr>
+              <tr><td>Manage permissions matrix</td><td class="yes">✓</td><td class="no">–</td><td class="no">–</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const CONNECTIONS = [
+  {from:['n-dash','bottom'], to:['n-switch','top']},
+  {from:['n-switch','bottom',0.16], to:['n-selectorg','top']},
+  {from:['n-switch','bottom',0.38], to:['n-joinorg','top']},
+  {from:['n-switch','bottom',0.62], to:['n-orgsettings','top']},
+  {from:['n-switch','bottom',0.84], to:['n-createorg','top']},
+
+  {from:['n-selectorg','bottom'], to:['n-orglist','top']},
+  {from:['n-orglist','bottom'], to:['n-brandlist','top']},
+  {from:['n-brandlist','bottom',0.28], to:['n-switchbrand','top']},
+  {from:['n-switchbrand','bottom'], to:['n-continue','top']},
+  {from:['n-brandlist','bottom',0.78], to:['n-addbrand','top',0.22]},
+  {from:['n-addbrand','top',0.6], to:['n-brandlist','bottom',0.94], dashed:true},
+
+  {from:['n-joinorg','bottom'], to:['n-invite','top']},
+  {from:['n-invite','left'], to:['n-orglist','right'], dashed:true},
+
+  {from:['n-orgsettings','bottom'], to:['n-settingschips','top']},
+  {from:['n-chip-profile','right'], to:['n-orgprofile','left']},
+  {from:['n-chip-members','right'], to:['n-members','left']},
+  {from:['n-chip-brands','right'], to:['n-brandsmgmt','left']},
+  {from:['n-chip-perm','right'], to:['n-permmatrix','left']},
+  {from:['n-chip-billing','right'], to:['n-billing','left']},
+  {from:['n-sysnote','bottom'], to:['n-orgprofile','top'], dashed:true},
+
+  {from:['n-createorg','bottom'], to:['n-createorg-inputs','top']},
+];
+
+function vert(side){return side==='top'||side==='bottom';}
+
+function pointOnRect(rect, side, t){
+  t = (t===undefined)?0.5:t;
+  if(side==='top') return {x: rect.left + rect.width*t, y: rect.top};
+  if(side==='bottom') return {x: rect.left + rect.width*t, y: rect.bottom};
+  if(side==='left') return {x: rect.left, y: rect.top + rect.height*t};
+  if(side==='right') return {x: rect.right, y: rect.top + rect.height*t};
+}
+
+function relRect(el, canvasRect){
+  const r = el.getBoundingClientRect();
+  return {left:r.left-canvasRect.left, top:r.top-canvasRect.top, right:r.right-canvasRect.left, bottom:r.bottom-canvasRect.top, width:r.width, height:r.height};
+}
+
+function elbow(p1, s1, p2, s2){
+  if(vert(s1) && vert(s2)){
+    const midY = (p1.y+p2.y)/2;
+    return `M ${p1.x} ${p1.y} V ${midY} H ${p2.x} V ${p2.y}`;
+  } else if(!vert(s1) && !vert(s2)){
+    const midX = (p1.x+p2.x)/2;
+    return `M ${p1.x} ${p1.y} H ${midX} V ${p2.y} H ${p2.x}`;
+  } else if(vert(s1) && !vert(s2)){
+    return `M ${p1.x} ${p1.y} V ${p2.y} H ${p2.x}`;
+  } else {
+    return `M ${p1.x} ${p1.y} H ${p2.x} V ${p2.y}`;
+  }
+}
+
+function draw(){
+  const canvas = document.getElementById('canvas');
+  const svg = document.getElementById('svg');
+  const canvasRect = canvas.getBoundingClientRect();
+  svg.setAttribute('width', canvas.scrollWidth);
+  svg.setAttribute('height', canvas.scrollHeight);
+  svg.setAttribute('viewBox', `0 0 ${canvas.scrollWidth} ${canvas.scrollHeight}`);
+
+  svg.innerHTML = `
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#14151A"></path>
+      </marker>
+      <marker id="arrow-dash" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#8A8F99"></path>
+      </marker>
+      <marker id="dot" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
+        <circle cx="5" cy="5" r="4" fill="#fff" stroke="#14151A" stroke-width="1.4"></circle>
+      </marker>
+      <marker id="dot-dash" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
+        <circle cx="5" cy="5" r="4" fill="#fff" stroke="#8A8F99" stroke-width="1.4"></circle>
+      </marker>
+    </defs>
+  `;
+
+  CONNECTIONS.forEach(conn=>{
+    const fromEl = document.getElementById(conn.from[0]);
+    const toEl = document.getElementById(conn.to[0]);
+    if(!fromEl || !toEl) return;
+    const r1 = relRect(fromEl, canvasRect);
+    const r2 = relRect(toEl, canvasRect);
+    const p1 = pointOnRect(r1, conn.from[1], conn.from[2]);
+    const p2 = pointOnRect(r2, conn.to[1], conn.to[2]);
+    const d = elbow(p1, conn.from[1], p2, conn.to[1]);
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill','none');
+    if(conn.dashed){
+      path.setAttribute('stroke','#8A8F99');
+      path.setAttribute('stroke-width','1.4');
+      path.setAttribute('stroke-dasharray','5,4');
+      path.setAttribute('marker-start','url(#dot-dash)');
+      path.setAttribute('marker-end','url(#arrow-dash)');
+    } else {
+      path.setAttribute('stroke','#14151A');
+      path.setAttribute('stroke-width','1.5');
+      path.setAttribute('marker-start','url(#dot)');
+      path.setAttribute('marker-end','url(#arrow)');
+    }
+    svg.appendChild(path);
+  });
+}
+
+window.addEventListener('load', ()=>{ draw(); setTimeout(draw,120); });
+window.addEventListener('resize', ()=>{ clearTimeout(window.__rt); window.__rt=setTimeout(draw,120); });
+if(document.fonts && document.fonts.ready){ document.fonts.ready.then(()=>setTimeout(draw,60)); }
+</script>
+
+</body>
+</html>

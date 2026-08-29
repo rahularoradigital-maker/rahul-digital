@@ -56,8 +56,8 @@ create table if not exists public.ad_meta (
 create index if not exists ad_meta_acct_idx on public.ad_meta (user_id, account_external_id);
 
 -- One row per (user, account): the last sync's outcome, so a background run is observable without logs.
--- meta_ads / meta_error record the METADATA step independently of the metrics step, so an empty ad_meta is
--- never masked by a metrics-only last_ok = true.
+-- last_ok reflects the metadata step too, and last_error carries any metadata failure, so an empty ad_meta
+-- is never masked by a metrics-only success.
 create table if not exists public.ad_sync_state (
   user_id             uuid    not null,
   account_external_id text    not null,
@@ -67,15 +67,9 @@ create table if not exists public.ad_sync_state (
   last_ok             boolean,
   last_error          text,
   last_rows           integer,
-  meta_ads            integer,
-  meta_error          text,
   updated_at          timestamptz not null default now(),
   primary key (user_id, account_external_id)
 );
-
--- Observability columns (added after the tables existed; kept here so a fresh apply matches production).
-alter table public.ad_sync_state add column if not exists meta_ads  integer;
-alter table public.ad_sync_state add column if not exists meta_error text;
 
 -- Service-role-only access: deny-by-default for everyone else.
 alter table public.ad_metrics    enable row level security;

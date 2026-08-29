@@ -1,0 +1,517 @@
+{
+  "id": "b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342",
+  "workflow_key": "creative_analytics",
+  "status": "completed",
+  "input": {
+    "thresholds": {
+      "min_impressions": 100
+    },
+    "campaign_ids": [
+      "52580745447017"
+    ],
+    "meta_account_id": "act_266769781",
+    "reporting_window": "last_3_months",
+    "include_paused_campaigns": false
+  },
+  "output": {
+    "ads": [
+      {
+        "ad_id": "52582327109817",
+        "status": "ACTIVE",
+        "caption": "The boAt Chrome Ivory, co-designed with GIVA, is crafted for women whose presence speaks before they do, featuring\n\n•⁠  ⁠a stunning 1.7\" AMOLED display\n•⁠  ⁠1000 nits peak brightness\n•⁠  ⁠a limited-edition 925 silver charm on select variants\n\nBecause elegance lies in the way you wear your charm.",
+        "adset_id": "52582327109617",
+        "headline": "Co-designed with GIVA",
+        "video_id": "1480796890117788",
+        "media_url": "https://scontent.fdel76-1.fna.fbcdn.net/v/t15.5256-10/648231857_840126499104133_8755798692402810191_n.jpg?_nc_cat=111&ccb=1-7&_nc_ohc=zAxBZ_kFr20Q7kNvwEVq59T&_nc_oc=AdrosaJMrvUvY3LXsfD4oY8GEx9fC1DCgvmAw2GvuRBuOitxNjOPTzLqVvyJbOtqW38&_nc_zt=23&_nc_ht=scontent.fdel76-1.fna&edm=AOgd6ZUEAAAA&_nc_gid=AO-h6oVqUZ4dYqqrg-DvGg&_nc_tpa=Q5bMBQEMlrqgWE1V937AvmQEHtcsrKS_sfuuM2LTvLwIVnCiSjMxWGeCw2Bpa2ECAWA_3Bd3OuBD87im&stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&ur=b696e2&_nc_sid=58080a&oh=00_Af9fymOMzywVkM5MqErRbw4d8W6WSnnq5j2rKMh9W9l7zQ&oe=6A3ECA65",
+        "asset_type": "video",
+        "campaign_id": "52580745447017",
+        "creative_id": "27105618465709938",
+        "thumbnail_url": "https://scontent.fdel76-1.fna.fbcdn.net/v/t15.5256-10/648231857_840126499104133_8755798692402810191_n.jpg?_nc_cat=111&ccb=1-7&_nc_ohc=zAxBZ_kFr20Q7kNvwEVq59T&_nc_oc=AdrosaJMrvUvY3LXsfD4oY8GEx9fC1DCgvmAw2GvuRBuOitxNjOPTzLqVvyJbOtqW38&_nc_zt=23&_nc_ht=scontent.fdel76-1.fna&edm=AOgd6ZUEAAAA&_nc_gid=AO-h6oVqUZ4dYqqrg-DvGg&_nc_tpa=Q5bMBQEMlrqgWE1V937AvmQEHtcsrKS_sfuuM2LTvLwIVnCiSjMxWGeCw2Bpa2ECAWA_3Bd3OuBD87im&stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&ur=b696e2&_nc_sid=58080a&oh=00_Af9fymOMzywVkM5MqErRbw4d8W6WSnnq5j2rKMh9W9l7zQ&oe=6A3ECA65",
+        "video_source_url": "https://instagram.fdel76-1.fna.fbcdn.net/o1/v/t2/f2/m366/AQNaKgGS-E-LgdSRwmILQKa4bv17JwUlVMEnZdaW0k4pqPkEP68mNcmcPXKAbnO_IZIBfjQ5xdf-LsTf8c8zV-mOFg3n8lfsBj1T1wqgrS4-0g.mp4?_nc_cat=101&_nc_oc=Adq_Q2iY9vdiGq3xpxMxYLTbd5jrV3Jc_tr99GLKNg3IcJZgdr-JtDKlpF6ibewIu6E&_nc_sid=5e9851&_nc_ht=instagram.fdel76-1.fna.fbcdn.net&_nc_ohc=tpljUbWsTeYQ7kNvwGkS-0b&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uQUQuQzMuNzIwLmRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHAiLCJ4cHZfYXNzZXRfaWQiOjEyNjY5MTk4MjUzNzIxOTUsImFzc2V0X2FnZV9kYXlzIjoxMDUsInZpX3VzZWNhc2VfaWQiOjEwNzk5LCJkdXJhdGlvbl9zIjoyMCwidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=1998f46acbf868ee&_nc_vs=HBksFQIYRWZiX2VwaGVtZXJhbC9EMDRDQTYyNjlCMjZGNTJDODE5QkFDODY5N0Y5RDM5Q19tdF8xX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAVAhhAZmJfcGVybWFuZW50L0M0NEI2QjA4ODZFNEFGODYwNUIxNzc3NTc0NDlGQTg5X2F1ZGlvX2Rhc2hpbml0Lm1wNBUCAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbG0LOiuJDABBUCKAJDMywXQDQKPXCj1woYGWRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHARAHXwB2XeqAEA&_nc_gid=ZePRdF6x0BG4rie7iKFGmw&edm=AIZKd-4EAAAA&_nc_zt=28&oh=00_Af_-g11Sw1T5bdiP5d1l1YXurz6Gbwlf2AUHDa_P_E1XQQ&oe=6A3EE3A3"
+      },
+      {
+        "ad_id": "52580745447417",
+        "status": "ACTIVE",
+        "caption": "The boAt Chrome Ivory, co-designed with GIVA, is crafted for women whose presence speaks before they do, featuring\n\n•⁠  ⁠a stunning 1.7\" AMOLED display\n•⁠  ⁠1000 nits peak brightness\n•⁠  ⁠a limited-edition 925 silver charm on select variants\n\nBecause elegance lies in the way you wear your charm.",
+        "adset_id": "52580745447217",
+        "headline": "Co-designed with GIVA",
+        "video_id": "1480796890117788",
+        "media_url": "https://scontent.fdel76-1.fna.fbcdn.net/v/t15.5256-10/648231857_840126499104133_8755798692402810191_n.jpg?_nc_cat=111&ccb=1-7&_nc_ohc=zAxBZ_kFr20Q7kNvwEVq59T&_nc_oc=AdrosaJMrvUvY3LXsfD4oY8GEx9fC1DCgvmAw2GvuRBuOitxNjOPTzLqVvyJbOtqW38&_nc_zt=23&_nc_ht=scontent.fdel76-1.fna&edm=AOgd6ZUEAAAA&_nc_gid=AO-h6oVqUZ4dYqqrg-DvGg&_nc_tpa=Q5bMBQEMlrqgWE1V937AvmQEHtcsrKS_sfuuM2LTvLwIVnCiSjMxWGeCw2Bpa2ECAWA_3Bd3OuBD87im&stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&ur=b696e2&_nc_sid=58080a&oh=00_Af9fymOMzywVkM5MqErRbw4d8W6WSnnq5j2rKMh9W9l7zQ&oe=6A3ECA65",
+        "asset_type": "video",
+        "campaign_id": "52580745447017",
+        "creative_id": "1314822520577929",
+        "thumbnail_url": "https://scontent.fdel76-1.fna.fbcdn.net/v/t15.5256-10/648231857_840126499104133_8755798692402810191_n.jpg?_nc_cat=111&ccb=1-7&_nc_ohc=zAxBZ_kFr20Q7kNvwEVq59T&_nc_oc=AdrosaJMrvUvY3LXsfD4oY8GEx9fC1DCgvmAw2GvuRBuOitxNjOPTzLqVvyJbOtqW38&_nc_zt=23&_nc_ht=scontent.fdel76-1.fna&edm=AOgd6ZUEAAAA&_nc_gid=AO-h6oVqUZ4dYqqrg-DvGg&_nc_tpa=Q5bMBQEMlrqgWE1V937AvmQEHtcsrKS_sfuuM2LTvLwIVnCiSjMxWGeCw2Bpa2ECAWA_3Bd3OuBD87im&stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&ur=b696e2&_nc_sid=58080a&oh=00_Af9fymOMzywVkM5MqErRbw4d8W6WSnnq5j2rKMh9W9l7zQ&oe=6A3ECA65",
+        "video_source_url": "https://instagram.fdel76-1.fna.fbcdn.net/o1/v/t2/f2/m366/AQNaKgGS-E-LgdSRwmILQKa4bv17JwUlVMEnZdaW0k4pqPkEP68mNcmcPXKAbnO_IZIBfjQ5xdf-LsTf8c8zV-mOFg3n8lfsBj1T1wqgrS4-0g.mp4?_nc_cat=101&_nc_oc=Adq_Q2iY9vdiGq3xpxMxYLTbd5jrV3Jc_tr99GLKNg3IcJZgdr-JtDKlpF6ibewIu6E&_nc_sid=5e9851&_nc_ht=instagram.fdel76-1.fna.fbcdn.net&_nc_ohc=tpljUbWsTeYQ7kNvwGkS-0b&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uQUQuQzMuNzIwLmRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHAiLCJ4cHZfYXNzZXRfaWQiOjEyNjY5MTk4MjUzNzIxOTUsImFzc2V0X2FnZV9kYXlzIjoxMDUsInZpX3VzZWNhc2VfaWQiOjEwNzk5LCJkdXJhdGlvbl9zIjoyMCwidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=1998f46acbf868ee&_nc_vs=HBksFQIYRWZiX2VwaGVtZXJhbC9EMDRDQTYyNjlCMjZGNTJDODE5QkFDODY5N0Y5RDM5Q19tdF8xX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAVAhhAZmJfcGVybWFuZW50L0M0NEI2QjA4ODZFNEFGODYwNUIxNzc3NTc0NDlGQTg5X2F1ZGlvX2Rhc2hpbml0Lm1wNBUCAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbG0LOiuJDABBUCKAJDMywXQDQKPXCj1woYGWRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHARAHXwB2XeqAEA&_nc_gid=zNDALRZXV9EtQh0VLkXYcw&edm=AIZKd-4EAAAA&_nc_zt=28&oh=00_Af-E571CQxYn2TfWIlnNRjZXEWDScXjx1QnMnS3eYReO6Q&oe=6A3EE3A3"
+      }
+    ],
+    "digest": "Over the last three months, no crystal-level ad patterns emerged as clear winners, with none surpassing the threshold to outperform the account average. This means no specific creative elements stood out by delivering significantly better results than usual.\n\nSimilarly, there were no distinct losing patterns identified during this period. No ad groups underperformed enough to suggest they should be paused based on crystal-level insights.\n\nLooking across crystals, the strongest pattern observed was a single ad exhibiting an embedding similarity score of 0.85 or higher, a trait often shared by top-performing ads in previous analyses. While this pattern did not translate into a measurable performance boost this time, it suggests that creative consistency or thematic alignment could be a promising angle to explore in upcoming briefs.\n\nAds to scale: None identified this period due to lack of clear winning patterns.\n\nAds to pause: None identified this period due to absence of clear losing patterns.\n\nIn summary, the creative landscape remains stable with no standout winners or losers. Future briefs should consider emphasizing creative elements that maintain high embedding similarity, as this has historically correlated with stronger performance.",
+    "run_id": "b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342",
+    "status": "completed",
+    "temp_dir": "/tmp/flamingo/b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342",
+    "warnings": [
+      "Meta insights returned no performance rows for the selected ads.",
+      "Meta publisher_platform insights returned no rows for the selected ads.",
+      "All 14 crystal groups were below the minimum impression threshold (100)."
+    ],
+    "agent_key": "creative_analytics",
+    "date_range": {
+      "since": "2026-03-24",
+      "until": "2026-06-22"
+    },
+    "thresholds": {
+      "min_impressions": 100
+    },
+    "ads_checked": 2,
+    "digest_text": "Over the last three months, no crystal-level ad patterns emerged as clear winners, with none surpassing the threshold to outperform the account average. This means no specific creative elements stood out by delivering significantly better results than usual.\n\nSimilarly, there were no distinct losing patterns identified during this period. No ad groups underperformed enough to suggest they should be paused based on crystal-level insights.\n\nLooking across crystals, the strongest pattern observed was a single ad exhibiting an embedding similarity score of 0.85 or higher, a trait often shared by top-performing ads in previous analyses. While this pattern did not translate into a measurable performance boost this time, it suggests that creative consistency or thematic alignment could be a promising angle to explore in upcoming briefs.\n\nAds to scale: None identified this period due to lack of clear winning patterns.\n\nAds to pause: None identified this period due to absence of clear losing patterns.\n\nIn summary, the creative landscape remains stable with no standout winners or losers. Future briefs should consider emphasizing creative elements that maintain high embedding similarity, as this has historically correlated with stronger performance.",
+    "performance": [],
+    "ads_to_pause": [],
+    "ads_to_scale": [],
+    "campaign_ids": [
+      "52580745447017"
+    ],
+    "media_bundles": [
+      {
+        "ad_id": "52582327109817",
+        "error": null,
+        "asset_type": "video",
+        "audio_path": "/tmp/flamingo/b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342/52582327109817/audio/audio.wav",
+        "image_path": null,
+        "frame_paths": [
+          "/tmp/flamingo/b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342/52582327109817/frames/frame_1.jpg",
+          "/tmp/flamingo/b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342/52582327109817/frames/frame_2.jpg",
+          "/tmp/flamingo/b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342/52582327109817/frames/frame_3.jpg"
+        ],
+        "media_url_hash": "b2e300f22bb3e799a77fd19409a6f26681dfed2afb44b2b68005aa0fac89a4df",
+        "download_status": "ok",
+        "duration_seconds": null
+      },
+      {
+        "ad_id": "52580745447417",
+        "error": null,
+        "asset_type": "video",
+        "audio_path": "/tmp/flamingo/b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342/52580745447417/audio/audio.wav",
+        "image_path": null,
+        "frame_paths": [
+          "/tmp/flamingo/b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342/52580745447417/frames/frame_1.jpg",
+          "/tmp/flamingo/b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342/52580745447417/frames/frame_2.jpg",
+          "/tmp/flamingo/b3cacfc5-1a54-4e5e-89e5-cf0b9fce1342/52580745447417/frames/frame_3.jpg"
+        ],
+        "media_url_hash": "b2e300f22bb3e799a77fd19409a6f26681dfed2afb44b2b68005aa0fac89a4df",
+        "download_status": "ok",
+        "duration_seconds": null
+      }
+    ],
+    "ranked_groups": [],
+    "crystal_groups": [
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "visual",
+        "crystal_value": "product_showcase",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "copy",
+        "crystal_value": "co-designed_with_giva_the_boat_chrome_ivory",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "colors",
+        "crystal_value": "black",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "colors",
+        "crystal_value": "white",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "colors",
+        "crystal_value": "green",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 1,
+        "ad_ids": [
+          "52582327109817"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "colors",
+        "crystal_value": "gold",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "mood",
+        "crystal_value": "elegant",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "mode",
+        "crystal_value": "studio",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "talent",
+        "crystal_value": "no_people",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 1,
+        "ad_ids": [
+          "52582327109817"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "audio",
+        "crystal_value": "silent",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "hook",
+        "crystal_value": "aspirational",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "offer",
+        "crystal_value": "new_collection",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 2,
+        "ad_ids": [
+          "52582327109817",
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "pace",
+        "crystal_value": "moderate",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      },
+      {
+        "count": 1,
+        "ad_ids": [
+          "52580745447417"
+        ],
+        "avg_cpa": null,
+        "avg_cpc": null,
+        "avg_cpm": null,
+        "avg_ctr": null,
+        "avg_roas": null,
+        "total_spend": 0,
+        "crystal_name": "colors",
+        "crystal_value": "purple",
+        "avg_purchase_rate": null,
+        "total_impressions": 0
+      }
+    ],
+    "filtered_groups": [],
+    "losing_patterns": [],
+    "meta_account_id": "act_266769781",
+    "analysis_dataset": [
+      {
+        "ad": {
+          "ad_id": "52582327109817",
+          "status": "ACTIVE",
+          "caption": "The boAt Chrome Ivory, co-designed with GIVA, is crafted for women whose presence speaks before they do, featuring\n\n•⁠  ⁠a stunning 1.7\" AMOLED display\n•⁠  ⁠1000 nits peak brightness\n•⁠  ⁠a limited-edition 925 silver charm on select variants\n\nBecause elegance lies in the way you wear your charm.",
+          "adset_id": "52582327109617",
+          "headline": "Co-designed with GIVA",
+          "video_id": "1480796890117788",
+          "media_url": "https://scontent.fdel76-1.fna.fbcdn.net/v/t15.5256-10/648231857_840126499104133_8755798692402810191_n.jpg?_nc_cat=111&ccb=1-7&_nc_ohc=zAxBZ_kFr20Q7kNvwEVq59T&_nc_oc=AdrosaJMrvUvY3LXsfD4oY8GEx9fC1DCgvmAw2GvuRBuOitxNjOPTzLqVvyJbOtqW38&_nc_zt=23&_nc_ht=scontent.fdel76-1.fna&edm=AOgd6ZUEAAAA&_nc_gid=AO-h6oVqUZ4dYqqrg-DvGg&_nc_tpa=Q5bMBQEMlrqgWE1V937AvmQEHtcsrKS_sfuuM2LTvLwIVnCiSjMxWGeCw2Bpa2ECAWA_3Bd3OuBD87im&stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&ur=b696e2&_nc_sid=58080a&oh=00_Af9fymOMzywVkM5MqErRbw4d8W6WSnnq5j2rKMh9W9l7zQ&oe=6A3ECA65",
+          "asset_type": "video",
+          "campaign_id": "52580745447017",
+          "creative_id": "27105618465709938",
+          "thumbnail_url": "https://scontent.fdel76-1.fna.fbcdn.net/v/t15.5256-10/648231857_840126499104133_8755798692402810191_n.jpg?_nc_cat=111&ccb=1-7&_nc_ohc=zAxBZ_kFr20Q7kNvwEVq59T&_nc_oc=AdrosaJMrvUvY3LXsfD4oY8GEx9fC1DCgvmAw2GvuRBuOitxNjOPTzLqVvyJbOtqW38&_nc_zt=23&_nc_ht=scontent.fdel76-1.fna&edm=AOgd6ZUEAAAA&_nc_gid=AO-h6oVqUZ4dYqqrg-DvGg&_nc_tpa=Q5bMBQEMlrqgWE1V937AvmQEHtcsrKS_sfuuM2LTvLwIVnCiSjMxWGeCw2Bpa2ECAWA_3Bd3OuBD87im&stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&ur=b696e2&_nc_sid=58080a&oh=00_Af9fymOMzywVkM5MqErRbw4d8W6WSnnq5j2rKMh9W9l7zQ&oe=6A3ECA65",
+          "video_source_url": "https://instagram.fdel76-1.fna.fbcdn.net/o1/v/t2/f2/m366/AQNaKgGS-E-LgdSRwmILQKa4bv17JwUlVMEnZdaW0k4pqPkEP68mNcmcPXKAbnO_IZIBfjQ5xdf-LsTf8c8zV-mOFg3n8lfsBj1T1wqgrS4-0g.mp4?_nc_cat=101&_nc_oc=Adq_Q2iY9vdiGq3xpxMxYLTbd5jrV3Jc_tr99GLKNg3IcJZgdr-JtDKlpF6ibewIu6E&_nc_sid=5e9851&_nc_ht=instagram.fdel76-1.fna.fbcdn.net&_nc_ohc=tpljUbWsTeYQ7kNvwGkS-0b&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uQUQuQzMuNzIwLmRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHAiLCJ4cHZfYXNzZXRfaWQiOjEyNjY5MTk4MjUzNzIxOTUsImFzc2V0X2FnZV9kYXlzIjoxMDUsInZpX3VzZWNhc2VfaWQiOjEwNzk5LCJkdXJhdGlvbl9zIjoyMCwidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=1998f46acbf868ee&_nc_vs=HBksFQIYRWZiX2VwaGVtZXJhbC9EMDRDQTYyNjlCMjZGNTJDODE5QkFDODY5N0Y5RDM5Q19tdF8xX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAVAhhAZmJfcGVybWFuZW50L0M0NEI2QjA4ODZFNEFGODYwNUIxNzc3NTc0NDlGQTg5X2F1ZGlvX2Rhc2hpbml0Lm1wNBUCAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbG0LOiuJDABBUCKAJDMywXQDQKPXCj1woYGWRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHARAHXwB2XeqAEA&_nc_gid=ZePRdF6x0BG4rie7iKFGmw&edm=AIZKd-4EAAAA&_nc_zt=28&oh=00_Af_-g11Sw1T5bdiP5d1l1YXurz6Gbwlf2AUHDa_P_E1XQQ&oe=6A3EE3A3"
+        },
+        "ad_id": "52582327109817",
+        "crystals": {
+          "copy": "Co-designed with GIVA The boAt Chrome Ivory, co-designed with GIVA, is crafted for women whose presence speaks before they do, featuring\n\n•⁠  ⁠a stunning 1.7\" AMOLED display\n•⁠  ⁠1000 nits peak brightness\n•⁠  ⁠a limited-edition 925 silver charm on select variants\n\nBecause elegance lies in the way you wear your charm.",
+          "hook": "aspirational",
+          "mode": "studio",
+          "mood": "elegant",
+          "pace": "moderate",
+          "audio": "silent",
+          "music": "unknown",
+          "offer": "new_collection",
+          "colors": [
+            "black",
+            "white",
+            "green",
+            "gold"
+          ],
+          "talent": "no_people",
+          "visual": "product_showcase",
+          "transcript": "Thanks for watching!",
+          "environment": "unknown"
+        },
+        "eligibility": {
+          "analytics": true
+        },
+        "performance": {}
+      },
+      {
+        "ad": {
+          "ad_id": "52580745447417",
+          "status": "ACTIVE",
+          "caption": "The boAt Chrome Ivory, co-designed with GIVA, is crafted for women whose presence speaks before they do, featuring\n\n•⁠  ⁠a stunning 1.7\" AMOLED display\n•⁠  ⁠1000 nits peak brightness\n•⁠  ⁠a limited-edition 925 silver charm on select variants\n\nBecause elegance lies in the way you wear your charm.",
+          "adset_id": "52580745447217",
+          "headline": "Co-designed with GIVA",
+          "video_id": "1480796890117788",
+          "media_url": "https://scontent.fdel76-1.fna.fbcdn.net/v/t15.5256-10/648231857_840126499104133_8755798692402810191_n.jpg?_nc_cat=111&ccb=1-7&_nc_ohc=zAxBZ_kFr20Q7kNvwEVq59T&_nc_oc=AdrosaJMrvUvY3LXsfD4oY8GEx9fC1DCgvmAw2GvuRBuOitxNjOPTzLqVvyJbOtqW38&_nc_zt=23&_nc_ht=scontent.fdel76-1.fna&edm=AOgd6ZUEAAAA&_nc_gid=AO-h6oVqUZ4dYqqrg-DvGg&_nc_tpa=Q5bMBQEMlrqgWE1V937AvmQEHtcsrKS_sfuuM2LTvLwIVnCiSjMxWGeCw2Bpa2ECAWA_3Bd3OuBD87im&stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&ur=b696e2&_nc_sid=58080a&oh=00_Af9fymOMzywVkM5MqErRbw4d8W6WSnnq5j2rKMh9W9l7zQ&oe=6A3ECA65",
+          "asset_type": "video",
+          "campaign_id": "52580745447017",
+          "creative_id": "1314822520577929",
+          "thumbnail_url": "https://scontent.fdel76-1.fna.fbcdn.net/v/t15.5256-10/648231857_840126499104133_8755798692402810191_n.jpg?_nc_cat=111&ccb=1-7&_nc_ohc=zAxBZ_kFr20Q7kNvwEVq59T&_nc_oc=AdrosaJMrvUvY3LXsfD4oY8GEx9fC1DCgvmAw2GvuRBuOitxNjOPTzLqVvyJbOtqW38&_nc_zt=23&_nc_ht=scontent.fdel76-1.fna&edm=AOgd6ZUEAAAA&_nc_gid=AO-h6oVqUZ4dYqqrg-DvGg&_nc_tpa=Q5bMBQEMlrqgWE1V937AvmQEHtcsrKS_sfuuM2LTvLwIVnCiSjMxWGeCw2Bpa2ECAWA_3Bd3OuBD87im&stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&ur=b696e2&_nc_sid=58080a&oh=00_Af9fymOMzywVkM5MqErRbw4d8W6WSnnq5j2rKMh9W9l7zQ&oe=6A3ECA65",
+          "video_source_url": "https://instagram.fdel76-1.fna.fbcdn.net/o1/v/t2/f2/m366/AQNaKgGS-E-LgdSRwmILQKa4bv17JwUlVMEnZdaW0k4pqPkEP68mNcmcPXKAbnO_IZIBfjQ5xdf-LsTf8c8zV-mOFg3n8lfsBj1T1wqgrS4-0g.mp4?_nc_cat=101&_nc_oc=Adq_Q2iY9vdiGq3xpxMxYLTbd5jrV3Jc_tr99GLKNg3IcJZgdr-JtDKlpF6ibewIu6E&_nc_sid=5e9851&_nc_ht=instagram.fdel76-1.fna.fbcdn.net&_nc_ohc=tpljUbWsTeYQ7kNvwGkS-0b&efg=eyJ2ZW5jb2RlX3RhZyI6Inhwdl9wcm9ncmVzc2l2ZS5JTlNUQUdSQU0uQUQuQzMuNzIwLmRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHAiLCJ4cHZfYXNzZXRfaWQiOjEyNjY5MTk4MjUzNzIxOTUsImFzc2V0X2FnZV9kYXlzIjoxMDUsInZpX3VzZWNhc2VfaWQiOjEwNzk5LCJkdXJhdGlvbl9zIjoyMCwidXJsZ2VuX3NvdXJjZSI6Ind3dyJ9&ccb=17-1&vs=1998f46acbf868ee&_nc_vs=HBksFQIYRWZiX2VwaGVtZXJhbC9EMDRDQTYyNjlCMjZGNTJDODE5QkFDODY5N0Y5RDM5Q19tdF8xX3ZpZGVvX2Rhc2hpbml0Lm1wNBUAAsgBEgAVAhhAZmJfcGVybWFuZW50L0M0NEI2QjA4ODZFNEFGODYwNUIxNzc3NTc0NDlGQTg5X2F1ZGlvX2Rhc2hpbml0Lm1wNBUCAsgBEgAoABgAGwKIB3VzZV9vaWwBMRJwcm9ncmVzc2l2ZV9yZWNpcGUBMRUAACbG0LOiuJDABBUCKAJDMywXQDQKPXCj1woYGWRhc2hfaDI2NC1iYXNpYy1nZW4yXzcyMHARAHXwB2XeqAEA&_nc_gid=zNDALRZXV9EtQh0VLkXYcw&edm=AIZKd-4EAAAA&_nc_zt=28&oh=00_Af-E571CQxYn2TfWIlnNRjZXEWDScXjx1QnMnS3eYReO6Q&oe=6A3EE3A3"
+        },
+        "ad_id": "52580745447417",
+        "crystals": {
+          "copy": "Co-designed with GIVA The boAt Chrome Ivory, co-designed with GIVA, is crafted for women whose presence speaks before they do, featuring\n\n•⁠  ⁠a stunning 1.7\" AMOLED display\n•⁠  ⁠1000 nits peak brightness\n•⁠  ⁠a limited-edition 925 silver charm on select variants\n\nBecause elegance lies in the way you wear your charm.",
+          "hook": "aspirational",
+          "mode": "studio",
+          "mood": "elegant",
+          "pace": "moderate",
+          "audio": "unknown",
+          "music": "unknown",
+          "offer": "new_collection",
+          "colors": [
+            "black",
+            "white",
+            "green",
+            "purple"
+          ],
+          "talent": "no_people",
+          "visual": "product_showcase",
+          "transcript": "Thanks for watching!",
+          "environment": "unknown"
+        },
+        "eligibility": {
+          "analytics": true
+        },
+        "performance": {}
+      }
+    ],
+    "creative_library": [
+      {
+        "ad_id": "52582327109817",
+        "crystals": {
+          "copy": "Co-designed with GIVA The boAt Chrome Ivory, co-designed with GIVA, is crafted for women whose presence speaks before they do, featuring\n\n•⁠  ⁠a stunning 1.7\" AMOLED display\n•⁠  ⁠1000 nits peak brightness\n•⁠  ⁠a limited-edition 925 silver charm on select variants\n\nBecause elegance lies in the way you wear your charm.",
+          "hook": "aspirational",
+          "mode": "studio",
+          "mood": "elegant",
+          "pace": "moderate",
+          "audio": "silent",
+          "music": "unknown",
+          "offer": "new_collection",
+          "colors": [
+            "black",
+            "white",
+            "green",
+            "gold"
+          ],
+          "talent": "no_people",
+          "visual": "product_showcase",
+          "transcript": "Thanks for watching!",
+          "environment": "unknown"
+        },
+        "asset_type": "video",
+        "transcript": "Thanks for watching!",
+        "creative_id": "27105618465709938",
+        "vision_summary": "The ad showcases the boAt Chrome Ivory watch with a focus on elegance and design, featuring a limited-edition charm.",
+        "extraction_source": "video"
+      },
+      {
+        "ad_id": "52580745447417",
+        "crystals": {
+          "copy": "Co-designed with GIVA The boAt Chrome Ivory, co-designed with GIVA, is crafted for women whose presence speaks before they do, featuring\n\n•⁠  ⁠a stunning 1.7\" AMOLED display\n•⁠  ⁠1000 nits peak brightness\n•⁠  ⁠a limited-edition 925 silver charm on select variants\n\nBecause elegance lies in the way you wear your charm.",
+          "hook": "aspirational",
+          "mode": "studio",
+          "mood": "elegant",
+          "pace": "moderate",
+          "audio": "unknown",
+          "music": "unknown",
+          "offer": "new_collection",
+          "colors": [
+            "black",
+            "white",
+            "green",
+            "purple"
+          ],
+          "talent": "no_people",
+          "visual": "product_showcase",
+          "transcript": "Thanks for watching!",
+          "environment": "unknown"
+        },
+        "asset_type": "video",
+        "transcript": "Thanks for watching!",
+        "creative_id": "1314822520577929",
+        "vision_summary": "The ad features an elegant showcase of the boAt Chrome Ivory watch, highlighting its design and collaboration with GIVA.",
+        "extraction_source": "video"
+      }
+    ],
+    "reporting_window": "last_3_months",
+    "winning_patterns": [],
+    "media_fetch_results": [
+      {
+        "ad_id": "52582327109817",
+        "error": null,
+        "media_url_hash": "b2e300f22bb3e799a77fd19409a6f26681dfed2afb44b2b68005aa0fac89a4df",
+        "download_status": "ok"
+      },
+      {
+        "ad_id": "52580745447417",
+        "error": null,
+        "media_url_hash": "b2e300f22bb3e799a77fd19409a6f26681dfed2afb44b2b68005aa0fac89a4df",
+        "download_status": "ok"
+      }
+    ],
+    "platform_performance": [],
+    "cross_crystal_patterns": [
+      {
+        "ad_count": 1,
+        "combination": {
+          "embedding_similarity": ">=0.85"
+        },
+        "avg_performance_score": null
+      }
+    ],
+    "include_paused_campaigns": false
+  },
+  "created_at": "2026-06-22T10:19:29.098754Z",
+  "updated_at": "2026-06-22T10:21:48.571185Z"
+}
