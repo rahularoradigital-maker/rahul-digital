@@ -10,6 +10,7 @@ export type { Verdict } from "../rules/verdict.ts";
 import { wasteRollup, budgetConcentration, type ConcentrationResult, type AdSummary } from "../rules/account.ts";
 import type { DiagnoseResult } from "../causality.ts";
 import type { Objective } from "../rules/comparator.ts";
+import { objectiveFamily, objectiveReason } from "../rules/objective-metrics.ts";
 import type { FatigueRead } from "../scoring/fatigue.ts";
 import { decide, type Decision } from "../scoring/decision.ts";
 import type { Explanation } from "../scoring/rubrics.ts";
@@ -220,32 +221,46 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
   const scored: CockpitAd[] = ads.map((input) => {
     const v = verdict(input, weights);
     const roas = roasOf(input.spendRs, input.revenueRs);
-    // Conversion ads keep the rigorous verdict engine (ROAS + causality ladder). Non-conversion
-    // ads (engagement/traffic/awareness/leads/installs) have no ROAS or purchase gate, so the
-    // verdict engine collapsed every one to Hold/35%. Route those through the objective-aware
-    // decision engine: it decides on the objective's own score + the day-wise fatigue read, so
-    // they get real Scale/Continue/Refresh/Pause calls with varied, data-volume-based confidence.
+    // Judge each ad on its OBJECTIVE'S metric family (rules/objective-metrics). "sales"
+    // objectives (conversion / sale / catalog) keep the rigorous verdict engine (ROAS + causality
+    // ladder). "awareness" objectives (awareness/engagement/traffic/leads/installs) have no ROAS
+    // or purchase gate, so the verdict engine collapsed every one to Hold/35% and could flag them
+    // a loser for a 0 ROAS they were never optimised to earn. Route those through the objective-
+    // aware decision engine, which reads CPM/CTR/CPC/LPV (via healthScore) + the day-wise fatigue
+    // trajectory, so they get real Scale/Continue/Refresh/Pause calls. Every verdict's "why" names
+    // the objective-appropriate read, so the reason is explainable, never a silent ROAS judgement.
+    const reason = objectiveReason(input.objective);
     let vVerdict = v.verdict;
     let confidence = v.confidence;
-    let why = v.why;
+    let why = [reason, ...v.why];
     let action = actionFor(v.verdict, input);
-    if (input.objective !== "conversion") {
-      const d = decide({
-        objective: input.objective,
-        objectiveScore: input.healthScore ?? v.score,
-        performance: input.performance,
-        fatigueState: input.fatigueRead?.state ?? "watch",
-        fatigueTrajectory: input.fatigueRead?.trajectory ?? "stable",
-        fatigueSufficiency: input.fatigueRead?.sufficiency ?? "insufficient_data",
-        roas,
-        conversions: input.conversions,
-        days: input.days,
-        roomToScale: input.roomToScale,
-      });
-      vVerdict = DECISION_VERDICT[d.action];
-      confidence = d.confidence;
-      why = d.why;
-      action = { label: DECISION_LABEL[d.action], priority: d.priority, why: d.why[0] ?? "" };
+    if (objectiveFamily(input.objective) === "awareness") {
+      if (input.healthScore === null) {
+        // No fabrication: the objective's own metric could not be formed (e.g. no impressions),
+        // so there is no honest awareness read. Hold and gather more; never fall back to the
+        // ROAS-led CreativeScore for an ad that was never optimised to convert.
+        vVerdict = "do_not_kill_yet";
+        confidence = 0.3;
+        why = [reason, "Not enough signal on the objective's own metric yet - hold."];
+        action = { label: "Hold - gather more data", priority: "WATCH", why: why[1] };
+      } else {
+        const d = decide({
+          objective: input.objective,
+          objectiveScore: input.healthScore ?? v.score,
+          performance: input.performance,
+          fatigueState: input.fatigueRead?.state ?? "watch",
+          fatigueTrajectory: input.fatigueRead?.trajectory ?? "stable",
+          fatigueSufficiency: input.fatigueRead?.sufficiency ?? "insufficient_data",
+          roas,
+          conversions: input.conversions,
+          days: input.days,
+          roomToScale: input.roomToScale,
+        });
+        vVerdict = DECISION_VERDICT[d.action];
+        confidence = d.confidence;
+        why = [reason, ...d.why];
+        action = { label: DECISION_LABEL[d.action], priority: d.priority, why: d.why[0] ?? "" };
+      }
     }
     return {
       id: input.id,
