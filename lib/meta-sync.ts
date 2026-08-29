@@ -22,6 +22,7 @@ import { marginalScaling, type MarginalRead } from "./scoring/marginal.ts";
 import { buildDailySeries, type DailyInputRow, type DailyPoint } from "./cockpit/daily-series.ts";
 import { levelFunnels, type LevelFunnels } from "./cockpit/level-funnel.ts";
 import { assessDataQuality, type DataQuality, type QualityRow } from "./scoring/data-quality.ts";
+import { buildCockpitFromStore } from "./cockpit/from-store.ts";
 
 // The user's currently-active Meta account (most-recently connected) and its token.
 // One user OAuth token works across all their ad accounts, so the account picker and
@@ -212,6 +213,30 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // account timezone.
     const since = window ? window.since : daysAgo(lookbackDays, tz);
     const until = window ? window.until : todayIn(tz);
+
+    // STAGE 2b: serve from the COMPLETE day-wise store when it has data for this account+window - every
+    // spending ad, no top-N cap. Returns null when the store is empty (not yet synced), in which case we
+    // fall through to the on-demand pull below, so the app is never worse than before, only more complete.
+    try {
+      const fromStore = await buildCockpitFromStore({
+        userId,
+        accountExternalId: acct.external_id,
+        accountName: acct.name ?? `act_${acct.external_id}`,
+        since,
+        until,
+        catalog,
+        weights,
+        objectives,
+        campaignIds: campaignId ? campaignId.split(",").filter(Boolean) : undefined,
+      });
+      if (fromStore) {
+        perfMark("from-store (complete-coverage)", tp);
+        return fromStore;
+      }
+    } catch (e) {
+      // Never let a store-read issue break the page: fall through to the live pull.
+      if (PERF) console.log("[perf] store read failed, falling back to live pull", e);
+    }
     // Which campaigns to include: the campaign picker, or the objective picker mapped to
     // the account's campaigns of those objectives. undefined = all; [] = matched nothing.
     const campaignIds = await resolveCampaignIds(acct.external_id, token, campaignId, objectives);
