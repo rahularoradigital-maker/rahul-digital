@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { syncShopifyProducts } from "@/lib/creative-production/shopify/sync";
 import { syncPublicShopifyProducts } from "@/lib/creative-production/shopify/public-sync";
-import { readShopifyConnection, getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
+import { readShopifyConnection, getShopifyConnectionStatus, saveShopifyConnection } from "@/lib/creative-production/shopify/store";
 
 // Creative Production — re-sync the connected store's catalogue into shopify_products. Handles BOTH connection
 // kinds: a token connection uses the Admin GraphQL sync; a URL-only (public feed) connection re-reads
@@ -22,7 +22,10 @@ export async function POST() {
     : await (async () => {
         const status = await getShopifyConnectionStatus(user.id);
         if (!status) return { ok: false, productsSeen: 0, shopDomain: "", error: "No connected store." };
-        return syncPublicShopifyProducts(user.id, status.shopDomain);
+        const r = await syncPublicShopifyProducts(user.id, status.shopDomain);
+        // Backfill currency on the connection so an already-connected store shows the right symbol.
+        if (r.ok && r.currency && r.currency !== status.currency) await saveShopifyConnection(user.id, status.shopDomain, null, "public_feed", "2026-07", "url_public", r.currency);
+        return r;
       })();
 
   if (!res.ok) return NextResponse.json({ ok: false, error: res.error ?? "Sync failed." }, { status: 502 });
