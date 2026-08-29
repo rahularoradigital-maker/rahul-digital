@@ -904,6 +904,33 @@ export type AdMetricRow = {
  * guard, sized far above any real account). Optional campaign filter for scoped syncs. This is a BACKGROUND
  * job's tool (the cron/worker has the time budget); it must NOT be called on a page-load request path.
  */
+/**
+ * Every ad id with spend in the window - the COMPLETE list, paginated (no top-N cap). This is a light
+ * query (account totals per ad, NOT day-wise), so it returns fast even for thousands of ads. The caller
+ * chunks these ids and pulls day-wise per chunk. Optional campaign filter for scoped syncs.
+ */
+export async function listAllSpendingAdIds(
+  accountExternalId: string,
+  since: string,
+  token: TokenSet,
+  until?: string,
+  campaignIds?: string[],
+  maxPages = 60,
+): Promise<string[]> {
+  if (campaignIds && campaignIds.length === 0) return [];
+  const params: Record<string, string> = {
+    level: "ad",
+    fields: "ad_id,spend",
+    time_range: JSON.stringify({ since, until: until ?? today() }),
+    limit: "500",
+  };
+  if (campaignIds) params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }]);
+  const rows = await graphGetAll<{ ad_id?: string; spend?: string }>(`act_${accountExternalId}/insights`, token.accessToken, params, maxPages);
+  const ids = new Set<string>();
+  for (const r of rows) if (r.ad_id && Number(r.spend || 0) > 0) ids.add(r.ad_id);
+  return [...ids];
+}
+
 type DayWiseRaw = MetaInsightRow & {
   ad_id: string;
   campaign_id?: string;
@@ -949,10 +976,10 @@ export async function streamAccountDayWiseRows(
   token: TokenSet,
   onBatch: (rows: AdMetricRow[]) => Promise<void>,
   until?: string,
-  campaignIds?: string[],
+  adIds?: string[],
   maxPages = 400,
 ): Promise<number> {
-  if (campaignIds && campaignIds.length === 0) return 0;
+  if (adIds && adIds.length === 0) return 0;
   const params: Record<string, string> = {
     level: "ad",
     fields:
@@ -961,7 +988,10 @@ export async function streamAccountDayWiseRows(
     time_increment: "1",
     limit: "500",
   };
-  if (campaignIds) params.filtering = JSON.stringify([{ field: "campaign.id", operator: "IN", value: campaignIds }]);
+  // Filter to a CHUNK of ad ids: the unfiltered whole-account day-wise query is too heavy for Meta to
+  // return a page within the request timeout (it computes every ad). Filtering to ~40 ids per call keeps
+  // each page fast (this is what the cockpit pull does). The caller chunks all ids and calls per chunk.
+  if (adIds) params.filtering = JSON.stringify([{ field: "ad.id", operator: "IN", value: adIds }]);
   let after: string | undefined;
   let total = 0;
   for (let page = 0; page < maxPages; page++) {

@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { streamAccountDayWiseRows, type AdMetricRow } from "@/lib/meta-source";
+import { streamAccountDayWiseRows, listAllSpendingAdIds, type AdMetricRow } from "@/lib/meta-source";
 import type { TokenSet } from "@/lib/ad-source";
 
 // Ingestion pipeline (roadmap #1): pull EVERY ad's day-wise metrics for an account into the ad_metrics
@@ -16,6 +16,7 @@ import type { TokenSet } from "@/lib/ad-source";
 const BACKFILL_DAYS = 90; // the app-wide comparison window; first sync backfills this much history
 const RESYNC_TAIL_DAYS = 4; // re-pull this many recent days each run to absorb late attribution
 const UPSERT_BATCH = 500; // rows per upsert call, so a huge account never sends one giant payload
+const AD_CHUNK = 40; // ad ids per day-wise pull: keeps each Meta page fast enough to beat the request timeout
 
 function isoDaysAgo(n: number): string {
   return new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
@@ -85,22 +86,28 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
     updated_at: new Date().toISOString(),
   });
 
-  // Stream page-by-page and upsert each page immediately: the store fills as the pull runs, so a run cut
-  // short still makes progress (and the next run resumes), and a huge account never buffers in memory.
   const seenAds = new Set<string>();
   let totalRows = 0;
+  const persist = async (batch: AdMetricRow[]) => {
+    const active = batch.filter((r) => r.spend > 0 || r.impressions > 0);
+    if (active.length === 0) return;
+    for (let i = 0; i < active.length; i += UPSERT_BATCH) {
+      const chunk = active.slice(i, i + UPSERT_BATCH).map(toDbRow);
+      const { error } = await admin.from("ad_metrics").upsert(chunk, { onConflict: "user_id,account_external_id,ad_id,date" });
+      if (error) throw new Error(`upsert: ${error.message}`);
+    }
+    active.forEach((r) => seenAds.add(r.adId));
+    totalRows += active.length;
+  };
   try {
-    await streamAccountDayWiseRows(accountExternalId, since, token, async (batch) => {
-      const active = batch.filter((r) => r.spend > 0 || r.impressions > 0);
-      if (active.length === 0) return;
-      for (let i = 0; i < active.length; i += UPSERT_BATCH) {
-        const chunk = active.slice(i, i + UPSERT_BATCH).map(toDbRow);
-        const { error } = await admin.from("ad_metrics").upsert(chunk, { onConflict: "user_id,account_external_id,ad_id,date" });
-        if (error) throw new Error(`upsert: ${error.message}`);
-      }
-      active.forEach((r) => seenAds.add(r.adId));
-      totalRows += active.length;
-    });
+    // Enumerate EVERY spending ad (complete, no cap), then pull day-wise in fast filtered chunks - the
+    // whole-account day-wise query is too heavy for Meta to page within the timeout, but ~40 ids at a time
+    // pages quickly. Each page is upserted immediately, so a run cut short still persists what it pulled.
+    const adIds = await listAllSpendingAdIds(accountExternalId, since, token);
+    for (let i = 0; i < adIds.length; i += AD_CHUNK) {
+      const chunk = adIds.slice(i, i + AD_CHUNK);
+      await streamAccountDayWiseRows(accountExternalId, since, token, persist, undefined, chunk);
+    }
   } catch (e) {
     const error = e instanceof Error ? e.message : "sync failed";
     await writeState({ last_ok: false, last_error: error.slice(0, 500), last_rows: totalRows });
