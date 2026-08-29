@@ -1,5 +1,5 @@
 // The small, single-purpose creative agents (stage 7). Each agent owns ONE narrow slice of
-// the 42-attribute set, has its own focused instruction + schema, and reads only what it
+// the 22-attribute set, has its own focused instruction + schema, and reads only what it
 // needs. No agent depends on another except the funnel classifier, which consumes the
 // upstream agents' findings (that data hand-off is the point of the orchestration layer).
 // One agent failing returns {} for its slice - the rest still produce their fields.

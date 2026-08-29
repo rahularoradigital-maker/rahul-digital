@@ -7,7 +7,7 @@ import { probeGemini, GEMINI_MODEL } from "@/lib/gemini";
 import type { CreativeAttributes } from "@/lib/competitors/types";
 
 // Stage 7 (LLM Creative Analysis): pick the top N creatives per brand and have Gemini read
-// each one, writing the 42-attribute set + TOF/MOF/BOF into competitor_creative_analysis.
+// each one, writing the 22-attribute set + TOF/MOF/BOF into competitor_creative_analysis.
 // Idempotent + cheap to resume: already-analyzed ads are skipped, and each request is capped
 // so it finishes inside the serverless window; the client can run it again to continue.
 

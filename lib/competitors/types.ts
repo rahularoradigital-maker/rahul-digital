@@ -28,32 +28,21 @@ export type NormalizedAd = {
   videoThumbUrl: string | null; // a video's preview frame
 };
 
-// The LLM Creative Analysis output (diagram stage 7): the 42-attribute set + funnel
-// classification for one creative. Written by the Gemini layer, read by stages 8-9.
-// funnelStage is TOF / MOF / BOF. Every field is the model's read of a REAL creative.
-export type CreativeAttributes = {
-  funnelStage: "TOF" | "MOF" | "BOF" | null;
-  hook: string | null;
-  hookType: string | null;
-  firstThreeSeconds: string | null;
-  messaging: string | null;
-  offer: string | null;
-  cta: string | null;
-  productVsHuman: string | null;
-  creatorTraits: string | null;
-  voiceAudio: string | null;
-  visualScene: string | null;
-  colorTypography: string | null;
-  branding: string | null;
-  painPoint: string | null;
-  benefit: string | null;
-  primaryEmotion: string | null;
-  socialProof: string | null;
-  storytelling: string | null;
-  editingPacing: string | null;
-  closing: string | null;
-  conversionIntent: string | null;
-  notes: string | null;
+// The LLM Creative Analysis output (diagram stage 7): the 22-attribute set + funnel classification
+// for one creative. Written by the Gemini layer, read by stages 8-9. funnelStage is TOF / MOF / BOF.
+// Every field is the model's read of a REAL creative. (ISSUE 20: comments/docs previously called this
+// "42 attributes" while the type had 22; the count is now single-sourced from the array below so the
+// contract can never drift again - see scripts/check-creative-attributes.ts.)
+export const CREATIVE_ATTRIBUTE_KEYS = [
+  "funnelStage", "hook", "hookType", "firstThreeSeconds", "messaging", "offer", "cta", "productVsHuman",
+  "creatorTraits", "voiceAudio", "visualScene", "colorTypography", "branding", "painPoint", "benefit",
+  "primaryEmotion", "socialProof", "storytelling", "editingPacing", "closing", "conversionIntent", "notes",
+] as const;
+
+// Derived from the array so the type and the runtime key list are one source of truth. funnelStage
+// carries its own enum; every other attribute is the model's free-text read (string | null).
+export type CreativeAttributes = { funnelStage: "TOF" | "MOF" | "BOF" | null } & {
+  [K in Exclude<(typeof CREATIVE_ATTRIBUTE_KEYS)[number], "funnelStage">]: string | null;
 };
 
 export type AnalyzedCreative = {

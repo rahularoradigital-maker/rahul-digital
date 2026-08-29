@@ -64,7 +64,7 @@ function buildCopy(media: CreativeMedia): string {
 }
 
 /**
- * Orchestrate the creative agents for one ad. Returns the merged 42-attribute set, or null
+ * Orchestrate the creative agents for one ad. Returns the merged 22-attribute set, or null
  * if every agent failed (so the caller skips this ad rather than storing an empty read).
  */
 export async function analyzeCreative(media: CreativeMedia): Promise<CreativeAttributes | null> {

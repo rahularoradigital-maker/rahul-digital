@@ -1,7 +1,7 @@
 // Stages 4-6 (per-brand analytics) + the deterministic part of stage 8 (competitive
 // engine). Pure functions over NormalizedAd[] - no I/O, no fabrication. Everything is a
 // straight count or a set difference over real Ad Library ads; the LLM-written layers
-// (42-attribute creative analysis, SWOT, written recommendations) are gated on Gemini and
+// (22-attribute creative analysis, SWOT, written recommendations) are gated on Gemini and
 // are NOT computed here.
 
 import type { AnalyzedCreative, BrandAnalytics, BrandTraffic, CompetitorReport, Counted, MediaCategory, NormalizedAd } from "./types.ts";
