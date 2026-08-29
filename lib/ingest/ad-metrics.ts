@@ -23,7 +23,7 @@ function isoDaysAgo(n: number): string {
   return new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 }
 
-export type SyncResult = { adsSeen: number; rows: number; since: string; ok: boolean; error?: string };
+export type SyncResult = { adsSeen: number; rows: number; since: string; ok: boolean; error?: string; metaAds?: number; metaError?: string | null };
 
 /**
  * Sync one account's day-wise ad metrics into the ad_metrics store. Complete coverage: no top-N cap.
@@ -109,15 +109,22 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
   }
 
   // Metadata (name, status, parent names, creative, end date) for every ad, so the app can render + rank
-  // entirely from the DB. Best-effort: a metadata hiccup must not lose the metrics we just stored.
+  // entirely from the DB. Its outcome is RECORDED (meta_ads / meta_error) - a metadata failure is never a
+  // silent last_ok:true with an empty ad_meta again (that stranded the cockpit on the slow live-pull path).
+  // A metadata hiccup still never loses the metrics we just stored.
+  let metaAds = 0;
+  let metaError: string | null = null;
   try {
-    await syncAdMeta(userId, accountExternalId, token, ads, idMap);
+    const metaRes = await syncAdMeta(userId, accountExternalId, token, ads, idMap);
+    metaAds = metaRes.metaAds;
+    metaError = metaRes.error;
   } catch (e) {
+    metaError = e instanceof Error ? e.message : "ad_meta sync failed";
     console.error("[ingest] ad_meta sync failed (metrics still stored)", e);
   }
 
-  await writeState({ last_ok: true, last_error: null, last_synced_date: isoDaysAgo(0), ads_seen: seenAds.size, last_rows: totalRows });
-  return { adsSeen: seenAds.size, rows: totalRows, since, ok: true };
+  await writeState({ last_ok: true, last_error: null, last_synced_date: isoDaysAgo(0), ads_seen: seenAds.size, last_rows: totalRows, meta_ads: metaAds, meta_error: metaError ? metaError.slice(0, 500) : null });
+  return { adsSeen: seenAds.size, rows: totalRows, since, ok: true, metaAds, metaError };
 }
 
 // Sync per-ad METADATA (name, status, parent names, creative thumb + catalog flag, ad-set end date) into
@@ -130,8 +137,8 @@ async function syncAdMeta(
   token: TokenSet,
   ads: { adId: string; name: string }[],
   idMap: Map<string, { campaignId: string | null; adsetId: string | null }>,
-): Promise<void> {
-  if (ads.length === 0) return;
+): Promise<{ metaAds: number; error: string | null }> {
+  if (ads.length === 0) return { metaAds: 0, error: null };
   const admin = createAdminClient();
   const adIds = ads.map((a) => a.adId);
   const nameById = new Map(ads.map((a) => [a.adId, a.name]));
@@ -146,6 +153,20 @@ async function syncAdMeta(
     const ids = idMap.get(adId);
     const m = meta.get(adId);
     const c = creatives.get(adId);
+    // Per-ad, NEVER throw: one malformed creative must not lose the other ads' metadata. A bad
+    // fingerprint/thumb just leaves those two fields null - the ad is still stored, still analyzable.
+    let thumb: string | null = null;
+    let format: string | null = null;
+    let isCatalog = false;
+    if (c) {
+      try {
+        thumb = thumbUrlOf(c);
+        format = deterministicFingerprint(c).format; // for the creative-diversity read off the store
+        isCatalog = c.isCatalog ?? false;
+      } catch {
+        /* malformed creative -> leave format/thumb null, keep the row */
+      }
+    }
     return {
       user_id: userId,
       account_external_id: accountExternalId,
@@ -156,16 +177,26 @@ async function syncAdMeta(
       campaign_name: m?.campaignName ?? null,
       adset_id: ids?.adsetId ?? null,
       adset_name: m?.adsetName ?? null,
-      thumb_url: c ? thumbUrlOf(c) : null,
-      is_catalog: c?.isCatalog ?? false,
-      format: c ? deterministicFingerprint(c).format : null, // for the creative-diversity read off the store
+      thumb_url: thumb,
+      is_catalog: isCatalog,
+      format,
       adset_end_unix: ids?.adsetId ? (ends.get(ids.adsetId) ?? null) : null,
       updated_at: new Date().toISOString(),
     };
   });
+
+  // Upsert in batches; a failing batch is isolated (its error captured, not thrown) so the remaining
+  // batches still land, and the caller records how many rows made it + the first error for observability.
+  let written = 0;
+  let firstError: string | null = null;
   for (let i = 0; i < rows.length; i += UPSERT_BATCH) {
     const batch = rows.slice(i, i + UPSERT_BATCH);
     const { error } = await admin.from("ad_meta").upsert(batch, { onConflict: "user_id,account_external_id,ad_id" });
-    if (error) throw new Error(`ad_meta upsert: ${error.message}`);
+    if (error) {
+      if (!firstError) firstError = `ad_meta upsert: ${error.message}`;
+    } else {
+      written += batch.length;
+    }
   }
+  return { metaAds: written, error: firstError };
 }
