@@ -49,3 +49,30 @@ export function objectiveReason(objective: Objective): string {
     ? `Awareness/engagement ad: ${FAMILY_METRICS.awareness} are the read, not ROAS.`
     : `Conversion ad: ${FAMILY_METRICS.sales} are the read.`;
 }
+
+// The single headline metric to SHOW for an ad, matched to its objective - so an awareness / engagement
+// ad never displays a "0.0x ROAS" that reads as a ROAS verdict. Sales -> ROAS; awareness -> CPM (reach
+// cost); traffic/leads/app_installs -> link CPC (click cost); engagement -> CTR. Value is "n/a" (never a
+// fabricated number) when the inputs to form it are absent (e.g. an old cache without impressions/clicks).
+export type ObjectiveHeadline = { label: string; value: string };
+export function objectiveHeadline(
+  objective: Objective,
+  m: { spendRs: number; roas: number | null; impressions?: number; clicks?: number },
+): ObjectiveHeadline {
+  const impr = m.impressions ?? 0;
+  const clicks = m.clicks ?? 0;
+  if (objectiveFamily(objective) === "sales") {
+    return { label: "ROAS", value: m.roas == null ? "n/a" : `${m.roas.toFixed(1)}x` };
+  }
+  if (objective === "awareness") {
+    const cpm = impr > 0 ? (m.spendRs / impr) * 1000 : null;
+    return { label: "CPM", value: cpm == null ? "n/a" : `₹${Math.round(cpm)}` };
+  }
+  if (objective === "traffic" || objective === "leads" || objective === "app_installs") {
+    const cpc = clicks > 0 ? m.spendRs / clicks : null;
+    return { label: "CPC", value: cpc == null ? "n/a" : `₹${cpc.toFixed(1)}` };
+  }
+  // engagement
+  const ctr = impr > 0 ? (clicks / impr) * 100 : null;
+  return { label: "CTR", value: ctr == null ? "n/a" : `${ctr.toFixed(2)}%` };
+}

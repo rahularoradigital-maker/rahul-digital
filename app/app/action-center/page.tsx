@@ -5,6 +5,7 @@ import { VERDICT_STYLE, PRIORITY_STYLE } from "@/components/cockpit/styles";
 import { AdLink } from "@/components/cockpit/AdLink";
 import { JudgmentButtons } from "@/components/app/judgment-buttons";
 import { rupees } from "@/lib/format";
+import { objectiveHeadline } from "@/lib/rules/objective-metrics";
 
 // Action Center: the full ranked action queue (rulebook 7.1 Scale/Continue/Stop
 // gates + 5.6 law "every screen ends in a ranked action with a number"). Renders
@@ -132,7 +133,7 @@ function ActionSection({
               <div className="flex shrink-0 flex-col items-end gap-1.5">
                 {ad && <span className={`rounded-full px-3 py-1 text-xs font-semibold ${VERDICT_STYLE[ad.verdict].cls}`}>{VERDICT_STYLE[ad.verdict].label}</span>}
                 <span className="text-xs text-[var(--ink-muted)] tabular-nums">
-                  {ad ? rupees.format(ad.spendRs) : "n/a"} · {ad?.roas == null ? "n/a" : `${ad.roas.toFixed(1)}x`}
+                  {ad ? `${rupees.format(ad.spendRs)} · ${(() => { const h = objectiveHeadline(ad.objective, ad); return `${h.value} ${h.label}`; })()}` : "n/a"}
                 </span>
               </div>
             </div>

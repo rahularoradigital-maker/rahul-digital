@@ -48,6 +48,8 @@ export type CockpitAdInput = VerdictInput & {
   spendRs: number;
   revenueRs: number;
   wastedRs: number; // per-ad wasted spend (upstream waste calc; sample supplies it)
+  impressions?: number; // for the objective-appropriate headline metric (CPM/CTR/CPC), never ROAS-only
+  clicks?: number;
   // Absolute 0-100 objective score (scoring.healthScoreOf): ROAS-vs-benchmark for
   // conversion, CTR-vs-benchmark for click objectives, reach+freshness for awareness.
   // Optional so hand-built fixtures / the sample account fall back to CreativeScore.
@@ -76,6 +78,8 @@ export type CockpitAd = {
   revenueRs: number;
   roas: number | null; // null when spend is 0 (never a fabricated ratio)
   conversions: number; // purchases in the window (real, from the day-wise rows)
+  impressions?: number; // for the objective-appropriate headline (CPM/CTR/CPC); optional -> old cache degrades
+  clicks?: number;
   verdict: Verdict;
   score: number;
   confidence: number;
@@ -285,6 +289,8 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       revenueRs: input.revenueRs,
       roas,
       conversions: input.conversions,
+      impressions: input.impressions,
+      clicks: input.clicks,
       verdict: vVerdict,
       score: v.score,
       confidence,

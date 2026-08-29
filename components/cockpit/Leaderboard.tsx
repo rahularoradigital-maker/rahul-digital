@@ -5,6 +5,7 @@ import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
 import { CollapsibleRows } from "./CollapsibleRows";
 import { CreativeThumb } from "./CreativeThumb";
+import { objectiveHeadline } from "@/lib/rules/objective-metrics";
 
 export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: CockpitAd[]; rupees: Intl.NumberFormat; accountId?: string; dateParam?: string }) {
   return (
@@ -55,8 +56,8 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
               </div>
               <div className="flex flex-col items-end gap-1.5">
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${v.cls}`}>{v.label}</span>
-                <span className="text-xs text-[var(--ink-muted)] tabular-nums">
-                  {ad.roas === null ? "n/a" : `${ad.roas.toFixed(1)}x`}
+                <span className="text-xs text-[var(--ink-muted)] tabular-nums" title={objectiveHeadline(ad.objective, ad).label}>
+                  {(() => { const h = objectiveHeadline(ad.objective, ad); return `${h.value} ${h.label}`; })()}
                 </span>
                 {ad.winner && (
                   <span

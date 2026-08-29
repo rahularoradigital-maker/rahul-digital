@@ -213,6 +213,8 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
       spendRs: Math.round(a.spend),
       revenueRs: Math.round(a.revenue),
       wastedRs: Math.round(wastedRs),
+      impressions: a.impressions,
+      clicks: a.clicks,
     };
   });
 }
