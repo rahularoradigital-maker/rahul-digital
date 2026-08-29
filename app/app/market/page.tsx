@@ -2,6 +2,7 @@ import { Tabs } from "@/components/app/tabs";
 import { BrandSection } from "@/components/app/market/brand-section";
 import { CompetitorsSection } from "@/components/app/market/competitors-section";
 import { VoiceSection } from "@/components/app/market/voice-section";
+import { PositioningSection } from "@/components/app/market/positioning-section";
 
 // Market: Brand understanding (the context that will drive discovery) + Competitors + Competitor
 // Voice, consolidated into one tabbed page.
@@ -17,12 +18,21 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
       <Tabs
         tabs={[
           { key: "brand", label: "Brand" },
+          { key: "positioning", label: "ICP & Pillars" },
           { key: "competitors", label: "Competitors" },
           { key: "voice", label: "Competitor Voice" },
         ]}
       />
 
-      {tab === "brand" ? <BrandSection /> : tab === "competitors" ? <CompetitorsSection /> : <VoiceSection />}
+      {tab === "brand" ? (
+        <BrandSection />
+      ) : tab === "positioning" ? (
+        <PositioningSection />
+      ) : tab === "competitors" ? (
+        <CompetitorsSection />
+      ) : (
+        <VoiceSection />
+      )}
     </div>
   );
 }
