@@ -52,7 +52,12 @@ export async function POST(request: NextRequest) {
   };
 
   const common =
-    " Use ONLY the DATA below - the brand's REAL Meta ads. Ad names encode the product, offer, format, and influencer. Never invent a product, number, or fact not derivable from the DATA; cite real ad names as evidence. Plain Indian English, rupees for money, no hype words, no em dashes.";
+    " Use ONLY the DATA below - the brand's REAL Meta ads. Separate two kinds of evidence: FACTS you can" +
+    " measure (ROAS, spend, the ad names and verdicts exactly as given) versus INFERENCES you read FROM" +
+    " the ad names (the product, offer, positioning). Ad names are HINTS, not proof - state anything derived" +
+    " from a name as an inference ('the names suggest', 'appears to'), never as confirmed fact, and flag" +
+    " where it needs checking against the real creative. Never invent a product, number, or fact not in the" +
+    " DATA; cite real ad names as evidence. Plain Indian English, rupees for money, no hype words, no em dashes.";
   const prompt =
     type === "brand"
       ? "You are a brand strategist reading a D2C brand's live Meta ads." +
