@@ -21,6 +21,7 @@ export type RealAd = {
   adsetName?: string; // parent ad set / campaign NAMES, so money figures trace to readable entities
   campaignName?: string;
   active?: boolean; // current delivery status: true = ACTIVE, false = paused/archived, undefined = unknown
+  thumbUrl?: string | null; // best still image for the leaderboard thumbnail (image, else video thumb); null when none
 };
 
 type Agg = {
@@ -187,6 +188,7 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
       adsetName: ad.adsetName,
       campaignName: ad.campaignName,
       active: ad.active,
+      thumbUrl: ad.thumbUrl,
       objective,
       performance,
       trend: trendScore(ad.rows, objective),

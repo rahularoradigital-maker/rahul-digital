@@ -11,7 +11,7 @@ import { createSingleFlight } from "./single-flight.ts";
 import { isRenderableShape } from "./cockpit/renderable.ts";
 import { todayIn, daysAgo } from "./date-window.ts";
 import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, fetchAccountTimezone, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
-import { deterministicFingerprint, excludeCatalogAds, type CreativeAsset } from "./creative/fingerprint.ts";
+import { deterministicFingerprint, excludeCatalogAds, thumbUrlOf, type CreativeAsset } from "./creative/fingerprint.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
@@ -261,6 +261,10 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     const nowSec = Math.floor(Date.now() / 1000);
     const adMeta = await metaPromise;
     tp = perfMark("awaitAdMeta", tp);
+    // Best still image per ad for the leaderboard thumbnail (image, else video thumb). creativesPromise
+    // has been in flight since above; awaiting it here overlaps the rest and it is awaited again later
+    // (ownDiversity) with no extra cost. Best-effort: a missing asset -> no thumbnail (never a placeholder).
+    const creativeAssets = await creativesPromise;
     const realAds: RealAd[] = top.map((ad) => {
       const entry = rowsByAd.get(ad.externalId);
       const endUnix = entry?.adsetId ? adsetEnds.get(entry.adsetId) : undefined;
@@ -270,6 +274,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       // hide a real budget leak just because a status lookup failed.
       const m = adMeta.get(ad.externalId);
       const active = m?.status === undefined ? undefined : m.status === "ACTIVE";
+      const asset = creativeAssets.get(ad.externalId);
       return {
         externalId: ad.externalId,
         name: ad.name ?? ad.externalId,
@@ -281,6 +286,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
         endsInDays,
         adSetId: entry?.adsetId,
         campaignId: entry?.campaignId,
+        thumbUrl: asset ? thumbUrlOf(asset) : null,
       };
     });
     // Only judge ads that actually spent in the window (J1 spend floor is applied deeper too).

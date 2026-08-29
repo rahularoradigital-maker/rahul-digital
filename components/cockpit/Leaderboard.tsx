@@ -4,6 +4,7 @@ import type { CockpitAd } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
 import { CollapsibleRows } from "./CollapsibleRows";
+import { CreativeThumb } from "./CreativeThumb";
 
 export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: CockpitAd[]; rupees: Intl.NumberFormat; accountId?: string; dateParam?: string }) {
   return (
@@ -27,7 +28,9 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
               <span className="text-[13px] font-semibold text-[var(--ink-muted)] tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-3">
+                {ad.thumbUrl && <CreativeThumb src={ad.thumbUrl} alt={ad.name} />}
+                <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <AdLink accountId={accountId} adId={ad.id} adSetId={ad.adSetId} campaignId={ad.campaignId} name={ad.name} className="truncate text-[15px] font-semibold" dateParam={dateParam} />
                   <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
@@ -40,6 +43,7 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
                   )}
                 </div>
                 {ad.why[0] && <div className="mt-1.5 truncate text-[13px] text-[var(--ink-muted)]">&#8627; {ad.why[0]}</div>}
+                </div>
               </div>
               <div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-alt)]">

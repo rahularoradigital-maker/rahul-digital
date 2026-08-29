@@ -103,6 +103,13 @@ export function excludeCatalogAds<T>(items: T[], assetOf: (item: T) => CreativeA
   });
 }
 
+// The best still image to show for a creative in the leaderboard: the image itself, else the video's
+// thumbnail, else null (never a placeholder). Empty strings are treated as absent. The Meta CDN URL is
+// signed and used as-is. Pure: prefer imageUrl > videoThumbUrl > null.
+export function thumbUrlOf(asset: CreativeAsset): string | null {
+  return asset.imageUrl || asset.videoThumbUrl || null;
+}
+
 export function deterministicFingerprint(asset: CreativeAsset): DeterministicFingerprint {
   const headline = (asset.title ?? "").trim();
   const body = (asset.body ?? "").trim();

@@ -43,6 +43,7 @@ export type CockpitAdInput = VerdictInput & {
   adsetName?: string; // readable parent names, so money figures trace to a campaign / ad set
   campaignName?: string;
   active?: boolean; // current delivery status; false = paused/archived (hidden from suggestions)
+  thumbUrl?: string | null; // best still image for the leaderboard thumbnail; null/absent when none
   objective: Objective;
   spendRs: number;
   revenueRs: number;
@@ -69,6 +70,7 @@ export type CockpitAd = {
   adsetName?: string; // readable parent names, so money figures trace to a campaign / ad set
   campaignName?: string;
   active?: boolean; // current delivery status; false = paused/archived (hidden from suggestions)
+  thumbUrl?: string | null; // best still image for the leaderboard thumbnail; null/absent when none
   objective: Objective;
   spendRs: number;
   revenueRs: number;
@@ -270,6 +272,7 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       adsetName: input.adsetName,
       campaignName: input.campaignName,
       active: input.active,
+      thumbUrl: input.thumbUrl,
       objective: input.objective,
       spendRs: input.spendRs,
       revenueRs: input.revenueRs,
