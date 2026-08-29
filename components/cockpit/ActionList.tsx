@@ -6,8 +6,9 @@ import type { CockpitAction, CockpitAd } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
 import { CollapsibleRows } from "./CollapsibleRows";
+import { rupees } from "@/lib/format";
 
-type PlanItem = CockpitAction & { adId: string; adName: string };
+type PlanItem = CockpitAction & { adId: string; adName: string; moneyAtStakeRs: number };
 
 export function ActionList({ items, ads, accountId, dateParam }: { items: PlanItem[]; ads: CockpitAd[]; accountId?: string; dateParam?: string }) {
   const byId = new Map(ads.map((a) => [a.id, a]));
@@ -24,7 +25,7 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
           <div className="text-base font-normal">This week&apos;s ranked plan</div>
-          <div className="text-[13px] text-[var(--ink-muted)]">Ranked by priority · what to ship first</div>
+          <div className="text-[13px] text-[var(--ink-muted)]">Ranked by money at stake · biggest first</div>
         </div>
         <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
           {items.filter((a) => a.priority === "DO_NOW").length} do-now
@@ -58,6 +59,11 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
                   {ad && (
                     <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
                       {ad.objective}
+                    </span>
+                  )}
+                  {a.moneyAtStakeRs > 0 && (
+                    <span className="shrink-0 rounded-full bg-[var(--bad-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--bad-ink)] tabular-nums">
+                      {rupees.format(a.moneyAtStakeRs)} at stake
                     </span>
                   )}
                   {conf !== null && (

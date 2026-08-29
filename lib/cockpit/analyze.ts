@@ -119,7 +119,7 @@ export type CockpitView = {
   opportunity: OpportunityLoss; // money bleeding: wasted + at-risk (fatiguing) spend
 
   leaderboard: CockpitAd[]; // sorted by CreativeScore, best first
-  doThis: (CockpitAction & { adId: string; adName: string })[]; // sorted by priority
+  doThis: (CockpitAction & { adId: string; adName: string; moneyAtStakeRs: number })[]; // priority tier, then money at stake
   waste: ReturnType<typeof wasteRollup>;
   wasteContributors: SpendContributor[]; // which ads make up the wasted spend + the math
   atRiskContributors: SpendContributor[]; // which fatiguing/fatigued ads make up the at-risk spend
@@ -127,6 +127,13 @@ export type CockpitView = {
 };
 
 const PRIORITY_RANK: Record<Priority, number> = { DO_NOW: 0, DO_NEXT: 1, WATCH: 2 };
+
+// Order the do-now queue: priority tier first (DO_NOW > DO_NEXT > WATCH), then MONEY AT STAKE within a
+// tier (biggest rupee first), so the single most expensive fix sits at the very top - the queue reads
+// as a decision, not a list. Pure + exported so it is testable.
+export function orderByMoneyAtStake<T extends { priority: Priority; moneyAtStakeRs: number }>(items: T[]): T[] {
+  return [...items].sort((x, y) => PRIORITY_RANK[x.priority] - PRIORITY_RANK[y.priority] || y.moneyAtStakeRs - x.moneyAtStakeRs);
+}
 
 /** Turn a verdict (+ any diagnosed cause) into the single next action for that ad. */
 function actionFor(v: Verdict, input: CockpitAdInput): CockpitAction {
@@ -314,10 +321,13 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
   // Suggestions are for ACTIVE ads only: nobody needs to be told to kill/refresh an ad that is
   // already paused (it is not wasting budget). Unknown status (active === undefined) still shows,
   // so a failed status lookup never hides a real budget leak.
-  const doThis = scored
-    .filter((a) => a.active !== false)
-    .map((a) => ({ adId: a.id, adName: a.name, ...a.action }))
-    .sort((x, y) => PRIORITY_RANK[x.priority] - PRIORITY_RANK[y.priority]);
+  const doThis = orderByMoneyAtStake(
+    scored
+      .filter((a) => a.active !== false)
+      // moneyAtStakeRs is a REAL number: an ad's wasted rupees if it is bleeding, else its own spend in
+      // the window (the money the action touches). Never an estimate. Used to order the queue.
+      .map((a) => ({ adId: a.id, adName: a.name, moneyAtStakeRs: Math.round(a.wastedRs > 0 ? a.wastedRs : a.spendRs), ...a.action })),
+  );
 
   const totalSpendRs = scored.reduce((acc, a) => acc + a.spendRs, 0);
   const totalRevenueRs = scored.reduce((acc, a) => acc + a.revenueRs, 0);
