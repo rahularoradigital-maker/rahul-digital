@@ -1,0 +1,179 @@
+import { rankCreators, type RankedCreator } from "@/lib/influencer/rank";
+import { tierOf } from "@/lib/influencer/tiers";
+import { SAMPLE_CREATORS, SAMPLE_TARGET } from "@/lib/influencer/sample";
+import type { Confidence, TransparentScore, NormalizedCreator } from "@/lib/influencer/types";
+
+// Influencer Hunt (preview). Runs the REAL ranking engine on a clearly-labelled sample set, so the screen
+// shows the true product UX - formula-driven ranking, transparent per-component scores, evidence +
+// confidence on every field, and an honest "why this creator" - before a data provider is connected. When
+// ScrapeCreators/Modash is wired, the same engine ranks the user's real creators with no UI change.
+
+const fmt = (n: number | null): string => {
+  if (n === null) return "n/a";
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1) + "K";
+  return String(n);
+};
+
+const CONF: Record<Confidence, { label: string; cls: string }> = {
+  high: { label: "high confidence", cls: "bg-[var(--good-bg)] text-[var(--good-ink)]" },
+  medium: { label: "medium confidence", cls: "bg-[var(--warn-bg)] text-[var(--warn-ink)]" },
+  low: { label: "low confidence", cls: "bg-[var(--surface-alt)] text-[var(--ink-muted)]" },
+  none: { label: "no data", cls: "bg-[var(--surface-alt)] text-[var(--ink-muted)]" },
+};
+
+function scoreCls(score: number): string {
+  if (score >= 70) return "text-[var(--good-ink)]";
+  if (score >= 45) return "text-[var(--warn-ink)]";
+  return "text-[var(--ink-muted)]";
+}
+function barCls(score: number): string {
+  if (score >= 70) return "bg-[var(--good-ink)]";
+  if (score >= 45) return "bg-[var(--warn-ink)]";
+  return "bg-[var(--ink-muted)]";
+}
+
+const COMPONENT_LABEL: Record<string, string> = {
+  brand_fit: "Brand fit",
+  audience_fit: "Audience fit",
+  content_fit: "Content fit",
+  engagement: "Engagement",
+  safety: "Safety",
+};
+
+function ConfPill({ c }: { c: Confidence }) {
+  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${CONF[c].cls}`}>{CONF[c].label}</span>;
+}
+
+function ScoreBreakdown({ score }: { score: TransparentScore }) {
+  return (
+    <div className="space-y-1.5">
+      {score.components.map((comp) => (
+        <div key={comp.key} className="flex items-center gap-2.5">
+          <span className="w-24 shrink-0 text-[12px] text-[var(--ink-muted)]">{COMPONENT_LABEL[comp.key] ?? comp.key}</span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--surface-alt)]">
+            <div className={`h-full rounded-full ${barCls(comp.score)}`} style={{ width: `${Math.round(comp.score)}%` }} />
+          </div>
+          <span className="w-8 shrink-0 text-right text-[12px] font-medium tabular-nums">{Math.round(comp.score)}</span>
+          <span className="w-14 shrink-0 text-right text-[10px] uppercase tracking-wide text-[var(--ink-muted)]">×{comp.weight.toFixed(2)}</span>
+        </div>
+      ))}
+      <p className="pt-1 text-[11px] leading-relaxed text-[var(--ink-muted)]">{score.formula}</p>
+    </div>
+  );
+}
+
+function audienceLine(c: NormalizedCreator): string {
+  const a = c.audience;
+  if (a.basis === "none" || a.source === "UNKNOWN") return "Audience data unavailable";
+  const top = a.topCountries[0];
+  const parts: string[] = [];
+  if (top) parts.push(`${Math.round(top.share * 100)}% ${top.countryCode}`);
+  if (a.genderLean) {
+    const f = Math.round(a.genderLean.female * 100);
+    parts.push(`${f}% women`);
+  }
+  const lang = a.topLanguages[0];
+  if (lang) parts.push(`${Math.round(lang.share * 100)}% ${lang.language}`);
+  return parts.join(" · ") || "Directional estimate";
+}
+
+function CreatorCard({ r }: { r: RankedCreator }) {
+  const c = r.creator;
+  const q = r.scorecard.quality;
+  const tier = c.followers.value !== null ? tierOf(c.followers.value) : null;
+  const risk = r.scorecard.risk;
+  return (
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+      <div className="flex items-start gap-4">
+        {/* Rank + quality */}
+        <div className="flex w-14 shrink-0 flex-col items-center gap-1">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-[var(--ink)] text-[13px] font-semibold text-white">{r.rank}</span>
+          <span className={`text-[22px] font-semibold leading-none ${scoreCls(q.score)}`}>{Math.round(q.score)}</span>
+          <span className="text-[10px] uppercase tracking-wide text-[var(--ink-muted)]">quality</span>
+        </div>
+
+        {/* Identity + why + audience */}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <a href={c.identity.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[15px] font-semibold hover:underline">
+              {c.name.value}
+            </a>
+            {c.verified.value ? <span title="verified" className="text-[var(--accent)]">✓</span> : null}
+            <span className="text-[13px] text-[var(--ink-muted)]">@{c.identity.handle}</span>
+            {tier ? <span className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] font-medium capitalize text-[var(--ink-muted)]">{tier}</span> : null}
+          </div>
+
+          <p className="mt-1 text-[13px] leading-relaxed text-[var(--ink)]">
+            <span className="font-medium">Why: </span>{r.topReason}
+          </p>
+
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-[var(--ink-muted)]">
+            <span><span className="font-medium text-[var(--ink)]">{fmt(c.followers.value)}</span> followers</span>
+            <span><span className="font-medium text-[var(--ink)]">{c.engagementRate.value !== null ? (c.engagementRate.value * 100).toFixed(1) + "%" : "n/a"}</span> engagement</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="font-medium text-[var(--ink)]">{audienceLine(c)}</span>
+              <ConfPill c={c.audience.confidence} />
+            </span>
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+            <span className={`rounded-full px-2 py-0.5 font-medium ${risk.score < 30 ? "bg-[var(--good-bg)] text-[var(--good-ink)]" : risk.score < 55 ? "bg-[var(--warn-bg)] text-[var(--warn-ink)]" : "bg-[var(--surface-alt)] text-[var(--ink-muted)]"}`}>
+              Risk {Math.round(risk.score)}
+            </span>
+            <span className={`rounded-full px-2 py-0.5 font-medium ${c.businessEmail.value ? "bg-[var(--good-bg)] text-[var(--good-ink)]" : "bg-[var(--surface-alt)] text-[var(--ink-muted)]"}`}>
+              {c.businessEmail.value ? "Public email listed" : "No public email"}
+            </span>
+          </div>
+        </div>
+
+        {/* Transparent breakdown */}
+        <div className="hidden w-[280px] shrink-0 border-l border-[var(--hairline)] pl-4 lg:block">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Score breakdown</span>
+            <ConfPill c={q.confidence} />
+          </div>
+          <ScoreBreakdown score={q} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function InfluencerHunt() {
+  const ranked = rankCreators(SAMPLE_CREATORS, SAMPLE_TARGET);
+
+  return (
+    <div className="space-y-6">
+      {/* Honest provenance banner - this is the honesty rule made visible. */}
+      <div className="rounded-[10px] border border-[var(--warn-ink)]/25 bg-[var(--warn-bg)] px-4 py-3 text-[13px] text-[var(--warn-ink)]">
+        <span className="font-semibold">Preview with sample creators.</span> The ranking, scores, and confidence you see are produced by
+        the real engine, but the creators below are sample data, not real accounts. Connect a creator-data provider (ScrapeCreators, or
+        Modash/HypeAuditor for verified audience data) to rank your brand&apos;s real creators here. Nothing is fabricated: every field
+        carries its source and confidence.
+      </div>
+
+      {/* What the engine is matching against */}
+      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Matching creators against</div>
+        <div className="mt-2 grid gap-x-8 gap-y-2 text-[13px] sm:grid-cols-2">
+          <div><span className="text-[var(--ink-muted)]">Category:</span> <span className="font-medium">{SAMPLE_TARGET.category}</span></div>
+          <div><span className="text-[var(--ink-muted)]">Sells to:</span> <span className="font-medium">{SAMPLE_TARGET.targetCountry} · {SAMPLE_TARGET.personaGender === "f" ? "women" : "men"}</span></div>
+          <div><span className="text-[var(--ink-muted)]">Products:</span> <span className="font-medium">{SAMPLE_TARGET.keyProducts.join(", ")}</span></div>
+          <div><span className="text-[var(--ink-muted)]">Needs formats:</span> <span className="font-medium">{SAMPLE_TARGET.requiredFormats.join(", ")}</span></div>
+        </div>
+        <p className="mt-3 text-[12px] text-[var(--ink-muted)]">
+          Ranked purely by the quality formula (brand fit, audience fit, content fit, engagement, safety) - never by follower count, so a
+          smaller, on-brand creator can outrank a large off-brand one.
+        </p>
+      </div>
+
+      {/* The ranked shortlist */}
+      <div className="space-y-3">
+        {ranked.map((r) => (
+          <CreatorCard key={r.creator.identity.platformUserId} r={r} />
+        ))}
+      </div>
+    </div>
+  );
+}
