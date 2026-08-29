@@ -24,6 +24,12 @@ const ALL_KEYS: (keyof CreativeAttributes)[] = [
   "primaryEmotion", "socialProof", "storytelling", "editingPacing", "closing", "conversionIntent", "notes",
 ];
 
+// ISSUE 22: the per-creative provider fan-out, as a tracked constant (measure before optimizing).
+// One creative currently costs this many Gemini calls; the analyze route multiplies it by the number
+// of creatives in the batch. check:creative-fanout pins the value so a change to the fan-out is visible
+// and its cost is a conscious decision, not an accident.
+export const CALLS_PER_CREATIVE = SPECIALIST_AGENTS.length + DEPENDENT_AGENTS.length;
+
 function isFilled(v: unknown): v is string {
   return typeof v === "string" && v.trim().length > 0 && v.trim().toLowerCase() !== "none";
 }
@@ -68,6 +74,7 @@ function buildCopy(media: CreativeMedia): string {
  * if every agent failed (so the caller skips this ad rather than storing an empty read).
  */
 export async function analyzeCreative(media: CreativeMedia): Promise<CreativeAttributes | null> {
+  const t0 = performance.now();
   const inline = await fetchInlineImage(media.imageUrl ?? media.videoThumbUrl);
   const baseCtx: AgentCtx = { copyText: buildCopy(media), inline, isVideo: media.isVideo, upstream: {} };
 
@@ -79,6 +86,10 @@ export async function analyzeCreative(media: CreativeMedia): Promise<CreativeAtt
   const depCtx: AgentCtx = { ...baseCtx, upstream: merged };
   const dependentSlices = await Promise.all(DEPENDENT_AGENTS.map((a) => a.run(depCtx).catch(() => ({}))));
   merged = mergeAttributes([merged, ...dependentSlices]);
+
+  // ISSUE 22: emit the actual cost of one creative (calls + wall time) so the fan-out is measured, not
+  // guessed. Server log only.
+  if (process.env.ADBRAIN_PERF) console.log(`[creative-fanout] 1 creative -> ${CALLS_PER_CREATIVE} calls in ${Math.round(performance.now() - t0)}ms`);
 
   return anyFilled(merged) ? merged : null;
 }

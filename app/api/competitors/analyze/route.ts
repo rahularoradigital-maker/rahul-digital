@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession } from "@/lib/meta-sync";
-import { analyzeCreative } from "@/lib/agents/creative/orchestrator";
+import { analyzeCreative, CALLS_PER_CREATIVE } from "@/lib/agents/creative/orchestrator";
 import { probeGemini, GEMINI_MODEL } from "@/lib/gemini";
 import type { CreativeAttributes } from "@/lib/competitors/types";
 
@@ -187,7 +187,12 @@ export async function POST(request: NextRequest) {
       else ok++;
     }
   }
+  const t0 = performance.now();
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, worker));
+
+  // ISSUE 22: measure the run's real provider fan-out (only NEW creatives cost Gemini calls; reused
+  // ones are free global-cache copies). This is the number the audit says to measure before optimizing.
+  console.log(`[competitor-fanout] ${ok} new x ${CALLS_PER_CREATIVE} = ${ok * CALLS_PER_CREATIVE} Gemini calls, ${reused} reused (free), ${failed} failed, ${Math.round(performance.now() - t0)}ms`);
 
   // If everything failed, surface the real Gemini error (status + snippet) instead of a
   // silent "0 analyzed", so the cause is confirmed, not guessed.
