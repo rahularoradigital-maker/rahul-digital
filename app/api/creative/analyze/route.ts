@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { callGeminiText } from "@/lib/gemini";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
+import { loadCompetitorFormatAds } from "@/lib/competitors/data";
+import { compareDiversityToCompetitors } from "@/lib/creative/diversity-vs-competitors";
 
 // Brand Brain + Concepts: a grounded Gemini analysis of the account's OWN ads. Both read the real
 // cockpit view (ad names encode product/offer/format/influencer, plus real verdicts and ROAS) and
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
   const v = live.view;
   // Compact, real-only snapshot: ad NAMES carry the creative signal (product/offer/format/influencer);
   // verdict/ROAS/spend carry what wins vs. bleeds. Nothing invented.
-  const data = {
+  const data: Record<string, unknown> = {
     account: live.accountName,
     window: scope.explicitWindow ? `${scope.explicitWindow.since} to ${scope.explicitWindow.until}` : `last ${scope.lookbackDays} days`,
     accountHealth: v.accountHealth.score,
@@ -50,6 +52,28 @@ export async function POST(request: NextRequest) {
     fatiguing: v.atRiskContributors.map((c) => ({ ad: c.name, roas: c.roas, spendRs: c.spendRs, state: c.fatigueState })),
     wasting: v.waste.status === "ok" ? v.wasteContributors.map((c) => ({ ad: c.name, roas: c.roas, wastedRs: c.amountRs })) : [],
   };
+
+  // Own-vs-competitor format gap (deterministic, real Ad Library data, deduped). Grounds Concepts'
+  // "where to diversify" in the real gap instead of the account's own ads alone. Best-effort: absent
+  // when no competitors are tracked, so the prompt simply gets no gap block. competitorsPctOfAds is
+  // PRESENCE only (share of their distinct ads) - a competitor's spend/ROAS is never knowable.
+  const ownFmt = live.ownDiversity?.dimensions.find((d) => d.dimension === "format");
+  if (ownFmt && ownFmt.buckets.length > 0) {
+    const competitorAds = await loadCompetitorFormatAds(user.id, live.accountExternalId);
+    const cmp = competitorAds.length > 0 ? compareDiversityToCompetitors(ownFmt.buckets, competitorAds) : null;
+    if (cmp) {
+      data.competitorFormatGap = {
+        basis: cmp.basis,
+        formats: cmp.formats.map((f) => ({
+          format: f.format,
+          youPctOfSpend: f.ownShare === null ? null : Math.round(f.ownShare * 100),
+          competitorsPctOfAds: f.competitorShare === null ? null : Math.round(f.competitorShare * 100),
+        })),
+        gaps: cmp.gaps,
+        overConcentration: cmp.overConcentration,
+      };
+    }
+  }
 
   const common =
     " Use ONLY the DATA below - the brand's REAL Meta ads. Separate two kinds of evidence: FACTS you can" +
@@ -65,7 +89,7 @@ export async function POST(request: NextRequest) {
         " Write four short labelled sections, no preamble: 1) WHAT THIS BRAND SELLS - the products and recurring campaign themes you can see in the ad names. 2) WHAT WINS - the creative angles, formats (video/static/carousel/catalog), offers, and influencer plays that show up in the higher-ROAS / winner ads, each with a real ad name. 3) WHAT IS FADING - angles/formats that are fatiguing or wasting spend, with ad names. 4) POSITIONING AND TONE - the brand's apparent positioning in one or two lines."
       : "You are a creative strategist. Propose exactly 4 NEW creatives to test for this brand, each as a recipe with five named parts on their own lines: SKU, Format, Concept, Offer, Landing - then one line 'Why' that cites a real winning ad it builds on OR a fatiguing ad it replaces." +
         common +
-        " Ground every SKU/format/offer in what already appears in the DATA (do not invent products the brand does not run). Prefer formats and angles that are winning, and target the gaps left by ads that are fatiguing or wasting spend. Number them 1 to 4.";
+        " Ground every SKU/format/offer in what already appears in the DATA (do not invent products the brand does not run). Prefer formats and angles that are winning, and target the gaps left by ads that are fatiguing or wasting spend. If DATA.competitorFormatGap is present, use it to pick which FORMAT to diversify into: competitorsPctOfAds is how much of competitors' distinct ads run that format (presence only - you do NOT know their spend or results, so never claim a competitor format 'works' or earns), youPctOfSpend is your own spend share. Favour a format where competitors are heavy and you are light, and note if you are over-concentrated in one format. Number them 1 to 4.";
 
   try {
     const answer = await callGeminiText(`${prompt}\n\nDATA:\n${JSON.stringify(data)}`);

@@ -131,3 +131,53 @@ type AnalysisRow = {
   brand_label: string | null;
   attributes: CreativeAttributes | null;
 };
+
+// Lightweight reader used by the Creative > Diversity view to compare the account's own format mix
+// against its competitors. Reads ONLY the fields the format comparison + de-dupe need (media +
+// creative-asset identity), account-scoped exactly like loadCompetitorData. Returns [] on any miss
+// so the caller degrades to "add competitors on the Market tab". Never throws.
+export type CompetitorFormatAd = {
+  pageId: string;
+  adArchiveId: string;
+  media: string;
+  isMyBrand: boolean;
+  videoUrl: string | null;
+  imageUrl: string | null;
+  title: string | null;
+  body: string | null;
+};
+
+export async function loadCompetitorFormatAds(userId: string, accountId: string | null): Promise<CompetitorFormatAd[]> {
+  try {
+    const admin = createAdminClient();
+    const q = admin
+      .from("competitor_ads")
+      .select("page_id, ad_archive_id, is_my_brand, media, video_url, image_url, title, body")
+      .eq("user_id", userId);
+    const { data } = await (accountId === null ? q.is("account_external_id", null) : q.eq("account_external_id", accountId));
+    if (!data) return [];
+    return (data as FormatAdRow[]).map((r) => ({
+      pageId: r.page_id,
+      adArchiveId: r.ad_archive_id,
+      media: r.media ?? "other",
+      isMyBrand: r.is_my_brand,
+      videoUrl: r.video_url,
+      imageUrl: r.image_url,
+      title: r.title,
+      body: r.body,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+type FormatAdRow = {
+  page_id: string;
+  ad_archive_id: string;
+  is_my_brand: boolean;
+  media: string | null;
+  video_url: string | null;
+  image_url: string | null;
+  title: string | null;
+  body: string | null;
+};

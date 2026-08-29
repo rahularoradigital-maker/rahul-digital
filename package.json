@@ -47,6 +47,7 @@
     "check:catalog": "node --experimental-strip-types scripts/check-catalog.ts",
     "check:level-metrics": "node --experimental-strip-types scripts/check-level-metrics.ts",
     "check:level-funnel": "node --experimental-strip-types scripts/check-level-funnel.ts",
+    "check:diversity-vs-competitors": "node --experimental-strip-types scripts/check-diversity-vs-competitors.ts",
     "check:rate-limit": "node --experimental-strip-types scripts/check-rate-limit.ts",
     "check:csp": "node --experimental-strip-types scripts/check-csp.ts",
     "check:thumb": "node --experimental-strip-types scripts/check-thumb.ts",

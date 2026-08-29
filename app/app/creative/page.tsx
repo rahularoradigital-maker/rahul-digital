@@ -6,6 +6,8 @@ import { FatigueSection } from "@/components/app/creative/fatigue-section";
 import { DiversitySection } from "@/components/app/creative/diversity-section";
 import { BrandBrainSection } from "@/components/app/creative/brand-brain-section";
 import { ConceptsSection } from "@/components/app/creative/concepts-section";
+import { loadCompetitorFormatAds } from "@/lib/competitors/data";
+import { compareDiversityToCompetitors } from "@/lib/creative/diversity-vs-competitors";
 
 // Creative: one consolidated page for the four creative screens (Fatigue, Diversity,
 // Brand Brain, Concepts). loadCockpit runs exactly once here; each tab section is a
@@ -41,6 +43,13 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
   const [data, user] = await Promise.all([loadCockpit(parseDays(sp.days)), getCurrentUser()]);
   const insights = data.connected && user ? await loadInsights(user.id, data.accountId) : {};
 
+  // Diversity view compares MY format mix against the competitors already scraped for this account.
+  // Only computed when I have a real own-format read AND competitor ads exist; otherwise null so the
+  // section shows a quiet "add competitors" note (never a fabricated comparison).
+  const ownFormat = data.connected ? data.ownDiversity?.dimensions.find((d) => d.dimension === "format") : undefined;
+  const competitorAds = data.connected && user && ownFormat && ownFormat.buckets.length > 0 ? await loadCompetitorFormatAds(user.id, data.accountId) : [];
+  const diversityVsCompetitors = ownFormat && ownFormat.buckets.length > 0 && competitorAds.length > 0 ? compareDiversityToCompetitors(ownFormat.buckets, competitorAds) : null;
+
   return (
     <div className="space-y-6">
       <div>
@@ -50,7 +59,7 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
       <Tabs tabs={TABS} />
 
       {tab === "fatigue" && <FatigueSection data={data} days={data.days} />}
-      {tab === "diversity" && <DiversitySection data={data} days={data.days} />}
+      {tab === "diversity" && <DiversitySection data={data} days={data.days} competitors={diversityVsCompetitors} />}
       {tab === "brand" && <BrandBrainSection initialContent={insights.brand ?? null} />}
       {tab === "concepts" && <ConceptsSection initialContent={insights.concepts ?? null} />}
     </div>
