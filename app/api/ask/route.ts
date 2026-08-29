@@ -36,16 +36,19 @@ export async function POST(request: NextRequest) {
   if (!question) return NextResponse.json({ error: "Ask a question." }, { status: 400 });
   if (question.length > 500) question = question.slice(0, 500);
 
-  // Enforce the rolling-24h cap BEFORE spending any tokens. On a count-failure we fail open (allow)
-  // so a DB hiccup never blocks a paying user; the cap is a cost backstop, not a security control.
+  // Enforce the rolling-24h cap ATOMICALLY before spending any tokens (ISSUE 03). The old path did
+  // count -> compare -> insert, so N concurrent asks could each read the same count and all slip
+  // through during Gemini's multi-second latency. reserve_ask_quota serializes count+insert per user
+  // in the DB, so the reservation is a true invariant. On an RPC error we fail open (allow) - the cap
+  // is a cost backstop for a free provider, not a security control, and a DB hiccup must not block.
   const admin = createAdminClient();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const { count: usedToday } = await admin
-    .from("ask_log")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .gte("created_at", since);
-  if ((usedToday ?? 0) >= ASK_DAILY_CAP) {
+  const { data: reserved, error: reserveErr } = await admin.rpc("reserve_ask_quota", {
+    p_user: user.id,
+    p_cap: ASK_DAILY_CAP,
+    p_window_seconds: 24 * 60 * 60,
+  });
+  if (!reserveErr && reserved === false) {
     return NextResponse.json({
       answer: `You have reached today's limit of ${ASK_DAILY_CAP} questions. It resets on a rolling 24-hour basis.`,
     });
@@ -80,13 +83,8 @@ export async function POST(request: NextRequest) {
     `You are AdBrain's analyst. Answer the user's question using ONLY the DATA JSON below - the user's REAL connected Meta ad account for the ${windowLabel} (the window they are currently viewing). Rules:` +
     " never invent a number or a fact that is not in the DATA; if the DATA does not contain the answer, say so plainly and name what to connect or check; every number you state must appear in the DATA. Be short and direct, plain Indian English, rupees for money, no hype words, no em dashes.";
 
-  // Count the usage BEFORE the model call. The cap check above only read a count, so logging AFTER a
-  // successful answer let N concurrent asks each slip through during Gemini's multi-second latency and
-  // blow past the daily cap. Awaiting the insert first shrinks that race to one fast DB round-trip.
-  // Same pass ages out this user's rows older than the rolling window, so ask_log stays bounded at
-  // ~cap rows/user at 1000 users instead of growing forever. Both are best-effort: a log failure must
-  // never fail the answer.
-  await admin.from("ask_log").insert({ user_id: user.id }).then(undefined, () => {});
+  // Usage was already recorded atomically by reserve_ask_quota above. Just age out this user's rows
+  // older than the rolling window so ask_log stays bounded (~cap rows/user). Best-effort.
   await admin.from("ask_log").delete().eq("user_id", user.id).lt("created_at", since).then(undefined, () => {});
 
   try {
