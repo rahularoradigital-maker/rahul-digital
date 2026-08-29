@@ -17,7 +17,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300; // many accounts x an occasional cold pull
 
 const CONCURRENCY = 3; // bounded so a sync wave never stampedes Meta's rate limits
-const WARM_DAYS = 14; // the default window a fresh dashboard load uses (matches parseDays default)
+// Pre-warm BOTH windows a user actually opens: 14 (the dashboard default) and 30 (the common
+// "last 30 days" view). Every feature/page shares one cockpit cache per window, so warming a window
+// makes the whole app instant for it on the next visit - not a per-feature pull.
+const WARM_WINDOWS = [14, 30];
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -47,9 +50,15 @@ export async function GET(request: NextRequest) {
       const uid = queue.shift();
       if (!uid) return;
       try {
-        const live = await fetchLiveCockpit(uid, WARM_DAYS);
-        if (live.status === "connected") warmed++;
-        else if (live.status === "not_connected") empty++;
+        // Warm each window in turn (self-throttled: a window already fresh does no Meta work). The
+        // user's status is judged by the DEFAULT window so the counts stay meaningful.
+        let status: string = "error";
+        for (const days of WARM_WINDOWS) {
+          const live = await fetchLiveCockpit(uid, days);
+          if (days === WARM_WINDOWS[0]) status = live.status;
+        }
+        if (status === "connected") warmed++;
+        else if (status === "not_connected") empty++;
         else failed++;
       } catch {
         failed++;
