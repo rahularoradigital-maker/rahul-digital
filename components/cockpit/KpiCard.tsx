@@ -1,17 +1,23 @@
+import type { ReactNode } from "react";
+
 // One decision KPI card. Either a real value, or an honest insufficient-data state
-// (we never invent a number the CockpitView does not carry).
+// (we never invent a number the CockpitView does not carry). `disclosure` is an optional
+// slot for the evidence tag + "how sure?" drawer, so a pillar can be made inspectable
+// without this card knowing anything about the canon.
 export function KpiCard({
   label,
   tip,
   value,
   sub,
   insufficient,
+  disclosure,
 }: {
   label: string;
   tip: string;
   value?: string;
   sub?: string;
   insufficient?: string;
+  disclosure?: ReactNode;
 }) {
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
@@ -20,6 +26,7 @@ export function KpiCard({
         <span title={tip} className="cursor-help text-[var(--hairline)]">
           &#9432;
         </span>
+        {disclosure && <span className="ml-auto">{disclosure}</span>}
       </div>
       {insufficient ? (
         <>

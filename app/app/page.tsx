@@ -16,6 +16,7 @@ import type { MarginalRead } from "@/lib/scoring/marginal";
 import type { DataQuality } from "@/lib/scoring/data-quality";
 import type { ScopeTotals } from "@/lib/meta-sync";
 import { WhyDrawer } from "@/components/cockpit/WhyDrawer";
+import { MetricDrawer, type MetricDisclosure } from "@/components/cockpit/MetricDrawer";
 import { rupees } from "@/lib/format";
 import { cockpitVerdict } from "@/lib/cockpit/verdict-line";
 
@@ -182,6 +183,37 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
   const roas = totals.roas;
   const conc = view.concentration;
 
+  // Confidence-inspectable pillars (Yamin canon rule 5): every headline pillar carries an
+  // evidence tag + a fetch/formula/logic/example disclosure. The Example is built from THIS
+  // account's real numbers (or an honest "not available"), never invented. To extend this to
+  // the funnel / scaling / diversity pillars later, add a MetricDisclosure here and render a
+  // <MetricDrawer> in that pillar's header - nothing else changes.
+  const healthDisclosure: MetricDisclosure = {
+    fetch: "Meta Marketing API: per-ad spend, impressions, clicks, purchases, revenue and frequency (day-wise rows).",
+    formula: "Spend-weighted mean of each ad's objective score (ROAS for conversion, CTR for traffic and awareness), minus a waste penalty of 25 x wasted-spend share.",
+    logic: "One loss-making ad should drag the account down in proportion to the money behind it, so the average is weighted by spend, not by ad count. It is our judgement, corrected from outcomes over time, not a Meta-published grade.",
+    example: health.explain.headline, // e.g. "72/100: spend-weighted average ... minus a 6% waste penalty" - real numbers
+  };
+  const roasDisclosure: MetricDisclosure = {
+    fetch: "Meta Marketing API: total revenue and total spend for the selected objective scope and window.",
+    formula: "Total revenue / total spend across the window. Null when spend is 0 (never a fabricated ratio).",
+    logic: "A raw platform ratio, not a judgement: Meta reports both numbers and we only divide. Blended across the account, so it is a headline, not an ad-level verdict.",
+    example:
+      roas === null
+        ? `Spend is ${rupees.format(totals.spendRs)} for this window, so ROAS is n/a. We never invent a ratio.`
+        : `${rupees.format(totals.revenueRs)} revenue / ${rupees.format(totals.spendRs)} spend = ${roas.toFixed(2)}x.`,
+  };
+  const concShare = conc.status === "ok" ? Math.round(conc.top1Share * 100) : null;
+  const concDisclosure: MetricDisclosure = {
+    fetch: "Meta Marketing API: per-ad spend across the analyzed ads.",
+    formula: "Top ad's spend / total spend.",
+    logic: "Pure arithmetic on platform spend facts, no judgement. It flags key-man risk: how much of the account rides on a single creative.",
+    example:
+      concShare === null
+        ? "Not enough spend yet to assess concentration, so no share is shown."
+        : `The single top ad takes ${concShare}% of spend; the other ${100 - concShare}% is spread across the rest.`,
+  };
+
   return (
     <div className="space-y-6">
       {/* Context line: coverage of this run (campaigns / ad sets / ads processed) */}
@@ -216,6 +248,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
             <div className="flex items-center gap-2">
               <div className="text-base font-normal">Account Health</div>
               <WhyDrawer explanation={view.accountHealth.explain} />
+              <MetricDrawer title="Account Health" tier="Y" disclosure={healthDisclosure} />
             </div>
             <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
               Internal calculation · {health.factLabel}
@@ -233,6 +266,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           tip="Revenue divided by spend, blended across the account. Source: connected Meta account."
           value={roas === null ? "n/a" : `${roas.toFixed(2)}x`}
           sub={`${rupees.format(totals.revenueRs)} on ${rupees.format(totals.spendRs)}`}
+          disclosure={<MetricDrawer title="Blended ROAS" tier="A" disclosure={roasDisclosure} />}
         />
         <KpiCard
           label="Concentration"
@@ -240,6 +274,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           value={conc.status === "ok" ? `${Math.round(conc.top1Share * 100)}%` : undefined}
           insufficient={conc.status === "ok" ? undefined : "Not enough spend to assess"}
           sub={conc.status === "ok" ? "top ad share of spend" : undefined}
+          disclosure={<MetricDrawer title="Concentration" tier="A" disclosure={concDisclosure} />}
         />
         {/* MER + nCAC need store revenue (Shopify), so they are always insufficient until a revenue
             source connects. Collapse the two permanently-dead cards into one honest affordance
