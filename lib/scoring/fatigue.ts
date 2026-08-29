@@ -141,6 +141,11 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
   // claim a %/day - the ad is judged on frequency + CPM and the evidence says so plainly.
   const PRIMARY_FLOOR = metricLabel === "ROAS" ? 0.1 : metricLabel === "CTR" ? 0.001 : 0;
   const primaryMeaningful = primaryMean >= PRIMARY_FLOOR;
+  const nearZero = (v: number) => v < (metricLabel === "CTR" ? 0.0005 : 0.005); // rounds to 0.00 in the display
+  // A creative's half-life is bounded by the comparison window; an almost-flat slope must NOT extrapolate to
+  // millions of days (that produced the "Account half-life ~30354410 days" bug). Past this, there is simply
+  // no dated crossing yet - report null, not a fantasy date.
+  const MAX_HALF_LIFE_DAYS = 120;
 
   // Relative per-day slopes (dimensionless): a declining primary metric and a rising CPM add fatigue.
   const primaryRelSlope = primaryMeaningful && primaryMean > 0 ? primarySlope / primaryMean : 0; // negative = decaying
@@ -167,10 +172,12 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
   let daysToFatigue: number | null = null;
   const startPrimary = primary[0];
   const latestPrimary = primary[primary.length - 1];
-  if (primaryMeaningful && primarySlope < 0 && startPrimary > 0) {
+  if (primaryMeaningful && !nearZero(startPrimary) && primarySlope < 0 && startPrimary > 0) {
     const floor = startPrimary * CTR_FLOOR_FRACTION;
     if (latestPrimary > floor) {
-      daysToFatigue = Math.max(1, Math.round((latestPrimary - floor) / -primarySlope));
+      const extrapolated = Math.round((latestPrimary - floor) / -primarySlope);
+      // A near-flat decline extrapolates to a huge, meaningless date - past the window cap, call it "no crossing yet".
+      daysToFatigue = extrapolated > MAX_HALF_LIFE_DAYS ? null : Math.max(1, extrapolated);
     } else {
       daysToFatigue = 0; // already at/below the fatigue floor
     }
@@ -185,16 +192,18 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
 
   // Format the primary metric for the evidence: CTR as a percentage, ROAS / reach as a ratio.
   const fmtPrimary = (v: number) => (metricLabel === "CTR" ? `${(v * 100).toFixed(2)}%` : v.toFixed(2));
-  const nearZero = (v: number) => v < (metricLabel === "CTR" ? 0.0005 : 0.005); // rounds to 0.00 in the display
-  // The primary-metric line, written to make sense in every case (no more "0.00 -> 0.00 at -19%/day"):
-  //  - metric near zero throughout: say the trend can't be read, name what we judge on instead
-  //  - collapsed from a real value to ~0: say "fell to near zero" (not "-> 0.00")
+  // The primary-metric line, written to make sense in every case (no more "0.00 -> 0.00 at -19%/day" or
+  // "fell from 0.00 to near zero"):
+  //  - metric near zero throughout (mean below floor, OR it started at ~0): say the trend can't be read,
+  //    name what we judge on instead. Starting at ~0 is NOT a "collapse" - it never had a real value to fall from.
+  //  - collapsed from a REAL start value to ~0: say "fell to near zero"
   //  - otherwise: the normal start -> end (+/-%/day)
-  const primaryLine = !primaryMeaningful
-    ? `${metricLabel} stayed near zero over ${primary.length} days - too little conversion to read a trend, so this ad is judged on frequency and CPM, not ${metricLabel}.`
-    : nearZero(latestPrimary)
-      ? `${metricLabel} fell from ${fmtPrimary(startPrimary)} to near zero over ${primary.length} days (${(primaryRelSlope * 100).toFixed(1)}%/day) - a real collapse.`
-      : `${metricLabel} ${fmtPrimary(startPrimary)} -> ${fmtPrimary(latestPrimary)} over ${primary.length} settled days (${primaryRelSlope >= 0 ? "+" : ""}${(primaryRelSlope * 100).toFixed(1)}%/day).`;
+  const primaryLine =
+    !primaryMeaningful || nearZero(startPrimary)
+      ? `${metricLabel} stayed near zero across the last ${primary.length} days - too little steady ${metricLabel} to read a trend, so this ad is judged on frequency and CPM, not ${metricLabel}.`
+      : nearZero(latestPrimary)
+        ? `${metricLabel} fell from ${fmtPrimary(startPrimary)} to near zero over ${primary.length} days - a real collapse.`
+        : `${metricLabel} ${fmtPrimary(startPrimary)} -> ${fmtPrimary(latestPrimary)} over ${primary.length} settled days (${primaryRelSlope >= 0 ? "+" : ""}${(primaryRelSlope * 100).toFixed(1)}%/day).`;
   const evidence: string[] = [
     primaryLine,
     `Frequency now ${latestFreq.toFixed(1)} (saturation ${frequencySignal}/100).`,

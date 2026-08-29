@@ -69,6 +69,26 @@ assert.ok(!/-?\d+\.\d+%\/day/.test(nearZeroRoas.evidence[0]), "near-zero ROAS do
 assert.equal(nearZeroRoas.signals.ctrDecay, 0, "a near-zero metric does not drive the fatigue decay signal (no noise)");
 assert.equal(nearZeroRoas.daysToFatigue, null, "no half-life extrapolated off a near-zero metric");
 
+// --- Start-at-near-zero: an ad whose ROAS STARTS at ~0 never had a real value to "fall from", so it must
+// NOT read as "fell from 0.00 ... a real collapse". It reads as "stayed near zero" and gives no half-life.
+// (Regression for the live "ROAS fell from 0.00 to near zero" line.) ---
+const startsAtZero = readFatigue(
+  series(14, { impr: 10000, clicks0: 200, clicks1: 200, freq0: 2, freq1: 2, spend0: 1000, spend1: 1000, rev0: 0, rev1: 4000 }),
+  { objective: "conversion" },
+);
+assert.ok(startsAtZero.evidence[0].toLowerCase().includes("near zero"), `start-at-zero ROAS reads honestly, got: ${startsAtZero.evidence[0]}`);
+assert.ok(!startsAtZero.evidence[0].toLowerCase().includes("collapse"), "a ROAS that started at zero is not a 'collapse'");
+assert.equal(startsAtZero.daysToFatigue, null, "no half-life extrapolated off a start-at-zero metric");
+
+// --- Near-flat decline must NOT extrapolate to a fantasy half-life (the "Account half-life ~30354410 days"
+// bug). ROAS 3.00 -> 2.98 over 14 days: a barely-negative slope would divide out to thousands of days.
+// Past the window cap, report NO dated crossing (null), never a millions-of-days number. ---
+const nearFlatDecline = readFatigue(
+  series(14, { impr: 10000, clicks0: 200, clicks1: 200, freq0: 2, freq1: 2, spend0: 1000, spend1: 1000, rev0: 3000, rev1: 2980 }),
+  { objective: "conversion" },
+);
+assert.equal(nearFlatDecline.daysToFatigue, null, "a near-flat decline yields no half-life (no millions-of-days extrapolation)");
+
 // Same numbers judged as ENGAGEMENT (CTR flat) do NOT fatigue on ROAS - CTR is the metric.
 const engRead = readFatigue(convRows, { objective: "engagement" });
 assert.ok(engRead.evidence[0].includes("CTR"), "engagement evidence reads on CTR");
