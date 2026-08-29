@@ -239,7 +239,7 @@ function TrafficSection({ traffic }: { traffic: BrandTraffic[] }) {
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 text-base font-normal">Where competitors send traffic</div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
-        Each brand's ad clicks by landing-page destination - own D2C site vs the big marketplaces and app stores.
+        Each brand&apos;s ad clicks by landing-page destination - own D2C site vs the big marketplaces and app stores.
       </div>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {traffic.map((b) => (

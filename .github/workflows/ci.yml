@@ -34,9 +34,15 @@ jobs:
           restore-keys: |
             nextjs-${{ hashFiles('**/package-lock.json') }}-
 
+      # ISSUE 11: lint is part of the declared GREEN gate. It runs before build so a genuine lint
+      # error (bad syntax, a real react-hooks violation, an unescaped entity) fails CI on its own,
+      # not just the type errors caught by the build's tsc pass.
+      - name: Lint
+        run: npm run lint
+
       - name: Build
         run: npm run build
 
-      # One step runs ALL 33 correctness gates, so a new check script can never silently miss CI.
+      # One step runs ALL correctness gates, so a new check script can never silently miss CI.
       - name: Run all checks
         run: npm run check:all
