@@ -63,7 +63,7 @@ function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: Co
                 <div key={ad.id} className="border-t border-[var(--surface-alt)] py-4 first:border-t-0">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate text-[15px] font-semibold" dateParam={dateParam} />
+                      <AdLink accountId={accountId} adId={ad.id} adSetId={ad.adSetId} campaignId={ad.campaignId} name={ad.name} className="truncate text-[15px] font-semibold" dateParam={dateParam} />
                       <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${fatigue.cls}`}>
                         {fatigue.label}
                       </span>

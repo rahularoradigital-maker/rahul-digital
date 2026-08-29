@@ -118,7 +118,7 @@ function ActionSection({
               </span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <AdLink accountId={accountId} adId={item.adId} name={item.adName} className="truncate text-sm font-medium" dateParam={dateParam} />
+                  <AdLink accountId={accountId} adId={item.adId} adSetId={ad?.adSetId} campaignId={ad?.campaignId} name={item.adName} className="truncate text-sm font-medium" dateParam={dateParam} />
                   <span className="shrink-0 text-sm text-[var(--ink-muted)]">·</span>
                   <span className="shrink-0 truncate text-sm text-[var(--ink)]">{item.label}</span>
                 </div>

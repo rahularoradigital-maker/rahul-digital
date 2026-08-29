@@ -95,7 +95,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
             {winners.map((ad) => (
               <div key={ad.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
                 <div className="min-w-0">
-                  <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="block truncate text-[15px] font-semibold" dateParam={dateParam} />
+                  <AdLink accountId={accountId} adId={ad.id} adSetId={ad.adSetId} campaignId={ad.campaignId} name={ad.name} className="block truncate text-[15px] font-semibold" dateParam={dateParam} />
                   <div className="mt-1 text-xs text-[var(--good-ink)]">Scale by 30% at a time, not more.</div>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-0.5">
@@ -133,7 +133,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
                 return (
                   <div key={ad.id}>
                     <div className="mb-1 flex items-center justify-between gap-3 text-[13px]">
-                      <AdLink accountId={accountId} adId={ad.id} name={ad.name} className="truncate font-medium" dateParam={dateParam} />
+                      <AdLink accountId={accountId} adId={ad.id} adSetId={ad.adSetId} campaignId={ad.campaignId} name={ad.name} className="truncate font-medium" dateParam={dateParam} />
                       <span className="shrink-0 tabular-nums text-[var(--ink-muted)]">
                         {rupees.format(ad.spendRs)} · {Math.round(share * 100)}%
                       </span>

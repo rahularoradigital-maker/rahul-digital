@@ -1,4 +1,5 @@
 import { DAILY_KPIS, type DailyPoint } from "@/lib/cockpit/daily-series";
+import { Sparkline } from "@/components/app/analytics/sparkline";
 import { rupees } from "@/lib/format";
 
 // Small day-wise SPARKLINES - one tiny trend line per metric, no axes, no big chart. Matches the
@@ -20,34 +21,6 @@ function fmtValue(v: number | null, fmt: string): string {
 }
 
 // A tiny inline line for one metric's day-wise values. Fixed viewBox, scales to the tile width.
-function Sparkline({ values }: { values: (number | null)[] }) {
-  const nums = values.filter((v): v is number => v !== null && Number.isFinite(v));
-  const W = 120, H = 30, pad = 2;
-  if (nums.length === 0) return <div className="h-[30px]" aria-hidden="true" />;
-  const min = Math.min(...nums), max = Math.max(...nums), range = max - min || 1;
-  const n = values.length;
-  const xAt = (i: number) => (n <= 1 ? W / 2 : pad + (i / (n - 1)) * (W - pad * 2));
-  const yAt = (v: number) => pad + (H - pad * 2) - ((v - min) / range) * (H - pad * 2);
-
-  let d = "";
-  let pen = false;
-  let lastPt: { x: number; y: number } | null = null;
-  for (let i = 0; i < n; i++) {
-    const v = values[i];
-    if (v === null || !Number.isFinite(v)) { pen = false; continue; }
-    const x = xAt(i), y = yAt(v as number);
-    d += `${pen ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)} `;
-    pen = true;
-    lastPt = { x, y };
-  }
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="30" preserveAspectRatio="none" role="img" className="block">
-      <path d={d.trim()} fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      {lastPt && <circle cx={lastPt.x} cy={lastPt.y} r="2" fill="var(--accent)" />}
-    </svg>
-  );
-}
-
 // Direction of a metric across the window (first vs last real value). Neutral wording only: "up" on a
 // metric like CPA is not "good", so the glyph reports direction, never a verdict/colour judgment.
 function trendGlyph(values: (number | null)[]): string {
