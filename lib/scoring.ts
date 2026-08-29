@@ -99,8 +99,8 @@ function ctrToScore(ctr: number): number {
 
 // Per-ad absolute objective score used for Account Health. Conversion is scored on ROAS
 // (falling back to CTR when no revenue is tracked, so the ad still gets an honest read);
-// awareness blends click-through with freshness (low fatigue); the click objectives score
-// on CTR. Returns null only when there is genuinely nothing to score (no impressions).
+// awareness leads on freshness/reach (low frequency-saturation), CTR only minor; the click
+// objectives score on CTR. Returns null only when there is genuinely nothing to score (no impressions).
 function healthScoreOf(objective: Objective, a: Agg): number | null {
   const ctr = a.impressions > 0 ? a.clicks / a.impressions : null;
   if (objective === "conversion") {
@@ -108,8 +108,12 @@ function healthScoreOf(objective: Objective, a: Agg): number | null {
     return ctr === null ? null : ctrToScore(ctr);
   }
   if (objective === "awareness") {
+    // Awareness is about broad reach at a controlled frequency, NOT clicks. Lead on freshness (low
+    // frequency-saturation = still reaching new people), with CTR only a minor engagement proxy. The old
+    // 60% CTR weight wrongly killed a cheap-reach brand video that few people clicked - clicks were never
+    // its job. (calibrate-at-build; to be ledger-tuned. See APP-CANON devil's-advocate note.)
     const fresh = 100 - fatigueScore(a.avgFrequency);
-    return ctr === null ? fresh : Math.round(0.6 * ctrToScore(ctr) + 0.4 * fresh);
+    return ctr === null ? fresh : Math.round(0.7 * fresh + 0.3 * ctrToScore(ctr));
   }
   return ctr === null ? null : ctrToScore(ctr);
 }
