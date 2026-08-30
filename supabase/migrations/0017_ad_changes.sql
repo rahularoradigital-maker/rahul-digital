@@ -1,3 +1,7 @@
+-- NOTE: applied to the live DB under the history name "0015_ad_changes" (2026-08-30); this file is renamed
+-- to 0017 only to keep repo ordinals unique (a parallel workstream owns 0015_audit_log + 0016_system_flags).
+-- Migration files are the non-authoritative mirror; the Supabase migration history is the source of truth.
+--
 -- Media-Buyer Change Intelligence: change-history store + its incremental-sync cursor. Mirrors ad_metrics
 -- conventions: (user_id, account_external_id, ...) scoping, deny-by-default RLS (service-role only),
 -- created_at/updated_at. change_id is a synthetic stable id so re-ingest dedupes. Applied live 2026-08-30.
