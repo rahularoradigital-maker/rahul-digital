@@ -1,4 +1,5 @@
 import { NextResponse, after, type NextRequest } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchLiveCockpit, getUserMetaSession } from "@/lib/meta-sync";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
@@ -39,7 +40,12 @@ function kickChain(origin: string, secret: string, uid: string, hop: number) {
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return NextResponse.json({ error: "CRON_SECRET is not configured." }, { status: 503 });
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
+  // Constant-time compare so the secret can't be recovered via response-timing.
+  const presented = request.headers.get("authorization") ?? "";
+  const expected = `Bearer ${secret}`;
+  const a = Buffer.from(presented);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -50,3 +50,6 @@ docs/shared-research/**/*.pdf
 docs/shared-research/**/*.mp4
 docs/shared-research/**/*.mov
 docs/shared-research/**/_chat.txt
+
+# Never track spreadsheets (docs/data dumps); the API-keys one is a secret footgun
+*.xlsx

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runTaskText } from "@/lib/ai/router";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 import { loadCompetitorFormatAds } from "@/lib/competitors/data";
@@ -20,6 +21,10 @@ export async function POST(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  // Per-user cap: this is a billed Gemini call; block a session from looping it (cost-DoS guard).
+  if ((await enforceRateLimit(`analyze:${user.id}`, { windowMs: 600_000, max: 30 })).limited) {
+    return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });
+  }
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: "Not configured yet (GEMINI_API_KEY missing)." }, { status: 400 });
   }
