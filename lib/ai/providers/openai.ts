@@ -5,11 +5,12 @@
 import type { InlineImage } from "../tasks.ts";
 import { jsonPrompt, parseJson } from "../json.ts";
 import { recordSpend } from "../spend.ts";
+import { resolveKey } from "../../keys.ts";
 
 const ENDPOINT = "https://api.openai.com/v1/chat/completions";
 
 async function call(model: string, prompt: string, inline: InlineImage | null, json: boolean): Promise<string | null> {
-  const key = process.env.OPENAI_API_KEY;
+  const key = await resolveKey("OPENAI_API_KEY");
   if (!key) return null;
   const parts: Record<string, unknown>[] = [{ type: "text", text: prompt }];
   if (inline) parts.push({ type: "image_url", image_url: { url: `data:${inline.mimeType};base64,${inline.data}` } });

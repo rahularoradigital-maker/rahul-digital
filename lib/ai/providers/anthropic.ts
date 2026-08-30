@@ -5,11 +5,12 @@
 import type { InlineImage } from "../tasks.ts";
 import { jsonPrompt, parseJson } from "../json.ts";
 import { recordSpend } from "../spend.ts";
+import { resolveKey } from "../../keys.ts";
 
 const ENDPOINT = "https://api.anthropic.com/v1/messages";
 
 async function call(model: string, prompt: string, inline: InlineImage | null): Promise<string | null> {
-  const key = process.env.ANTHROPIC_API_KEY;
+  const key = await resolveKey("ANTHROPIC_API_KEY");
   if (!key) return null;
   const content: Record<string, unknown>[] = [];
   if (inline) content.push({ type: "image", source: { type: "base64", media_type: inline.mimeType, data: inline.data } });

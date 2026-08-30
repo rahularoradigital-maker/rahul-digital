@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import { loadAdminDashboard } from "@/lib/admin/dashboard";
+import { keyStatus } from "@/lib/keys";
+import { AdminControls } from "@/components/app/admin/admin-controls";
 
 // Internal admin cost/ops console. Not in the nav; reachable at /app/admin. Gated by the ADMIN_EMAILS
 // allowlist (defaults to the founder). Shows per-user + per-provider + per-task AI spend and job health.
@@ -35,9 +37,11 @@ export default async function AdminPage() {
   }
 
   let d: Awaited<ReturnType<typeof loadAdminDashboard>> | null = null;
+  let keys: Awaited<ReturnType<typeof keyStatus>> = [];
   let loadError: string | null = null;
   try {
     d = await loadAdminDashboard(30);
+    keys = await keyStatus();
   } catch (e) {
     loadError = e instanceof Error ? e.message : "failed to load";
   }
@@ -88,6 +92,8 @@ export default async function AdminPage() {
           </div>
         ))}
       </div>
+
+      <AdminControls keys={keys} />
 
       <Card title="Connectors & integrations" sub="What's wired and working right now.">
         <div className="flex flex-wrap gap-2">

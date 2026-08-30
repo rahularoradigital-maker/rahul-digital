@@ -7,6 +7,7 @@
 import { fetchWithTimeout } from "./http.ts";
 import { isPublicHttpsUrl } from "./ssrf.ts";
 import { recordSpend } from "./ai/spend.ts";
+import { resolveKey } from "./keys.ts";
 
 const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -34,7 +35,7 @@ export function stringObjectSchema(keys: string[]): Record<string, unknown> {
 // One tiny diagnostic call so a failing run can report WHY (status + body snippet) instead
 // of a silent "0 analyzed". Text-only; no schema. Never throws.
 export async function probeGemini(): Promise<{ ok: boolean; status: number; body: string }> {
-  const key = process.env.GEMINI_API_KEY;
+  const key = await resolveKey("GEMINI_API_KEY");
   if (!key) return { ok: false, status: 0, body: "GEMINI_API_KEY not set" };
   try {
     const res = await fetch(ENDPOINT, {
@@ -78,7 +79,7 @@ export async function callGemini(
   schema: Record<string, unknown>,
   inline?: InlineImage | null,
 ): Promise<Record<string, unknown> | null> {
-  const key = process.env.GEMINI_API_KEY;
+  const key = await resolveKey("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY is not set");
 
   const parts: Record<string, unknown>[] = [{ text: prompt }];
@@ -128,7 +129,7 @@ export async function callGemini(
  * caller degrades gracefully; throws only when the key is missing (a real config error).
  */
 export async function callGeminiText(prompt: string): Promise<string | null> {
-  const key = process.env.GEMINI_API_KEY;
+  const key = await resolveKey("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY is not set");
 
   const bodyJson = JSON.stringify({
