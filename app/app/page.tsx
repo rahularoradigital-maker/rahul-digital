@@ -9,6 +9,7 @@ import { ActionList } from "@/components/cockpit/ActionList";
 import { FatigueRadar } from "@/components/cockpit/FatigueRadar";
 import { Leaderboard } from "@/components/cockpit/Leaderboard";
 import { FunnelCard } from "@/components/cockpit/FunnelCard";
+import { CulpritBanner } from "@/components/cockpit/CulpritBanner";
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import type { DailyPoint } from "@/lib/cockpit/daily-series";
 import type { LevelFunnels } from "@/lib/cockpit/level-funnel";
@@ -294,6 +295,9 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
       {/* Scaling headroom (marginal economics) + ad-level funnel metrics */}
       <ScalingCard marginal={marginal} />
       <FunnelCard funnel={funnel} dailySeries={dailySeries} funnelLevels={funnelLevels} />
+
+      {/* Why-results-dropped diagnostic: names a paused/ended campaign as the cause (never as a to-do) */}
+      <CulpritBanner dailySeries={dailySeries} funnelLevels={funnelLevels} />
 
       {/* This week's plan + Fatigue radar */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
