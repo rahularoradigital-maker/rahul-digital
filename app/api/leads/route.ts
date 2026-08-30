@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createRateLimiter } from "@/lib/rate-limit";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 
 // Public lead capture for the /book-demo form. No auth (it is a marketing form), so it is
 // deliberately narrow: bound the abuse surface (IP rate-limit + body-size cap), validate the email,
@@ -12,9 +12,9 @@ const cap = (v: unknown, n: number): string | null => {
   const s = typeof v === "string" ? v.trim() : "";
   return s ? s.slice(0, n) : null;
 };
-// At most 8 submissions per IP per 10 minutes (a real person submits once). Per-instance ceiling; see
-// lib/rate-limit.ts. Module-scope so it persists across invocations on a warm serverless instance.
-const limiter = createRateLimiter({ windowMs: 600_000, max: 8 });
+// At most 8 submissions per IP per 10 minutes (a real person submits once). Distributed across instances
+// when Upstash is configured, else per-instance (see lib/rate-limit-distributed.ts).
+const RL = { windowMs: 600_000, max: 8 };
 const clientIp = (request: NextRequest): string =>
   (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown";
 
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   if (Number(request.headers.get("content-length") ?? 0) > 10_000) {
     return NextResponse.json({ error: "Request too large." }, { status: 413 });
   }
-  if (limiter(clientIp(request)).limited) {
+  if ((await enforceRateLimit(clientIp(request), RL)).limited) {
     return NextResponse.json({ error: "Too many requests. Please try again in a few minutes." }, { status: 429 });
   }
 

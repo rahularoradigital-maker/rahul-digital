@@ -2,6 +2,8 @@ import { NextResponse, after, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchLiveCockpit, getUserMetaSession } from "@/lib/meta-sync";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
+import { getAiCallsToday } from "@/lib/ai/usage";
+import { sendAlert } from "@/lib/alerts";
 
 // Background sync (ADR-0004): pre-warm each connected account's DEFAULT cockpit into cockpit_cache on a
 // schedule, so the first page load is a fast cache read instead of a cold Meta pull, AND run the day-wise
@@ -92,5 +94,19 @@ export async function GET(request: NextRequest) {
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, Math.max(1, queue.length)) }, worker));
 
-  return NextResponse.json({ ok: true, accounts: userIds.length, warmed, empty, failed, ingestionChainsStarted: warmed });
+  // Daily ops + cost alarm: push failures and AI-spend-over-budget to the alert channel (no-op if
+  // ALERT_WEBHOOK_URL is unset - it just logs). AI_DAILY_CALL_BUDGET=0/unset disables the budget check.
+  const aiCalls = await getAiCallsToday();
+  const budget = Number(process.env.AI_DAILY_CALL_BUDGET || 0);
+  const overBudget = budget > 0 && aiCalls > budget;
+  if (failed > 0 || overBudget) {
+    await sendAlert({
+      title: failed > 0 ? `${failed} account(s) failed the daily sync` : "AI daily call budget exceeded",
+      detail: `Warmed ${warmed}/${userIds.length}, failed ${failed}. AI calls today: ${aiCalls}${budget ? ` (budget ${budget})` : ""}.`,
+      severity: overBudget ? "critical" : "warning",
+      context: { warmed, failed, aiCalls, budget },
+    });
+  }
+
+  return NextResponse.json({ ok: true, accounts: userIds.length, warmed, empty, failed, aiCalls, ingestionChainsStarted: warmed });
 }

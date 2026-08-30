@@ -8,6 +8,7 @@ import type { InlineImage, ModelRef, TaskKind } from "./tasks.ts";
 import { gemini } from "./providers/gemini.ts";
 import { openai } from "./providers/openai.ts";
 import { anthropic } from "./providers/anthropic.ts";
+import { recordAiCall } from "./usage.ts";
 
 const ADAPTERS = { gemini, openai, anthropic };
 
@@ -19,6 +20,7 @@ function chain(kind: TaskKind): ModelRef[] {
 /** Text task: returns the raw model text (caller parses if needed), or null after all fallbacks. */
 export async function runTaskText(kind: TaskKind, prompt: string): Promise<string | null> {
   for (const m of chain(kind)) {
+    recordAiCall(); // fire-and-forget cost counter (no-op without Upstash)
     const out = await ADAPTERS[m.provider].text(m.model, prompt);
     if (out != null) return out;
     if (process.env.ADBRAIN_PERF) console.warn(`[ai] ${kind}: ${m.provider}/${m.model} returned null, trying next`);
@@ -34,6 +36,7 @@ export async function runTaskJson(
   inline?: InlineImage | null,
 ): Promise<Record<string, unknown> | null> {
   for (const m of chain(kind)) {
+    recordAiCall(); // fire-and-forget cost counter (no-op without Upstash)
     const out = await ADAPTERS[m.provider].json(m.model, prompt, schema, inline ?? null);
     if (out != null) return out;
     if (process.env.ADBRAIN_PERF) console.warn(`[ai] ${kind}: ${m.provider}/${m.model} returned null, trying next`);
