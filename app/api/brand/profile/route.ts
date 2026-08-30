@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { setAiUser } from "@/lib/ai/context";
 import { getUserMetaSession, fetchLiveCockpit } from "@/lib/meta-sync";
 import { fetchAccountCurrency, fetchBrandWebsite } from "@/lib/meta-source";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
@@ -15,6 +16,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  setAiUser(user.id); // attribute AI spend to this user
   const session = await getUserMetaSession(user.id);
   if (!session) return NextResponse.json({ profile: null });
   return NextResponse.json({ profile: await loadBrandProfile(user.id, session.activeExternalId) });
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  setAiUser(user.id); // attribute AI spend to this user
 
   const session = await getUserMetaSession(user.id);
   if (!session) return NextResponse.json({ error: "Connect a Meta ad account first." }, { status: 400 });

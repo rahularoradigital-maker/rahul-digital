@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { setAiUser } from "@/lib/ai/context";
 import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
 import { ensureProductDNA } from "@/lib/creative-production/intelligence/product-dna";
 import { loadEffectiveBrandDNA } from "@/lib/creative-production/intelligence/brand-dna";
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  setAiUser(user.id); // attribute AI spend to this user
   const conn = await getShopifyConnectionStatus(user.id);
   if (!conn) return NextResponse.json({ error: "No connected store." }, { status: 400 });
 

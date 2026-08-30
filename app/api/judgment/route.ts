@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { setAiUser } from "@/lib/ai/context";
 import { judgeAccount, narrate, type AdInput } from "@/lib/judgment/agent";
 
 // The parallel Judge agent, exposed. POST a batch of the dashboard's ads (already scored upstream, mapped to
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  setAiUser(user.id); // attribute AI spend to this user
 
   let body: unknown;
   try {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { setAiUser } from "@/lib/ai/context";
 import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
 import { ensureProductDNA } from "@/lib/creative-production/intelligence/product-dna";
 import { loadEffectiveBrandDNA } from "@/lib/creative-production/intelligence/brand-dna";
@@ -18,6 +19,7 @@ export async function GET(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  setAiUser(user.id); // attribute AI spend to this user
   const productId = new URL(req.url).searchParams.get("productId");
   if (!productId) return NextResponse.json({ error: "productId required" }, { status: 400 });
   const concepts = await loadConcepts(user.id, productId);
@@ -28,6 +30,7 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  setAiUser(user.id); // attribute AI spend to this user
   const conn = await ctx(user.id);
   if (!conn) return NextResponse.json({ error: "No connected store." }, { status: 400 });
   const shopDomain = conn.shopDomain;

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { enforceRateLimit } from "@/lib/rate-limit-distributed";
+import { setAiUser } from "@/lib/ai/context";
 import { searchAdLibraryPages, fetchAdLibraryAds, iso2FromMarket } from "@/lib/meta-source";
 import { loadBrandProfile } from "@/lib/brand/profile";
 import { buildSearchQueries, shortlistCandidates } from "@/lib/brand/discover";
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const userId = user.id;
+  setAiUser(userId); // attribute AI spend to this user
   // Per-user cap: discovery makes billed Meta Ad Library calls; block a session from looping it.
   if ((await enforceRateLimit(`discover:${userId}`, { windowMs: 600_000, max: 20 })).limited) {
     return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });

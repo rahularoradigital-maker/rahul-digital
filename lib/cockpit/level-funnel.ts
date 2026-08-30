@@ -7,7 +7,22 @@
 import { windowFunnel, type ExtendedMetricsRow, type FunnelMetrics } from "../metrics/funnel-metrics.ts";
 
 // One rolled-up group (an ad set or a campaign). id/name identify it; spendRs orders the list.
-export type GroupFunnel = { id: string; name: string; spendRs: number; funnel: FunnelMetrics };
+// `daily` is the day-wise spend series (the "strike graph" of delivery), and `delivering` is recent-spend
+// liveness so the UI can flag a group that has stopped (paused/ended) without pointing to it as actionable.
+export type GroupFunnel = { id: string; name: string; spendRs: number; funnel: FunnelMetrics; daily: { date: string; spend: number }[]; delivering: boolean };
+
+const RECENT_DELIVERY_DAYS = 7; // matches lib/scoring: no spend within this many days of the window end -> stopped
+
+// Sum a group's rows into one spend-per-day series (sorted), and decide liveness from its recent tail.
+function dailySpend(rows: ExtendedMetricsRow[], asOf: string | null): { daily: { date: string; spend: number }[]; delivering: boolean } {
+  const byDate = new Map<string, number>();
+  for (const r of rows) byDate.set(r.date, (byDate.get(r.date) ?? 0) + r.spend);
+  const daily = [...byDate.entries()].map(([date, spend]) => ({ date, spend })).sort((a, b) => a.date.localeCompare(b.date));
+  let lastSpendDate: string | null = null;
+  for (const d of daily) if (d.spend > 0 && (lastSpendDate === null || d.date > lastSpendDate)) lastSpendDate = d.date;
+  const delivering = Boolean(asOf && lastSpendDate && Math.round((Date.parse(asOf) - Date.parse(lastSpendDate)) / 86_400_000) <= RECENT_DELIVERY_DAYS);
+  return { daily, delivering };
+}
 
 // One ad's contribution to the rollups: its grouping ids/names + its day-wise funnel rows.
 export type LevelInputAd = {
@@ -20,7 +35,7 @@ export type LevelInputAd = {
 
 export type LevelFunnels = { adset: GroupFunnel[]; campaign: GroupFunnel[] };
 
-function groupBy(ads: LevelInputAd[], idOf: (a: LevelInputAd) => string | undefined, nameOf: (a: LevelInputAd) => string | undefined, limit: number): GroupFunnel[] {
+function groupBy(ads: LevelInputAd[], idOf: (a: LevelInputAd) => string | undefined, nameOf: (a: LevelInputAd) => string | undefined, limit: number, asOf: string | null): GroupFunnel[] {
   const groups = new Map<string, { name: string; rows: ExtendedMetricsRow[]; spend: number }>();
   for (const a of ads) {
     const id = idOf(a);
@@ -33,15 +48,18 @@ function groupBy(ads: LevelInputAd[], idOf: (a: LevelInputAd) => string | undefi
     groups.set(id, g);
   }
   return [...groups.entries()]
-    .map(([id, g]) => ({ id, name: g.name, spendRs: Math.round(g.spend), funnel: windowFunnel(g.rows) }))
+    .map(([id, g]) => ({ id, name: g.name, spendRs: Math.round(g.spend), funnel: windowFunnel(g.rows), ...dailySpend(g.rows, asOf) }))
     .sort((x, y) => y.spendRs - x.spendRs)
     .slice(0, limit);
 }
 
-// Top `limit` ad sets and campaigns by spend, each with its own rolled-up funnel.
+// Top `limit` ad sets and campaigns by spend, each with its own rolled-up funnel + delivery strike graph.
 export function levelFunnels(ads: LevelInputAd[], limit = 8): LevelFunnels {
+  // asOf = the window's most recent data day, so liveness reads correctly for historical windows too.
+  const allDates = ads.flatMap((a) => a.rows.map((r) => r.date)).sort();
+  const asOf = allDates.length ? allDates[allDates.length - 1] : null;
   return {
-    adset: groupBy(ads, (a) => a.adSetId, (a) => a.adsetName, limit),
-    campaign: groupBy(ads, (a) => a.campaignId, (a) => a.campaignName, limit),
+    adset: groupBy(ads, (a) => a.adSetId, (a) => a.adsetName, limit, asOf),
+    campaign: groupBy(ads, (a) => a.campaignId, (a) => a.campaignName, limit, asOf),
   };
 }

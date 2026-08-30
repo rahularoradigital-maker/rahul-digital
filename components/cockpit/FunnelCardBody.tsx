@@ -94,11 +94,12 @@ export function FunnelCardBody({ funnel, dailySeries, funnelLevels }: { funnel: 
         <div className="py-6 text-center text-sm text-[var(--ink-muted)]">No {level === "adset" ? "ad set" : "campaign"} breakdown for this window.</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
+          <table className="w-full min-w-[820px] border-collapse text-sm">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-wide text-[var(--ink-muted)]">
                 <th className="py-2 pr-3 font-medium">{level === "adset" ? "Ad set" : "Campaign"}</th>
                 <th className="py-2 pr-3 text-right font-medium">Spend</th>
+                <th className="py-2 pr-3 font-medium">Trend</th>
                 {STATS.map((s) => (
                   <th key={s.label} className="py-2 pr-3 text-right font-medium">{s.label}</th>
                 ))}
@@ -107,8 +108,16 @@ export function FunnelCardBody({ funnel, dailySeries, funnelLevels }: { funnel: 
             <tbody>
               {groups.map((g) => (
                 <tr key={g.id} className="border-t border-[var(--surface-alt)]">
-                  <td className="max-w-[220px] truncate py-2 pr-3 font-medium text-[var(--ink)]" title={g.name}>{g.name}</td>
+                  <td className="max-w-[220px] py-2 pr-3 font-medium text-[var(--ink)]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="truncate" title={g.name}>{g.name}</span>
+                      {!g.delivering && (
+                        <span className="shrink-0 rounded-full bg-[var(--surface-alt)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]" title="No spend in the recent window - paused or ended">not delivering</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="py-2 pr-3 text-right tabular-nums">{rupees.format(g.spendRs)}</td>
+                  <td className="w-[92px] py-2 pr-3"><Sparkline values={g.daily.map((d) => d.spend)} height={22} /></td>
                   {STATS.map((s) => (
                     <td key={s.label} className="py-2 pr-3 text-right tabular-nums">{s.get(g.funnel)}</td>
                   ))}

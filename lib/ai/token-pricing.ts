@@ -4,6 +4,11 @@
 // (accounting, not runtime). Gemini free tier bills $0 in practice, but we cost it at list price so the
 // dashboard shows the true marginal value of usage.
 
+// Version + provenance of this pricing table (control-plane Phase 7: pricing must be versioned, not silent).
+// Bump when any price changes; recorded conceptually with each cost so historical costs stay reproducible.
+export const MODEL_PRICING_VERSION = "2026-08-30";
+export const MODEL_PRICING_SOURCE = "provider public pricing pages (approximate) - confirm before billing on it";
+
 type Price = { match: string; in: number; out: number };
 
 // Order matters: more specific prefixes first (e.g. "gpt-4o-mini" before "gpt-4o").

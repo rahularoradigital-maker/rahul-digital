@@ -49,4 +49,17 @@ assert.equal(z.campaign[0].funnel.ctr, null, "0 impressions -> ctr null, never f
 const many = Array.from({ length: 12 }, (_, i) => ad({ campaignId: `c${i}`, campaignName: `C${i}`, rows: [row({ spend: i + 1 })] }));
 assert.equal(levelFunnels(many, 8).campaign.length, 8, "limit respected");
 
-console.log("PASS: per-level funnel rollups (group + rollup + sort + skip-missing-id + null-on-zero + limit)");
+// Strike graph + liveness: each group carries a day-wise spend series (the trend), and `delivering` is true
+// only when it spent within 7 days of the window's last data day. asOf below = 2026-08-29 (the latest date).
+const t = levelFunnels([
+  ad({ campaignId: "live", campaignName: "Live", rows: [row({ date: "2026-08-20", spend: 100 }), row({ date: "2026-08-29", spend: 100 })] }),
+  ad({ campaignId: "stopped", campaignName: "Stopped", rows: [row({ date: "2026-08-01", spend: 100 }), row({ date: "2026-08-05", spend: 100 })] }),
+]);
+const liveG = t.campaign.find((g) => g.id === "live")!;
+const stoppedG = t.campaign.find((g) => g.id === "stopped")!;
+assert.equal(liveG.delivering, true, "group spending near the window end is delivering");
+assert.equal(stoppedG.delivering, false, "group whose last spend was 3+ weeks ago is NOT delivering");
+assert.deepEqual(liveG.daily.map((d) => d.date), ["2026-08-20", "2026-08-29"], "daily strike-graph series is sorted by date");
+assert.equal(liveG.daily.reduce((s, d) => s + d.spend, 0), 200, "daily spend series sums to the group's total spend");
+
+console.log("PASS: per-level funnel rollups (group + rollup + sort + skip-missing-id + null-on-zero + limit + strike-graph + liveness)");
