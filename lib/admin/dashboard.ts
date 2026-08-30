@@ -11,6 +11,7 @@ const round = (n: number) => Math.round(n * 1e4) / 1e4;
 export type UserSpend = { userId: string | null; email: string; calls: number; promptTokens: number; completionTokens: number; costUsd: number };
 export type Bucket = { key: string; calls: number; costUsd: number };
 export type JobRow = { account: string; userEmail: string; lastOk: boolean | null; lastError: string | null; lastRunAt: string | null; detail: string };
+export type ConnectorStatus = { name: string; configured: boolean; status: "ok" | "not_configured" | "attention"; detail: string };
 export type AuditEventRow = { at: string; actor: string; action: string; target: string; result: string; reason: string | null };
 export type AdminDashboard = {
   windowDays: number;
@@ -22,6 +23,7 @@ export type AdminDashboard = {
   tasks: Bucket[];
   jobs: JobRow[];
   audit: AuditEventRow[];
+  connectors: ConnectorStatus[];
 };
 
 type UsageRow = { user_id: string | null; task: string | null; provider: string; model: string; prompt_tokens: number; completion_tokens: number; cost_usd: number };
@@ -78,6 +80,27 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     jobs.push({ account: s.account_external_id, userEmail: emails.get(s.user_id) ?? s.user_id, lastOk: s.last_ok, lastError: s.last_error, lastRunAt: s.last_run_at, detail: `change sync${s.changes_seen != null ? ` · ${s.changes_seen} changes` : ""}` });
   }
 
+  // Connector / integration health: which integrations are wired + working. Derived from env presence + a
+  // couple of DB signals (no separate registry table needed at this scale - a real registry is a later seam).
+  const { count: connectedAccounts } = await admin.from("ad_accounts").select("id", { count: "exact", head: true }).eq("platform", "meta").eq("status", "connected");
+  const { count: shopifyConns } = await admin.from("shopify_connections").select("user_id", { count: "exact", head: true });
+  const syncHasError = jobs.some((j) => j.detail.startsWith("metrics") && j.lastOk === false);
+  const env = (k: string) => Boolean(process.env[k]);
+  const imgChoice = (process.env.IMAGE_PROVIDER ?? "").toLowerCase();
+  const imgActive = imgChoice === "openai" ? env("OPENAI_API_KEY") : (imgChoice === "google" || imgChoice === "") && env("GEMINI_API_KEY");
+  const connectors: ConnectorStatus[] = [
+    { name: "Gemini (AI)", configured: env("GEMINI_API_KEY"), status: env("GEMINI_API_KEY") ? "ok" : "not_configured", detail: env("GEMINI_API_KEY") ? "key set" : "no key" },
+    { name: "OpenAI (fallback)", configured: env("OPENAI_API_KEY"), status: env("OPENAI_API_KEY") ? "ok" : "not_configured", detail: env("OPENAI_API_KEY") ? "key set" : "no key" },
+    { name: "Anthropic (fallback)", configured: env("ANTHROPIC_API_KEY"), status: env("ANTHROPIC_API_KEY") ? "ok" : "not_configured", detail: env("ANTHROPIC_API_KEY") ? "key set" : "no key" },
+    { name: "Meta Ads", configured: (connectedAccounts ?? 0) > 0, status: (connectedAccounts ?? 0) === 0 ? "not_configured" : syncHasError ? "attention" : "ok", detail: `${connectedAccounts ?? 0} connected account(s)${syncHasError ? " · a sync errored" : ""}` },
+    { name: "Shopify", configured: (shopifyConns ?? 0) > 0, status: (shopifyConns ?? 0) > 0 ? "ok" : "not_configured", detail: `${shopifyConns ?? 0} store(s)` },
+    { name: "Image generation", configured: imgActive, status: imgActive ? "ok" : "not_configured", detail: imgActive ? `real images (${imgChoice || "google"})` : "stub placeholders" },
+    { name: "Competitor source", configured: env("SCRAPECREATORS_API_KEY"), status: "ok", detail: env("SCRAPECREATORS_API_KEY") ? "ScrapeCreators" : "Meta Ad Library (free)" },
+    { name: "Upstash (limits/budget)", configured: env("UPSTASH_REDIS_REST_URL") && env("UPSTASH_REDIS_REST_TOKEN"), status: env("UPSTASH_REDIS_REST_URL") ? "ok" : "not_configured", detail: env("UPSTASH_REDIS_REST_URL") ? "distributed" : "per-instance fallback" },
+    { name: "Alerts webhook", configured: env("ALERT_WEBHOOK_URL"), status: env("ALERT_WEBHOOK_URL") ? "ok" : "not_configured", detail: env("ALERT_WEBHOOK_URL") ? "configured" : "logs only" },
+    { name: "Cron (auto-refresh)", configured: env("CRON_SECRET"), status: env("CRON_SECRET") ? "ok" : "attention", detail: env("CRON_SECRET") ? "armed" : "CRON_SECRET unset" },
+  ];
+
   const auditRaw = await listAudit(50);
   const audit: AuditEventRow[] = auditRaw.map((a) => ({
     at: a.occurred_at,
@@ -98,5 +121,6 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     tasks: [...byTask.values()].map((t) => ({ ...t, costUsd: round(t.costUsd) })).sort((a, b) => b.costUsd - a.costUsd),
     jobs,
     audit,
+    connectors,
   };
 }

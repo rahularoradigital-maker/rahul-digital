@@ -71,6 +71,18 @@ export default async function AdminPage() {
         ))}
       </div>
 
+      <Card title="Connectors & integrations" sub="What's wired and working right now.">
+        <div className="flex flex-wrap gap-2">
+          {d.connectors.map((c) => (
+            <div key={c.name} className="flex items-center gap-2 rounded-[10px] border border-[var(--hairline)] px-3 py-2 text-[13px]">
+              <span className="h-2 w-2 rounded-full" style={{ background: c.status === "ok" ? "#16a34a" : c.status === "attention" ? "#d97706" : "var(--ink-muted)" }} aria-hidden="true" />
+              <span className="font-medium text-[var(--ink)]">{c.name}</span>
+              <span className="text-[var(--ink-muted)]">{c.detail}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       <Card title="Spend by user" sub="Which user is spending how much on AI.">
         {d.users.length === 0 ? <Empty /> : (
           <table className="w-full text-[13px]">
