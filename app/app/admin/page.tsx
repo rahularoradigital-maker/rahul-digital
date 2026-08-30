@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/app/user";
+import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import { loadAdminDashboard } from "@/lib/admin/dashboard";
 
@@ -20,15 +20,34 @@ function Card({ title, sub, children }: { title: string; sub?: string; children:
 }
 
 export default async function AdminPage() {
-  const user = await getCurrentUser();
-  if (!user || !isAdminEmail(user.email)) {
+  // Resolve the email via getUser() (guaranteed to include email) rather than the JWT claims, which may omit
+  // it on this project's asymmetric-key setup - that omission would wrongly deny the real admin.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const email = user?.email ?? null;
+  if (!email || !isAdminEmail(email)) {
     return (
       <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-[14px] text-[var(--ink-muted)]">
         This page is for administrators only.
+        {email ? <span className="block mt-1 text-[12px]">Signed in as {email}. To grant access, add this email to ADMIN_EMAILS in Vercel.</span> : <span className="block mt-1 text-[12px]">(No email on the current session - try signing out and back in.)</span>}
       </div>
     );
   }
-  const d = await loadAdminDashboard(30);
+
+  let d: Awaited<ReturnType<typeof loadAdminDashboard>> | null = null;
+  let loadError: string | null = null;
+  try {
+    d = await loadAdminDashboard(30);
+  } catch (e) {
+    loadError = e instanceof Error ? e.message : "failed to load";
+  }
+  if (!d) {
+    return (
+      <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-[14px] text-[var(--ink-muted)]">
+        Admin data could not load{loadError ? `: ${loadError}` : ""}. The console works once AI usage or sync jobs exist.
+      </div>
+    );
+  }
   const th = "pb-2 pr-4 text-left font-medium text-[var(--ink-muted)]";
   const td = "py-2 pr-4 text-[var(--ink)]";
 
