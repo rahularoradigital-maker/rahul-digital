@@ -145,6 +145,19 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
   - Load-test harness (scripts/loadtest.mjs, `npm run loadtest`): bounded, public-GET-only, latency
     percentiles. Baseline vs live: 30/30 = 200, static p50 ~55ms, /api/health p50 ~520ms (live DB read).
 
+- **B26 — Rate limiting + alerts + cost tracking + backup drill + canonical domain (2026-08-30).** All
+  verified (68 gates, build green) and deployed.
+  - **Canonical URL is now https://adscaledigital.co** (apex serves; www 308-redirects to it). Verified live.
+  - **Distributed rate limiting** (lib/rate-limit-distributed.ts + lib/upstash.ts): Upstash-backed atomic
+    limiter, fail-open to the in-process one. Add UPSTASH_REDIS_REST_URL/TOKEN to switch on, zero code change.
+  - **Alert channel** (lib/alerts.ts): posts to ALERT_WEBHOOK_URL (Slack/Teams/Discord); logs if unset.
+  - **AI cost tracking** (lib/ai/usage.ts): per-day AI-call counter in the router; the daily cron alarms on
+    sync failures and when calls exceed AI_DAILY_CALL_BUDGET (via the alert channel).
+  - **Backup-restore drill** (docs/production/BACKUP-RESTORE-DRILL.md): executable restore procedure + DR quick-ref.
+  - **Load-test harness** already shipped (B25, `npm run loadtest`).
+  - **Google login**: button + callback code confirmed correct; ONLY needs the Google provider enabled in
+    Supabase (Google Cloud OAuth creds) — a dashboard step for Rahul, no code change.
+
 ---
 
 *This ledger is updated as new feedback comes in and re-shared as a download on request.*
