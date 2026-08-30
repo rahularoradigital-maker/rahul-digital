@@ -158,6 +158,21 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
   - **Google login**: button + callback code confirmed correct; ONLY needs the Google provider enabled in
     Supabase (Google Cloud OAuth creds) — a dashboard step for Rahul, no code change.
 
+- **B28 — Media-Buyer Change Intelligence engine (complete) + P0 security batch (2026-08-30).** All verified
+  (72 gates green, build + tsc clean, deployed).
+  - **Change engine, end-to-end:** P1 ingest (`ad_changes` + `syncChangeHistory`, wired into cron) → P3
+    impact engine (`change-impact.ts`: before/after on the objective's own metric, settled-tail trim,
+    sufficiency-gated → improved/worsened/flat/insufficient) → P4 ranking (`change-ranking.ts` +
+    `change-analysis.ts`: buyer leaderboard on outcomes, algo excluded, change-type rollup) → P5 UI
+    (`/app/changes` "Change Impact" in nav). Meta gives actor NAME not email; honest correlation-with-controls,
+    never naive causality. (Numbers go live once `ad_changes` has real rows from a cron sync.)
+  - **P0 security fixes:** SSRF guard on external image fetches; `/api/judgment` auth-gated; notifications
+    dedupe bug fixed (partial→full unique index, live); per-user rate caps on creative/analyze +
+    market/positioning + brand/discover (cost-DoS guard); cron secret compare now constant-time;
+    `.gitignore *.xlsx` + untracked the API-keys spreadsheet.
+  - Migration hygiene: renamed my `0015_ad_changes`→`0017` to clear the duplicate ordinal (a parallel
+    control-plane workstream owns `0015_audit_log`/`0016_system_flags`).
+
 ---
 
 *This ledger is updated as new feedback comes in and re-shared as a download on request.*
