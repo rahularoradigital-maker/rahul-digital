@@ -1,5 +1,6 @@
 import "server-only";
 import { fetchWithTimeout } from "@/lib/http";
+import { isPublicHttpsUrl } from "@/lib/ssrf";
 
 // Creative Production — Shopify Admin GraphQL client. POST to the shop's graphql.json with the encrypted
 // access token in the X-Shopify-Access-Token header (server-side only; never reaches the browser). Reads
@@ -22,12 +23,17 @@ export async function shopifyGraphQL<T = unknown>(
   variables: Record<string, unknown> = {},
   apiVersion = "2026-07",
 ): Promise<{ data: T; cost: ShopifyCost }> {
+  const endpoint = shopifyEndpoint(shopDomain, apiVersion);
+  // SSRF guard: shopDomain drives the request origin. Verify it is a public https host before sending the
+  // access token anywhere - never POST a credential to an internal/rebound address.
+  if (!(await isPublicHttpsUrl(endpoint))) throw new Error("Shopify endpoint host is not a public address");
   const res = await fetchWithTimeout(
-    shopifyEndpoint(shopDomain, apiVersion),
+    endpoint,
     {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": accessToken },
       body: JSON.stringify({ query, variables }),
+      redirect: "manual",
     },
     SHOPIFY_TIMEOUT_MS,
   );

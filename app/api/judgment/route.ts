@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { setAiUser } from "@/lib/ai/context";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 import { judgeAccount, narrate, type AdInput } from "@/lib/judgment/agent";
 
 // The parallel Judge agent, exposed. POST a batch of the dashboard's ads (already scored upstream, mapped to
@@ -77,6 +78,11 @@ export async function POST(req: Request) {
   const url = new URL(req.url);
   let narrative: string | null = null;
   if (url.searchParams.get("narrate") === "1") {
+    // The narrate path makes a BILLED LLM call, so it must be rate-limited (every sibling AI route is) -
+    // otherwise a signed-in user can loop it for unbounded AI spend. The deterministic result above is free.
+    if ((await enforceRateLimit(`judgment:${user.id}`, { windowMs: 600_000, max: 20 })).limited) {
+      return NextResponse.json({ ...account, narrative: null, error: "Narration rate limit reached; try again shortly." });
+    }
     try {
       narrative = await narrate(account);
     } catch {

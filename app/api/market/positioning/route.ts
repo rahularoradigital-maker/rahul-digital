@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runTaskText } from "@/lib/ai/router";
+import { compose } from "@/lib/ai/compose";
 import { setAiUser } from "@/lib/ai/context";
 import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
@@ -92,7 +93,7 @@ export async function POST() {
 
   const data = { us, competitors: them };
   try {
-    const answer = await runTaskText("positioning", `${prompt}\n\nDATA:\n${JSON.stringify(data)}`);
+    const answer = await runTaskText("positioning", compose(prompt, [{ label: "data", content: JSON.stringify(data) }]));
     if (!answer) {
       return NextResponse.json({ error: "Could not generate right now (the model was slow). Please try again." }, { status: 200 });
     }

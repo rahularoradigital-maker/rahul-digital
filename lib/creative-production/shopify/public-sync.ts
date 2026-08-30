@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchWithTimeout } from "@/lib/http";
+import { isPublicHttpsUrl } from "@/lib/ssrf";
 import { normalizePublicPage, type NormalizedProduct } from "./normalize";
 
 // Creative Production - NO-TOKEN Shopify ingest via the public storefront feed (`/products.json`). The user
@@ -21,7 +22,7 @@ export type PublicFetchResult = { ok: boolean; isShopify: boolean; origin: strin
 // Best-effort: null if not found (UI then shows the bare amount). One small GET, never throws.
 async function detectCurrency(origin: string): Promise<string | null> {
   try {
-    const res = await fetchWithTimeout(origin, { headers: HEADERS }, 12_000);
+    const res = await fetchWithTimeout(origin, { headers: HEADERS, redirect: "manual" }, 12_000);
     if (!res.ok) return null;
     const html = await res.text();
     const m = html.match(/Shopify\.currency\s*=\s*\{[^}]*"active"\s*:\s*"([A-Z]{3})"/) ?? html.match(/"currency"\s*:\s*"([A-Z]{3})"/);
@@ -47,12 +48,15 @@ export function toOrigin(raw: string): string | null {
 export async function fetchPublicShopifyProducts(rawUrl: string): Promise<PublicFetchResult> {
   const origin = toOrigin(rawUrl);
   if (!origin) return { ok: false, isShopify: false, origin: "", products: [], currency: null, error: "That does not look like a valid website URL." };
+  // SSRF guard: the origin is USER-SUPPLIED. Verify it is a public https host (not localhost / a private or
+  // metadata IP / a DNS-rebind) BEFORE any fetch, so this cannot be used to probe internal services.
+  if (!(await isPublicHttpsUrl(origin))) return { ok: false, isShopify: false, origin, products: [], currency: null, error: "That store URL could not be verified as a public web address." };
 
   const all: NormalizedProduct[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
     let json: unknown;
     try {
-      const res = await fetchWithTimeout(`${origin}/products.json?limit=${PAGE_SIZE}&page=${page}`, { headers: HEADERS }, 15_000);
+      const res = await fetchWithTimeout(`${origin}/products.json?limit=${PAGE_SIZE}&page=${page}`, { headers: HEADERS, redirect: "manual" }, 15_000);
       if (!res.ok) {
         if (page === 1) return { ok: false, isShopify: false, origin, products: [], currency: null, error: `The store did not return a public product feed (HTTP ${res.status}). It may not be Shopify, or the storefront is password-protected.` };
         break; // a later page failing just ends pagination with what we have

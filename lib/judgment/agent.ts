@@ -123,10 +123,11 @@ export function judgeAccount(ads: AdInput[]): AccountJudgment {
  */
 export async function narrate(acct: AccountJudgment): Promise<string | null> {
   const { runTaskText } = await import("../ai/router.ts");
+  const { compose } = await import("../ai/compose.ts");
   const top = acct.actionable.slice(0, 8).map((a) => `${a.name}: ${a.verdict} (conf ${a.confidence.tier}, ${a.agreement.agree}/3 agree) - ${a.headline}`);
-  const prompt =
+  const system =
     `You are a senior media buyer briefing an account owner. Below are deterministic verdicts already decided by a rules engine. ` +
-    `Do NOT change any verdict. In 4-6 plain sentences, tell them what to do first and why, grounded only in these lines.\n\n` +
-    `Account: ${acct.summary}\n\nTop actions:\n${top.join("\n")}`;
-  return runTaskText("decision-verdict", prompt);
+    `Do NOT change any verdict. In 4-6 plain sentences, tell them what to do first and why, grounded only in these lines.`;
+  // Ad names in the verdict lines are account-supplied - fence them so a crafted ad name can't inject.
+  return runTaskText("decision-verdict", compose(system, [{ label: "verdicts", content: `Account: ${acct.summary}\n\nTop actions:\n${top.join("\n")}` }]));
 }
