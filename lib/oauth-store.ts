@@ -1,6 +1,7 @@
 import "server-only"; // compile-time tripwire: decrypted OAuth tokens must never reach the client
 import { encryptToken, decryptToken } from "./crypto";
 import { createAdminClient } from "./supabase/admin";
+import { recordAudit } from "./security/audit-log";
 import type { TokenSet } from "./ad-source";
 
 // Encrypt OAuth tokens and upsert them into oauth_tokens (server-only, via the service role).
@@ -42,4 +43,30 @@ export async function readToken(adAccountId: string, userId: string): Promise<To
     refreshToken: data.encrypted_refresh ? decryptToken(data.encrypted_refresh) : undefined,
     expiresAt: data.expires_at ? new Date(data.expires_at) : undefined,
   };
+}
+
+// Revoke a stored credential: verify the caller owns the account, then destroy the token and mark the account
+// disconnected. Ownership-checked (never revoke another tenant's credential) and AUDITED (credentials.revoke).
+// Returns true if a credential was revoked, false if none was found for this owner. The token value is never
+// read or logged - only the fact of revocation is recorded.
+export async function revokeToken(adAccountId: string, userId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  // Ownership gate: the account must belong to this user, or we do nothing (and reveal nothing).
+  const { data: owned } = await admin.from("ad_accounts").select("id").eq("id", adAccountId).eq("user_id", userId).maybeSingle();
+  if (!owned) {
+    await recordAudit({ action: "credential.revoke", actorId: userId, targetType: "ad_account", targetId: adAccountId, result: "denied", reason: "not owner / account not found" });
+    return false;
+  }
+  const { error } = await admin.from("oauth_tokens").delete().eq("ad_account_id", adAccountId);
+  await admin.from("ad_accounts").update({ status: "disconnected", is_active: false }).eq("id", adAccountId).eq("user_id", userId);
+  await recordAudit({
+    action: "credential.revoke",
+    actorId: userId,
+    targetType: "ad_account",
+    targetId: adAccountId,
+    after: { status: "disconnected" },
+    result: error ? "error" : "ok",
+    reason: error ? `revoke failed: ${error.message}` : "credential revoked",
+  });
+  return !error;
 }
