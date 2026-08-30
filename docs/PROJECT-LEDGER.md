@@ -38,7 +38,7 @@ Every request/feedback, newest at the bottom. Status: 🟢 done · 🟠 partial/
 | 19 | Show campaigns / ad-sets / ads processed each run | 🟢 (cockpit context line: N campaigns, M ad sets, K ads) |
 | 20 | Can a static ad image be read? | 🟢 (yes - verified: Gemini describes the image) |
 | 21 | Ad Library link button per brand; show ads as in FB Ad Library | 🟢 |
-| 22 | Incorporate Imagive.ai data/logics/items | 🟠 (spec in docs/imagive-spec.md; building) |
+| 22 | Incorporate the sibling product.ai data/logics/items | 🟠 (spec in docs/the sibling product-spec.md; building) |
 | 23 | Build on labeled triples; RLEF as the audit baseline | 🟢 (decision_triples table + per-run logging live) |
 | 24 | Searchable campaign + objective dropdowns; custom date range | 🟠 (search 🟢; custom date range 🔴) |
 | 25 | This living ledger + mirror shared docs to Google Drive | 🟢 (ledger built; Drive mirror offered) |
@@ -91,7 +91,7 @@ Each real document Rahul shared, mirrored into `docs/`, and what it changed in t
 |---|---|---|
 | LinkedIn/tech rulebooks (sanitized) | `docs/rules/` | Voice, verdict/scoring rules, quality gates |
 | 9-stage competitor diagram | `docs/competitor-intelligence.md` | The whole competitor pipeline (stages 1-9), stage->code map |
-| Imagive.ai competitive tool | `docs/imagive-spec.md` | Roadmap: ad-traffic distribution, longevity top ads, dedupe, placement insight |
+| the sibling product.ai competitive tool | `docs/the sibling product-spec.md` | Roadmap: ad-traffic distribution, longevity top ads, dedupe, placement insight |
 | AI vocab / audit doc (sanitized) | `docs/ai-audit-architecture.md` | Labeled-triples + RLEF audit design; decision_triples plan |
 | KPI set (162 KPIs) | `lib/app/kpi-catalog.ts` | The KPI catalog + select-all |
 
@@ -121,7 +121,7 @@ Each real document Rahul shared, mirrored into `docs/`, and what it changed in t
   exact brand (boAt) outranks big unrelated pages (Boateng). Ad Performance Intelligence summary
   on the competitor dashboard (live ads / active / creative mix / new-7d, real counts only).
   Verified data flow live: real ad_ids + objectives flowing (via the decision_triples audit).
-  NOTE: the "Ad Performance Intelligence" screenshot Rahul shared is the Imagive.ai reference
+  NOTE: the "Ad Performance Intelligence" screenshot Rahul shared is the the sibling product.ai reference
   tool; our equivalent is Market -> Competitors (now with the summary row + platform/traffic/
   longevity). Device-level breakdown data is a NEXT data pull. All checks green.
 - **2026-08-27 (batch 4, autonomous)** Competitor discovery re-ranked (verified + most-liked

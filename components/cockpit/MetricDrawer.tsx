@@ -1,6 +1,6 @@
 "use client";
 
-// "How sure + how computed" disclosure for a headline pillar (Yamin canon doctrine:
+// "How sure + how computed" disclosure for a headline pillar (measurement canon doctrine:
 // "a weight or number must be defended, not decorated"). It pairs the evidence tag with a
 // four-part disclosure - what we FETCH, the FORMULA, the LOGIC, and a worked EXAMPLE on
 // this account's real numbers - so a reader can see the source and the maths behind a

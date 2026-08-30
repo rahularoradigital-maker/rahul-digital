@@ -17,7 +17,7 @@ what each does better, and what we steal - then the plan.
 ### Competitor / ad-library intelligence
 - **Foreplay.co** - swipe-file + ad-library discovery + brief builder; boards of saved rival
   ads. STEAL: save-to-board + brief generation from winning competitor creatives.
-- **Atria (tryatria.com), Imagive** - competitor ad research + AI breakdowns + longevity
+- **Atria (tryatria.com), the sibling product** - competitor ad research + AI breakdowns + longevity
   ("running 1+ year" = winner). STEAL: longevity as a top-performer proxy (DONE), the
   competitor dashboard layout (platform donut, creative mix, top performers - mostly DONE).
 

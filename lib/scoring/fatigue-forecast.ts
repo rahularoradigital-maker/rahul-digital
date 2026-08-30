@@ -126,7 +126,7 @@ export function forecastFatigue(read: FatigueRead): FatigueForecast {
 }
 
 // FATIGUE FRAMING: re-express the structured fatigue read as a "named-ad + countdown + mechanism +
-// cost impact" line (Yamin canon framing rule), instead of a bare score. This adds NO new math: it
+// cost impact" line (measurement canon framing rule), instead of a bare score. This adds NO new math: it
 // only names fields the engine already computed - the real days-to-line (read.daysToFatigue), the
 // dominant driver (read.signals + trajectory), and defers the concrete cost numbers to
 // read.evidence[0] ("<metric> X -> Y over N days (-Z%/day)"). It NEVER fabricates a future

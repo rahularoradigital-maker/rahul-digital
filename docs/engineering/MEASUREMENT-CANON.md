@@ -1,10 +1,10 @@
-# Yamin Measurement Canon — AdBrain reference
+# AdBrain Measurement Canon — AdBrain reference
 
-The Yamin Measurement Canon (v2.0, Aug 2026, reference brand boAt) is the **canonical spec** for AdBrain's
+The AdBrain Measurement Canon (v2.0, Aug 2026, reference brand boAt) is the **canonical spec** for AdBrain's
 scoring: every weight, formula, band, and input. The machine-readable rules are committed here as
-[`yamin-measurement-canon.spec.json`](./yamin-measurement-canon.spec.json) (the exact `YAMIN_SPEC` block
-from the source HTML — read that, don't re-derive weights). Source HTML + the sister `YAMIN_BUILD_PHASES`
-(architecture + 9-table data model) live in `docs/shared-research/imagive-whatsapp/` (gitignored, local only).
+[`measurement-canon.spec.json`](./measurement-canon.spec.json) (the exact `MEASUREMENT_SPEC` block
+from the source HTML — read that, don't re-derive weights). Source HTML + the sister `MEASUREMENT_BUILD_PHASES`
+(architecture + 9-table data model) live in `docs/shared-research/the sibling product-whatsapp/` (gitignored, local only).
 
 **This wins on any weight/formula conflict with older specs.** Build *toward* it — improve, don't blind-copy.
 
@@ -13,7 +13,7 @@ from the source HTML — read that, don't re-derive weights). Source HTML + the 
 2. **Score creative inside its own campaign** — hook rate has no standard formula; rank an ad vs the ads it competes with (same campaign, same 14 days).
 3. **Measurement is a gate, not a score** — if sales aren't reaching Meta (Meta purchases vs real Shopify orders), STOP; score nothing.
 4. **Grade the portfolio we supply, not the spend Meta allocates** — diversity measured on our creative spread, not spend (Meta concentrates budget on ~6% of ads on purpose).
-5. **Every number carries an evidence tag** — A platform / B panel / C folklore (never build on) / Y Yamin-judgement.
+5. **Every number carries an evidence tag** — A platform / B panel / C folklore (never build on) / Y AdBrain-judgement.
 6. **Recommend, never act** — nothing auto-launches/pauses for 12 months; the human-decision ledger is the moat.
 
 ## The compute order + rollup

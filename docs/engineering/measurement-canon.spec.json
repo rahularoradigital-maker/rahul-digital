@@ -1,9 +1,9 @@
 {
- "document": "Yamin Measurement Canon",
+ "document": "AdBrain Measurement Canon",
  "version": "2.0",
  "date": "2026-08-13",
- "sister_document": "YAMIN_BUILD_PHASES.html",
- "purpose": "Canonical weights, formulas and score bands for the Yamin measurement system. Architecture, data model and build order live in the sister document.",
+ "sister_document": "MEASUREMENT_BUILD_PHASES.html",
+ "purpose": "Canonical weights, formulas and score bands for the AdBrain measurement system. Architecture, data model and build order live in the sister document.",
  "precedence": "If a weight or formula appears in both documents, this one wins.",
  "doctrine": [
   "Compare a brand to itself, never to a public benchmark, inside a score.",
@@ -11,7 +11,7 @@
   "Measurement is a gate, not a score.",
   "Grade the portfolio we supply, not the spend the platform allocates.",
   "Every number carries an evidence tag.",
-  "Yamin recommends, a human acts. Nothing auto launches for the next 12 months."
+  "AdBrain recommends, a human acts. Nothing auto launches for the next 12 months."
  ],
  "confidence_rules": {
   "label_accept_min_pct": 97,
@@ -28,7 +28,7 @@
   "A": "Platform published or a real dataset. Build on it.",
   "B": "Named panel, self selected sample. Starting line only, replace with client history after 90 days.",
   "C": "Unsourced folklore. Never build on it, never quote it.",
-  "Y": "Yamin judgement. No public benchmark exists. Correct from the ledger."
+  "Y": "AdBrain judgement. No public benchmark exists. Correct from the ledger."
  },
  "rollup": {
   "formula": "0.40*AccountHealth + 0.30*CreativeAnalytics + 0.20*Diversity + 0.10*(100-FatigueLoad)",

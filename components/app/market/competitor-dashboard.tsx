@@ -265,7 +265,7 @@ function TrafficSection({ traffic }: { traffic: BrandTraffic[] }) {
   );
 }
 
-// Ad Performance Intelligence: the headline numbers Imagive leads with, but only real counts
+// Ad Performance Intelligence: the headline numbers leading tools lead with, but only real counts
 // over the ads we actually pulled - Total live ads, active share, creative mix, new this week.
 function AdPerfIntel({ brands }: { brands: BrandAnalytics[] }) {
   const total = brands.reduce((s, b) => s + b.totalAds, 0);

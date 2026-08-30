@@ -187,7 +187,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
   const roas = totals.roas;
   const conc = view.concentration;
 
-  // Confidence-inspectable pillars (Yamin canon rule 5): every headline pillar carries an
+  // Confidence-inspectable pillars (measurement canon rule 5): every headline pillar carries an
   // evidence tag + a fetch/formula/logic/example disclosure. The Example is built from THIS
   // account's real numbers (or an honest "not available"), never invented. To extend this to
   // the funnel / scaling / diversity pillars later, add a MetricDisclosure here and render a

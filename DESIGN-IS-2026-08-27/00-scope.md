@@ -17,6 +17,6 @@
 
 **Constraints:** Next.js 16 + Tailwind; existing token system in `globals.css`; Indian-English, plain, lightly-technical voice; hard rule — no number shown without a real-data-derived formula; no fabricated data.
 
-**Reference:** deepsolv.ai / Imagive.ai (creative intelligence tools) as category peers; Meta Ads Manager as the tool it must reconcile with.
+**Reference:** deepsolv.ai / the sibling product.ai (creative intelligence tools) as category peers; Meta Ads Manager as the tool it must reconcile with.
 
 **Method note:** dev server requires Supabase auth, so Visual/Accessibility evidence is read from source (CSS tokens, component markup) and marked INFERRED where a rendered measurement was not possible. Recent user-supplied screenshots of the cockpit are used as rendered evidence where cited.

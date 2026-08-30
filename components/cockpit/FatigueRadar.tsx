@@ -48,7 +48,7 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
         {rows.map((ad) => {
           const f = ad.fatigueRead!;
           const s = STATE_STYLE[f.state];
-          // Reframe each ad as named-ad + countdown + mechanism + cost impact (Yamin canon), not a
+          // Reframe each ad as named-ad + countdown + mechanism + cost impact (measurement canon), not a
           // bare score. countdown + mechanism come from the framed read; the cost-impact numbers are
           // the engine's real observed decline (evidence[0]); the % is the forward-looking risk.
           const frame = frameFatigue(f);

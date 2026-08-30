@@ -1,6 +1,6 @@
 "use client";
 
-// A / B / C / Y evidence chip (Yamin canon doctrine: "every number carries an evidence tag").
+// A / B / C / Y evidence chip (measurement canon doctrine: "every number carries an evidence tag").
 // Reads the shared EVIDENCE_MEANING registry so the chip and its check can never drift.
 // The meaning reaches screen readers via aria-label and appears on hover / focus for
 // sighted keyboard users, so the tag is inspectable, not just a coloured letter.
