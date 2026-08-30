@@ -54,14 +54,22 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
           return;
         }
       } else {
-        const { data, error: err } = await supabase.auth.signUp({ email, password });
+        // Capture name + website at signup, stored on the user's metadata (queryable in the admin console).
+        const fullName = String(form.get("full_name") ?? "").trim();
+        const website = String(form.get("website") ?? "").trim();
+        const { data, error: err } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName, website }, emailRedirectTo: `${window.location.origin}/auth/callback?next=/app` },
+        });
         if (err) {
           setError(err.message);
           setPending(false);
           return;
         }
+        // With "Confirm email" on in Supabase, signUp returns no session until the user verifies. Tell them.
         if (!data.session) {
-          setMessage("Check your email to confirm your account, then log in.");
+          setMessage("Almost there - we've emailed you a confirmation link. Click it to verify your email, then log in.");
           setPending(false);
           return;
         }
@@ -99,8 +107,21 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
+          {/* Signup collects name + website too; both required. Login shows only email + password. */}
+          {mode === "signup" && (
+            <>
+              <div>
+                <label htmlFor="full_name" className="text-sm text-[var(--ink-muted)]">Full name</label>
+                <input id="full_name" name="full_name" type="text" required autoComplete="name" className={inputCls} />
+              </div>
+              <div>
+                <label htmlFor="website" className="text-sm text-[var(--ink-muted)]">Website</label>
+                <input id="website" name="website" type="url" required placeholder="https://yourbrand.com" autoComplete="url" className={inputCls} />
+              </div>
+            </>
+          )}
           <div>
-            <label htmlFor="email" className="text-sm text-[var(--ink-muted)]">Email</label>
+            <label htmlFor="email" className="text-sm text-[var(--ink-muted)]">{mode === "signup" ? "Work email" : "Email"}</label>
             <input id="email" name="email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <div>
