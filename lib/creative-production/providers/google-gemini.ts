@@ -1,5 +1,6 @@
 import "server-only";
 import { fetchWithTimeout } from "@/lib/http";
+import { isPublicHttpsUrl } from "@/lib/ssrf";
 import { priceFor, estimateCost } from "./pricing.ts";
 import type { ImageProvider, GenerationBrief, GenerationResult, ProviderCapabilities, CostEstimate } from "@/lib/creative-production/types";
 
@@ -47,6 +48,7 @@ function buildPrompt(brief: GenerationBrief): string {
 }
 
 async function inlineReference(url: string): Promise<{ mimeType: string; data: string } | null> {
+  if (!(await isPublicHttpsUrl(url))) return null; // SSRF guard: product image URLs are external data
   try {
     const res = await fetchWithTimeout(url, {}, 15_000);
     if (!res.ok) return null;

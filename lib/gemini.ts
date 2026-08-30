@@ -5,6 +5,7 @@
 // agent can fail alone without taking down the orchestration.
 
 import { fetchWithTimeout } from "./http.ts";
+import { isPublicHttpsUrl } from "./ssrf.ts";
 
 const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -52,6 +53,7 @@ export async function probeGemini(): Promise<{ ok: boolean; status: number; body
 // creative is downloaded a single time, not once per agent.
 export async function fetchInlineImage(url: string | null | undefined): Promise<InlineImage | null> {
   if (!url) return null;
+  if (!(await isPublicHttpsUrl(url))) return null; // SSRF guard: only https to public hosts (ad URLs are external data)
   try {
     const res = await fetchWithTimeout(url, {}, 10_000);
     if (!res.ok) return null;
