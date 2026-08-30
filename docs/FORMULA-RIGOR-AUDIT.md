@@ -19,7 +19,7 @@ buyer would sign off, frozen + documented) · 🔴 assumption / placeholder (mus
 |---|---|---|---|---|---|
 | 1 | **Statistical sufficiency** (`decision.ts`) | Whether an ad has enough volume to judge at all | **JUST HARDENED** — gates on conversions (≥15), clicks (≥100/1k impr), impressions (≥10k awareness), per objective; below → HOLD | 🟢 | Grounded in media-buying practice (Meta learning ~50 conv/wk; rate stability ~100 clicks). Frozen constants; revisit only with data, logged here. |
 | 2 | **90-day self-baseline window** (`cockpit-data.ts`) | The comparison baseline for every ad | Fixed 90-day day-wise; each ad vs the account's own history | 🟢 | Correct — self-baselined, not absolute. Keep fixed (app-wide COMPARISON_DAYS). |
-| 3 | **Decision thresholds** STRONG 70 / GOOD 55 / WEAK 45 (`decision.ts`) | scale / refresh / pause / hold cutoffs on the objective score | Chosen cutoffs on a 0-100 objective grade | 🟠 | Defensible tiers; frozen + documented. Next: express as percentile bands vs the account's own same-objective ads (fully self-baselined) rather than absolute. |
+| 3 | **Decision thresholds** STRONG 70 / GOOD 55 / WEAK 45 (`decision.ts`) | scale / refresh / pause / hold cutoffs | **HARDENED** — scale/pause now require BOTH the absolute grade AND self-baselined standing (percentile vs the account's own same-objective ads): scale needs top ~30%, pause needs bottom ~30%, so it never scales a good-but-not-leading ad nor kills the least-bad ad of a weak account | 🟢 | Both absolute + relative must agree. Tiers frozen + documented. |
 | 4 | **Fatigue index weights** freq .4 / CTR-decay .4 / CPM-rise .2 (`fatigue.ts`) | Blends the fatigue signal | Chosen weights | 🟠 | Frozen + documented. The three signals are the *right* ones (a buyer reads exactly these). Weights revisited only from outcome backtests, logged here. |
 | 5 | **Frequency saturation curve** `100·(1-(f+1)^-0.4)` (`fatigue.ts`) | How exposure saturation grows with frequency | Meta's published exposure-decay shape | 🟢 | Sourced (platform). Keep. |
 | 6 | **Fatigue state cuts** fresh/watch/fatiguing (`fatigue.ts`) | Labels the fatigue index | Chosen cuts on 0-100 | 🟠 | Frozen + documented; revisit from backtests only. |
@@ -33,8 +33,8 @@ buyer would sign off, frozen + documented) · 🔴 assumption / placeholder (mus
 | 14 | **Evidence tiers A/B/C + Judgement** (`evidence.ts`) | Provenance tag on every number | Honesty framework | 🟢 | Correct — this *is* the anti-assumption guardrail. Keep. |
 
 ## Status
-- **Fixed this pass:** #1 statistical sufficiency (the biggest expert-grade gap — no verdict on thin volume).
-- **Frozen + documented (🟠):** #3, #4, #6, #10, #11 — defensible, now version-locked here so they don't drift.
-- **Remaining 🔴 to replace:** #13 (concept scoring placeholders) — now unblocked because the day-wise store exists; #3/#9 upgrade from absolute to fully self-baselined percentile bands is the next rigor step.
+- **Fixed:** #1 statistical sufficiency (no verdict on thin volume) + #3 self-baselined scale/pause (absolute AND account-relative standing must agree).
+- **Frozen + documented (🟠):** #4, #6, #10, #11 — defensible, version-locked here so they don't drift.
+- **Remaining 🔴 to replace:** #13 (concept-scoring white-space + historical-performance placeholders). Blocked on a clean concept-archetype → creative-format mapping before grounding it from the store (grounding it on an invented mapping would itself be an assumption). #9 (per-benchmark sourcing) is the next 🟠→🟢 step.
 
 *Updated 2026-08-30. Any formula change must update the matching row here.*

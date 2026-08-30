@@ -40,6 +40,16 @@ const GOOD = 55; // still working, but eligible for a refresh once it starts wea
 const WEAK = 45; // below this the ad is underperforming its objective benchmark
 const FULL_CONFIDENCE_DAYS = 14; // data volume at/after which the volume term is maxed out
 
+// SELF-BASELINED standing (principle: judge vs the account's OWN same-objective ads, not only an absolute
+// grade). `performance` is the 0-100 percentile within same-objective siblings. A verdict needs BOTH the
+// absolute grade AND the relative standing to agree:
+//  - SCALE requires top standing - don't pour budget into a good-but-not-leading ad, or into the "best of
+//    a weak account". A strong absolute score that isn't top-of-account -> keep running, don't scale.
+//  - PAUSE requires bottom standing - a weak absolute score that's still relatively BETTER than the
+//    account's others means the whole account is weak; pausing your least-bad ad is wrong, so it doesn't.
+const STRONG_PCTL = 70; // top ~30% of same-objective ads
+const WEAK_PCTL = 30; // bottom ~30% of same-objective ads
+
 // STATISTICAL SUFFICIENCY (the rule a $100M buyer applies first): never judge an ad until it has enough
 // VOLUME to be real, not just enough days. Below these, the ad is still gathering signal -> HOLD, never
 // scale/pause. Grounded in media-buying practice, versioned + stable (not tuned per run):
@@ -118,9 +128,11 @@ export function decide(input: DecisionInput): Decision {
     };
   }
 
-  // 2) Strong and not wearing: this is a winner. Scale if there is headroom, else keep it running.
+  // 2) Strong and not wearing: a candidate winner. SCALE only when it is also a top performer vs the
+  // account's own same-objective ads AND has headroom; otherwise keep it running (don't scale a
+  // good-but-not-leading ad).
   if (objectiveScore >= STRONG && fresh && !worsening) {
-    if (roomToScale) {
+    if (roomToScale && performance >= STRONG_PCTL) {
       return {
         action: "scale",
         priority: "DO_NEXT",
@@ -128,18 +140,19 @@ export function decide(input: DecisionInput): Decision {
         confidence: confidence(0.7, 0.15, days),
         why: [
           `Strong: objective score ${label(objectiveScore)}/100 (>=${STRONG}), fatigue ${fatigueState}, trajectory ${fatigueTrajectory}.`,
-          `Room to scale and ${label(performance)}th percentile vs same-objective ads. Push budget.`,
+          `Top of the account: ${label(performance)}th percentile vs same-objective ads, with room to scale. Push budget.`,
         ],
       };
     }
+    const reason =
+      performance < STRONG_PCTL
+        ? `Strong absolute (${label(objectiveScore)}/100) but only ${label(performance)}th percentile vs same-objective ads, so keep running rather than scale.`
+        : `No headroom to scale right now, so hold budget and keep it running.`;
     return {
       action: "continue",
       priority: "WATCH",
       confidence: confidence(0.7, 0.15, days),
-      why: [
-        `Strong: objective score ${label(objectiveScore)}/100 (>=${STRONG}), fatigue ${fatigueState}.`,
-        `No headroom to scale right now, so hold budget and keep it running.`,
-      ],
+      why: [`Strong: objective score ${label(objectiveScore)}/100 (>=${STRONG}), fatigue ${fatigueState}.`, reason],
     };
   }
 
@@ -158,17 +171,19 @@ export function decide(input: DecisionInput): Decision {
     };
   }
 
-  // 4) Weak and worsening or fatigued: it is underperforming its objective and the trend is not
-  // recovering. Cut it. More days of a bad read = more confidence it is really bad.
-  if (objectiveScore < WEAK && (worsening || fatigueState === "fatigued")) {
+  // 4) Weak and worsening or fatigued: underperforming with no recovery. PAUSE only when it is also among
+  // the account's WORST (bottom standing) - a weak absolute score that still beats the account's other
+  // same-objective ads means the whole account is weak, and cutting the least-bad ad is the wrong move
+  // (that falls through to hold). More days of a bad read = more confidence it is really bad.
+  if (objectiveScore < WEAK && (worsening || fatigueState === "fatigued") && performance <= WEAK_PCTL) {
     return {
       action: "pause",
       priority: "DO_NOW",
       // base 0.60, +0.20 with volume -> ~0.60 with little data, up to ~0.80 with a full window.
       confidence: confidence(0.6, 0.2, days),
       why: [
-        `Weak and not recovering: objective score ${label(objectiveScore)}/100 (<${WEAK}), fatigue ${fatigueState}, trajectory ${fatigueTrajectory}.`,
-        `Underperforming its objective with no recovery over ${label(days)} days. Pause and reallocate.`,
+        `Weak and not recovering: objective score ${label(objectiveScore)}/100 (<${WEAK}), ${label(performance)}th percentile vs same-objective ads, fatigue ${fatigueState}.`,
+        `Bottom of the account and not recovering over ${label(days)} days. Pause and reallocate.`,
       ],
     };
   }
