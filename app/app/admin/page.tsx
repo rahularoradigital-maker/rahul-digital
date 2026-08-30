@@ -58,11 +58,29 @@ export default async function AdminPage() {
         <p className="mt-1 text-[13px] text-[var(--ink-muted)]">AI spend, usage, and background-job health over the last {d.windowDays} days. Costs are list-price estimates.</p>
       </div>
 
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+        {[
+          { label: "Active today (DAU)", value: num(d.overview.dau) },
+          { label: "Active 7d (WAU)", value: num(d.overview.wau) },
+          { label: "Active 30d (MAU)", value: num(d.overview.mau) },
+          { label: "Total users", value: num(d.overview.totalUsers) },
+          { label: "New (7d)", value: num(d.overview.newUsers7d) },
+          { label: "New (30d)", value: num(d.overview.newUsers30d) },
+          { label: "AI-active users", value: num(d.overview.activeAiUsers) },
+          { label: "AI cost (30d)", value: usd(d.totalCostUsd) },
+        ].map((s) => (
+          <div key={s.label} className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-4">
+            <div className="text-[12px] text-[var(--ink-muted)]">{s.label}</div>
+            <div className="mt-1 text-[20px] font-semibold text-[var(--ink)]">{s.value}</div>
+          </div>
+        ))}
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-3">
         {[
+          { label: "AI calls (30d)", value: num(d.totalCalls) },
+          { label: "Tokens (30d)", value: num(d.totalTokens) },
           { label: "AI cost (30d)", value: usd(d.totalCostUsd) },
-          { label: "AI calls", value: num(d.totalCalls) },
-          { label: "Tokens", value: num(d.totalTokens) },
         ].map((s) => (
           <div key={s.label} className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
             <div className="text-[13px] text-[var(--ink-muted)]">{s.label}</div>
@@ -112,6 +130,21 @@ export default async function AdminPage() {
           )}
         </Card>
       </div>
+
+      <Card title="Live activity" sub="Recent meaningful events (logins, connections, feature use).">
+        {d.activity.length === 0 ? <Empty /> : (
+          <div className="space-y-1.5">
+            {d.activity.map((a, i) => (
+              <div key={i} className="flex items-baseline gap-3 border-t border-[var(--hairline)] py-1.5 text-[13px] first:border-0">
+                <span className="w-28 flex-shrink-0 text-[12px] text-[var(--ink-muted)]">{new Date(a.at).toISOString().slice(5, 16).replace("T", " ")}</span>
+                <span className="font-medium text-[var(--ink)]">{a.event}</span>
+                {a.feature && <span className="text-[var(--ink-muted)]">{a.feature}</span>}
+                <span className="ml-auto text-[12px] text-[var(--ink-muted)]">{a.user}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       <Card title="Audit trail" sub="Recent privileged/security events (who, what, when, result).">
         {d.audit.length === 0 ? <Empty /> : (

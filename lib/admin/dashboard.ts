@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listAudit } from "@/lib/security/audit-log";
+import { listRecentEvents } from "@/lib/owner/events";
 
 // Data for the admin cost/ops console: per-user + per-provider + per-task AI spend (from ai_usage), and the
 // background-job health (ad + change sync state). Reads via the service-role admin client. Aggregation is in
@@ -12,6 +13,8 @@ export type UserSpend = { userId: string | null; email: string; calls: number; p
 export type Bucket = { key: string; calls: number; costUsd: number };
 export type JobRow = { account: string; userEmail: string; lastOk: boolean | null; lastError: string | null; lastRunAt: string | null; detail: string };
 export type ConnectorStatus = { name: string; configured: boolean; status: "ok" | "not_configured" | "attention"; detail: string };
+export type OwnerOverview = { totalUsers: number; dau: number; wau: number; mau: number; newUsers7d: number; newUsers30d: number; activeAiUsers: number };
+export type ActivityRow = { at: string; event: string; user: string; feature: string | null };
 export type AuditEventRow = { at: string; actor: string; action: string; target: string; result: string; reason: string | null };
 export type AdminDashboard = {
   windowDays: number;
@@ -24,6 +27,8 @@ export type AdminDashboard = {
   jobs: JobRow[];
   audit: AuditEventRow[];
   connectors: ConnectorStatus[];
+  overview: OwnerOverview;
+  activity: ActivityRow[];
 };
 
 type UsageRow = { user_id: string | null; task: string | null; provider: string; model: string; prompt_tokens: number; completion_tokens: number; cost_usd: number };
@@ -42,8 +47,10 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
 
   // id -> email (Supabase admin API; auth.users isn't exposed via PostgREST).
   const emails = new Map<string, string>();
+  let allUsers: { id: string; email?: string; created_at?: string; last_sign_in_at?: string | null }[] = [];
   try {
     const { data } = await admin.auth.admin.listUsers();
+    allUsers = data.users;
     for (const u of data.users) if (u.email) emails.set(u.id, u.email);
   } catch {
     /* best-effort: fall back to showing the id */
@@ -101,6 +108,23 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     { name: "Cron (auto-refresh)", configured: env("CRON_SECRET"), status: env("CRON_SECRET") ? "ok" : "attention", detail: env("CRON_SECRET") ? "armed" : "CRON_SECRET unset" },
   ];
 
+  // Owner overview: active users (real sign-ins) + new signups, from Supabase auth timestamps. DAU/WAU/MAU
+  // count users whose last sign-in falls in the window - a real active-user read, not a vanity number.
+  const now2 = Date.now();
+  const within = (iso: string | null | undefined, ms: number) => Boolean(iso) && now2 - new Date(iso as string).getTime() <= ms;
+  const overview: OwnerOverview = {
+    totalUsers: allUsers.length,
+    dau: allUsers.filter((u) => within(u.last_sign_in_at, 86_400_000)).length,
+    wau: allUsers.filter((u) => within(u.last_sign_in_at, 7 * 86_400_000)).length,
+    mau: allUsers.filter((u) => within(u.last_sign_in_at, 30 * 86_400_000)).length,
+    newUsers7d: allUsers.filter((u) => within(u.created_at, 7 * 86_400_000)).length,
+    newUsers30d: allUsers.filter((u) => within(u.created_at, 30 * 86_400_000)).length,
+    activeAiUsers: [...byUser.keys()].filter((k) => k !== "unattributed").length,
+  };
+
+  const activityRaw = await listRecentEvents(40);
+  const activity: ActivityRow[] = activityRaw.map((e) => ({ at: e.at, event: e.eventType, user: e.userId ? emails.get(e.userId) ?? e.userId : "system", feature: e.feature }));
+
   const auditRaw = await listAudit(50);
   const audit: AuditEventRow[] = auditRaw.map((a) => ({
     at: a.occurred_at,
@@ -122,5 +146,7 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     jobs,
     audit,
     connectors,
+    overview,
+    activity,
   };
 }

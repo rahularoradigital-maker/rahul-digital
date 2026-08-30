@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession, bustCockpitCache, fetchLiveCockpit } from "@/lib/meta-sync";
 import { listAllAccessibleAdAccounts } from "@/lib/meta-source";
 import { storeToken } from "@/lib/oauth-store";
+import { logEvent } from "@/lib/owner/events";
 import { autoDeriveBrandDraft } from "@/lib/brand/auto";
 
 // Switch the active ad account. One user OAuth token works across all their accounts,
@@ -63,6 +64,9 @@ export async function GET(request: NextRequest) {
   }
   // Bust the cached cockpit (both levels) so the newly selected account shows immediately.
   await bustCockpitCache(user.id);
+  logEvent("connector.connected", { userId: user.id, feature: "meta", meta: { account: id } }); // owner-analytics
+
+
   // AUTO-PROCESS on account switch: in the BACKGROUND (the just-upserted account is now the
   // most-recent = active) warm the new account's cockpit cache, THEN auto-learn the brand from that
   // warm data. By the time the browser lands on /app the cockpit is usually ready (instant, not a cold
