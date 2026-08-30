@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 import { judgeAccount, narrate, type AdInput } from "@/lib/judgment/agent";
 
 // The parallel Judge agent, exposed. POST a batch of the dashboard's ads (already scored upstream, mapped to
@@ -52,6 +53,12 @@ function coerce(x: unknown): AdInput | null {
 }
 
 export async function POST(req: Request) {
+  // Require a signed-in user: this endpoint runs CPU-bound judging and, with ?narrate=1, a billed LLM call.
+  // Leaving it open is a cost-DoS / open-AI-proxy lever. Every sibling route already gates with getUser().
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
   let body: unknown;
   try {
     body = await req.json();
