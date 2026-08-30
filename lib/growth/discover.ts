@@ -90,10 +90,16 @@ const STRONG_COMMUNITIES = new Set(["r/PPC", "r/FacebookAds", "r/GoogleAds", "r/
 const SEVERITY = /(tanked|collapsed|dropped|plummeted|wasting|burning|broken|dying|help|desperate|urgent)/i;
 const COMMERCIAL = /(budget|spend|\$\d|agency|tool|software|subscri|pricing|vs |alternative|switch)/i;
 const RISK_WORDS = /(politic|nsfw|lawsuit|scam|hate|banned|drama|rant)/i;
+// Ad-context guard (killcritic fix): "creative fatigue" also appears in film/tv threads. A conversation only
+// counts as a real AD opportunity if it ALSO carries advertising context. Without it, relevance + fit are
+// heavily discounted so an off-domain keyword match can never reach the DRAFT threshold. Deterministic + cheap.
+const AD_CONTEXT = /\b(ad|ads|advert|campaign|meta ads|facebook ads|instagram|google ads|tiktok ads|roas|cpa|cpm|ctpr?|ctr|ad spend|ad account|media buy|performance marketing|ecommerce|shopify|dtc|paid social|ad creative)\b/i;
 
 export function factorsFor(conv: Conversation, nowMs: number): OppFactors {
   const text = conv.content.toLowerCase();
   const m = matchIntent(text);
+  const adCtx = AD_CONTEXT.test(text); // gate: an intent match with no ad context is almost certainly off-domain
+  const ctxMul = adCtx ? 1 : 0.25;
   const ageH = (nowMs - Date.parse(conv.timestamp)) / 3_600_000;
   const recency = ageH < 24 ? 1 : ageH < 72 ? 0.7 : ageH < 168 ? 0.4 : 0.2;
   const commercialIntent = COMMERCIAL.test(text) ? 0.65 : conv.question ? 0.35 : 0.25;
@@ -101,8 +107,8 @@ export function factorsFor(conv: Conversation, nowMs: number): OppFactors {
   const communityQuality = STRONG_COMMUNITIES.has(conv.community) ? 0.85 : 0.5;
   const audienceFit = STRONG_COMMUNITIES.has(conv.community) ? 0.8 : 0.55;
   const intent = m.matched ? (conv.question ? 0.8 : 0.6) : conv.question ? 0.4 : 0.25;
-  const relevance = m.matched ? 0.6 + 0.4 * m.fit : 0.2;
+  const relevance = (m.matched ? 0.6 + 0.4 * m.fit : 0.2) * ctxMul;
   const competition = 0.5; // without comment depth per-thread, assume moderate room; refined when we read the thread
-  const risk = RISK_WORDS.test(text) ? 0.6 : 0.2;
-  return { relevance, intent, solutionFit: m.fit, commercialIntent, audienceFit, problemSeverity, recency, communityQuality, competition, risk };
+  const risk = RISK_WORDS.test(text) ? 0.6 : adCtx ? 0.2 : 0.4; // off-domain also carries a little more risk
+  return { relevance, intent, solutionFit: m.fit * ctxMul, commercialIntent, audienceFit, problemSeverity, recency, communityQuality, competition, risk };
 }

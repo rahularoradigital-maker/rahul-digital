@@ -1,7 +1,8 @@
 // Proof for the growth-agent brain: documented weights, monotonic scoring, promotion gate, the DRAFT ceiling
 // (it can NEVER decide to publish), and safety guardrails. No network. Run: node --experimental-strip-types scripts/check-growth.ts
 
-import { OPP_WEIGHTS, WEIGHT_SUM, opportunityScore, promotionGate, decide, assess, matchIntent, type OppFactors } from "../lib/growth/engine.ts";
+import { OPP_WEIGHTS, WEIGHT_SUM, opportunityScore, promotionGate, decide, assess, matchIntent, type OppFactors, type Conversation } from "../lib/growth/engine.ts";
+import { factorsFor } from "../lib/growth/discover.ts";
 import { SAFETY_DONOTDO, INTENT_SIGNALS } from "../lib/growth/knowledge.ts";
 
 let pass = 0;
@@ -57,5 +58,15 @@ const a = assess(
 );
 ok(allowed.has(a.decision), "assess decision within the allowed set");
 ok(a.promote.mayMention === false, "no mention when community disallows, even on a strong fit");
+
+// 7) ad-context guard (killcritic fix): a "creative fatigue" thread with NO advertising context (a movie
+// discussion) must not become a draftable opportunity, while the same phrase WITH ad context should.
+const now = Date.now();
+const mkConv = (content: string): Conversation => ({ conversationId: "x", platform: "hackernews", community: "Hacker News", author: "a", url: "u", timestamp: new Date(now).toISOString(), content, question: false });
+const movie = assess(mkConv("The apex of this creative fatigue was Doctor Strange in the Multiverse of Madness"), factorsFor(mkConv("The apex of this creative fatigue was Doctor Strange in the Multiverse of Madness"), now), false);
+const realAd = assess(mkConv("my facebook ads creative fatigue is brutal, roas dropped, ad spend wasted"), factorsFor(mkConv("my facebook ads creative fatigue is brutal, roas dropped, ad spend wasted"), now), false);
+ok(movie.decision === "IGNORE" || movie.decision === "MONITOR", `off-domain 'creative fatigue' is not draftable (got ${movie.decision})`);
+ok(realAd.score > movie.score, "a real ad-context conversation outscores the off-domain one");
+ok(realAd.factors.relevance > movie.factors.relevance, "ad-context guard discounts off-domain relevance");
 
 console.log(`check-growth: ${pass} assertions passed. weights sum=${WEIGHT_SUM.toFixed(3)}.`);
