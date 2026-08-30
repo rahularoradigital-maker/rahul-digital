@@ -1,0 +1,42 @@
+// Runnable check for buyer/change-type ranking (lib/scoring/change-ranking.ts). No I/O.
+// node --experimental-strip-types scripts/check-change-ranking.ts
+import assert from "node:assert/strict";
+import { rankBuyers, rollupChangeTypes, type ChangeResult } from "../lib/scoring/change-ranking.ts";
+import type { ChangeImpact } from "../lib/scoring/change-impact.ts";
+
+const imp = (verdict: ChangeImpact["verdict"], deltaPct: number | null): ChangeImpact => ({ verdict, metric: "ROAS", before: 1, after: 1, deltaPct, reason: "" });
+const r = (actor: string, changeType: string, verdict: ChangeImpact["verdict"], delta: number | null, source: "buyer" | "algo" = "buyer"): ChangeResult => ({ actorId: actor, actorName: actor, changeType, source, impact: imp(verdict, delta) });
+
+const results: ChangeResult[] = [
+  // Priya: 3 improved, 1 worsened -> hitRate 0.75, confident (4 usable)
+  r("Priya", "budget", "improved", 40), r("Priya", "budget", "improved", 30), r("Priya", "audience", "improved", 20), r("Priya", "budget", "worsened", -25),
+  // Raj: 1 improved, 3 worsened -> hitRate 0.25, confident
+  r("Raj", "budget", "improved", 10), r("Raj", "audience", "worsened", -30), r("Raj", "audience", "worsened", -20), r("Raj", "creative", "worsened", -15),
+  // an algo move (must be excluded from buyer ranking) + an insufficient (counted, not usable)
+  r("System", "status", "improved", 50, "algo"), r("Priya", "creative", "insufficient", null),
+];
+
+const buyers = rankBuyers(results);
+assert.equal(buyers.length, 2, "algo actor excluded -> only 2 buyers");
+assert.equal(buyers[0].actorName, "Priya", "higher hit-rate ranks first");
+assert.equal(buyers[0].improved, 3);
+assert.equal(buyers[0].worsened, 1);
+assert.equal(buyers[0].insufficient, 1, "insufficient counted");
+assert.equal(buyers[0].usable, 4, "insufficient NOT in usable");
+assert.ok(Math.abs((buyers[0].hitRate ?? 0) - 0.75) < 1e-9, "Priya hitRate 0.75");
+assert.equal(buyers[0].confident, true, "4 usable >= MIN_SAMPLE");
+assert.ok(buyers[0].score > buyers[1].score, "Priya scores above Raj");
+assert.equal(buyers[1].actorName, "Raj");
+
+// A low-sample buyer is not-confident.
+const solo = rankBuyers([r("Solo", "budget", "improved", 10)]);
+assert.equal(solo[0].confident, false, "1 usable < MIN_SAMPLE -> not confident");
+
+// Change-type rollup: budget appears across buyers; audience mixed.
+const types = rollupChangeTypes(results);
+const budget = types.find((t) => t.changeType === "budget");
+assert.ok(budget, "budget rollup exists");
+assert.equal(budget?.improved, 3, "budget improved = Priya x2 + Raj x1");
+assert.equal(budget?.worsened, 1, "budget worsened = Priya x1");
+
+console.log("PASS: change ranking (buyer hit-rate, algo excluded, insufficient handling, confidence, type rollup)");
