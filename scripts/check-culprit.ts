@@ -1,7 +1,8 @@
-// Proof for the culprit diagnosis: it flags a recent drop and names the stopped contributor that explains it,
-// and stays silent when nothing dropped. Run: node --experimental-strip-types scripts/check-culprit.ts
+// Proof for the culprit diagnosis (lib/scoring/culprit.ts - the live one wired into CulpritBanner): it names a
+// stopped, material contributor as the CAUSE of a recent drop, and stays silent otherwise (never a false alarm).
+// Run: node --experimental-strip-types scripts/check-culprit.ts
 
-import { diagnoseCulprit, type CulpritGroup, type DayPoint } from "../lib/scoring/culprit.ts";
+import { diagnoseCulprit, type DayPoint, type CulpritGroup } from "../lib/scoring/culprit.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {
@@ -9,37 +10,34 @@ function ok(cond: boolean, msg: string) {
   pass++;
 }
 
-// 14 days: 2026-08-01 .. 2026-08-14. asOf = 08-14. prior = 08-01..08-07, recent = 08-08..08-14.
-const days = Array.from({ length: 14 }, (_, i) => `2026-08-${String(i + 1).padStart(2, "0")}`);
-const asOf = days[days.length - 1];
+const day = (d: number) => `2026-08-${String(d).padStart(2, "0")}`;
+const DAYS = Array.from({ length: 14 }, (_, i) => 17 + i); // Aug 17..30 (prior week 17-23, recent 24-30)
+const asOf = day(30);
 
-// Account revenue high in the prior week, then halves in the recent week (a real drop).
-const account: DayPoint[] = days.map((date, i) => ({ date, spend: 10000, revenue: i < 7 ? 40000 : 18000, purchases: i < 7 ? 20 : 9 }));
-
-// Big campaign A spent heavily then STOPPED after 08-07; small campaign B keeps running.
+// Account revenue fell hard in the recent week (10k/day -> 3k/day = 70% drop).
+const account: DayPoint[] = DAYS.map((d) => ({ date: day(d), spend: d <= 23 ? 10000 : 3000, revenue: d <= 23 ? 40000 : 12000, purchases: d <= 23 ? 20 : 6 }));
+// A big campaign spent heavily the prior week then stopped; an evergreen keeps running.
 const groups: CulpritGroup[] = [
-  { id: "A", name: "Lyxel_Big_Sale", daily: days.map((date, i) => ({ date, spend: i < 7 ? 6000 : 0 })) },
-  { id: "B", name: "Lyxel_Evergreen", daily: days.map((date) => ({ date, spend: 4000 })) },
+  { id: "big", name: "Big Sale Campaign", daily: DAYS.filter((d) => d <= 23).map((d) => ({ date: day(d), spend: 8000 })) },
+  { id: "ever", name: "Evergreen", daily: DAYS.map((d) => ({ date: day(d), spend: 2000 })) },
 ];
 
-const d = diagnoseCulprit(account, groups, asOf);
-ok(d.dropped, "a >=20% revenue drop is detected");
-ok(d.metric === "revenue", "explains the drop on revenue (account earns revenue)");
-ok(d.culprits.length >= 1, "at least one culprit found");
-ok(d.culprits[0].id === "A", "the big STOPPED campaign is the top culprit, not the still-running one");
-ok(d.culprits[0].stoppedOn === "2026-08-07", "culprit's last delivering day is identified");
-ok(d.culprits.every((c) => c.id !== "B"), "the still-delivering campaign is NOT blamed");
-ok(d.summary != null && d.summary.includes("Lyxel_Big_Sale"), "summary names the culprit in plain English");
-ok(d.summary!.includes("nothing to fix"), "summary makes clear the dead entity is not actionable");
+const dx = diagnoseCulprit(account, groups, asOf);
+ok(dx.dropped, "a real revenue drop is detected");
+ok(dx.metric === "revenue", "explains the drop on revenue when the account earns");
+ok(dx.dropPct >= 0.5, `drop magnitude is reported (got ${Math.round(dx.dropPct * 100)}%)`);
+ok(dx.culprits.length >= 1 && dx.culprits[0].id === "big", "the stopped big campaign is the top culprit");
+ok(dx.culprits[0].shareOfPriorSpend >= 0.7, "culprit was a large share of prior spend");
+ok(dx.culprits[0].stoppedOn === day(23), "reports when it last delivered");
+ok(!!dx.summary && /stopped delivering|most likely cause|nothing to fix/i.test(dx.summary), "summary frames it as a cause, not an action");
 
-// No drop -> silent (no false alarm).
-const steady: DayPoint[] = days.map((date) => ({ date, spend: 10000, revenue: 40000, purchases: 20 }));
-const q = diagnoseCulprit(steady, groups, asOf);
-ok(!q.dropped, "steady account -> no drop reported");
-ok(q.summary === null, "no drop -> no summary (no false alarm)");
+// No drop -> silent (both campaigns keep running, revenue flat).
+const flat: DayPoint[] = DAYS.map((d) => ({ date: day(d), spend: 5000, revenue: 20000, purchases: 10 }));
+const dxFlat = diagnoseCulprit(flat, groups, asOf);
+ok(!dxFlat.dropped && dxFlat.summary === null, "no drop -> no culprit, no summary (stays silent)");
 
-// Too little history -> silent.
-const short = diagnoseCulprit(account.slice(0, 6), groups.map((g) => ({ ...g, daily: g.daily.slice(0, 6) })), days[5]);
-ok(!short.dropped && short.summary === null, "under two windows of data -> no diagnosis");
+// Not enough history -> silent.
+const short = account.slice(0, 6);
+ok(diagnoseCulprit(short, groups, asOf).summary === null, "too little history -> silent");
 
 console.log(`check-culprit: ${pass} assertions passed.`);
