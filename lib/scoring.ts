@@ -15,7 +15,10 @@ export type RealAd = {
   externalId: string;
   name: string;
   objective?: Objective; // from the campaign; defaults to conversion
-  rows: MetricsRow[]; // daily performance rows (oldest..newest order not required)
+  rows: MetricsRow[]; // daily rows for the SELECTED display window - drives spend/ROAS/CTR/funnel shown
+  // The full 90-day day-wise history for fatigue/trend/stability, independent of the display window: a top
+  // buyer views any range but reads fatigue on the long trend. Absent -> fatigue falls back to `rows`.
+  baselineRows?: MetricsRow[];
   endsInDays?: number | null; // days until the ad set / campaign end date, if scheduled
   adSetId?: string; // parent ad set id, for the Ads Manager deep link (campaign -> ad set -> ad)
   campaignId?: string; // parent campaign id, for the Ads Manager deep link
@@ -185,9 +188,11 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
   return ads.map((ad, i) => {
     const a = aggs[i];
     const objective = objectives[i];
-    // Real day-wise fatigue read; fall back to the absolute frequency proxy only when there
-    // are too few days for a trend. This is what feeds CreativeScore and the fatigue radar.
-    const fatigueRead = readFatigue(ad.rows, { endsInDays: ad.endsInDays, objective });
+    // Fatigue/trend/stability read the full 90-day baseline (independent of the selected display window),
+    // so switching to a 7-day view never turns a long-trend read into a noisy short one. Falls back to the
+    // display rows when no baseline was supplied (the live-pull fallback path).
+    const fatigueRows = ad.baselineRows ?? ad.rows;
+    const fatigueRead = readFatigue(fatigueRows, { endsInDays: ad.endsInDays, objective });
     const fatigue = fatigueRead.sufficiency === "ok" ? fatigueRead.index : fatigueScore(a.avgFrequency);
     const goodness = goodnessOf(objective, a);
     const performance = goodness === null ? 0 : percentile(goodness, goodnessByObjective.get(objective) ?? []);
@@ -204,12 +209,12 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
       thumbUrl: ad.thumbUrl,
       objective,
       performance,
-      trend: trendScore(ad.rows, objective),
+      trend: trendScore(fatigueRows, objective),
       fatigue,
       funnel: funnelScore(a, ctrList, cvrList, objective),
       conversions: a.purchases,
       days: a.days,
-      stable: isStable(ad.rows),
+      stable: isStable(fatigueRows),
       roomToScale,
       healthScore: healthScoreOf(objective, a),
       fatigueRead,

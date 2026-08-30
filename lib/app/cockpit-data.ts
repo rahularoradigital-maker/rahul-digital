@@ -24,9 +24,10 @@ import { recordDecisionTriples } from "@/lib/audit/record";
 
 export type { AccountMetrics } from "@/lib/meta-sync";
 
-// Date-window constants live in a client-safe module (no server imports); re-exported
-// here so server pages keep a single import site for the loader + windows.
-export { WINDOWS, parseDays } from "./windows";
+// Date-window constants live in a client-safe module (no server imports); imported for use here and
+// re-exported so server pages keep a single import site for the loader + windows.
+import { WINDOWS, parseDays } from "./windows";
+export { WINDOWS, parseDays };
 
 export type ConnectReason = "not_connected" | "error" | "no_data" | "syncing";
 export type PerfBreakdown = { authMs: number; scopeMs: number; cockpitMs: number; totalMs: number; freshness: string };
@@ -110,10 +111,11 @@ type CookieReader = { get(name: string): { value: string } | undefined };
  * compute the SAME cache key - Ask reuses the dashboard's already-warm cockpit instead of triggering
  * its own separate cold pull, and answers about the window the user is actually viewing.
  */
-// PRODUCT RULE: comparison and ranking ALWAYS use a fixed 90-day day-wise self-baseline (an ad is
-// ranked against the account's own last 90 days, day by day - stable, not a noisy short window). The
-// whole app analyzes this one window, so headline totals, KPI cards, funnel, and the leaderboard are
-// all consistent. The Dates toggle no longer changes the analysis window; every surface is 90 days.
+// PRODUCT RULE: the topbar window (7/14/30/60/90 + custom) selects the DISPLAY window - headline totals,
+// KPI cards, funnel, and the trend chart show that range. But fatigue / half-life / trend / scaling always
+// read the fixed 90-day day-wise baseline (an ad is judged on its full trend, not a noisy short window);
+// the store enforces that internally, so switching windows never shrinks the trend read and needs no
+// re-pull. COMPARISON_DAYS is that baseline and the default when no window is chosen.
 export const COMPARISON_DAYS = 90;
 
 export function resolveCockpitScope(cookieStore: CookieReader, _defaultDays: number) {
@@ -124,15 +126,16 @@ export function resolveCockpitScope(cookieStore: CookieReader, _defaultDays: num
   // Catalog include/exclude (topbar objective filter). Only the explicit "exclude" opts out;
   // anything else (unset, or a stale value) stays the default "include" = current behavior.
   const catalog: CatalogMode = cookieStore.get("adbrain.catalog")?.value === "exclude" ? "exclude" : "include";
-  // Fixed 90-day window everywhere: the Dates cookie is intentionally ignored so ranking is always the
-  // 90-day day-wise baseline. explicitWindow is always undefined now (no custom range narrows the
-  // comparison); the cast keeps the {since,until}|undefined shape callers still destructure and type on.
-  return {
-    lookbackDays: COMPARISON_DAYS,
-    campaignId,
-    objectives,
-    explicitWindow: undefined as { since: string; until: string } | undefined,
-    weights,
-    catalog,
-  };
+  // Display window from the topbar: "7"|"14"|"30"|"60"|"90" or "custom:YYYY-MM-DD_YYYY-MM-DD". Default 90.
+  const windowRaw = cookieStore.get("adbrain.window")?.value || "";
+  let lookbackDays = COMPARISON_DAYS;
+  let explicitWindow: { since: string; until: string } | undefined;
+  if (windowRaw.startsWith("custom:")) {
+    const [since, until] = windowRaw.slice(7).split("_");
+    if (/^\d{4}-\d{2}-\d{2}$/.test(since ?? "") && /^\d{4}-\d{2}-\d{2}$/.test(until ?? "")) explicitWindow = { since, until };
+  } else if (windowRaw) {
+    const n = Number(windowRaw);
+    if ((WINDOWS as readonly number[]).includes(n)) lookbackDays = n;
+  }
+  return { lookbackDays, campaignId, objectives, explicitWindow, weights, catalog };
 }

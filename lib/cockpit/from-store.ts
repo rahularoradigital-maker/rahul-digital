@@ -122,9 +122,16 @@ export async function buildCockpitFromStore(opts: {
   const weights = opts.weights ?? VERDICT_WEIGHTS;
   const admin = createAdminClient();
 
+  // The DISPLAY window (what the topbar selected) is [since, until]. The fatigue/trend/scaling BASELINE is
+  // always the full 90 days ending `until`, read regardless of the display window - switching to a 7-day
+  // view never shrinks the trend read, and it needs no re-pull (the store already holds 90 days).
+  const displaySince = since;
+  const BASELINE_DAYS = 90;
+  const baselineSince = new Date(new Date(`${until}T00:00:00Z`).getTime() - BASELINE_DAYS * 86_400_000).toISOString().slice(0, 10);
+
   let metricRows: MetricRowDb[];
   try {
-    metricRows = await readAllMetricRows(admin, userId, accountExternalId, since, until);
+    metricRows = await readAllMetricRows(admin, userId, accountExternalId, baselineSince, until);
   } catch {
     return null; // store unavailable -> fall back to the live pull
   }
@@ -179,7 +186,8 @@ export async function buildCockpitFromStore(opts: {
       externalId: adId,
       name: m?.name ?? adId,
       objective: mapMetaObjective(rawObjective),
-      rows: rows.map(toMetricsRow),
+      rows: rows.filter((r) => r.date >= displaySince).map(toMetricsRow), // display window: spend/ROAS/CTR/funnel shown
+      baselineRows: rows.map(toMetricsRow), // full 90 days: fatigue/trend/stability read this, not the display window
       endsInDays: daysUntilEnd(endUnix, nowSec),
       adSetId: m?.adset_id ?? rows[0]?.adset_id ?? undefined,
       campaignId: m?.campaign_id ?? rows[0]?.campaign_id ?? undefined,
@@ -243,24 +251,29 @@ export async function buildCockpitFromStore(opts: {
     })),
   );
 
-  // Per-day aggregation (feeds marginal scaling, data quality, and the day-wise trend chart).
-  const byDay = new Map<string, DailyInputRow>();
-  for (const ad of realAds) {
-    for (const r of ad.rows) {
-      const d = byDay.get(r.date) ?? {
-        date: r.date, spend: 0, impressions: 0, clicks: 0, outboundClicks: 0, video3sViews: 0,
-        videoThruplays: 0, landingPageViews: 0, addToCarts: 0, initiateCheckouts: 0, purchases: 0, revenue: 0,
-      };
-      d.spend += r.spend; d.impressions += r.impressions; d.clicks += r.clicks;
-      d.outboundClicks += r.outboundClicks ?? 0; d.video3sViews += r.video3sViews ?? 0; d.videoThruplays += r.videoThruplays ?? 0;
-      d.landingPageViews += r.landingPageViews ?? 0; d.addToCarts += r.addToCarts ?? 0; d.initiateCheckouts += r.initiateCheckouts ?? 0;
-      d.purchases += r.purchases; d.revenue += r.revenue;
-      byDay.set(r.date, d);
-    }
-  }
-  const dayRows = [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
-  const marginal = marginalScaling(dayRows);
-  const dataQuality = assessDataQuality(dayRows);
+  // Per-day aggregation. Built twice on purpose: the DISPLAY window drives the headline totals + trend
+  // chart (what the selected 7/14/30/60/90/custom window shows), while the 90-day BASELINE drives marginal
+  // scaling + data quality (scaling/trend reads that must not shrink with a short display window).
+  const aggByDay = (rowSets: MetricsRow[][]): DailyInputRow[] => {
+    const byDay = new Map<string, DailyInputRow>();
+    for (const rows of rowSets)
+      for (const r of rows) {
+        const d = byDay.get(r.date) ?? {
+          date: r.date, spend: 0, impressions: 0, clicks: 0, outboundClicks: 0, video3sViews: 0,
+          videoThruplays: 0, landingPageViews: 0, addToCarts: 0, initiateCheckouts: 0, purchases: 0, revenue: 0,
+        };
+        d.spend += r.spend; d.impressions += r.impressions; d.clicks += r.clicks;
+        d.outboundClicks += r.outboundClicks ?? 0; d.video3sViews += r.video3sViews ?? 0; d.videoThruplays += r.videoThruplays ?? 0;
+        d.landingPageViews += r.landingPageViews ?? 0; d.addToCarts += r.addToCarts ?? 0; d.initiateCheckouts += r.initiateCheckouts ?? 0;
+        d.purchases += r.purchases; d.revenue += r.revenue;
+        byDay.set(r.date, d);
+      }
+    return [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
+  };
+  const dayRows = aggByDay(realAds.map((ad) => ad.rows)); // display window: headline totals + trend chart
+  const baselineDayRows = aggByDay(realAds.map((ad) => ad.baselineRows ?? ad.rows)); // 90 days: scaling + data quality
+  const marginal = marginalScaling(baselineDayRows);
+  const dataQuality = assessDataQuality(baselineDayRows);
   const dailySeries = buildDailySeries(dayRows);
 
   // Headline totals: the COMPLETE, catalog-correct account totals (realAds are already catalog-filtered),

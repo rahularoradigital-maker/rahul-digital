@@ -5,7 +5,7 @@ import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import type { DailyKpiKey, DailyPoint } from "@/lib/cockpit/daily-series";
 import type { LevelFunnels } from "@/lib/cockpit/level-funnel";
 import { Sparkline } from "@/components/app/analytics/sparkline";
-import { rupees } from "@/lib/format";
+import { rupees, rupeesPrecise } from "@/lib/format";
 
 // Interactive funnel body: an Ad / Ad set / Campaign selector (replacing the old static "Ad-level"
 // pill). Ad level shows the account-aggregate 8 ratios with day-wise sparklines; Ad set / Campaign
@@ -21,13 +21,17 @@ function pct(v: number | null): string {
 function rs(v: number | null): string {
   return v === null ? "n/a" : rupees.format(v);
 }
+// Per-unit costs (CPM/CPC) show 2 decimals - rounding to whole rupees hides real differences.
+function rsUnit(v: number | null): string {
+  return v === null ? "n/a" : rupeesPrecise.format(v);
+}
 
 const STATS: { label: string; hint: string; kpi: DailyKpiKey; get: (f: FunnelMetrics) => string }[] = [
   { label: "Thumb-stop", hint: "3s video views / impressions", kpi: "thumbStop", get: (f) => pct(f.thumbStopRate) },
   { label: "Hold rate", hint: "thruplays / 3s views", kpi: "holdRate", get: (f) => pct(f.holdRate) },
   { label: "CTR", hint: "clicks / impressions", kpi: "ctr", get: (f) => pct(f.ctr) },
-  { label: "CPM", hint: "cost / 1000 impressions", kpi: "cpm", get: (f) => rs(f.cpm) },
-  { label: "CPC", hint: "cost / click", kpi: "cpc", get: (f) => rs(f.cpc) },
+  { label: "CPM", hint: "cost / 1000 impressions", kpi: "cpm", get: (f) => rsUnit(f.cpm) },
+  { label: "CPC", hint: "cost / click", kpi: "cpc", get: (f) => rsUnit(f.cpc) },
   { label: "LP view rate", hint: "landing-page views / outbound clicks", kpi: "lpViewRate", get: (f) => pct(f.lpViewRate) },
   { label: "Add-to-cart", hint: "ATC / landing-page views", kpi: "atcRate", get: (f) => pct(f.atcRate) },
   { label: "Checkout", hint: "initiate checkout / ATC", kpi: "checkoutRate", get: (f) => pct(f.checkoutRate) },
