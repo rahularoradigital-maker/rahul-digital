@@ -34,11 +34,23 @@ export async function GET() {
   const cronConfigured = Boolean(process.env.CRON_SECRET); // false => nightly auto-refresh is disabled
   const healthy = startedOk && db === "up" && syncErrors === 0 && cronConfigured;
 
+  // Config visibility (presence only, never key values). imageProvider MUST read "google" for real
+  // Nano Banana ad images - anything else means the app serves stub "placeholder" creatives.
+  const providers = {
+    imageProvider: process.env.IMAGE_PROVIDER ?? null,
+    imageModel: process.env.IMAGE_MODEL ?? null,
+    realImages: (process.env.IMAGE_PROVIDER ?? "").toLowerCase() === "google" && Boolean(process.env.GEMINI_API_KEY),
+    gemini: Boolean(process.env.GEMINI_API_KEY),
+    anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
+    openai: Boolean(process.env.OPENAI_API_KEY),
+  };
+
   return NextResponse.json(
     {
       status: healthy ? "ok" : "degraded",
       db,
       cronConfigured,
+      providers,
       sync: { accounts: syncAccounts, withErrors: syncErrors, stale: syncStale },
       time: new Date().toISOString(),
     },
