@@ -29,13 +29,24 @@ export function WindowSwitcher() {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const v = readCookie("adbrain.window") || "90";
-    setValue(v);
-    if (v.startsWith("custom:")) {
-      const [s, u] = v.slice(7).split("_");
-      setFrom(s ?? "");
-      setTo(u ?? "");
+    // Validate the cookie: only a known preset or a well-formed custom range is trusted. Anything else
+    // (a stale cookie from an older format like "days:14") is treated as the 90-day default AND cleared,
+    // so the chip never shows a value the server ignores.
+    const raw = readCookie("adbrain.window") || "";
+    if (raw.startsWith("custom:")) {
+      const [s, u] = raw.slice(7).split("_");
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s ?? "") && /^\d{4}-\d{2}-\d{2}$/.test(u ?? "")) {
+        setValue(raw);
+        setFrom(s);
+        setTo(u);
+        return;
+      }
+    } else if ((PRESETS as readonly number[]).includes(Number(raw))) {
+      setValue(raw);
+      return;
     }
+    setValue("90");
+    if (raw) document.cookie = "adbrain.window=; path=/; max-age=0"; // clear a stale/invalid value
   }, []);
 
   useEffect(() => {
