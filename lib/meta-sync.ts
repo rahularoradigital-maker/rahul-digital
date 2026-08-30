@@ -10,7 +10,7 @@ import { LruMap } from "./lru.ts";
 import { createSingleFlight } from "./single-flight.ts";
 import { isRenderableShape } from "./cockpit/renderable.ts";
 import { todayIn, daysAgo } from "./date-window.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, fetchAccountTimezone, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, fetchAccountTimezone, fetchLevelNative, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { deterministicFingerprint, excludeCatalogAds, thumbUrlOf, type CreativeAsset } from "./creative/fingerprint.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
@@ -389,6 +389,12 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // Campaign. Reuses the same ExtendedMetricsRow shape, grouped per ad's parent ids. OPTIONAL on the
     // payload: older cached blobs omit it and the card falls back to the ad-level view, so no
     // CACHE_SCHEMA bump and no forced cold pull.
+    // LEVEL-NATIVE metrics (reach/frequency/budget) that cannot be rolled up from ad rows - pulled from Meta
+    // at level=adset/campaign, in parallel + best-effort (any failure -> empty map -> the card shows "n/a").
+    const [adsetNative, campaignNative] = await Promise.all([
+      fetchLevelNative(acct.external_id, token, "adset", since, until),
+      fetchLevelNative(acct.external_id, token, "campaign", since, until),
+    ]);
     const funnelLevels = levelFunnels(
       realAds.map((ad) => ({
         adSetId: ad.adSetId,
@@ -402,6 +408,8 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
           purchases: r.purchases,
         })),
       })),
+      8,
+      { adset: adsetNative, campaign: campaignNative },
     );
 
     // ONE per-day aggregation feeds three things: marginal scaling, data quality, AND the day-wise

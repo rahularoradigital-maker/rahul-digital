@@ -25,6 +25,10 @@ function rs(v: number | null): string {
 function rsUnit(v: number | null): string {
   return v === null ? "n/a" : rupeesPrecise.format(v);
 }
+// Reach can be millions - compact it (1.2M) so the column stays narrow. n/a when the level pull didn't run.
+function compactNum(v: number | null | undefined): string {
+  return v == null ? "n/a" : new Intl.NumberFormat("en-IN", { notation: "compact", maximumFractionDigits: 1 }).format(v);
+}
 
 const STATS: { label: string; hint: string; kpi: DailyKpiKey; get: (f: FunnelMetrics) => string }[] = [
   { label: "Thumb-stop", hint: "3s video views / impressions", kpi: "thumbStop", get: (f) => pct(f.thumbStopRate) },
@@ -94,12 +98,15 @@ export function FunnelCardBody({ funnel, dailySeries, funnelLevels }: { funnel: 
         <div className="py-6 text-center text-sm text-[var(--ink-muted)]">No {level === "adset" ? "ad set" : "campaign"} breakdown for this window.</div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] border-collapse text-sm">
+          <table className="w-full min-w-[1040px] border-collapse text-sm">
             <thead>
               <tr className="text-left text-[11px] uppercase tracking-wide text-[var(--ink-muted)]">
                 <th className="py-2 pr-3 font-medium">{level === "adset" ? "Ad set" : "Campaign"}</th>
                 <th className="py-2 pr-3 text-right font-medium">Spend</th>
                 <th className="py-2 pr-3 font-medium">Trend</th>
+                <th className="py-2 pr-3 text-right font-medium" title="Ad-set/campaign budget (from Meta)">Budget</th>
+                <th className="py-2 pr-3 text-right font-medium" title="Unique people reached - de-duplicated at this level (from Meta)">Reach</th>
+                <th className="py-2 pr-3 text-right font-medium" title="Avg impressions per person - native to this level, not a roll-up">Freq</th>
                 {STATS.map((s) => (
                   <th key={s.label} className="py-2 pr-3 text-right font-medium">{s.label}</th>
                 ))}
@@ -118,6 +125,9 @@ export function FunnelCardBody({ funnel, dailySeries, funnelLevels }: { funnel: 
                   </td>
                   <td className="py-2 pr-3 text-right tabular-nums">{rupees.format(g.spendRs)}</td>
                   <td className="w-[92px] py-2 pr-3"><Sparkline values={g.daily.map((d) => d.spend)} height={22} /></td>
+                  <td className="py-2 pr-3 text-right tabular-nums">{g.native?.budgetRs != null ? `${rupees.format(g.native.budgetRs)}${g.native.budgetType ? `/${g.native.budgetType === "daily" ? "day" : "life"}` : ""}` : "n/a"}</td>
+                  <td className="py-2 pr-3 text-right tabular-nums">{compactNum(g.native?.reach)}</td>
+                  <td className="py-2 pr-3 text-right tabular-nums">{g.native?.frequency != null ? g.native.frequency.toFixed(2) : "n/a"}</td>
                   {STATS.map((s) => (
                     <td key={s.label} className="py-2 pr-3 text-right tabular-nums">{s.get(g.funnel)}</td>
                   ))}

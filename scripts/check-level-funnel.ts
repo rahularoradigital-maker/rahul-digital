@@ -62,4 +62,17 @@ assert.equal(stoppedG.delivering, false, "group whose last spend was 3+ weeks ag
 assert.deepEqual(liveG.daily.map((d) => d.date), ["2026-08-20", "2026-08-29"], "daily strike-graph series is sorted by date");
 assert.equal(liveG.daily.reduce((s, d) => s + d.spend, 0), 200, "daily spend series sums to the group's total spend");
 
-console.log("PASS: per-level funnel rollups (group + rollup + sort + skip-missing-id + null-on-zero + limit + strike-graph + liveness)");
+// Native level metrics (reach/frequency/budget) merge by entity id; a group with no native entry stays
+// undefined so the UI shows "n/a" rather than a fabricated number.
+const withNative = levelFunnels([ad({ campaignId: "c1", campaignName: "C1", rows: [row({ spend: 100 })] })], 8, {
+  adset: new Map(),
+  campaign: new Map([["c1", { reach: 5000, frequency: 2.1, budgetRs: 1000, budgetType: "daily" }]]),
+});
+assert.equal(withNative.campaign[0].native?.reach, 5000, "native reach merged by campaign id");
+assert.equal(withNative.campaign[0].native?.frequency, 2.1, "native frequency merged");
+assert.equal(withNative.campaign[0].native?.budgetRs, 1000, "native budget merged");
+assert.equal(withNative.campaign[0].native?.budgetType, "daily", "native budget type merged");
+const noNative = levelFunnels([ad({ campaignId: "c2", campaignName: "C2", rows: [row({ spend: 50 })] })], 8);
+assert.equal(noNative.campaign[0].native, undefined, "no native map -> native undefined (UI shows n/a, never fabricated)");
+
+console.log("PASS: per-level funnel rollups (group + rollup + sort + skip-missing-id + null-on-zero + limit + strike-graph + liveness + native-merge)");

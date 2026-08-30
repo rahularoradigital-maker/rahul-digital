@@ -4,6 +4,7 @@
 // Pure data-fetching; scoring/verdicts happen in the rules engine, not here.
 
 import type { AdSource, TokenSet, SourceAd, MetricsRow } from "./ad-source.ts";
+import type { LevelNative } from "./cockpit/level-funnel.ts";
 import type { Objective } from "./rules/comparator.ts";
 import type { CreativeAsset } from "./creative/fingerprint.ts";
 import type { NormalizedAd } from "./competitors/types.ts";
@@ -738,6 +739,58 @@ export async function fetchScopeInsights(
     acc.revenue += purchaseValue(r.action_values);
     return acc;
   }, { ...empty });
+}
+
+// LEVEL-NATIVE metrics: reach + frequency (from insights at level=adset/campaign, where reach de-dups people
+// across the group's ads - impossible to reconstruct from ad rows) and budget (from the entity config, in the
+// account's minor currency unit). Keyed by entity id, to merge into levelFunnels. Best-effort: any Meta error
+// returns a partial/empty map, so the cockpit degrades to "n/a" and never breaks. Budget assumes INR (/100).
+type MetaLevelInsight = { adset_id?: string; campaign_id?: string; reach?: string; frequency?: string; impressions?: string };
+type MetaBudgetRow = { id: string; daily_budget?: string; lifetime_budget?: string };
+const numOrNull = (v: string | undefined): number | null => {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+export async function fetchLevelNative(accountExternalId: string, token: TokenSet, level: "adset" | "campaign", since: string, until?: string): Promise<Map<string, LevelNative>> {
+  const out = new Map<string, LevelNative>();
+  const idField = level === "adset" ? "adset_id" : "campaign_id";
+  try {
+    const insights = await graphGetAll<MetaLevelInsight>(
+      `act_${accountExternalId}/insights`,
+      token.accessToken,
+      { level, fields: `${idField},reach,frequency,impressions`, time_range: JSON.stringify({ since, until: until ?? today() }), limit: "500" },
+      20,
+    );
+    for (const r of insights) {
+      const id = (level === "adset" ? r.adset_id : r.campaign_id) ?? "";
+      if (!id) continue;
+      out.set(id, { reach: numOrNull(r.reach), frequency: numOrNull(r.frequency), budgetRs: null, budgetType: null });
+    }
+  } catch {
+    /* reach/frequency unavailable -> stays n/a */
+  }
+  try {
+    // Budget lives on the entity, not insights. Meta returns minor units (paise for INR) -> /100 for rupees.
+    const budgets = await graphGetAll<MetaBudgetRow>(`act_${accountExternalId}/${level}s`, token.accessToken, { fields: "id,daily_budget,lifetime_budget", limit: "500" }, 20);
+    for (const b of budgets) {
+      const daily = numOrNull(b.daily_budget);
+      const life = numOrNull(b.lifetime_budget);
+      const budgetRs = daily && daily > 0 ? daily / 100 : life && life > 0 ? life / 100 : null;
+      const budgetType: LevelNative["budgetType"] = daily && daily > 0 ? "daily" : life && life > 0 ? "lifetime" : null;
+      const cur = out.get(b.id);
+      if (cur) {
+        cur.budgetRs = budgetRs;
+        cur.budgetType = budgetType;
+      } else if (budgetRs != null) {
+        out.set(b.id, { reach: null, frequency: null, budgetRs, budgetType });
+      }
+    }
+  } catch {
+    /* budget unavailable -> stays n/a */
+  }
+  return out;
 }
 
 /**
