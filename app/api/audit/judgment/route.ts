@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordAudit } from "@/lib/security/audit-log";
 
 // Record the operator's judgment on a recommendation (the RLEF preference label): approve /
 // dismiss / modify. Updates today's decision_triple for that ad + window. Best-effort; never
@@ -43,6 +44,17 @@ export async function POST(request: NextRequest) {
     if (!data || data.length === 0) {
       return NextResponse.json({ ok: false, error: "Nothing to record against yet" }, { status: 404 });
     }
+    // Audit spine: the operator judged a recommendation - an attributable control-plane action.
+    await recordAudit({
+      action: "judgment.label",
+      actorId: user.id,
+      targetType: "recommendation",
+      targetId: adId,
+      after: { timeWindow, judgment },
+      reason: "operator RLEF label",
+      requestId: request.headers.get("x-request-id"),
+      userAgent: request.headers.get("user-agent"),
+    });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ ok: false, error: "Server error" }, { status: 500 });

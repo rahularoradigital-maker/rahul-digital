@@ -62,9 +62,17 @@ function lifecycleMatches(rule: Rule, ctx: RuleContext): boolean {
   return rule.lifecycle === "any" || ctx.lifecycle === "any" || rule.lifecycle === ctx.lifecycle;
 }
 
-/** Every rule in force for this ad's context, most heavily weighted first. This is the agent's reading list. */
+// A rule is IN FORCE only if it is actually enforced/active - "shipped" or "partly". "planned" rules are a
+// roadmap, not a basis: the Judge agent must never cite an unshipped rule as the reason for a live verdict.
+// (Audit finding: of 1,061 rules, ~721 are "planned"; serving them as in-force overstated the reasoning.)
+const IN_FORCE = new Set(["shipped", "partly"]);
+export function isInForce(r: Rule): boolean {
+  return IN_FORCE.has(r.status);
+}
+
+/** Every IN-FORCE rule for this ad's context, most heavily weighted first. This is the agent's reading list. */
 export function applicableRules(ctx: RuleContext): Rule[] {
-  return RULES.filter((r) => r.platform === ctx.platform && objectiveMatches(r, ctx) && levelMatches(r, ctx) && lifecycleMatches(r, ctx)).sort((a, b) => b.weight - a.weight);
+  return RULES.filter((r) => isInForce(r) && r.platform === ctx.platform && objectiveMatches(r, ctx) && levelMatches(r, ctx) && lifecycleMatches(r, ctx)).sort((a, b) => b.weight - a.weight);
 }
 
 /** Applicable rules for one Triple-Label axis (Evidence | Agreement | Confidence). */

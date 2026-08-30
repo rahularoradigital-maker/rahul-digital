@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { storeToken } from "@/lib/oauth-store";
 import { listMetaAdAccounts } from "@/lib/meta-source";
+import { recordAudit } from "@/lib/security/audit-log";
 
 // Meta OAuth callback: exchange the code for a token, create an ad_accounts row, store the
 // ENCRYPTED token. Token values are never returned to the client (audit F4 boundary).
@@ -111,7 +112,10 @@ export async function GET(request: NextRequest) {
   } catch {
     // storeToken throws on a DB/encryption failure; degrade to the same graceful error redirect the
     // rest of this route uses instead of an unhandled 500 that leaves the OAuth flow in limbo.
+    await recordAudit({ action: "credential.store", actorId: user.id, targetType: "ad_account", targetId: acct.id, after: { platform: "meta", externalId: chosen.externalId }, result: "error", reason: "meta oauth token store failed" });
     return NextResponse.redirect(new URL("/app?connect=error", request.url));
   }
+  // Audit spine: a customer credential was stored (the token value itself is never logged, only the fact).
+  await recordAudit({ action: "credential.store", actorId: user.id, targetType: "ad_account", targetId: acct.id, after: { platform: "meta", externalId: chosen.externalId, expiresAt: expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null } });
   return NextResponse.redirect(new URL("/app?connect=ok", request.url));
 }

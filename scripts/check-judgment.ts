@@ -57,7 +57,10 @@ const jw = judgeAd(weak);
 ok(jw.evidence.judgeable, "weak ad is judgeable (material + volume ok)");
 ok(jw.agreement.lean === "cut", "weak ad agreement leans cut");
 ok(jw.verdict === "KILL", `weak ad verdict KILL (got ${jw.verdict})`);
-ok(jw.basis.some((b) => b.category === "Fatigue signals"), "weak ad basis cites a Fatigue rule");
+// The cut is backed by an IN-FORCE rule (efficiency-vs-peers), never an unshipped one. Fatigue rules are
+// currently all "planned", so - honestly - the basis does NOT cite them, even though the engine reads fatigue.
+ok(jw.basis.length > 0 && jw.basis.every((b) => /^R\d+/.test(b.id)), "weak ad basis cites only real, in-force rule ids");
+ok(jw.basis.some((b) => b.category === "Efficiency (relative)"), "weak ad cut is backed by an in-force efficiency rule");
 
 // 5) Account rollup: counts add up, actionable excludes INSUFFICIENT/WATCH
 const acct = judgeAccount([strong, thin, weak]);
