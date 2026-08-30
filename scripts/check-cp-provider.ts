@@ -14,6 +14,8 @@ assert.equal(priceFor("gemini-2.5-flash-image"), 0.039, "legacy price");
 assert.equal(priceFor("something-unknown"), 0.067, "unknown -> default");
 // lite must not be shadowed by the flash prefix (order matters).
 assert.equal(priceFor("gemini-3.1-flash-lite-image"), 0.0336, "lite price distinct from flash");
+// OpenAI GPT-Image (the image fallback) is priced, and doesn't collide with the Gemini prefixes.
+assert.equal(priceFor("gpt-image-1"), 0.04, "gpt-image price");
 
 // Cost estimate: linear in asset count, rounded to 3 decimals.
 const brief = { promptVersion: "v1" } as GenerationBrief;

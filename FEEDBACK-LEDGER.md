@@ -130,6 +130,21 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
     (need an alert channel).** Unchanged blockers: email SMTP, Sentry DSN, CRON_SECRET confirm, domain/DNS,
     backup restore drill, load test, deploy + live in-app verification.
 
+- **B25 — AI model-routing matrix + GPT-Image + load harness (autonomous block, 2026-08-30).** Reconciled the
+  multi-provider router (lib/ai) to Rahul's exact matrix and added the image fallback. All keyless-graceful
+  (zero behaviour change on the live Gemini path until the OpenAI/Anthropic keys are added). Verified: build
+  green, tsc clean, 68 gates pass, AI-ROUTER GREEN.
+  - Routing (lib/ai/config.ts): vision-volume fallback now the CHEAP GPT-mini vision (was GPT-4o) for the
+    60+ ads/run path; analyze-text gains an OpenAI fallback; heavy tasks (concept + verdict) fall back to the
+    other TOP model (GPT) before the cheap Gemini flash; ask fallback order matched to the matrix.
+  - GPT-Image provider (lib/creative-production/providers/openai-image.ts) implementing the full ImageProvider
+    contract (generate via /images/generations, edit+variant via /images/edits), wired into the registry as
+    IMAGE_PROVIDER=openai, priced in pricing.ts. Matrix's "Nano Banana -> GPT-Image" fallback now exists.
+  - Env template: documented OPENAI_API_KEY + ANTHROPIC_API_KEY + the AI_PROVIDER_/AI_MODEL_ overrides and the
+    IMAGE_PROVIDER options. check:ai already wired into check:all (passes).
+  - Load-test harness (scripts/loadtest.mjs, `npm run loadtest`): bounded, public-GET-only, latency
+    percentiles. Baseline vs live: 30/30 = 200, static p50 ~55ms, /api/health p50 ~520ms (live DB read).
+
 ---
 
 *This ledger is updated as new feedback comes in and re-shared as a download on request.*

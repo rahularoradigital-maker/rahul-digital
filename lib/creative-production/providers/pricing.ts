@@ -8,6 +8,8 @@ const PRICE: { match: string; usd: number }[] = [
   { match: "gemini-3.1-flash-lite-image", usd: 0.0336 },
   { match: "gemini-3.1-flash-image", usd: 0.067 },
   { match: "gemini-2.5-flash-image", usd: 0.039 },
+  // OpenAI GPT-Image (approx, ~1024px medium quality; confirm current pricing at platform.openai.com).
+  { match: "gpt-image", usd: 0.04 },
 ];
 
 export function priceFor(model: string): number {

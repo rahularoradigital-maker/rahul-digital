@@ -13,5 +13,11 @@ export async function getImageProvider(): Promise<ImageProvider> {
     const { googleImageProvider } = await import("./google-gemini");
     return googleImageProvider;
   }
+  // GPT-Image (the matrix's image fallback). Lazily imported so its server-only module never loads on a
+  // stub/dev path. Selected only when explicitly chosen AND the key is present.
+  if (choice === "openai" && process.env.OPENAI_API_KEY) {
+    const { openaiImageProvider } = await import("./openai-image");
+    return openaiImageProvider;
+  }
   return stubImageProvider; // default / no key -> deterministic placeholder, keeps the pipeline alive
 }

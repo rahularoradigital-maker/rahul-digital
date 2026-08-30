@@ -16,14 +16,19 @@ const CLAUDE_HEAVY: ModelRef = { provider: "anthropic", model: E("AI_MODEL_CLAUD
 const OPENAI_LIGHT: ModelRef = { provider: "openai", model: E("AI_MODEL_OPENAI_LIGHT", "gpt-4o-mini") };
 const OPENAI_HEAVY: ModelRef = { provider: "openai", model: E("AI_MODEL_OPENAI_HEAVY", "gpt-4o") };
 
+// Routes follow Rahul's model matrix: light tasks -> Gemini flash-lite (fallback GPT-mini / Claude Haiku);
+// standard -> Gemini flash (fallback Claude Sonnet); vision-volume -> Gemini flash (fallback GPT-mini
+// VISION, kept cheap because this runs 60+ ads/run); heavy (concept + verdict) -> Claude Sonnet, then the
+// other TOP model (GPT), then Gemini flash as the last resort. Fallback ORDER matters: for heavy/quality
+// tasks the next model must be the other premium one, not the cheap flash.
 const BASE: Record<TaskKind, TaskRoute> = {
-  "ask": { tier: "light", kind: "text", primary: GEMINI_TEXT, fallbacks: [CLAUDE_LIGHT, OPENAI_LIGHT] },
-  "analyze-text": { tier: "light", kind: "text", primary: GEMINI_TEXT, fallbacks: [CLAUDE_LIGHT] },
+  "ask": { tier: "light", kind: "text", primary: GEMINI_TEXT, fallbacks: [OPENAI_LIGHT, CLAUDE_LIGHT] },
+  "analyze-text": { tier: "light", kind: "text", primary: GEMINI_TEXT, fallbacks: [OPENAI_LIGHT, CLAUDE_LIGHT] },
   "positioning": { tier: "standard", kind: "text", primary: GEMINI_TEXT, fallbacks: [CLAUDE_HEAVY] },
-  "concept-gen": { tier: "heavy", kind: "text", primary: CLAUDE_HEAVY, fallbacks: [GEMINI_TEXT, OPENAI_HEAVY] },
-  "creative-vision": { tier: "vision", kind: "json", primary: GEMINI_VISION, fallbacks: [OPENAI_HEAVY] },
+  "concept-gen": { tier: "heavy", kind: "text", primary: CLAUDE_HEAVY, fallbacks: [OPENAI_HEAVY, GEMINI_TEXT] },
+  "creative-vision": { tier: "vision", kind: "json", primary: GEMINI_VISION, fallbacks: [OPENAI_LIGHT] },
   "brand-profile": { tier: "vision", kind: "json", primary: GEMINI_VISION, fallbacks: [CLAUDE_HEAVY] },
-  "decision-verdict": { tier: "heavy", kind: "text", primary: CLAUDE_HEAVY, fallbacks: [GEMINI_TEXT, OPENAI_HEAVY] },
+  "decision-verdict": { tier: "heavy", kind: "text", primary: CLAUDE_HEAVY, fallbacks: [OPENAI_HEAVY, GEMINI_TEXT] },
 };
 
 // Per-task env override of the PRIMARY model, e.g. AI_PROVIDER_ASK=anthropic + AI_MODEL_ASK=claude-...
