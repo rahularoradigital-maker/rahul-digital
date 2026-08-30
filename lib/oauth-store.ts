@@ -22,12 +22,18 @@ export async function storeToken(adAccountId: string, tokens: TokenSet): Promise
 
 // Read + decrypt a stored token (server-only). Returns null if none exists.
 // Decrypted values must NEVER be sent to the client.
-export async function readToken(adAccountId: string): Promise<TokenSet | null> {
+//
+// Tenant guard (defense in depth): the caller must pass the owning userId, and we enforce ownership at the
+// query via the ad_accounts FK (ad_accounts!inner + user_id filter). So even if a caller ever passed an
+// ad_account_id it did not verify, this returns null rather than another tenant's token - isolation no
+// longer depends on call-site discipline alone.
+export async function readToken(adAccountId: string, userId: string): Promise<TokenSet | null> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("oauth_tokens")
-    .select("encrypted_access, encrypted_refresh, expires_at")
+    .select("encrypted_access, encrypted_refresh, expires_at, ad_accounts!inner(user_id)")
     .eq("ad_account_id", adAccountId)
+    .eq("ad_accounts.user_id", userId)
     .maybeSingle();
   if (error) throw new Error(`readToken failed: ${error.message}`);
   if (!data) return null;

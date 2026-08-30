@@ -40,6 +40,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Standalone type gate: fails fast on any type error, independent of next build's config.
+      - name: Type check
+        run: npm run typecheck
+
       - name: Build
         run: npm run build
 

@@ -1,11 +1,25 @@
 import Link from "next/link";
 import { Logo } from "@/components/site-header";
 
-const COLS = [
-  { title: "Platform", links: ["Use Cases", "Features", "Solutions", "Book a demo"] },
-  { title: "Solutions", links: ["Beauty & Skincare", "Apparel", "Health & Wellness", "Agencies"] },
-  { title: "Resources", links: ["Blog", "Trending Ads", "Attention Heatmap", "Documentation"] },
-  { title: "Company", links: ["Contact us", "About us", "Join us", "Terms"] },
+// Each link is { label, href }. Product/marketing links point at the demo funnel (nothing to over-promise
+// yet); the legal + contact links point at real, published pages so no footer link is a dead end.
+const COLS: { title: string; links: { label: string; href: string }[] }[] = [
+  { title: "Platform", links: [
+    { label: "Use Cases", href: "/product" }, { label: "Features", href: "/product" },
+    { label: "Solutions", href: "/product" }, { label: "Book a demo", href: "/book-demo" },
+  ] },
+  { title: "Solutions", links: [
+    { label: "Beauty & Skincare", href: "/book-demo" }, { label: "Apparel", href: "/book-demo" },
+    { label: "Health & Wellness", href: "/book-demo" }, { label: "Agencies", href: "/book-demo" },
+  ] },
+  { title: "Resources", links: [
+    { label: "Blog", href: "/book-demo" }, { label: "Trending Ads", href: "/book-demo" },
+    { label: "Attention Heatmap", href: "/book-demo" }, { label: "Documentation", href: "/book-demo" },
+  ] },
+  { title: "Company", links: [
+    { label: "Contact us", href: "mailto:hello@adbrain.ai" }, { label: "Book a demo", href: "/book-demo" },
+    { label: "Privacy", href: "/privacy" }, { label: "Terms", href: "/terms" },
+  ] },
 ];
 
 export function SiteFooter() {
@@ -27,9 +41,9 @@ export function SiteFooter() {
               </h4>
               <ul className="mt-4 flex flex-col gap-2.5">
                 {col.links.map((lk) => (
-                  <li key={lk}>
-                    <Link href="/signup" className="text-[15px] hover:text-[var(--accent)]">
-                      {lk}
+                  <li key={lk.label}>
+                    <Link href={lk.href} className="text-[15px] hover:text-[var(--accent)]">
+                      {lk.label}
                     </Link>
                   </li>
                 ))}
@@ -37,8 +51,14 @@ export function SiteFooter() {
             </div>
           ))}
         </div>
-        <div className="mt-12 border-t border-[var(--hairline)] pt-6 text-[13px] text-[var(--ink-muted)]">
-          &copy; 2026 adbrain.ai, All rights reserved
+        <div className="mt-12 flex flex-col gap-3 border-t border-[var(--hairline)] pt-6 text-[13px] text-[var(--ink-muted)] sm:flex-row sm:items-center sm:justify-between">
+          <span>&copy; 2026 adbrain.ai, All rights reserved</span>
+          <nav className="flex flex-wrap gap-4">
+            <Link href="/privacy" className="hover:text-[var(--accent)]">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-[var(--accent)]">Terms</Link>
+            <Link href="/cookie-policy" className="hover:text-[var(--accent)]">Cookies</Link>
+            <Link href="/data-deletion" className="hover:text-[var(--accent)]">Data deletion</Link>
+          </nav>
         </div>
       </div>
     </footer>

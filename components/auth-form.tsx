@@ -104,7 +104,12 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
             <input id="email" name="email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label htmlFor="password" className="text-sm text-[var(--ink-muted)]">Password</label>
+            <div className="flex items-baseline justify-between">
+              <label htmlFor="password" className="text-sm text-[var(--ink-muted)]">Password</label>
+              {mode === "login" && (
+                <Link href="/forgot-password" className="text-xs text-[var(--accent)] hover:underline">Forgot password?</Link>
+              )}
+            </div>
             <input id="password" name="password" type="password" required minLength={6} autoComplete={mode === "signup" ? "new-password" : "current-password"} className={inputCls} />
           </div>
 

@@ -79,4 +79,57 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
 
 ---
 
+## Part E — Production launch + Notification Center (2026-08-30)
+
+- **B21 — Production-readiness plan (`/make-plan`).** Ran 4 parallel discovery agents (deployment/infra,
+  auth/security/tenancy, payments/email/SEO/legal, reliability/observability/notifications). Produced
+  `docs/production/PRODUCTION-READINESS-PLAN.md`: a R/Y/G scorecard, an autopsy, P0-P3 roadmap, a launch
+  gate, and the continuous health-loop design. **Verdict: 🔴 not public-launch-ready** — 5 blockers
+  (no password reset, no error tracking, silent sync-failure invisibility, missing legal pages + a false
+  "Privacy Policy" claim, confirm CRON_SECRET). Core product is well-built; the gaps are operational.
+  Billing is **N/A** (no monetization code in v1 by design).
+- **B22 — Notification Center foundation (built + verified).** Per-user activity feed + intelligent
+  failure surfacing. Shipped: `notifications` table (live + `migrations/0013_notifications.sql`),
+  `lib/notifications/humanize.ts` (technical error → plain-English what/why/fix, never leaks a stack
+  trace), `lib/notifications/store.ts` (notify/list/mark-read, user-scoped), `scripts/check-notifications.ts`
+  wired into `check:all` (PASS). Remaining (P1-2, specced in the plan): emission at sync/ingest/competitor
+  seams + `/api/notifications` + the bell/feed UI.
+
+- **B23 — Launch-blocker fixes ("fix these as well", 2026-08-30).** Cleared/advanced the P0 blockers in code
+  (build green, tsc clean, all gates pass):
+  - **Notification Center is now live end-to-end** (P0-3 + monitoring gate): sync failures + "up to date"
+    now emit per-user notifications from the shared `syncAdMetrics` seam (dedupe-keyed, no spam);
+    `/api/notifications` (list + mark-read, user-scoped); a bell + activity feed in the topbar; and a public
+    `/api/health` probe that reports DB + sync health and whether the cron secret is armed.
+  - **Password reset** (P0-1): `/forgot-password` + `/reset-password` (Supabase recovery tokens, enumeration-safe),
+    with a "Forgot password?" link on login.
+  - **Legal + trust** (P0-4): real `/privacy`, `/terms`, `/cookie-policy`, `/data-deletion` pages; fixed the
+    homepage's false "Privacy Policy" claim (now a real link); fixed every dead footer link + added a legal row.
+  - **SEO + 404** (gate): `app/not-found.tsx`, `robots.ts`, `sitemap.ts`, OpenGraph/Twitter/metadataBase.
+  - **Security**: routed the two Meta error-text leaks in `brand/discover` through the safe humanizer.
+  - **Still needs Rahul (cannot be done from code):** Sentry account + DSN (error tracking), `CRON_SECRET`
+    set in Vercel (now visible via /api/health), production SMTP in Supabase (so reset/verify emails land),
+    a backup restore drill, a load test, and custom domain/DNS. Live in-app verification pending deploy.
+
+- **B24 — Safe hardening batch + tenant-isolation audit ("build what doesn't need my attention", 2026-08-30).**
+  All verified: build green, `tsc` clean, 68 gates pass.
+  - **Central error capture**: `instrumentation.ts` (`onRequestError`) + `lib/observability.ts` catch every
+    server error as one structured log line; a one-line swap to Sentry when a DSN is added (no route edits).
+  - **CI/build hygiene**: pinned Node (`.nvmrc` + `engines: node>=22`), added a standalone `typecheck`
+    script + a Type-check step in CI, and rewrote `.env.local.example` to match the real env vars
+    (dropped the stale ANTHROPIC_API_KEY, added GEMINI_API_KEY + ~11 others).
+  - **Notification coverage**: competitor pulls now emit to the feed (persistent "connect a source" /
+    "out of credits", and "competitor ads updated" on success), dedupe-keyed.
+  - **Tenant-isolation audit (read-only agent):** NO confirmed cross-tenant read leak. Every row-returning
+    admin read carries `user_id` (or a user-derived `in()` set). Two flags: (1) `competitors/analyze`
+    global cache of PUBLIC competitor-ad analysis - intentional cost lever, no private data, left as-is
+    pending your sign-off; (2) `oauth-store.readToken` was safe only via call-site discipline - **now
+    HARDENED**: it takes `userId` and enforces ownership through the `ad_accounts` FK join, so it can never
+    return another tenant's token even if a future caller passes an unverified id.
+  - **Deferred (need you): distributed rate limiting (Upstash), in-app delete-account button, cost alarms
+    (need an alert channel).** Unchanged blockers: email SMTP, Sentry DSN, CRON_SECRET confirm, domain/DNS,
+    backup restore drill, load test, deploy + live in-app verification.
+
+---
+
 *This ledger is updated as new feedback comes in and re-shared as a download on request.*

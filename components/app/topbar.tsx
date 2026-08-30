@@ -8,6 +8,7 @@ import { WindowSwitcher } from "@/components/app/window-switcher";
 import { CampaignSwitcher } from "@/components/app/campaign-switcher";
 import { ObjectiveSwitcher } from "@/components/app/objective-switcher";
 import { CatalogSwitcher } from "@/components/app/catalog-switcher";
+import { NotificationBell } from "@/components/app/notification-bell";
 import { FILTER_TRIGGER, FILTER_LABEL } from "@/components/app/control-styles";
 import { rescanCockpit } from "@/app/app/actions";
 
@@ -112,6 +113,8 @@ export function Topbar() {
               </div>
             )}
           </form>
+
+          <NotificationBell />
 
           <button
             type="button"

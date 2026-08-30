@@ -5,6 +5,7 @@ import { getUserMetaSession } from "@/lib/meta-sync";
 import { pageIdFromAdLibraryUrl } from "@/lib/scrapecreators";
 import { availableSource, collectBrandAds } from "@/lib/competitors/collect";
 import { storeCompetitorBrandAds } from "@/lib/competitors/store";
+import { notify, notifyFailure } from "@/lib/notifications/store";
 import type { NormalizedAd } from "@/lib/competitors/types";
 
 // Stage 2 + 3 of the competitor pipeline: given the user's brand + competitor Ad Library
@@ -52,6 +53,9 @@ export async function POST(request: NextRequest) {
   // just has nothing to collect from yet. Lights up when SCRAPECREATORS_API_KEY or Meta access is added.
   const source = availableSource(!!session);
   if (source === "none") {
+    // Persist this as a notification (dedupe-keyed) so the "why is competitor data empty" answer stays in
+    // the user's feed, not just this one response they might miss.
+    await notify({ userId, kind: "competitor", status: "info", title: "Connect a competitor data source", detail: "Competitor intelligence has no source to pull from yet.", action: "Add a ScrapeCreators API key, or connect Meta Ad Library access.", dedupeKey: `competitor:source:${userId}` });
     return NextResponse.json(
       { ok: false, reason: "no_source", message: "Connect a data source to collect competitor ads: add a ScrapeCreators API key, or connect Meta Ad Library access." },
       { status: 200 },
@@ -96,6 +100,15 @@ export async function POST(request: NextRequest) {
     }
   }
   await Promise.all(Array.from({ length: Math.min(FETCH_CONCURRENCY, Math.max(1, queue.length)) }, worker));
+
+  // Surface an out-of-credits / access condition to the feed too (dedupe-keyed): it is an ongoing account
+  // state the user should see later, not a transient this-request blip. Clears next successful run.
+  const creditIssue = errors.find((e) => /\b402\b|out of credit|payment required|2332002|verif/i.test(e));
+  if (creditIssue) {
+    await notifyFailure(userId, "competitor", creditIssue, { dedupeKey: `competitor:source:${userId}`, source: "pulling competitor ads" });
+  } else if (brands.length > 0) {
+    await notify({ userId, kind: "competitor", status: "success", title: "Competitor ads updated", detail: `Refreshed ${brands.length} ${brands.length === 1 ? "brand" : "brands"}.`, dedupeKey: `competitor:source:${userId}` });
+  }
 
   const ok = brands.length > 0;
   return NextResponse.json({ ok, brands, errors }, { status: ok ? 200 : 502 });

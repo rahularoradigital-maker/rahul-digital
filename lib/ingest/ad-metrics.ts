@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { streamAccountDayWiseRows, listAllSpendingAdIds, fetchAdMeta, fetchAdCreatives, listAdSetEnds, type AdMetricRow } from "@/lib/meta-source";
 import { thumbUrlOf, deterministicFingerprint } from "@/lib/creative/fingerprint";
 import { selectAdsToSync } from "@/lib/ingest/select-ads";
+import { notify, notifyFailure } from "@/lib/notifications/store";
 import type { TokenSet } from "@/lib/ad-source";
 
 // Ingestion pipeline (roadmap #1): pull EVERY ad's day-wise metrics for an account into the ad_metrics
@@ -81,6 +82,7 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
   } catch (e) {
     const error = e instanceof Error ? e.message : "sync failed";
     await writeState({ last_ok: false, last_error: error.slice(0, 500) });
+    await notifyFailure(userId, "sync", error, { dedupeKey: `sync:${accountExternalId}`, source: "syncing your ad data", context: { accountExternalId } });
     return { adsSeen: 0, rows: 0, since, ok: false, error, processed: 0, remaining: 0, complete: false };
   }
 
@@ -124,12 +126,19 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
   } catch (e) {
     const error = e instanceof Error ? e.message : "sync failed";
     await writeState({ last_ok: false, last_error: error.slice(0, 500), ads_seen: allAds.length, last_rows: totalRows });
+    await notifyFailure(userId, "sync", error, { dedupeKey: `sync:${accountExternalId}`, source: "syncing your ad data", context: { accountExternalId } });
     return { adsSeen: allAds.length, rows: totalRows, since, ok: false, error, processed, remaining: toProcess.length - processed, complete: false };
   }
 
   const remaining = toProcess.length - processed;
   const complete = remaining === 0;
   await writeState({ last_ok: metaError === null, last_error: metaError ? `metadata: ${metaError}`.slice(0, 500) : null, last_synced_date: isoDaysAgo(0), ads_seen: allAds.length, last_rows: totalRows });
+  // Tell the user, only once coverage converges (dedupe_key keeps it to one live row per account, so the
+  // self-chaining hops don't spam the feed): a clean "up to date", or a plain-English partial-sync warning.
+  if (complete) {
+    if (metaError) await notifyFailure(userId, "sync", `metadata: ${metaError}`, { dedupeKey: `sync:${accountExternalId}`, source: "syncing your ad data", context: { accountExternalId } });
+    else await notify({ userId, kind: "sync", status: "success", title: "Your ad data is up to date", detail: `Synced ${allAds.length} ads.`, dedupeKey: `sync:${accountExternalId}`, context: { accountExternalId, ads: allAds.length } });
+  }
   return { adsSeen: allAds.length, rows: totalRows, since, ok: true, processed, remaining, complete };
 }
 

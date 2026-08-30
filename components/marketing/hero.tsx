@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { EmailCapture } from "@/components/marketing/email-capture";
 
 export function Hero() {
@@ -18,7 +19,7 @@ export function Hero() {
         </div>
         <p className="mt-3 max-w-[460px] text-xs text-[var(--ink-muted)]">
           By clicking Book a demo, you agree to be contacted for marketing purposes. Review our{" "}
-          <span className="underline">Privacy Policy</span>.
+          <Link href="/privacy" className="underline hover:text-[var(--ink)]">Privacy Policy</Link>.
         </p>
       </div>
     </section>

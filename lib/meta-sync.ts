@@ -71,7 +71,7 @@ export async function getUserMetaSession(
       .limit(1)
       .maybeSingle();
     if (!data) return null;
-    const token = await readToken(data.id);
+    const token = await readToken(data.id, userId);
     if (!token) return null;
     return { token, activeExternalId: data.external_id, activeAccountName: data.name ?? `act_${data.external_id}` };
   } catch {
@@ -188,7 +188,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
 
   let token;
   try {
-    token = await readToken(acct.id);
+    token = await readToken(acct.id, userId);
   } catch {
     return { status: "not_connected" };
   }

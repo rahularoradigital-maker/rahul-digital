@@ -6,6 +6,7 @@ import { searchAdLibraryPages, fetchAdLibraryAds, iso2FromMarket } from "@/lib/m
 import { loadBrandProfile } from "@/lib/brand/profile";
 import { buildSearchQueries, shortlistCandidates } from "@/lib/brand/discover";
 import { storeCompetitorBrandAds } from "@/lib/competitors/store";
+import { humanizeError } from "@/lib/notifications/humanize";
 import type { NormalizedAd } from "@/lib/competitors/types";
 
 // Stage 2: auto competitor discovery from the CONFIRMED brand profile, powered by META'S OWN AD LIBRARY
@@ -56,7 +57,8 @@ export async function POST(request: NextRequest) {
         try {
           ads = await fetchAdLibraryAds(t.pageId, t.name ?? "Competitor", false, country, session!.token);
         } catch (e) {
-          errors.push(e instanceof Error ? e.message : `Failed to fetch ${t.pageId}`);
+          // Map the raw Meta error to a fixed, user-safe message (never surface the upstream error text).
+          errors.push(humanizeError(e instanceof Error ? e.message : "", `fetching ${t.name ?? "a competitor"}`).detail);
           continue;
         }
         const label = ads[0]?.brandLabel ?? t.name ?? `Page ${t.pageId}`;
@@ -85,13 +87,13 @@ export async function POST(request: NextRequest) {
   try {
     pages = await searchAdLibraryPages(searchTerms, country, session.token, 20);
   } catch (e) {
-    // A Graph error here is almost always the token lacking Ad Library access, or a rate limit.
-    // Report it honestly instead of a misleading "profile too vague".
+    // A Graph error here is almost always the token lacking Ad Library access, or a rate limit. Report it
+    // honestly (a fixed, user-safe message) instead of a misleading "profile too vague" or the raw Meta text.
     return NextResponse.json({
       ok: true,
       candidates: [],
       suggested: terms,
-      lookupError: `Could not search the Meta Ad Library (${e instanceof Error ? e.message : "request failed"}).`,
+      lookupError: humanizeError(e instanceof Error ? e.message : "", "searching the Meta Ad Library").detail,
     });
   }
   const candidates = shortlistCandidates(pages, session.activeAccountName ?? "", 10);
