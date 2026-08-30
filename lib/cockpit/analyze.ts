@@ -266,6 +266,8 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
           fatigueSufficiency: input.fatigueRead?.sufficiency ?? "insufficient_data",
           roas,
           conversions: input.conversions,
+          impressions: input.impressions ?? 0,
+          clicks: input.clicks ?? 0,
           days: input.days,
           roomToScale: input.roomToScale,
         });

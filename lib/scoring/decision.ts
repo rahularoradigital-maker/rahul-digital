@@ -27,6 +27,8 @@ export type DecisionInput = {
   fatigueSufficiency: "ok" | "insufficient_data";
   roas: number | null;
   conversions: number;
+  impressions: number; // window totals - needed for statistical sufficiency (a rate needs volume behind it)
+  clicks: number;
   days: number; // days the ad ran in the window
   roomToScale: boolean;
 };
@@ -37,6 +39,37 @@ const STRONG = 70; // objectiveScore at/above this is a genuinely strong ad
 const GOOD = 55; // still working, but eligible for a refresh once it starts wearing
 const WEAK = 45; // below this the ad is underperforming its objective benchmark
 const FULL_CONFIDENCE_DAYS = 14; // data volume at/after which the volume term is maxed out
+
+// STATISTICAL SUFFICIENCY (the rule a $100M buyer applies first): never judge an ad until it has enough
+// VOLUME to be real, not just enough days. Below these, the ad is still gathering signal -> HOLD, never
+// scale/pause. Grounded in media-buying practice, versioned + stable (not tuned per run):
+//  - conversion / leads / app_installs (judged on ROAS/CPA): Meta exits "learning" at ~50 conversions/week;
+//    a directional per-ad read of cost-per-result needs at least this many before a call is defensible.
+//  - traffic / engagement (judged on CTR/CPC): a click-rate is a proportion - it needs ~100 clicks over
+//    ~1,000 impressions before the rate is stable enough to act on.
+//  - awareness (judged on CPM / reach / frequency): a delivery read needs volume - ~10,000 impressions.
+const MIN_CONVERSIONS = 15;
+const MIN_CLICKS = 100;
+const MIN_IMPRESSIONS_RATE = 1000;
+const MIN_IMPRESSIONS_AWARENESS = 10000;
+
+// Is there enough volume to trust a verdict on this objective's own metric? Returns the shortfall reason
+// so the "why" names exactly what is missing (e.g. "only 3 conversions, need >=15").
+function volumeSufficiency(input: DecisionInput): { ok: boolean; reason: string } {
+  const o = input.objective;
+  if (o === "conversion" || o === "leads" || o === "app_installs") {
+    if (input.conversions < MIN_CONVERSIONS)
+      return { ok: false, reason: `only ${label(input.conversions)} result${input.conversions === 1 ? "" : "s"} (need >=${MIN_CONVERSIONS} to judge ${o === "conversion" ? "ROAS" : "cost per result"})` };
+    return { ok: true, reason: "" };
+  }
+  if (o === "awareness") {
+    if (input.impressions < MIN_IMPRESSIONS_AWARENESS) return { ok: false, reason: `only ${label(input.impressions)} impressions (need >=${MIN_IMPRESSIONS_AWARENESS} to judge CPM/reach)` };
+    return { ok: true, reason: "" };
+  }
+  if (input.clicks < MIN_CLICKS || input.impressions < MIN_IMPRESSIONS_RATE)
+    return { ok: false, reason: `only ${label(input.clicks)} clicks / ${label(input.impressions)} impressions (need >=${MIN_CLICKS} clicks over >=${MIN_IMPRESSIONS_RATE} impressions to judge CTR/CPC)` };
+  return { ok: true, reason: "" };
+}
 
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
@@ -66,12 +99,14 @@ export function decide(input: DecisionInput): Decision {
   const worsening = fatigueTrajectory === "worsening";
   const wearing = fatigueState === "fatiguing" || fatigueState === "fatigued";
 
-  // 1) Thin data: not enough runway (or the fatigue read itself flagged insufficient data) to
-  // trust any trend. Hold and watch. Confidence stays low but still climbs with the few days we
-  // do have, so day-2 and day-3 reads differ.
-  if (days < MIN_DAYS || fatigueSufficiency === "insufficient_data") {
-    const reason =
-      fatigueSufficiency === "insufficient_data"
+  // 1) Thin data: not enough VOLUME to be statistically real, not enough runway, or the fatigue read
+  // itself flagged insufficient data. Any of these -> hold and watch, never a scale/pause on noise. The
+  // volume gate is checked first because it is the call a top buyer makes before anything else.
+  const vol = volumeSufficiency(input);
+  if (!vol.ok || days < MIN_DAYS || fatigueSufficiency === "insufficient_data") {
+    const reason = !vol.ok
+      ? vol.reason
+      : fatigueSufficiency === "insufficient_data"
         ? "fatigue read reports insufficient data"
         : `only ${label(days)} day${days === 1 ? "" : "s"} of delivery (need ${MIN_DAYS})`;
     return {
@@ -79,7 +114,7 @@ export function decide(input: DecisionInput): Decision {
       priority: "WATCH",
       // base 0.30, +0.10 across the ramp -> ~0.30 at day 0 up to ~0.40 near the threshold.
       confidence: confidence(0.3, 0.1, days),
-      why: [`Too early to act: ${reason}.`, `Objective score ${label(objectiveScore)}/100, but the trend cannot be trusted yet.`],
+      why: [`Too early to act: ${reason}.`, `Objective score ${label(objectiveScore)}/100, but not enough volume to trust a call yet.`],
     };
   }
 
