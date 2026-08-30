@@ -5,6 +5,7 @@
 // wrong). Pure, no I/O. Ratios are null on a zero denominator (never a fabricated 0), via windowFunnel.
 
 import { windowFunnel, type ExtendedMetricsRow, type FunnelMetrics } from "../metrics/funnel-metrics.ts";
+import { buildDailySeries, windowHeadline, type DailyInputRow, type DailyKpiKey, type DailyPoint, type WindowTotals } from "./daily-series.ts";
 
 // LEVEL-NATIVE metrics: the ones that CANNOT be rolled up from ad rows and must be pulled from Meta at
 // level=adset/campaign - reach de-dups people across the group's ads, and budget is a config field on the
@@ -17,7 +18,39 @@ export type NativeByLevel = { adset: Map<string, LevelNative>; campaign: Map<str
 // `daily` is the day-wise spend series (the "strike graph" of delivery), and `delivering` is recent-spend
 // liveness so the UI can flag a group that has stopped (paused/ended) without pointing to it as actionable.
 // `native` carries the level-only metrics (reach/frequency/budget) when a Meta level pull supplied them.
-export type GroupFunnel = { id: string; name: string; spendRs: number; funnel: FunnelMetrics; daily: { date: string; spend: number }[]; delivering: boolean; native?: LevelNative };
+// `series` + `headline` power the per-entity drill-in card grid: one card per metric, big number (headline)
+// + day-wise sparkline (series), exactly like the Ad view but for this ad set / campaign.
+export type GroupFunnel = {
+  id: string;
+  name: string;
+  spendRs: number;
+  funnel: FunnelMetrics;
+  daily: { date: string; spend: number }[];
+  delivering: boolean;
+  native?: LevelNative;
+  series: DailyPoint[];
+  headline: Record<DailyKpiKey, number | null>;
+};
+
+// A group's window totals, for the headline (big) numbers on each metric card.
+function groupTotals(rows: DailyInputRow[]): WindowTotals {
+  let spendRs = 0, revenueRs = 0, impressions = 0, clicks = 0, purchases = 0;
+  for (const r of rows) {
+    spendRs += r.spend;
+    revenueRs += r.revenue;
+    impressions += r.impressions;
+    clicks += r.clicks;
+    purchases += r.purchases;
+  }
+  return {
+    spendRs, revenueRs, impressions, clicks, purchases,
+    roas: spendRs > 0 ? revenueRs / spendRs : null,
+    cpm: impressions > 0 ? (spendRs / impressions) * 1000 : null,
+    ctrAll: impressions > 0 ? (clicks / impressions) * 100 : null,
+    cpcAll: clicks > 0 ? spendRs / clicks : null,
+    cpa: purchases > 0 ? spendRs / purchases : null,
+  };
+}
 
 const RECENT_DELIVERY_DAYS = 7; // matches lib/scoring: no spend within this many days of the window end -> stopped
 
@@ -32,19 +65,20 @@ function dailySpend(rows: ExtendedMetricsRow[], asOf: string | null): { daily: {
   return { daily, delivering };
 }
 
-// One ad's contribution to the rollups: its grouping ids/names + its day-wise funnel rows.
+// One ad's contribution to the rollups: its grouping ids/names + its day-wise rows (with revenue, so a group
+// can compute a full per-metric daily series + headline for the drill-in card grid).
 export type LevelInputAd = {
   adSetId?: string;
   adsetName?: string;
   campaignId?: string;
   campaignName?: string;
-  rows: ExtendedMetricsRow[];
+  rows: DailyInputRow[];
 };
 
 export type LevelFunnels = { adset: GroupFunnel[]; campaign: GroupFunnel[] };
 
 function groupBy(ads: LevelInputAd[], idOf: (a: LevelInputAd) => string | undefined, nameOf: (a: LevelInputAd) => string | undefined, limit: number, asOf: string | null, native?: Map<string, LevelNative>): GroupFunnel[] {
-  const groups = new Map<string, { name: string; rows: ExtendedMetricsRow[]; spend: number }>();
+  const groups = new Map<string, { name: string; rows: DailyInputRow[]; spend: number }>();
   for (const a of ads) {
     const id = idOf(a);
     if (!id) continue; // an ad with no ad-set/campaign id cannot be grouped at that level - skip it, never guess
@@ -56,7 +90,19 @@ function groupBy(ads: LevelInputAd[], idOf: (a: LevelInputAd) => string | undefi
     groups.set(id, g);
   }
   return [...groups.entries()]
-    .map(([id, g]) => ({ id, name: g.name, spendRs: Math.round(g.spend), funnel: windowFunnel(g.rows), ...dailySpend(g.rows, asOf), native: native?.get(id) }))
+    .map(([id, g]) => {
+      const funnel = windowFunnel(g.rows);
+      return {
+        id,
+        name: g.name,
+        spendRs: Math.round(g.spend),
+        funnel,
+        series: buildDailySeries(g.rows),
+        headline: windowHeadline(groupTotals(g.rows), funnel),
+        ...dailySpend(g.rows, asOf),
+        native: native?.get(id),
+      };
+    })
     .sort((x, y) => y.spendRs - x.spendRs)
     .slice(0, limit);
 }

@@ -405,7 +405,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
           date: r.date, spend: r.spend, impressions: r.impressions, clicks: r.clicks,
           outboundClicks: r.outboundClicks ?? 0, video3sViews: r.video3sViews ?? 0, videoThruplays: r.videoThruplays ?? 0,
           landingPageViews: r.landingPageViews ?? 0, addToCarts: r.addToCarts ?? 0, initiateCheckouts: r.initiateCheckouts ?? 0,
-          purchases: r.purchases,
+          purchases: r.purchases, revenue: r.revenue ?? 0,
         })),
       })),
       8,

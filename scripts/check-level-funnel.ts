@@ -4,10 +4,10 @@ import assert from "node:assert/strict";
 import { levelFunnels, type LevelInputAd } from "../lib/cockpit/level-funnel.ts";
 import type { ExtendedMetricsRow } from "../lib/metrics/funnel-metrics.ts";
 
-function row(over: Partial<ExtendedMetricsRow> = {}): ExtendedMetricsRow {
+function row(over: Partial<ExtendedMetricsRow & { revenue: number }> = {}): ExtendedMetricsRow & { revenue: number } {
   return {
     date: "2026-08-01", spend: 0, impressions: 0, clicks: 0, outboundClicks: 0, video3sViews: 0,
-    videoThruplays: 0, landingPageViews: 0, addToCarts: 0, initiateCheckouts: 0, purchases: 0, ...over,
+    videoThruplays: 0, landingPageViews: 0, addToCarts: 0, initiateCheckouts: 0, purchases: 0, revenue: 0, ...over,
   };
 }
 function ad(over: Partial<LevelInputAd> = {}): LevelInputAd {
