@@ -47,6 +47,10 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
 
 ---
 
+| B19 | **"Build the multi-tenant structure: agencies, brands, accounts."** | Built **Org → Brands → Accounts** additively (new `orgs`/`org_members`/`brand_members` tables; `brands` re-parented to org; `ad_accounts` gain `brand_id`, many accounts per brand; per-brand access grants so a member sees only assigned clients). Backfilled live: your data became 1 agency org + **5 brands** (Aurelia, Boat, Kimirica, Soch, Tetr), you as owner. The isolation rule (`brandsVisibleTo`) is pure + unit-tested. Then wired it into the app: the topbar is now a **Brand switcher** (lists only brands you may see, via the resolver), and switching **enforces tenancy** (`canAccessBrand`) before activating that brand's account. Live-verified: switched Soch ↔ BOAT and the whole cockpit followed. **Still open (next phases):** per-feature reads beyond the cockpit (competitors, creative, influencer, ask) are still user-scoped, not yet brand-routed; member-invite UI; RLS on membership. | 🟢 (structure + brand navigation live-verified; deeper per-feature isolation is the next phase) |
+
+---
+
 ## Part C — Your open action items (only you can do these)
 
 | # | Item | Effect | Status |
