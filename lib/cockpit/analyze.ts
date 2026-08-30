@@ -16,6 +16,7 @@ import { decide, type Decision } from "../scoring/decision.ts";
 import type { Explanation } from "../scoring/rubrics.ts";
 import { opportunityLoss, type OpportunityLoss } from "../scoring/opportunity.ts";
 import { winnerScores, type WinnerScores } from "../scoring/winner.ts";
+import { judgeAd, type AdJudgment } from "../judgment/agent.ts";
 
 // Map the objective-aware decision to the leaderboard's verdict vocabulary + the action row.
 const DECISION_VERDICT: Record<Decision["action"], Verdict> = {
@@ -89,6 +90,7 @@ export type CockpitAd = {
   fatigueRead?: FatigueRead; // day-wise fatigue read (state, trajectory, evidence)
   halfLifeDays?: number | null; // creative half-life: days to the fatigue floor
   winner?: WinnerScores; // multi-factor winner rank (quality x scale x stability x opportunity)
+  judgment?: AdJudgment; // Triple-Label read (Evidence x Agreement x Confidence) from the parallel Judge agent
 };
 
 // Account creative half-life: the spend-weighted median of the ads' half-lives (days to the
@@ -322,6 +324,33 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       },
       accountMaxSpend,
     );
+  });
+
+  // Triple-Label judgment: a parallel, auditable second opinion (Evidence x Agreement x Confidence),
+  // each label traced to a real rule id in the 1,061-rule corpus. Runs as its OWN pass so it never
+  // perturbs the verdict above - the buyer sees the machine's confidence in that verdict alongside it.
+  const adSetSpend = new Map<string, number>();
+  for (const a of scored) if (a.adSetId) adSetSpend.set(a.adSetId, (adSetSpend.get(a.adSetId) ?? 0) + a.spendRs);
+  scored.forEach((a, i) => {
+    const input = ads[i];
+    const perf = typeof input.performance === "number" ? input.performance : null;
+    a.judgment = judgeAd({
+      id: a.id,
+      name: a.name,
+      platform: "Meta", // ponytail: platform inferred - live accounts are Meta. Upgrade when Google accounts land.
+      objective: a.objective,
+      spend: a.spendRs,
+      adSetSpend: a.adSetId ? adSetSpend.get(a.adSetId) ?? a.spendRs : a.spendRs,
+      conversions: a.conversions,
+      clicks: a.clicks ?? 0,
+      impressions: a.impressions ?? 0,
+      daysDelivered: input.days,
+      settledDays: Math.max(0, input.days - 1), // ponytail: drops the latest (attribution-lagging) day; real settled-row tracking is the upgrade
+      metricVsMedian: perf && perf > 0 ? perf / 50 : null, // percentile->ratio proxy (50th pct = median = 1.0x); upgrade = true per-objective median
+      fatigueState: input.fatigueRead?.state ?? "watch",
+      fatigueTrajectory: input.fatigueRead?.trajectory ?? "stable",
+      fatigueSufficiency: input.fatigueRead?.sufficiency ?? "insufficient_data",
+    });
   });
 
   const leaderboard = [...scored].sort((a, b) => b.score - a.score);

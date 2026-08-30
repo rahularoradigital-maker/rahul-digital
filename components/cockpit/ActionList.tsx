@@ -3,12 +3,33 @@
 // carries a real confidence bar and the engine's Scale / Iterate / Kill verdict chip,
 // matching the design's ranked test-plan list. No fabricated ordering or metrics.
 import type { CockpitAction, CockpitAd } from "@/lib/cockpit/analyze";
+import type { AdJudgment } from "@/lib/judgment/agent";
 import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
 import { CollapsibleRows } from "./CollapsibleRows";
 import { rupees } from "@/lib/format";
 
 type PlanItem = CockpitAction & { adId: string; adName: string; moneyAtStakeRs: number };
+
+// The Triple-Labelled Decision, shown inline so a buyer sees WHY to trust (or distrust) the verdict at a
+// glance: is it judgeable at all (Evidence), do the independent signals agree (Agreement), how sure
+// (Confidence). When an ad is not judgeable - e.g. it spent too little of its ad set to read fatigue - the
+// card says so plainly instead of asserting a fatigue/kill verdict on noise.
+const chip = "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium";
+function TripleLabel({ j }: { j: AdJudgment }) {
+  const ev = j.evidence.judgeable;
+  const t = j.confidence.tier;
+  const tierCls = t === "high" ? "bg-[var(--good-bg)] text-[var(--good-ink)]" : t === "med" ? "bg-[var(--warn-bg)] text-[var(--warn-ink)]" : "bg-[var(--surface-alt)] text-[var(--ink-muted)]";
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1" title="Triple-Labelled Decision: three independent checks stand behind this verdict">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Judged</span>
+      <span className={`${chip} ${ev ? "bg-[var(--good-bg)] text-[var(--good-ink)]" : "bg-[var(--bad-bg)] text-[var(--bad-ink)]"}`}>{ev ? "Evidence ✓" : "Not judgeable"}</span>
+      {ev && <span className={`${chip} border border-[var(--hairline)] bg-[var(--bg)] text-[var(--ink-muted)] tabular-nums`}>{j.agreement.agree}/{j.agreement.of} agree</span>}
+      {ev && <span className={`${chip} ${tierCls}`}>Conf {t === "high" ? "High" : t === "med" ? "Med" : "Low"}</span>}
+      {!ev && j.evidence.blockingReason && <span className="text-[11px] text-[var(--ink-muted)]">{j.evidence.blockingReason}</span>}
+    </div>
+  );
+}
 
 export function ActionList({ items, ads, accountId, dateParam }: { items: PlanItem[]; ads: CockpitAd[]; accountId?: string; dateParam?: string }) {
   const byId = new Map(ads.map((a) => [a.id, a]));
@@ -75,6 +96,8 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
                     </div>
                   )}
                 </div>
+                {/* Line 2.5: the Triple-Labelled Decision - Evidence x Agreement x Confidence behind the verdict */}
+                {ad?.judgment && <TripleLabel j={ad.judgment} />}
                 {/* Line 3: WHY - context for the verdict, always shown in light text so nothing is asserted without a reason */}
                 {reason && <div className="mt-1.5 text-[13px] leading-snug text-[var(--ink-muted)]">&#8627; {reason}</div>}
               </div>

@@ -66,4 +66,13 @@ ok(acct.counts.byVerdict.SCALE === 1 && acct.counts.byVerdict.KILL === 1 && acct
 ok(acct.actionable.every((a) => a.verdict !== "INSUFFICIENT" && a.verdict !== "WATCH"), "actionable list excludes non-actions");
 ok(acct.corpusSize === CORPUS_SIZE, "account reports full corpus size");
 
-console.log(`check-judgment: ${pass} assertions passed. corpus=${CORPUS_SIZE}. ${acct.summary}`);
+// 6) Integration: the cockpit pipeline attaches a Triple-Label judgment to every scored ad
+const { analyzeAccount } = await import("../lib/cockpit/analyze.ts");
+const { SAMPLE_ADS } = await import("../lib/sample/account.ts");
+const view = analyzeAccount(SAMPLE_ADS, "SAMPLE");
+ok(view.leaderboard.length > 0, "sample account produced ads");
+ok(view.leaderboard.every((a) => a.judgment != null), "every cockpit ad carries a judgment");
+ok(view.leaderboard.every((a) => typeof a.judgment!.confidence.tier === "string" && a.judgment!.agreement.of === 3), "each judgment has the three labels (confidence tier + N/3 agreement)");
+ok(view.leaderboard.every((a) => a.judgment!.evidence.judgeable ? a.judgment!.basis.length > 0 : true), "judgeable ads cite at least one rule id");
+
+console.log(`check-judgment: ${pass} assertions passed. corpus=${CORPUS_SIZE}. engine: ${acct.summary} | pipeline: ${view.leaderboard.length} cockpit ads judged.`);
