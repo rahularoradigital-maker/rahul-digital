@@ -2,6 +2,7 @@ import { NextResponse, after, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchLiveCockpit, getUserMetaSession } from "@/lib/meta-sync";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
+import { syncChangeHistory } from "@/lib/ingest/change-history";
 import { getAiCallsToday } from "@/lib/ai/usage";
 import { sendAlert } from "@/lib/alerts";
 
@@ -52,6 +53,9 @@ export async function GET(request: NextRequest) {
     const session = await getUserMetaSession(uid);
     if (!session) return NextResponse.json({ ok: true, uid, skipped: "no session" });
     const res = await syncAdMetrics(uid, session.activeExternalId, session.token);
+    // Change-history ingest rides the same hop (incremental + cheap). Best-effort: a failure here must never
+    // block the metrics sync or the chain - it records its own last_error in change_sync_state.
+    await syncChangeHistory(uid, session.activeExternalId, session.token).catch(() => {});
     // Continue the chain while there is work AND this hop made progress. An immediate no-progress failure
     // (processed === 0, e.g. Meta's app-level rate limit blocking the very first call) STOPS the chain, so
     // it doesn't tight-loop against the wall - the next daily trigger resumes it after a cooldown. A hop
