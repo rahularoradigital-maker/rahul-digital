@@ -9,6 +9,7 @@ import { gemini } from "./providers/gemini.ts";
 import { openai } from "./providers/openai.ts";
 import { anthropic } from "./providers/anthropic.ts";
 import { recordAiCall } from "./usage.ts";
+import { setAiTask } from "./context.ts";
 import { isKilled } from "../security/flags.ts";
 
 const ADAPTERS = { gemini, openai, anthropic };
@@ -21,6 +22,7 @@ function chain(kind: TaskKind): ModelRef[] {
 /** Text task: returns the raw model text (caller parses if needed), or null after all fallbacks. */
 export async function runTaskText(kind: TaskKind, prompt: string): Promise<string | null> {
   if (await isKilled("ai")) return null; // global AI kill switch: halt every call at the source (callers already handle null)
+  setAiTask(kind); // attribute spend to this task
   for (const m of chain(kind)) {
     recordAiCall(); // fire-and-forget cost counter (no-op without Upstash)
     const out = await ADAPTERS[m.provider].text(m.model, prompt);
@@ -38,6 +40,7 @@ export async function runTaskJson(
   inline?: InlineImage | null,
 ): Promise<Record<string, unknown> | null> {
   if (await isKilled("ai")) return null; // global AI kill switch: halt every call at the source (callers already handle null)
+  setAiTask(kind); // attribute spend to this task
   for (const m of chain(kind)) {
     recordAiCall(); // fire-and-forget cost counter (no-op without Upstash)
     const out = await ADAPTERS[m.provider].json(m.model, prompt, schema, inline ?? null);

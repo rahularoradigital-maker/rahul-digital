@@ -6,6 +6,7 @@
 
 import { fetchWithTimeout } from "./http.ts";
 import { isPublicHttpsUrl } from "./ssrf.ts";
+import { recordSpend } from "./ai/spend.ts";
 
 const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -103,9 +104,10 @@ export async function callGemini(
         }
         return null;
       }
-      const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+      const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } };
       const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text) return null;
+      recordSpend({ provider: "gemini", model: MODEL, promptTokens: json.usageMetadata?.promptTokenCount ?? 0, completionTokens: json.usageMetadata?.candidatesTokenCount ?? 0 });
       return JSON.parse(text) as Record<string, unknown>;
     } catch (e) {
       // Retry a transient blip once, but NOT a timeout abort - retrying would double the wait and can
@@ -160,12 +162,13 @@ export async function callGeminiText(prompt: string): Promise<string | null> {
         console.error(`[gemini] text ${res.status}: ${body.slice(0, 300)}`); // diagnostics -> server logs, not the UI
         return null;
       }
-      const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[] };
+      const json = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[]; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number } };
       const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text) {
         console.error(`[gemini] text empty, finishReason=${json.candidates?.[0]?.finishReason ?? "?"}`);
         return null;
       }
+      recordSpend({ provider: "gemini", model: TEXT_MODEL, promptTokens: json.usageMetadata?.promptTokenCount ?? 0, completionTokens: json.usageMetadata?.candidatesTokenCount ?? 0 });
       return text.trim();
     } catch (e) {
       // Retry a transient network blip once, but NOT a timeout abort (retrying would double the wait

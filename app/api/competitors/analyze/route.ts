@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession } from "@/lib/meta-sync";
+import { setAiUser } from "@/lib/ai/context";
 import { analyzeCreative, CALLS_PER_CREATIVE } from "@/lib/agents/creative/orchestrator";
 import { probeGemini, GEMINI_MODEL } from "@/lib/gemini";
 import type { CreativeAttributes } from "@/lib/competitors/types";
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Not signed in" }, { status: 401 });
   const userId = user.id;
+  setAiUser(userId); // attribute AI spend to this user
 
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ ok: false, error: "GEMINI_API_KEY is not set. Add it in Vercel to enable AI analysis." }, { status: 400 });

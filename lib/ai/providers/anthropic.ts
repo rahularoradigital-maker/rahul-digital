@@ -4,6 +4,7 @@
 
 import type { InlineImage } from "../tasks.ts";
 import { jsonPrompt, parseJson } from "../json.ts";
+import { recordSpend } from "../spend.ts";
 
 const ENDPOINT = "https://api.anthropic.com/v1/messages";
 
@@ -23,8 +24,10 @@ async function call(model: string, prompt: string, inline: InlineImage | null): 
       console.error(`[anthropic] ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
       return null;
     }
-    const j = (await res.json()) as { content?: { type: string; text?: string }[] };
-    return j.content?.find((b) => b.type === "text")?.text?.trim() ?? null;
+    const j = (await res.json()) as { content?: { type: string; text?: string }[]; usage?: { input_tokens?: number; output_tokens?: number } };
+    const text = j.content?.find((b) => b.type === "text")?.text?.trim() ?? null;
+    if (text != null) recordSpend({ provider: "anthropic", model, promptTokens: j.usage?.input_tokens ?? 0, completionTokens: j.usage?.output_tokens ?? 0 });
+    return text;
   } catch (e) {
     console.error("[anthropic] " + (e instanceof Error ? e.message : "request failed"));
     return null;

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runTaskText } from "@/lib/ai/router";
+import { setAiUser } from "@/lib/ai/context";
 import { groundedNumbers, ungroundedNumbers } from "@/lib/ask-grounding";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
@@ -24,6 +25,7 @@ export async function POST(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  setAiUser(user.id); // attribute AI spend to this user
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: "Ask is not configured yet (GEMINI_API_KEY missing)." }, { status: 400 });
   }

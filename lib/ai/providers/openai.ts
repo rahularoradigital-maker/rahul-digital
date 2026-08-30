@@ -4,6 +4,7 @@
 
 import type { InlineImage } from "../tasks.ts";
 import { jsonPrompt, parseJson } from "../json.ts";
+import { recordSpend } from "../spend.ts";
 
 const ENDPOINT = "https://api.openai.com/v1/chat/completions";
 
@@ -28,8 +29,10 @@ async function call(model: string, prompt: string, inline: InlineImage | null, j
       console.error(`[openai] ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
       return null;
     }
-    const j = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    return j.choices?.[0]?.message?.content?.trim() ?? null;
+    const j = (await res.json()) as { choices?: { message?: { content?: string } }[]; usage?: { prompt_tokens?: number; completion_tokens?: number } };
+    const text = j.choices?.[0]?.message?.content?.trim() ?? null;
+    if (text != null) recordSpend({ provider: "openai", model, promptTokens: j.usage?.prompt_tokens ?? 0, completionTokens: j.usage?.completion_tokens ?? 0 });
+    return text;
   } catch (e) {
     console.error("[openai] " + (e instanceof Error ? e.message : "request failed"));
     return null;
