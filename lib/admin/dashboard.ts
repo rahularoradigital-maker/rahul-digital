@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { listAudit } from "@/lib/security/audit-log";
 
 // Data for the admin cost/ops console: per-user + per-provider + per-task AI spend (from ai_usage), and the
 // background-job health (ad + change sync state). Reads via the service-role admin client. Aggregation is in
@@ -10,6 +11,7 @@ const round = (n: number) => Math.round(n * 1e4) / 1e4;
 export type UserSpend = { userId: string | null; email: string; calls: number; promptTokens: number; completionTokens: number; costUsd: number };
 export type Bucket = { key: string; calls: number; costUsd: number };
 export type JobRow = { account: string; userEmail: string; lastOk: boolean | null; lastError: string | null; lastRunAt: string | null; detail: string };
+export type AuditEventRow = { at: string; actor: string; action: string; target: string; result: string; reason: string | null };
 export type AdminDashboard = {
   windowDays: number;
   totalCalls: number;
@@ -19,6 +21,7 @@ export type AdminDashboard = {
   providers: Bucket[];
   tasks: Bucket[];
   jobs: JobRow[];
+  audit: AuditEventRow[];
 };
 
 type UsageRow = { user_id: string | null; task: string | null; provider: string; model: string; prompt_tokens: number; completion_tokens: number; cost_usd: number };
@@ -75,6 +78,16 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     jobs.push({ account: s.account_external_id, userEmail: emails.get(s.user_id) ?? s.user_id, lastOk: s.last_ok, lastError: s.last_error, lastRunAt: s.last_run_at, detail: `change sync${s.changes_seen != null ? ` · ${s.changes_seen} changes` : ""}` });
   }
 
+  const auditRaw = await listAudit(50);
+  const audit: AuditEventRow[] = auditRaw.map((a) => ({
+    at: a.occurred_at,
+    actor: a.actor_id ? emails.get(a.actor_id) ?? a.actor_id : "system",
+    action: a.action,
+    target: [a.target_type, a.target_id].filter(Boolean).join(":") || "-",
+    result: a.result ?? "ok",
+    reason: a.reason,
+  }));
+
   return {
     windowDays,
     totalCalls,
@@ -84,5 +97,6 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     providers: [...byProvider.values()].map((p) => ({ ...p, costUsd: round(p.costUsd) })).sort((a, b) => b.costUsd - a.costUsd),
     tasks: [...byTask.values()].map((t) => ({ ...t, costUsd: round(t.costUsd) })).sort((a, b) => b.costUsd - a.costUsd),
     jobs,
+    audit,
   };
 }

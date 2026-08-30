@@ -101,6 +101,22 @@ export default async function AdminPage() {
         </Card>
       </div>
 
+      <Card title="Audit trail" sub="Recent privileged/security events (who, what, when, result).">
+        {d.audit.length === 0 ? <Empty /> : (
+          <table className="w-full text-[13px]"><thead><tr><th className={th}>When</th><th className={th}>Actor</th><th className={th}>Action</th><th className={th}>Target</th><th className={th}>Result</th></tr></thead>
+            <tbody>{d.audit.map((a, i) => (
+              <tr key={i} className="border-t border-[var(--hairline)]">
+                <td className={td}>{new Date(a.at).toISOString().slice(0, 16).replace("T", " ")}</td>
+                <td className={td}>{a.actor}</td>
+                <td className={td}>{a.action}</td>
+                <td className={td}>{a.target}</td>
+                <td className={td}>{a.result === "ok" ? <span className="text-[var(--good-ink)]">ok</span> : a.result === "denied" ? <span className="text-[var(--warn-ink)]">denied</span> : <span className="text-[var(--bad-ink)]">{a.result}</span>}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        )}
+      </Card>
+
       <Card title="Background jobs" sub="Metrics + change sync per connected account.">
         {d.jobs.length === 0 ? <Empty /> : (
           <table className="w-full text-[13px]"><thead><tr><th className={th}>Account</th><th className={th}>User</th><th className={th}>Job</th><th className={th}>Status</th><th className={th}>Last run</th></tr></thead>

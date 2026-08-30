@@ -18,3 +18,20 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
     console.warn(`[audit] failed to record ${entry.action}:`, err instanceof Error ? err.message : err);
   }
 }
+
+export type AuditRow = { occurred_at: string; actor_id: string | null; action: string; target_type: string | null; target_id: string | null; result: string | null; reason: string | null };
+
+// Read the most recent audit events for the admin console (who / what / when / result). Never secrets.
+export async function listAudit(limit = 50): Promise<AuditRow[]> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("audit_log")
+      .select("occurred_at, actor_id, action, target_type, target_id, result, reason")
+      .order("occurred_at", { ascending: false })
+      .limit(limit);
+    return (data ?? []) as AuditRow[];
+  } catch {
+    return [];
+  }
+}
