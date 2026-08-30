@@ -44,6 +44,7 @@ export type CockpitAdInput = VerdictInput & {
   adsetName?: string; // readable parent names, so money figures trace to a campaign / ad set
   campaignName?: string;
   active?: boolean; // current delivery status; false = paused/archived (hidden from suggestions)
+  delivering?: boolean; // recent-spend liveness: false = no spend in the recent window (stopped), no action shown
   thumbUrl?: string | null; // best still image for the leaderboard thumbnail; null/absent when none
   objective: Objective;
   spendRs: number;
@@ -73,6 +74,7 @@ export type CockpitAd = {
   adsetName?: string; // readable parent names, so money figures trace to a campaign / ad set
   campaignName?: string;
   active?: boolean; // current delivery status; false = paused/archived (hidden from suggestions)
+  delivering?: boolean; // recent-spend liveness: false = stopped (no recent spend), excluded from the action queue
   thumbUrl?: string | null; // best still image for the leaderboard thumbnail; null/absent when none
   objective: Objective;
   spendRs: number;
@@ -287,6 +289,7 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       adsetName: input.adsetName,
       campaignName: input.campaignName,
       active: input.active,
+      delivering: input.delivering,
       thumbUrl: input.thumbUrl,
       objective: input.objective,
       spendRs: input.spendRs,
@@ -360,7 +363,10 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
   // so a failed status lookup never hides a real budget leak.
   const doThis = orderByMoneyAtStake(
     scored
-      .filter((a) => a.active !== false)
+      // Action queue = LIVE ads only. active !== false hides known-paused ads; delivering !== false also drops
+      // an unknown-status ad that stopped spending (ended/paused ad set or schedule) so we never suggest a
+      // scale/refresh/pause on something that isn't running. It still appears on the leaderboard as history.
+      .filter((a) => a.active !== false && a.delivering !== false)
       // moneyAtStakeRs is a REAL number: an ad's wasted rupees if it is bleeding, else its own spend in
       // the window (the money the action touches). Never an estimate. Used to order the queue.
       .map((a) => ({ adId: a.id, adName: a.name, moneyAtStakeRs: Math.round(a.wastedRs > 0 ? a.wastedRs : a.spendRs), ...a.action })),

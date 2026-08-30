@@ -193,6 +193,24 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
     if (id) adSetWindowSpend.set(id, (adSetWindowSpend.get(id) ?? 0) + a.spend);
   });
 
+  // "Currently delivering?" - an ACTION (scale/refresh/pause) only makes sense on a LIVE ad. Meta's status
+  // sync is best-effort, so an ad whose status we could not fetch is `active === undefined` and would slip
+  // into the action queue even if it stopped weeks ago (a paused/ended ad set, or a spent-out schedule).
+  // Recency is the honest discriminator: no spend in the recent window = not delivering, regardless of the
+  // status flag - and a genuinely-spending unknown-status ad still counts as live (never hide a real leak).
+  // Anchored to the window's most recent DATA day, not wall-clock, so historical windows read correctly.
+  const RECENT_DELIVERY_DAYS = 7; // calibrate-at-build: zero spend for this many days -> treat as stopped
+  const allDates = ads.flatMap((ad) => ad.rows.map((r) => r.date)).sort();
+  const asOf = allDates.length ? allDates[allDates.length - 1] : null;
+  const deliveringNow = (rows: MetricsRow[]): boolean => {
+    if (!asOf) return false;
+    let last: string | null = null;
+    for (const r of rows) if (r.spend > 0 && (last === null || r.date > last)) last = r.date;
+    if (!last) return false;
+    const gapDays = Math.round((Date.parse(asOf) - Date.parse(last)) / 86_400_000);
+    return gapDays <= RECENT_DELIVERY_DAYS;
+  };
+
   return ads.map((ad, i) => {
     const a = aggs[i];
     const objective = objectives[i];
@@ -223,6 +241,7 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
       adsetName: ad.adsetName,
       campaignName: ad.campaignName,
       active: ad.active,
+      delivering: deliveringNow(ad.rows), // recent-spend liveness, so a stopped ad never gets an action
       thumbUrl: ad.thumbUrl,
       objective,
       performance,
