@@ -207,7 +207,7 @@ export async function buildCockpitFromStore(opts: {
   for (const adId of rowsByAd.keys()) if (!metaById.has(adId)) return null;
 
   // Same source-level gate as the live path: judge only ads that spent AND are not paused/ended.
-  const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0 && a.active !== false);
+  const inputs = toCockpitInputs(realAds).filter((a) => (a.impressions ?? 0) > 0 && a.spendRs > 0 && a.active !== false);
   if (inputs.length === 0) return null; // store has rows but nothing analyzable in scope -> let the caller fall back
   const view = analyzeAccount(inputs, "LIVE", weights);
 

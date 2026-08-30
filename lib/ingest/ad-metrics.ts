@@ -48,8 +48,9 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
       .upsert({ user_id: userId, account_external_id: accountExternalId, last_run_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...fields }, { onConflict: "user_id,account_external_id" })
       .then(undefined, () => {});
 
-  // Map one metrics row to its DB shape. Only rows with real activity (spend or impressions) are stored,
-  // so a brand with 5 ads stores 5 and one with 5,000 stores 5,000 - nothing capped, nothing empty stored.
+  // Map one metrics row to its DB shape. Only DELIVERED rows (impressions > 0) are stored - a day with no
+  // delivery has no analyzable signal, and a 0/negative-impression row must never reach a rate (CTR/CPM/
+  // frequency). This is the single ingest gate for the whole app: nothing with impressions <= 0 gets in.
   const toDbRow = (r: AdMetricRow) => ({
     user_id: userId,
     account_external_id: accountExternalId,
@@ -102,7 +103,7 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
       const idMap = new Map<string, { campaignId: string | null; adsetId: string | null }>();
       const persist = async (batch: AdMetricRow[]) => {
         for (const r of batch) if (!idMap.has(r.adId)) idMap.set(r.adId, { campaignId: r.campaignId, adsetId: r.adsetId });
-        const active = batch.filter((r) => r.spend > 0 || r.impressions > 0);
+        const active = batch.filter((r) => r.impressions > 0);
         for (let j = 0; j < active.length; j += UPSERT_BATCH) {
           const { error } = await admin.from("ad_metrics").upsert(active.slice(j, j + UPSERT_BATCH).map(toDbRow), { onConflict: "user_id,account_external_id,ad_id,date" });
           if (error) throw new Error(`upsert: ${error.message}`);

@@ -328,7 +328,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // is kept so a live ad is never hidden by a flaky lookup. This is the single source-level gate, so
     // EVERY downstream surface (leaderboard, do-now, waste, fatigue) inherits it. Headline scope totals
     // come from a separate account-level pull, so they still reflect all spend in the window.
-    const inputs = toCockpitInputs(realAds).filter((a) => a.spendRs > 0 && a.active !== false);
+    const inputs = toCockpitInputs(realAds).filter((a) => (a.impressions ?? 0) > 0 && a.spendRs > 0 && a.active !== false);
     const view = analyzeAccount(inputs, "LIVE", weights);
     tp = perfMark("analyzeAccount", tp);
     perfMark("COLD-PULL-TOTAL", t0);
