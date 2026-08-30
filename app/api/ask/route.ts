@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { callGeminiText } from "@/lib/gemini";
+import { runTaskText } from "@/lib/ai/router";
 import { groundedNumbers, ungroundedNumbers } from "@/lib/ask-grounding";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Gemini takes a single prompt (no separate system role), so fold the rules + data + question
     // into one grounded prompt.
     const dataJson = JSON.stringify(context);
-    const answer = await callGeminiText(`${system}\n\nDATA:\n${dataJson}\n\nQUESTION: ${question}`);
+    const answer = await runTaskText("ask", `${system}\n\nDATA:\n${dataJson}\n\nQUESTION: ${question}`);
     if (!answer) return NextResponse.json({ answer: "I could not form an answer from your data right now. Please try again." });
 
     // ISSUE 28: deterministic grounding check. If the answer states a specific number that is not in
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const bad = ungroundedNumbers(answer, grounded);
     if (bad.length > 0) {
       console.error(`[ask] ungrounded number(s) ${bad.join(", ")} - regenerating stricter`);
-      const strict = await callGeminiText(
+      const strict = await runTaskText("ask", 
         `${system}\n\nEVERY number in your answer MUST be one of these exact values from the DATA: ${[...grounded].join(", ")}. ` +
           `Do not compute, estimate, or round to any other number; if the answer needs a figure not in that list, say you do not have it.\n\nDATA:\n${dataJson}\n\nQUESTION: ${question}`,
       );

@@ -4,7 +4,8 @@
 // upstream agents' findings (that data hand-off is the point of the orchestration layer).
 // One agent failing returns {} for its slice - the rest still produce their fields.
 
-import { callGemini, stringObjectSchema, type InlineImage } from "../../gemini.ts";
+import { stringObjectSchema, type InlineImage } from "../../gemini.ts";
+import { runTaskJson } from "../../ai/router.ts";
 import type { CreativeAttributes } from "../../competitors/types.ts";
 
 export type AgentCtx = {
@@ -52,7 +53,7 @@ function makeAgent(spec: AgentSpec): CreativeAgent {
       const upstream = spec.usesUpstream ? `\n\nWhat other analysts already found on this ad:\n${JSON.stringify(ctx.upstream)}` : "";
       const videoNote = ctx.isVideo ? "\n(This is a VIDEO ad; the image is its preview frame.)" : "";
       const prompt = `${BASE}\n\nYour job: ${spec.instruction}${videoNote}\n\nAd copy:\n${ctx.copyText}${upstream}`;
-      const out = await callGemini(prompt, schema, spec.needsVision ? ctx.inline : null);
+      const out = await runTaskJson("creative-vision", prompt, schema, spec.needsVision ? ctx.inline : null);
       return pick(out, spec.keys);
     },
   };

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { callGeminiText } from "@/lib/gemini";
+import { runTaskText } from "@/lib/ai/router";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 import { loadBrandProfile } from "@/lib/brand/profile";
@@ -86,7 +86,7 @@ export async function POST() {
 
   const data = { us, competitors: them };
   try {
-    const answer = await callGeminiText(`${prompt}\n\nDATA:\n${JSON.stringify(data)}`);
+    const answer = await runTaskText("positioning", `${prompt}\n\nDATA:\n${JSON.stringify(data)}`);
     if (!answer) {
       return NextResponse.json({ error: "Could not generate right now (the model was slow). Please try again." }, { status: 200 });
     }

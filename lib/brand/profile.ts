@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { callGemini, stringObjectSchema } from "@/lib/gemini";
+import { stringObjectSchema } from "@/lib/gemini";
+import { runTaskJson } from "@/lib/ai/router";
 import { parseDerived, type DerivedProfile } from "./parse";
 
 export { parseDerived, type DerivedProfile } from "./parse";
@@ -64,7 +65,7 @@ export async function deriveBrandProfile(
   ]
     .filter(Boolean)
     .join("\n");
-  const raw = await callGemini(prompt, SCHEMA);
+  const raw = await runTaskJson("brand-profile", prompt, SCHEMA);
   return raw ? parseDerived(raw) : null;
 }
 
@@ -91,7 +92,7 @@ export async function suggestCompetitorNames(p: BrandProfile): Promise<string[]>
   ]
     .filter(Boolean)
     .join("\n");
-  const raw = await callGemini(prompt, stringObjectSchema(["competitors"]));
+  const raw = await runTaskJson("brand-profile", prompt, stringObjectSchema(["competitors"]));
   const list = String((raw as { competitors?: unknown } | null)?.competitors ?? "");
   const seen = new Set<string>();
   const out: string[] = [];

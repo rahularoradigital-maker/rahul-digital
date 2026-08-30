@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { callGeminiText } from "@/lib/gemini";
+import { runTaskText } from "@/lib/ai/router";
 import { fetchLiveCockpit } from "@/lib/meta-sync";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 import { loadCompetitorFormatAds } from "@/lib/competitors/data";
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         " Ground every SKU/offer in what already appears in the DATA (do not invent products the brand does not run). Prefer the ANGLES and OFFERS that are winning, but always express them as a real, testable creative format (never catalog), and target the gaps left by ads that are fatiguing or wasting spend. If DATA.competitorFormatGap is present, use it to pick which real creative FORMAT to diversify into: competitorsPctOfAds is how much of competitors' distinct ads run that format (presence only - you do NOT know their spend or results, so never claim a competitor format 'works' or earns), youPctOfSpend is your own spend share. Favour a format where competitors are heavy and you are light, and note if you are over-concentrated in one format. Number them 1 to 4.";
 
   try {
-    const answer = await callGeminiText(`${prompt}\n\nDATA:\n${JSON.stringify(data)}`);
+    const answer = await runTaskText("analyze-text", `${prompt}\n\nDATA:\n${JSON.stringify(data)}`);
     if (!answer) {
       return NextResponse.json({ error: "Could not generate right now (the model was slow). Please try again." }, { status: 200 });
     }
