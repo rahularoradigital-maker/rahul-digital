@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession } from "@/lib/meta-sync";
-import { fetchBrandAds, pageIdFromAdLibraryUrl } from "@/lib/scrapecreators";
+import { pageIdFromAdLibraryUrl } from "@/lib/scrapecreators";
+import { availableSource, collectBrandAds } from "@/lib/competitors/collect";
 import { storeCompetitorBrandAds } from "@/lib/competitors/store";
 import type { NormalizedAd } from "@/lib/competitors/types";
 
@@ -46,6 +47,17 @@ export async function POST(request: NextRequest) {
   const session = await getUserMetaSession(userId);
   const accountId = session?.activeExternalId ?? null;
 
+  // Layer 2 is source-independent + keyless-graceful: pick the best available source. With none configured,
+  // return an honest "connect a source" state (not a per-brand crash) - the pipeline is live and ready, it
+  // just has nothing to collect from yet. Lights up when SCRAPECREATORS_API_KEY or Meta access is added.
+  const source = availableSource(!!session);
+  if (source === "none") {
+    return NextResponse.json(
+      { ok: false, reason: "no_source", message: "Connect a data source to collect competitor ads: add a ScrapeCreators API key, or connect Meta Ad Library access." },
+      { status: 200 },
+    );
+  }
+
   const admin = createAdminClient();
   const brands: { label: string; pageId: string; adCount: number; isMyBrand: boolean }[] = [];
   const errors: string[] = [];
@@ -71,7 +83,7 @@ export async function POST(request: NextRequest) {
       if (!t) return;
       let ads: NormalizedAd[];
       try {
-        ads = await fetchBrandAds(t.pageId, t.isMyBrand ? "My brand" : "Competitor", t.isMyBrand);
+        ads = await collectBrandAds(source, t.pageId, t.isMyBrand ? "My brand" : "Competitor", t.isMyBrand, { token: session?.token });
       } catch (e) {
         errors.push(e instanceof Error ? e.message : `Failed to fetch ${t.pageId}`);
         continue;
