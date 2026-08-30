@@ -24,7 +24,7 @@ export type DecisionInput = {
   performance: number; // 0-100 percentile within the account's same-objective ads
   fatigueState: "fresh" | "watch" | "fatiguing" | "fatigued";
   fatigueTrajectory: "improving" | "stable" | "worsening";
-  fatigueSufficiency: "ok" | "insufficient_data";
+  fatigueSufficiency: "ok" | "insufficient_data" | "insufficient_spend";
   roas: number | null;
   conversions: number;
   impressions: number; // window totals - needed for statistical sufficiency (a rate needs volume behind it)
@@ -113,12 +113,15 @@ export function decide(input: DecisionInput): Decision {
   // itself flagged insufficient data. Any of these -> hold and watch, never a scale/pause on noise. The
   // volume gate is checked first because it is the call a top buyer makes before anything else.
   const vol = volumeSufficiency(input);
-  if (!vol.ok || days < MIN_DAYS || fatigueSufficiency === "insufficient_data") {
+  const thinSpend = fatigueSufficiency === "insufficient_spend"; // spent too little of its ad set's budget to judge
+  if (!vol.ok || days < MIN_DAYS || fatigueSufficiency === "insufficient_data" || thinSpend) {
     const reason = !vol.ok
       ? vol.reason
-      : fatigueSufficiency === "insufficient_data"
-        ? "fatigue read reports insufficient data"
-        : `only ${label(days)} day${days === 1 ? "" : "s"} of delivery (need ${MIN_DAYS})`;
+      : thinSpend
+        ? "spent too small a share of its ad set's budget to judge yet"
+        : fatigueSufficiency === "insufficient_data"
+          ? "fatigue read reports insufficient data"
+          : `only ${label(days)} day${days === 1 ? "" : "s"} of delivery (need ${MIN_DAYS})`;
     return {
       action: "hold",
       priority: "WATCH",

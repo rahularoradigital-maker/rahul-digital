@@ -185,6 +185,14 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
     goodnessByObjective.set(objectives[i], list);
   });
 
+  // Ad-set window-spend totals, for the fatigue MATERIALITY gate: an ad that spent only a sliver of its
+  // ad set's budget in the selected window has not earned a fatigue/half-life verdict (see readFatigue).
+  const adSetWindowSpend = new Map<string, number>();
+  aggs.forEach((a, i) => {
+    const id = ads[i].adSetId;
+    if (id) adSetWindowSpend.set(id, (adSetWindowSpend.get(id) ?? 0) + a.spend);
+  });
+
   return ads.map((ad, i) => {
     const a = aggs[i];
     const objective = objectives[i];
@@ -192,8 +200,17 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
     // so switching to a 7-day view never turns a long-trend read into a noisy short one. Falls back to the
     // display rows when no baseline was supplied (the live-pull fallback path).
     const fatigueRows = ad.baselineRows ?? ad.rows;
-    const fatigueRead = readFatigue(fatigueRows, { endsInDays: ad.endsInDays, objective });
-    const fatigue = fatigueRead.sufficiency === "ok" ? fatigueRead.index : fatigueScore(a.avgFrequency);
+    // Share of the ad set's window spend this ad took (null when we can't attribute it to an ad set).
+    const adSetTotal = ad.adSetId ? adSetWindowSpend.get(ad.adSetId) ?? 0 : 0;
+    const spendShareOfAdSet = adSetTotal > 0 ? a.spend / adSetTotal : null;
+    const fatigueRead = readFatigue(fatigueRows, { endsInDays: ad.endsInDays, objective, spendShareOfAdSet });
+    // insufficient_spend -> not enough budget share to judge: treat as low fatigue, never the frequency proxy.
+    const fatigue =
+      fatigueRead.sufficiency === "ok"
+        ? fatigueRead.index
+        : fatigueRead.sufficiency === "insufficient_spend"
+          ? 0
+          : fatigueScore(a.avgFrequency);
     const goodness = goodnessOf(objective, a);
     const performance = goodness === null ? 0 : percentile(goodness, goodnessByObjective.get(objective) ?? []);
     const roomToScale = a.roas !== null && medianRoas !== null && a.roas > medianRoas && fatigue < 60;

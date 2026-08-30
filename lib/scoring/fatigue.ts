@@ -17,7 +17,7 @@ export type FatigueState = "fresh" | "watch" | "fatiguing" | "fatigued";
 export type Trajectory = "improving" | "stable" | "worsening";
 
 export type FatigueRead = {
-  sufficiency: "ok" | "insufficient_data";
+  sufficiency: "ok" | "insufficient_data" | "insufficient_spend";
   windowDays: number; // distinct days with delivery in the window
   index: number; // 0-100 fatigue (higher = more fatigued)
   state: FatigueState;
@@ -33,6 +33,11 @@ const WEIGHTS = { frequency: 0.4, ctrDecay: 0.4, cpmRise: 0.2 } as const;
 const STATE_CUTS = { fresh: 30, watch: 55, fatiguing: 75 } as const; // <30 fresh, <55 watch, <75 fatiguing, else fatigued
 const REL_SLOPE_GAIN = 1400; // maps a per-day relative CTR/CPM change into 0-100 (a ~7%/day move ~= 100)
 const CTR_FLOOR_FRACTION = 0.6; // "fatigued" when CTR falls to 60% of the window's starting CTR
+// calibrate-at-build. MATERIALITY: an ad that spent only a sliver of its AD SET's budget in the window
+// has not earned a fatigue/half-life verdict - a CTR "collapse" on a few hundred impressions is sampling
+// noise, not creative wear. A senior buyer ignores sub-scale ads until they get real budget. Below this
+// share of the ad set's window spend, we return "insufficient_spend" (a non-verdict), never "fatiguing".
+const MIN_ADSET_SPEND_SHARE = 0.2;
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
@@ -79,7 +84,10 @@ export function daysUntilEnd(endUnix: number | null | undefined, nowSec: number)
  * days until the ad's AD SET / CAMPAIGN end date, if any - a creative cannot outlive its ad
  * set, so the half-life (days-to-fatigue) is capped at that, whichever comes first.
  */
-export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | null; objective?: Objective } = {}): FatigueRead {
+export function readFatigue(
+  rows: MetricsRow[],
+  opts: { endsInDays?: number | null; objective?: Objective; spendShareOfAdSet?: number | null } = {},
+): FatigueRead {
   // One row per day (sum same-day duplicates), oldest first, only days that actually delivered.
   const byDate = new Map<string, { spend: number; impressions: number; clicks: number; revenue: number; freqSum: number; freqN: number }>();
   for (const r of rows) {
@@ -95,6 +103,25 @@ export function readFatigue(rows: MetricsRow[], opts: { endsInDays?: number | nu
   }
   const days = [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([date, v]) => ({ date, ...v }));
   const windowDays = days.length;
+
+  // MATERIALITY GATE (media-buyer rule): no fatigue/half-life verdict on an ad that spent only a sliver
+  // of its ad set's window budget - the CTR/CPM swings are sampling noise, not wear. Returns a non-verdict
+  // ("insufficient_spend", state stays "fresh") so nothing downstream flags it as fatiguing / at-risk.
+  const share = opts.spendShareOfAdSet ?? null;
+  if (share !== null && share < MIN_ADSET_SPEND_SHARE) {
+    return {
+      sufficiency: "insufficient_spend",
+      windowDays,
+      index: 0,
+      state: "fresh",
+      trajectory: "stable",
+      signals: { frequency: 0, ctrDecay: 0, cpmRise: 0 },
+      daysToFatigue: null,
+      evidence: [
+        `Spent only ${Math.round(share * 100)}% of its ad set's budget in this window - too little to judge fatigue (needs >=${Math.round(MIN_ADSET_SPEND_SHARE * 100)}%). CTR/CPM swings at this volume are noise.`,
+      ],
+    };
+  }
 
   if (windowDays < MIN_DAYS) {
     // Even without a trend, a scheduled end date IS a hard half-life ceiling worth reporting.
