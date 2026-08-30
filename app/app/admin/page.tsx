@@ -101,6 +101,21 @@ export default async function AdminPage() {
         </div>
       </Card>
 
+      <Card title="Problems (backend errors)" sub="Recent captured server errors - what's breaking, on which route, and why.">
+        {d.problems.length === 0 ? <p className="text-[13px] text-[var(--good-ink)]">No errors captured. 🎉</p> : (
+          <div className="space-y-1.5">
+            {d.problems.map((p, i) => (
+              <div key={i} className="flex items-baseline gap-3 border-t border-[var(--hairline)] py-1.5 text-[13px] first:border-0">
+                <span className="w-24 flex-shrink-0 text-[12px] text-[var(--ink-muted)]">{new Date(p.at).toISOString().slice(5, 16).replace("T", " ")}</span>
+                <span className="font-medium text-[var(--bad-ink)]">{p.feature}</span>
+                <span className="min-w-0 flex-1 truncate text-[var(--ink-muted)]">{p.message}</span>
+                <span className="flex-shrink-0 text-[12px] text-[var(--ink-muted)]">{p.user}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
       <Card title="Spend by user" sub="Which user is spending how much on AI.">
         {d.users.length === 0 ? <Empty /> : (
           <table className="w-full text-[13px]">
@@ -122,14 +137,43 @@ export default async function AdminPage() {
             </table>
           )}
         </Card>
-        <Card title="Spend by task" sub="Which kind of prompt/job runs most.">
+        <Card title="Spend by feature" sub="Which kind of prompt/job runs most.">
           {d.tasks.length === 0 ? <Empty /> : (
-            <table className="w-full text-[13px]"><thead><tr><th className={th}>Task</th><th className={th}>Cost</th><th className={th}>Calls</th></tr></thead>
+            <table className="w-full text-[13px]"><thead><tr><th className={th}>Feature</th><th className={th}>Cost</th><th className={th}>Calls</th></tr></thead>
               <tbody>{d.tasks.map((t) => (<tr key={t.key} className="border-t border-[var(--hairline)]"><td className={`${td} capitalize`}>{t.key}</td><td className={td}>{usd(t.costUsd)}</td><td className={td}>{num(t.calls)}</td></tr>))}</tbody>
             </table>
           )}
         </Card>
+        <Card title="Spend by model (API)" sub="Which model/API costs the most.">
+          {d.models.length === 0 ? <Empty /> : (
+            <table className="w-full text-[13px]"><thead><tr><th className={th}>Model</th><th className={th}>Cost</th><th className={th}>Calls</th></tr></thead>
+              <tbody>{d.models.map((m) => (<tr key={m.key} className="border-t border-[var(--hairline)]"><td className={td}>{m.key}</td><td className={td}>{usd(m.costUsd)}</td><td className={td}>{num(m.calls)}</td></tr>))}</tbody>
+            </table>
+          )}
+        </Card>
       </div>
+
+      <Card title="Feature usage by user" sub="Which user uses which features, and what it costs them.">
+        {d.userFeatures.length === 0 ? <Empty /> : (
+          <div className="space-y-3">
+            {d.userFeatures.map((u) => (
+              <div key={u.email} className="border-t border-[var(--hairline)] pt-3 first:border-0 first:pt-0">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[13px] font-medium text-[var(--ink)]">{u.email}</span>
+                  <span className="text-[13px] text-[var(--ink-muted)]">{usd(u.costUsd)} total</span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {u.features.map((f) => (
+                    <span key={f.feature} className="rounded-[8px] border border-[var(--hairline)] px-2 py-1 text-[12px] text-[var(--ink-muted)]">
+                      <span className="capitalize text-[var(--ink)]">{f.feature}</span> · {num(f.calls)}× · {usd(f.costUsd)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       <Card title="Live activity" sub="Recent meaningful events (logins, connections, feature use).">
         {d.activity.length === 0 ? <Empty /> : (

@@ -15,6 +15,8 @@ export type JobRow = { account: string; userEmail: string; lastOk: boolean | nul
 export type ConnectorStatus = { name: string; configured: boolean; status: "ok" | "not_configured" | "attention"; detail: string };
 export type OwnerOverview = { totalUsers: number; dau: number; wau: number; mau: number; newUsers7d: number; newUsers30d: number; activeAiUsers: number };
 export type ActivityRow = { at: string; event: string; user: string; feature: string | null };
+export type UserFeature = { email: string; features: { feature: string; calls: number; costUsd: number }[]; costUsd: number };
+export type ProblemRow = { at: string; feature: string; message: string; user: string };
 export type AuditEventRow = { at: string; actor: string; action: string; target: string; result: string; reason: string | null };
 export type AdminDashboard = {
   windowDays: number;
@@ -29,6 +31,9 @@ export type AdminDashboard = {
   connectors: ConnectorStatus[];
   overview: OwnerOverview;
   activity: ActivityRow[];
+  models: Bucket[];
+  userFeatures: UserFeature[];
+  problems: ProblemRow[];
 };
 
 type UsageRow = { user_id: string | null; task: string | null; provider: string; model: string; prompt_tokens: number; completion_tokens: number; cost_usd: number };
@@ -59,6 +64,8 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
   const byUser = new Map<string, UserSpend>();
   const byProvider = new Map<string, Bucket>();
   const byTask = new Map<string, Bucket>();
+  const byModel = new Map<string, Bucket>();
+  const userTask = new Map<string, Map<string, { calls: number; costUsd: number }>>(); // userKey -> feature -> {calls,cost}
   let totalCalls = 0;
   let totalCostUsd = 0;
   let totalTokens = 0;
@@ -75,6 +82,13 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     const tk = r.task ?? "other";
     const t = byTask.get(tk) ?? { key: tk, calls: 0, costUsd: 0 };
     t.calls++; t.costUsd += r.cost_usd || 0; byTask.set(tk, t);
+    const mk = r.model || "unknown";
+    const mm = byModel.get(mk) ?? { key: mk, calls: 0, costUsd: 0 };
+    mm.calls++; mm.costUsd += r.cost_usd || 0; byModel.set(mk, mm);
+    // per-user feature (task) breakdown: which user used which feature, how many times, at what cost.
+    const uf = userTask.get(uk) ?? new Map<string, { calls: number; costUsd: number }>();
+    const ufe = uf.get(tk) ?? { calls: 0, costUsd: 0 };
+    ufe.calls++; ufe.costUsd += r.cost_usd || 0; uf.set(tk, ufe); userTask.set(uk, uf);
   }
 
   const jobs: JobRow[] = [];
@@ -135,6 +149,27 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     reason: a.reason,
   }));
 
+  // Per-user feature breakdown (which user uses which feature + spend).
+  const userFeatures: UserFeature[] = [...userTask.entries()].map(([uk, feats]) => {
+    const features = [...feats.entries()].map(([feature, v]) => ({ feature, calls: v.calls, costUsd: round(v.costUsd) })).sort((a, b) => b.costUsd - a.costUsd);
+    const total = features.reduce((s, f) => s + f.costUsd, 0);
+    return { email: uk === "unattributed" ? "unattributed" : emails.get(uk) ?? uk, features, costUsd: round(total) };
+  }).sort((a, b) => b.costUsd - a.costUsd);
+
+  // Backend problems: recent captured errors (route + reason), for "what's breaking".
+  let problems: ProblemRow[] = [];
+  try {
+    const { data: errs } = await admin.from("owner_events").select("created_at, user_id, feature, meta").eq("event_type", "error").order("created_at", { ascending: false }).limit(40);
+    problems = ((errs ?? []) as { created_at: string; user_id: string | null; feature: string | null; meta: { message?: string } | null }[]).map((e) => ({
+      at: e.created_at,
+      feature: e.feature ?? "unknown",
+      message: e.meta?.message ?? "",
+      user: e.user_id ? emails.get(e.user_id) ?? e.user_id : "system",
+    }));
+  } catch {
+    /* table may be empty */
+  }
+
   return {
     windowDays,
     totalCalls,
@@ -148,5 +183,8 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     connectors,
     overview,
     activity,
+    models: [...byModel.values()].map((m) => ({ ...m, costUsd: round(m.costUsd) })).sort((a, b) => b.costUsd - a.costUsd),
+    userFeatures,
+    problems,
   };
 }
