@@ -9,7 +9,12 @@ import { stubImageProvider } from "./stub.ts";
 // google-gemini is imported lazily so its `server-only` module never loads on a stub/dev path.
 export async function getImageProvider(): Promise<ImageProvider> {
   const choice = (process.env.IMAGE_PROVIDER ?? "").toLowerCase();
-  if (choice === "google" && process.env.GEMINI_API_KEY) {
+  // Real Google images (Nano Banana) when explicitly chosen OR by default when a Gemini key is present and
+  // no other provider is picked - so real ad visuals are ON without needing an env var. Safe: a failed
+  // generation degrades to a flagged placeholder in the pipeline (never a crash), and the provider itself
+  // falls back from the preview model id to the stable one. Set IMAGE_PROVIDER=stub to force placeholders.
+  const wantsGoogle = choice === "google" || (choice === "" && !!process.env.GEMINI_API_KEY);
+  if (wantsGoogle && process.env.GEMINI_API_KEY) {
     const { googleImageProvider } = await import("./google-gemini");
     return googleImageProvider;
   }
@@ -19,5 +24,5 @@ export async function getImageProvider(): Promise<ImageProvider> {
     const { openaiImageProvider } = await import("./openai-image");
     return openaiImageProvider;
   }
-  return stubImageProvider; // default / no key -> deterministic placeholder, keeps the pipeline alive
+  return stubImageProvider; // no key / IMAGE_PROVIDER=stub -> deterministic placeholder, keeps the pipeline alive
 }

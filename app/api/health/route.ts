@@ -34,12 +34,17 @@ export async function GET() {
   const cronConfigured = Boolean(process.env.CRON_SECRET); // false => nightly auto-refresh is disabled
   const healthy = startedOk && db === "up" && syncErrors === 0 && cronConfigured;
 
-  // Config visibility (presence only, never key values). imageProvider MUST read "google" for real
-  // Nano Banana ad images - anything else means the app serves stub "placeholder" creatives.
+  // Config visibility (presence only, never key values). realImages mirrors registry.getImageProvider:
+  // Google (Nano Banana) is active when explicitly chosen OR by default with a Gemini key; OpenAI when
+  // explicitly chosen with its key; otherwise stub placeholders. IMAGE_PROVIDER=stub forces placeholders.
+  const imgChoice = (process.env.IMAGE_PROVIDER ?? "").toLowerCase();
+  const googleActive = (imgChoice === "google" || imgChoice === "") && Boolean(process.env.GEMINI_API_KEY);
+  const openaiActive = imgChoice === "openai" && Boolean(process.env.OPENAI_API_KEY);
   const providers = {
     imageProvider: process.env.IMAGE_PROVIDER ?? null,
     imageModel: process.env.IMAGE_MODEL ?? null,
-    realImages: (process.env.IMAGE_PROVIDER ?? "").toLowerCase() === "google" && Boolean(process.env.GEMINI_API_KEY),
+    effectiveImageProvider: imgChoice === "stub" ? "stub" : googleActive ? "google" : openaiActive ? "openai" : "stub",
+    realImages: imgChoice !== "stub" && (googleActive || openaiActive),
     gemini: Boolean(process.env.GEMINI_API_KEY),
     anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
     openai: Boolean(process.env.OPENAI_API_KEY),
