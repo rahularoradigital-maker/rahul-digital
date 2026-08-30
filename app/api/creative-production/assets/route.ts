@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { signedAssetUrl } from "@/lib/creative-production/pipeline";
+import { getActiveBrandId } from "@/lib/tenancy/resolve";
 
 // Creative Studio - the asset library + human review (Phases 10 + 22 UI).
 //   GET  ?productId  -> stored assets (with short-lived signed SVG urls, QA status, approval)
@@ -15,8 +16,12 @@ export async function GET(req: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
+  // Brand isolation: only the CURRENT brand's assets (not every brand this user can touch). No active brand
+  // means no creative to show.
+  const brandId = await getActiveBrandId(user.id);
+  if (!brandId) return NextResponse.json({ assets: [] });
   const productId = new URL(req.url).searchParams.get("productId");
-  let q = createAdminClient().from("cp_assets").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(200);
+  let q = createAdminClient().from("cp_assets").select("*").eq("user_id", user.id).eq("brand_id", brandId).order("created_at", { ascending: false }).limit(200);
   if (productId) q = q.eq("product_id", productId);
   const { data } = await q;
 
@@ -45,7 +50,10 @@ export async function POST(req: Request) {
   const { creativeId, approval } = (await req.json().catch(() => ({}))) as { creativeId?: string; approval?: string };
   if (!creativeId || !approval || !VALID.has(approval)) return NextResponse.json({ error: "creativeId + valid approval required" }, { status: 400 });
 
-  const { error } = await createAdminClient().from("cp_assets").update({ approval }).eq("user_id", user.id).eq("creative_id", creativeId);
+  // Can only approve/reject assets in the brand you're currently in.
+  const brandId = await getActiveBrandId(user.id);
+  if (!brandId) return NextResponse.json({ error: "No active brand" }, { status: 400 });
+  const { error } = await createAdminClient().from("cp_assets").update({ approval }).eq("user_id", user.id).eq("brand_id", brandId).eq("creative_id", creativeId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

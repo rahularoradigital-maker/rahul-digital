@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getActiveBrandId } from "@/lib/tenancy/resolve";
 import { getImageProvider } from "./providers/registry.ts";
 import { getFormat } from "./formats/ad-formats.ts";
 import { briefHash } from "./generation/brief-hash.ts";
@@ -54,6 +55,7 @@ export async function generateAssetsForConcept(
   const admin = createAdminClient();
   const out: CreativeAssetRecord[] = [];
   const approved = { headline: concept.headline, subhead: concept.supportingCopy, cta: concept.cta, offer: concept.offer };
+  const brandId = await getActiveBrandId(userId); // tag every generated asset/generation with the current brand
 
   for (const format of formats) {
     const brief = buildBrief(product, brand, concept, format);
@@ -109,13 +111,13 @@ export async function generateAssetsForConcept(
     };
 
     await admin.from("cp_generations").upsert(
-      { id: generationId, user_id: userId, concept_id: concept.id, brief_hash: hash, provider: gen.provider, model: gen.model, prompt_version: PROMPT_VERSION, cost_usd: gen.costUsd, status: gen.ok ? "done" : "placeholder", created_at: now },
+      { id: generationId, user_id: userId, brand_id: brandId, concept_id: concept.id, brief_hash: hash, provider: gen.provider, model: gen.model, prompt_version: PROMPT_VERSION, cost_usd: gen.costUsd, status: gen.ok ? "done" : "placeholder", created_at: now },
       { onConflict: "user_id,id" },
     ).then(undefined, () => {});
 
     await admin.from("cp_assets").upsert(
       {
-        creative_id: creativeId, user_id: userId, version: 1, parent_creative_id: null, concept_id: concept.id, product_id: product.productId,
+        creative_id: creativeId, user_id: userId, brand_id: brandId, version: 1, parent_creative_id: null, concept_id: concept.id, product_id: product.productId,
         generation_id: generationId, format_id: format.id, provider: gen.provider, model: gen.model, prompt_version: PROMPT_VERSION,
         brand_dna_version: brand.version, product_dna_version: 1, storage_path: storagePath, qa, approval: "draft", cost_usd: gen.costUsd, edits: null, created_at: now,
       },

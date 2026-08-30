@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getActiveBrandId } from "@/lib/tenancy/resolve";
 import { fetchWithTimeout } from "@/lib/http";
 import { deriveJSON } from "./llm-json.ts";
 import { mergeBrandDNA, emptyBrandDNA } from "./brand-dna-merge.ts";
@@ -82,17 +83,19 @@ export async function deriveBrandDNA(userId: string, scopeKey: string, opts: { w
   const { data: existing } = await admin.from("cp_brand_dna").select("version").eq("user_id", userId).eq("scope_key", scopeKey).maybeSingle();
   const version = (existing?.version ?? 0) + 1;
   derived.version = version;
+  const brandId = await getActiveBrandId(userId); // tag with the current brand (scope_key already isolates via the brand's store)
   await admin
     .from("cp_brand_dna")
-    .upsert({ user_id: userId, scope_key: scopeKey, derived, version, updated_at: new Date().toISOString() }, { onConflict: "user_id,scope_key" })
+    .upsert({ user_id: userId, brand_id: brandId, scope_key: scopeKey, derived, version, updated_at: new Date().toISOString() }, { onConflict: "user_id,scope_key" })
     .then(undefined, () => {});
   return derived;
 }
 
 export async function saveBrandOverride(userId: string, scopeKey: string, override: BrandDNAOverride | null): Promise<void> {
+  const brandId = await getActiveBrandId(userId);
   await createAdminClient()
     .from("cp_brand_dna")
-    .upsert({ user_id: userId, scope_key: scopeKey, override, updated_at: new Date().toISOString() }, { onConflict: "user_id,scope_key" })
+    .upsert({ user_id: userId, brand_id: brandId, scope_key: scopeKey, override, updated_at: new Date().toISOString() }, { onConflict: "user_id,scope_key" })
     .then(undefined, () => {});
 }
 

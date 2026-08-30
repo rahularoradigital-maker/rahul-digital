@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getActiveBrandId } from "@/lib/tenancy/resolve";
 import { deriveJSON } from "@/lib/creative-production/intelligence/llm-json.ts";
 import { CONCEPT_FORMATS } from "@/lib/creative-production/formats/concept-formats.ts";
 import { scoreConcept, rankConcepts, formatSuitability } from "@/lib/creative-production/strategy/concept-engine.ts";
@@ -106,10 +107,11 @@ export async function generateConcepts(userId: string, product: ProductDNA, bran
 
   // Persist (idempotent per concept id). Never throws - concept UX degrades gracefully on a DB hiccup.
   const admin = createAdminClient();
+  const brandId = await getActiveBrandId(userId); // tag concepts with the brand they were generated for
   await admin
     .from("cp_concepts")
     .upsert(
-      concepts.map((cc) => ({ id: cc.id, user_id: userId, product_id: cc.productId, concept: cc, score: cc.score, created_at: new Date().toISOString() })),
+      concepts.map((cc) => ({ id: cc.id, user_id: userId, brand_id: brandId, product_id: cc.productId, concept: cc, score: cc.score, created_at: new Date().toISOString() })),
       { onConflict: "user_id,id" },
     )
     .then(undefined, () => {});
@@ -117,6 +119,8 @@ export async function generateConcepts(userId: string, product: ProductDNA, bran
 }
 
 export async function loadConcepts(userId: string, productId: string): Promise<CreativeConcept[]> {
-  const { data } = await createAdminClient().from("cp_concepts").select("concept").eq("user_id", userId).eq("product_id", productId).order("score", { ascending: false });
+  const brandId = await getActiveBrandId(userId); // only the current brand's concepts
+  if (!brandId) return [];
+  const { data } = await createAdminClient().from("cp_concepts").select("concept").eq("user_id", userId).eq("brand_id", brandId).eq("product_id", productId).order("score", { ascending: false });
   return (data ?? []).map((r) => r.concept as CreativeConcept);
 }

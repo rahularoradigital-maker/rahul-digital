@@ -54,6 +54,16 @@ export async function resolveUserContext(userId: string): Promise<UserContext> {
   return { userId, brands, accounts };
 }
 
+// The brand the user is currently working in = the brand of their active ad account (which the brand
+// switcher sets). Null if nothing is active or the active account isn't linked to a brand yet. Feature reads
+// that hold BRAND-level data (creative concepts, brand DNA, the Shopify connection) scope by this, so
+// switching brand shows only that brand's creative - the same isolation the cockpit already has.
+export async function getActiveBrandId(userId: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data } = await admin.from("ad_accounts").select("brand_id").eq("user_id", userId).eq("is_active", true).maybeSingle();
+  return ((data?.brand_id as string | null) ?? null) || null;
+}
+
 // Guard helpers - use these before acting on any client-supplied id.
 export function canAccessBrand(ctx: UserContext, brandId: string): boolean {
   return ctx.brands.some((b) => b.id === brandId);

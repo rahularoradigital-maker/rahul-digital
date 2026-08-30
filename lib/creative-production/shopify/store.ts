@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { encryptToken, decryptToken } from "@/lib/crypto";
+import { getActiveBrandId } from "@/lib/tenancy/resolve";
 
 // Creative Production — Shopify connection store. The access token is AES-256-GCM encrypted at rest via
 // lib/crypto.ts (same envelope as the Meta OAuth token); it never leaves the server in plaintext. Service
@@ -20,9 +21,11 @@ export async function saveShopifyConnection(
   currency?: string | null,
 ): Promise<boolean> {
   const admin = createAdminClient();
+  const brandId = await getActiveBrandId(userId); // a store connects to the brand you're currently in
   const { error } = await admin.from("shopify_connections").upsert(
     {
       user_id: userId,
+      brand_id: brandId,
       shop_domain: shopDomain,
       access_token_encrypted: accessToken ? encryptToken(accessToken) : null,
       scopes,
@@ -40,10 +43,13 @@ export async function saveShopifyConnection(
 /** The user's most-recently-connected shop with a usable token, decrypted. null when none is connected. */
 export async function readShopifyConnection(userId: string): Promise<ShopifyConnection | null> {
   const admin = createAdminClient();
+  const brandId = await getActiveBrandId(userId); // only the CURRENT brand's store
+  if (!brandId) return null;
   const { data } = await admin
     .from("shopify_connections")
     .select("shop_domain, access_token_encrypted, api_version, status")
     .eq("user_id", userId)
+    .eq("brand_id", brandId)
     .eq("status", "connected")
     .order("connected_at", { ascending: false })
     .limit(1)
@@ -64,10 +70,13 @@ export async function readShopifyConnection(userId: string): Promise<ShopifyConn
 /** Lightweight "is a store connected?" for the UI (no token decrypt). Returns the shop + status + currency. */
 export async function getShopifyConnectionStatus(userId: string): Promise<{ shopDomain: string; status: string; currency: string | null } | null> {
   const admin = createAdminClient();
+  const brandId = await getActiveBrandId(userId); // only the CURRENT brand's store
+  if (!brandId) return null;
   const { data } = await admin
     .from("shopify_connections")
     .select("shop_domain, status, currency")
     .eq("user_id", userId)
+    .eq("brand_id", brandId)
     .order("connected_at", { ascending: false })
     .limit(1)
     .maybeSingle();
