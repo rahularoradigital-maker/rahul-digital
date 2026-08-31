@@ -227,31 +227,41 @@ export async function buildCockpitFromStore(opts: {
   // status, which is worse than the clean live pull. Until the sync fully covers the window, fall back.
   for (const adId of rowsByAd.keys()) if (!metaById.has(adId)) return null;
 
-  // LIVENESS FIX: the store's effective_status is only as fresh as the last ad_meta sync (which can be many
-  // hours stale on the daily cron), so a recently-paused/ended ad can still read ACTIVE and wrongly get an
-  // action. Refresh the CURRENT status for the top spenders (the ads that actually surface as actions) via ONE
-  // bounded Meta call and override `active`. Best-effort + bounded: any failure or no token leaves the stored
-  // status (previous behavior); only the top-N by window spend are refreshed, so it is a light status-only call.
+  // Same source-level gate as the live path: judge only ads that spent AND are not paused/ended (stored status).
+  let inputs = toCockpitInputs(realAds).filter((a) => (a.impressions ?? 0) > 0 && a.spendRs > 0 && a.active !== false);
+  if (inputs.length === 0) return null; // store has rows but nothing analyzable in scope -> let the caller fall back
+
+  // LIVENESS FIX (once and for all): the store's effective_status is only as fresh as the last ad_meta sync
+  // (hours stale on the daily cron), so a recently-paused/ended ad can still read ACTIVE and wrongly get an
+  // action nudge. The action queue surfaces ads by PRIORITY, not spend, so a tiny-spend paused ad can appear -
+  // which a top-N-by-spend refresh would miss. So: run a CANDIDATE analysis on the stored status, take the exact
+  // ads that would surface as ACTIONS (view.doThis, any spend) plus the top spenders, refresh THEIR current
+  // status in ONE bounded Meta call, override `active`, and re-filter. Bounded (|doThis| + 60), best-effort:
+  // no token or any failure leaves the stored status (never worse). analyzeAccount is pure, so the candidate
+  // pass has no side effects.
   if (opts.token) {
     try {
-      const STATUS_REFRESH_N = 60;
+      const candidate = analyzeAccount(inputs, "LIVE", weights);
+      const verifyIds = new Set<string>(candidate.doThis.map((a) => a.adId)); // every ad shown as an action, regardless of spend
       const spendOf = (a: RealAd) => a.rows.reduce((s, r) => s + r.spend, 0);
-      const topIds = [...realAds].sort((a, b) => spendOf(b) - spendOf(a)).slice(0, STATUS_REFRESH_N).map((a) => a.externalId);
-      const fresh = await fetchAdMeta(accountExternalId, topIds, opts.token);
+      for (const a of [...realAds].sort((x, y) => spendOf(y) - spendOf(x)).slice(0, 60)) verifyIds.add(a.externalId);
+      const fresh = await fetchAdMeta(accountExternalId, [...verifyIds], opts.token);
       if (fresh.size > 0) {
+        let changed = false;
         for (const ad of realAds) {
           const f = fresh.get(ad.externalId);
-          if (f && f.status !== undefined) ad.active = f.status === "ACTIVE"; // fresh status wins over the stale stored one
+          if (f && f.status !== undefined) {
+            const nowActive = f.status === "ACTIVE";
+            if (ad.active !== nowActive) { ad.active = nowActive; changed = true; } // fresh status wins over the stale stored one
+          }
         }
+        if (changed) inputs = toCockpitInputs(realAds).filter((a) => (a.impressions ?? 0) > 0 && a.spendRs > 0 && a.active !== false);
       }
     } catch {
       // keep the stored status - the action queue is never worse than before
     }
   }
 
-  // Same source-level gate as the live path: judge only ads that spent AND are not paused/ended.
-  const inputs = toCockpitInputs(realAds).filter((a) => (a.impressions ?? 0) > 0 && a.spendRs > 0 && a.active !== false);
-  if (inputs.length === 0) return null; // store has rows but nothing analyzable in scope -> let the caller fall back
   const view = analyzeAccount(inputs, "LIVE", weights);
 
   // Account funnel (thumb-stop/hold/LP/ATC/checkout) from the real day-wise rows.
