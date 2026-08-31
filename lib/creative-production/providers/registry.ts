@@ -9,20 +9,22 @@ import { stubImageProvider } from "./stub.ts";
 // google-gemini is imported lazily so its `server-only` module never loads on a stub/dev path.
 export async function getImageProvider(): Promise<ImageProvider> {
   const choice = (process.env.IMAGE_PROVIDER ?? "").toLowerCase();
-  // Real Google images (Nano Banana) when explicitly chosen OR by default when a Gemini key is present and
-  // no other provider is picked - so real ad visuals are ON without needing an env var. Safe: a failed
-  // generation degrades to a flagged placeholder in the pipeline (never a crash), and the provider itself
-  // falls back from the preview model id to the stable one. Set IMAGE_PROVIDER=stub to force placeholders.
+  // GPT-Image (OpenAI) is the DEFAULT image model (switched 2026-09-01): used when explicitly chosen OR when
+  // IMAGE_PROVIDER is unset and an OpenAI key is present - so real ad visuals are ON without needing an env
+  // var. Lazily imported so its server-only module never loads on a stub/dev path. Set IMAGE_PROVIDER=google
+  // to force Nano Banana, or IMAGE_PROVIDER=stub to force placeholders.
+  const wantsOpenai = choice === "openai" || (choice === "" && !!process.env.OPENAI_API_KEY);
+  if (wantsOpenai && process.env.OPENAI_API_KEY) {
+    const { openaiImageProvider } = await import("./openai-image");
+    return openaiImageProvider;
+  }
+  // Google images (Nano Banana) when explicitly chosen, or the fallback default when no OpenAI key but a
+  // Gemini key is present. Safe: a failed generation degrades to a flagged placeholder in the pipeline (never
+  // a crash), and the provider itself falls back from the preview model id to the stable one.
   const wantsGoogle = choice === "google" || (choice === "" && !!process.env.GEMINI_API_KEY);
   if (wantsGoogle && process.env.GEMINI_API_KEY) {
     const { googleImageProvider } = await import("./google-gemini");
     return googleImageProvider;
-  }
-  // GPT-Image (the matrix's image fallback). Lazily imported so its server-only module never loads on a
-  // stub/dev path. Selected only when explicitly chosen AND the key is present.
-  if (choice === "openai" && process.env.OPENAI_API_KEY) {
-    const { openaiImageProvider } = await import("./openai-image");
-    return openaiImageProvider;
   }
   return stubImageProvider; // no key / IMAGE_PROVIDER=stub -> deterministic placeholder, keeps the pipeline alive
 }

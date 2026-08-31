@@ -35,16 +35,17 @@ export async function GET() {
   const healthy = startedOk && db === "up" && syncErrors === 0 && cronConfigured;
 
   // Config visibility (presence only, never key values). realImages mirrors registry.getImageProvider:
-  // Google (Nano Banana) is active when explicitly chosen OR by default with a Gemini key; OpenAI when
-  // explicitly chosen with its key; otherwise stub placeholders. IMAGE_PROVIDER=stub forces placeholders.
+  // OpenAI (GPT-Image) is the default - active when explicitly chosen OR when unset with an OpenAI key;
+  // Google (Nano Banana) when explicitly chosen OR the fallback default (unset, no OpenAI key, Gemini key);
+  // otherwise stub placeholders. IMAGE_PROVIDER=stub forces placeholders.
   const imgChoice = (process.env.IMAGE_PROVIDER ?? "").toLowerCase();
-  const googleActive = (imgChoice === "google" || imgChoice === "") && Boolean(process.env.GEMINI_API_KEY);
-  const openaiActive = imgChoice === "openai" && Boolean(process.env.OPENAI_API_KEY);
+  const openaiActive = (imgChoice === "openai" || imgChoice === "") && Boolean(process.env.OPENAI_API_KEY);
+  const googleActive = (imgChoice === "google" || (imgChoice === "" && !process.env.OPENAI_API_KEY)) && Boolean(process.env.GEMINI_API_KEY);
   const providers = {
     imageProvider: process.env.IMAGE_PROVIDER ?? null,
     imageModel: process.env.IMAGE_MODEL ?? null,
-    effectiveImageProvider: imgChoice === "stub" ? "stub" : googleActive ? "google" : openaiActive ? "openai" : "stub",
-    realImages: imgChoice !== "stub" && (googleActive || openaiActive),
+    effectiveImageProvider: imgChoice === "stub" ? "stub" : openaiActive ? "openai" : googleActive ? "google" : "stub",
+    realImages: imgChoice !== "stub" && (openaiActive || googleActive),
     gemini: Boolean(process.env.GEMINI_API_KEY),
     anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
     openai: Boolean(process.env.OPENAI_API_KEY),
