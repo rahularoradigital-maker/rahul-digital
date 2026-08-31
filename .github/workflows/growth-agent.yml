@@ -1,0 +1,26 @@
+name: Growth Agent (24x7 discovery)
+
+# Runs the free, no-touch growth discovery on a frequent schedule by pinging the gated Vercel endpoint.
+# The endpoint itself discovers (Hacker News, free) -> scores -> decides -> stores a DRAFT-ONLY brief.
+# It publishes NOTHING. Needs one repo secret: CRON_SECRET (the same value set in Vercel).
+#   Set it once with:  gh secret set CRON_SECRET   (paste the value from Vercel's env)
+# Until that secret exists, the Vercel daily cron still runs the agent once a day on its own.
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"   # every 2 hours (24x7). Change to "0 * * * *" for hourly.
+  workflow_dispatch: {}      # lets you run it on demand from the Actions tab
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger growth discovery (draft-only)
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "CRON_SECRET not set — skipping. The Vercel daily cron still runs the agent."
+            exit 0
+          fi
+          curl -sS -X GET "https://rahul-digital.vercel.app/api/cron/growth" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --fail-with-body
