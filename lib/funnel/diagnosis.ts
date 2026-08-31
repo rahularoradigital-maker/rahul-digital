@@ -14,6 +14,8 @@ export type FunnelAd = {
   name?: string;
   objective: Objective;
   optimizationGoal?: string | null; // raw Meta ad-set goal when known; else undefined -> classify from objective
+  adSetId?: string | null; // for the Ads Manager deep link (open the ad in context)
+  campaignId?: string | null;
   rows: ExtendedMetricsRow[]; // this ad's day-wise rows
 };
 
@@ -40,6 +42,7 @@ export type StepRead = {
 
 export type AdDiagnosis = {
   adId: string; name?: string; objective: Objective;
+  adSetId?: string | null; campaignId?: string | null;
   stage: StageResult;
   spend: number;
   metrics: FunnelMetrics;
@@ -143,6 +146,7 @@ export function diagnoseFunnel(ads: FunnelAd[], opts: { currency?: string | null
 
       diagnoses.push({
         adId: p.ad.adId, name: p.ad.name, objective,
+        adSetId: p.ad.adSetId ?? null, campaignId: p.ad.campaignId ?? null,
         stage: classifyStage(p.ad.optimizationGoal, objective),
         spend: p.spend, metrics: p.metrics, steps: ranked, leak, hold,
       });

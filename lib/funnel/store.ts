@@ -21,7 +21,7 @@ const LIVE_MAX_ADS = 200; // live-pull cap (one account-level insights call); th
 type PathResult = { ads: FunnelAd[]; adsetByAd: Map<string, string> };
 
 type Db = {
-  ad_id: string; date: string; objective: string | null; adset_id: string | null; spend: number; impressions: number; clicks: number;
+  ad_id: string; date: string; objective: string | null; adset_id: string | null; campaign_id: string | null; spend: number; impressions: number; clicks: number;
   outbound_clicks: number; video_3s: number; video_thruplays: number; landing_page_views: number;
   add_to_carts: number; initiate_checkouts: number; purchases: number;
 };
@@ -42,7 +42,7 @@ function metricToExt(r: MetricsRow): ExtendedMetricsRow {
   };
 }
 
-export type FunnelReportBundle = { report: FunnelReport; accountName: string; since: string; until: string; lookbackDays: number; source: "store" | "live" } | null;
+export type FunnelReportBundle = { report: FunnelReport; accountName: string; accountId: string; since: string; until: string; lookbackDays: number; source: "store" | "live" } | null;
 
 type Session = NonNullable<Awaited<ReturnType<typeof getUserMetaSession>>>;
 
@@ -53,7 +53,7 @@ async function fromStore(userId: string, accountExternalId: string, since: strin
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await admin
       .from("ad_metrics")
-      .select("ad_id,date,objective,adset_id,spend,impressions,clicks,outbound_clicks,video_3s,video_thruplays,landing_page_views,add_to_carts,initiate_checkouts,purchases")
+      .select("ad_id,date,objective,adset_id,campaign_id,spend,impressions,clicks,outbound_clicks,video_3s,video_thruplays,landing_page_views,add_to_carts,initiate_checkouts,purchases")
       .eq("user_id", userId)
       .eq("account_external_id", accountExternalId)
       .gte("date", since)
@@ -90,6 +90,8 @@ async function fromStore(userId: string, accountExternalId: string, since: strin
       name: names.get(adId) ?? adId,
       objective: mapMetaObjective(rs.find((r) => r.objective)?.objective ?? ""),
       optimizationGoal: null,
+      adSetId: adsetByAd.get(adId) ?? null,
+      campaignId: rs.find((r) => r.campaign_id)?.campaign_id ?? null,
       rows: rs.map(dbToExt),
     });
   }
@@ -116,6 +118,8 @@ async function fromLive(session: Session, since: string, until: string): Promise
       name: ad.name ?? ad.externalId,
       objective: mapMetaObjective(entry?.objective),
       optimizationGoal: null,
+      adSetId: entry?.adsetId ?? null,
+      campaignId: entry?.campaignId ?? null,
       rows: (entry?.rows ?? []).map(metricToExt),
     };
   });
@@ -155,5 +159,5 @@ export async function loadFunnelReport(userId: string, opts: { lookbackDays?: nu
   if (!result.ads.length) return null;
 
   const ads = await applyGoals(result, session);
-  return { report: diagnoseFunnel(ads, {}), accountName, since, until, lookbackDays, source };
+  return { report: diagnoseFunnel(ads, {}), accountName, accountId: accountExternalId, since, until, lookbackDays, source };
 }

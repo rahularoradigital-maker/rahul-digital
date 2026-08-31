@@ -1,4 +1,5 @@
 import type { AdDiagnosis, FunnelReport, StepRead } from "@/lib/funnel/diagnosis";
+import { adsManagerUrl } from "@/lib/app/ads-manager-url";
 
 // Presentational (server component) for the funnel diagnosis. Renders the account verdict, each ad's stage +
 // weakest step (or its honest Hold), the funnel chain, and the held (under-floor) ads. No interactivity yet.
@@ -53,12 +54,20 @@ function Chain({ steps }: { steps: StepRead[] }) {
   );
 }
 
-function AdCard({ ad }: { ad: AdDiagnosis }) {
+function AdCard({ ad, accountId, dateParam }: { ad: AdDiagnosis; accountId: string; dateParam: string }) {
+  const href = adsManagerUrl(accountId, ad.adId, { adSetId: ad.adSetId ?? undefined, campaignId: ad.campaignId ?? undefined, dateParam });
   return (
     <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <div className="truncate text-[14px] font-medium text-[var(--ink)]">{ad.name ?? ad.adId}</div>
+          {href ? (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="group inline-flex max-w-full items-center gap-1 text-[14px] font-medium text-[var(--ink)] hover:text-[var(--accent)]">
+              <span className="truncate">{ad.name ?? ad.adId}</span>
+              <span className="shrink-0 text-[var(--ink-muted)] group-hover:text-[var(--accent)]" aria-hidden>↗</span>
+            </a>
+          ) : (
+            <div className="truncate text-[14px] font-medium text-[var(--ink)]">{ad.name ?? ad.adId}</div>
+          )}
           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[12px] text-[var(--ink-muted)]">
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${STAGE_STYLE[ad.stage.stage] ?? ""}`}>{ad.stage.stage}</span>
             <span>{ad.objective}</span>
@@ -85,8 +94,9 @@ function AdCard({ ad }: { ad: AdDiagnosis }) {
   );
 }
 
-export function FunnelReportView({ report, accountName, since, until }: { report: FunnelReport; accountName: string; since: string; until: string }) {
+export function FunnelReportView({ report, accountName, accountId, since, until }: { report: FunnelReport; accountName: string; accountId: string; since: string; until: string }) {
   const { verdict } = report;
+  const dateParam = `${since}_${until}`;
   const leaking = report.ads.filter((a) => a.leak);
   const held = report.ads.filter((a) => !a.leak);
 
@@ -117,14 +127,14 @@ export function FunnelReportView({ report, accountName, since, until }: { report
       {leaking.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-[13px] font-semibold text-[var(--ink)]">Ads with a named leak ({leaking.length})</h2>
-          {leaking.map((ad) => <AdCard key={ad.adId} ad={ad} />)}
+          {leaking.map((ad) => <AdCard key={ad.adId} ad={ad} accountId={accountId} dateParam={dateParam} />)}
         </section>
       )}
 
       {held.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-[13px] font-semibold text-[var(--ink)]">Held (no confident leak) ({held.length})</h2>
-          {held.map((ad) => <AdCard key={ad.adId} ad={ad} />)}
+          {held.map((ad) => <AdCard key={ad.adId} ad={ad} accountId={accountId} dateParam={dateParam} />)}
         </section>
       )}
 
