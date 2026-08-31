@@ -127,6 +127,9 @@ export function resolveCockpitScope(cookieStore: CookieReader, _defaultDays: num
   // Catalog include/exclude (topbar objective filter). Only the explicit "exclude" opts out;
   // anything else (unset, or a stale value) stays the default "include" = current behavior.
   const catalog: CatalogMode = cookieStore.get("adbrain.catalog")?.value === "exclude" ? "exclude" : "include";
+  // Platform scope (topbar): "meta" (default) | "google" | "both". Meta + Google are separate sources for now.
+  const platformRaw = cookieStore.get("adbrain.platform")?.value;
+  const platform: "meta" | "google" | "both" = platformRaw === "google" || platformRaw === "both" ? platformRaw : "meta";
   // Display window from the topbar: "7"|"14"|"30"|"60"|"90" or "custom:YYYY-MM-DD_YYYY-MM-DD". Default 90.
   const windowRaw = cookieStore.get("adbrain.window")?.value || "";
   let lookbackDays = COMPARISON_DAYS;
@@ -138,5 +141,5 @@ export function resolveCockpitScope(cookieStore: CookieReader, _defaultDays: num
     const n = Number(windowRaw);
     if ((WINDOWS as readonly number[]).includes(n)) lookbackDays = n;
   }
-  return { lookbackDays, campaignId, objectives, explicitWindow, weights, catalog };
+  return { lookbackDays, campaignId, objectives, explicitWindow, weights, catalog, platform };
 }

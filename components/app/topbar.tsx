@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { titleFor } from "@/lib/app/nav";
 import { BrandSwitcher } from "@/components/app/brand-switcher";
+import { PlatformSwitcher } from "@/components/app/platform-switcher";
 import { WindowSwitcher } from "@/components/app/window-switcher";
 import { CampaignSwitcher } from "@/components/app/campaign-switcher";
 import { ObjectiveSwitcher } from "@/components/app/objective-switcher";
@@ -135,6 +136,9 @@ export function Topbar() {
       {/* Tier 2 - scope filters, a calm toolbar under a hairline. Wraps cleanly on narrow screens. */}
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--hairline)] pt-3">
         <BrandSwitcher />
+        {/* Platform: Facebook/Instagram (Meta), Google Ads, or Both combined. Meta + Google are separate
+            sources for now (merged later); this scopes which platform's numbers the dashboard reflects. */}
+        <PlatformSwitcher />
         {/* Window selects the DISPLAY range (7/14/30/60/90 + custom). Fatigue/trend/scaling stay on the
             fixed 90-day baseline regardless (enforced in the store), so switching is instant + no re-pull. */}
         <WindowSwitcher />
