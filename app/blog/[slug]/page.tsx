@@ -73,7 +73,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         )}
         <h1 className="mt-2 text-[28px] font-normal leading-tight tracking-tight text-balance">{a.title}</h1>
         {a.dek && <p className="mt-2 text-[16px] text-[var(--ink-muted)]">{a.dek}</p>}
-        <p className="mt-2 flex items-center gap-2 text-[12px] text-[var(--ink-muted)]">
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-[var(--ink-muted)]">
+          <span className="text-[var(--ink)]">By the AdBrain team</span>
+          <span aria-hidden>·</span>
           {a.published_at && <time dateTime={a.published_at}>{a.published_at.slice(0, 10)}</time>}
           {a.published_at && <span aria-hidden>·</span>}
           <span>{readingMinutes(a.body_md)} min read</span>
@@ -94,6 +96,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <p className="text-[14px] text-[var(--ink)]">See what AdBrain flags in your own ad account - what to scale, refresh, or kill, with a reason for every call.</p>
           <Link href="/product" className="mt-3 inline-block text-[14px] font-medium text-[var(--accent)] hover:underline">How AdBrain works →</Link>
         </aside>
+        {/* Google's "how/why" disclosure: honest about production, so the content is people-first, not search-first. */}
+        <p className="mt-8 border-t border-[var(--hairline)] pt-5 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+          Written by the AdBrain team from established Meta and Google media-buying practice, AI-assisted and
+          reviewed for accuracy. We do not invent statistics, results, or case studies; figures are sourced to
+          the platforms&apos; own documentation where cited.
+        </p>
       </article>
     </main>
   );

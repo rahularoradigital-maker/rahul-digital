@@ -13,6 +13,7 @@ import {
   CaseStudy,
   FinalCta,
 } from "@/components/marketing/static-sections";
+import { FAQ } from "@/components/marketing/faq";
 
 export default function Home() {
   return (
@@ -37,6 +38,7 @@ export default function Home() {
         <Security />
         <Testimonials />
         <CaseStudy />
+        <FAQ />
         <FinalCta />
       </main>
 
