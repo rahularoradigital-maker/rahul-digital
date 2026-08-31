@@ -45,12 +45,12 @@ function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: Co
         </p>
       </div>
 
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-4 text-[13px] text-[var(--ink-muted)]">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-4 text-[13px] text-[var(--ink-muted)]">
         A precise fatigue percentage and a half-life death date need per-ad delivery history (impressions per day,
         frequency) this account does not expose yet. Needs more delivery history - never a fabricated date or percentage.
       </div>
 
-      <div className="overflow-hidden rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)]">
+      <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
         {sorted.length === 0 ? (
           <div className="p-6 text-sm text-[var(--ink-muted)]">No ads assessed yet.</div>
         ) : (

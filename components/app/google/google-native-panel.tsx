@@ -19,7 +19,7 @@ export function GoogleNativePanel({ native }: { native: GoogleNative }) {
   return (
     <div className="space-y-4">
       {/* Lead metrics - most effective for Google, on top */}
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-5">
         <div className="mb-3 flex flex-wrap items-center gap-2 text-[13px] text-[var(--ink-muted)]">
           <span className="font-medium text-[var(--ink)]">Google levers</span>
           <span>·</span>
@@ -40,7 +40,7 @@ export function GoogleNativePanel({ native }: { native: GoogleNative }) {
       </div>
 
       {/* Ranked engine findings - deterministic, no AI */}
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-5">
         <div className="mb-3 flex items-center gap-2 text-[13px]">
           <span className="font-medium text-[var(--ink)]">What to change</span>
           <span className="text-[var(--ink-muted)]">· ranked by money at stake · {rupees(diagnosis.totalMoneyAtStake)} in play</span>

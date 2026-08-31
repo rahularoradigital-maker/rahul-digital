@@ -44,7 +44,7 @@ function ActionCenter({ view, accountId, dateParam }: { view: CockpitView; accou
     return (
       <div className="space-y-6">
         <Header />
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-8 text-center text-sm text-[var(--ink-muted)]">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-8 text-center text-sm text-[var(--ink-muted)]">
           No actions to take in this window. Every ad the engine assessed is holding steady.
         </div>
       </div>
@@ -55,7 +55,7 @@ function ActionCenter({ view, accountId, dateParam }: { view: CockpitView; accou
     <div className="space-y-6">
       <Header />
 
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-sm">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-5 text-sm">
         <span className="font-semibold text-[var(--ink)]">
           {doNow.length} do-now action{doNow.length === 1 ? "" : "s"}
         </span>
@@ -99,7 +99,7 @@ function ActionSection({
 }) {
   const style = PRIORITY_STYLE[items[0].priority];
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="mb-2 flex items-center gap-2.5">
         <span className={`h-2 w-2 rounded-full ${style.dot}`} />
         <div className="text-base font-normal">{heading}</div>

@@ -27,7 +27,7 @@ export function GenerateInsight({ type, initial, emptyCta }: { type: "brand" | "
   }
 
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="mb-3 flex items-center justify-between gap-3">
         <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">From your real ads · grounded, not invented</span>
         <button

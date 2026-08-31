@@ -8,7 +8,7 @@
 export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-6">
-      <div className="w-full max-w-md rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-8 text-center">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card text-card-foreground shadow-sm p-8 text-center">
         <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--accent-soft)]">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 9v4" /><path d="M12 17h.01" /><circle cx="12" cy="12" r="9" />

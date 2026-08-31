@@ -56,7 +56,7 @@ export function AnalyzeControl({ analyzedCount }: { analyzedCount: number }) {
   }
 
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-base font-normal">AI creative analysis</div>

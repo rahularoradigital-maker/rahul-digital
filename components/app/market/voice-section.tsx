@@ -15,7 +15,7 @@ export async function VoiceSection() {
 
   if (!data) {
     return (
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
         <h2 className="text-[22px] font-normal tracking-tight">Competitor Voice</h2>
         <p className="mt-1.5 max-w-2xl text-sm text-[var(--ink-muted)]">
           How the market talks - the CTAs and opening lines your rivals lead with, and the messaging
@@ -90,7 +90,7 @@ export async function VoiceSection() {
 
 function Card({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="mb-1 text-base font-normal">{title}</div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">{hint}</div>
       {children}

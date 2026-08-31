@@ -64,7 +64,7 @@ export function KpiSection({ data }: { data: CockpitData }) {
       </div>
 
       {!data.connected && (
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-3 text-sm text-[var(--ink-muted)]">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm px-4 py-3 text-sm text-[var(--ink-muted)]">
           Connect Meta to populate live values.{" "}
           <a href="/api/connect/meta/authorize" className="font-medium text-[var(--accent)] underline underline-offset-2">
             Connect Meta

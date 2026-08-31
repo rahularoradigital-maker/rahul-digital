@@ -167,7 +167,7 @@ function ContributorList({ items, accountId, dateParam, kind }: { items: SpendCo
 function ScalingCard({ marginal }: { marginal: MarginalRead }) {
   const s = MARGINAL_STYLE[marginal.classification];
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="mb-1 flex flex-wrap items-center gap-2">
         <span className="text-base font-normal">Scaling headroom</span>
         <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${s.cls}`}>{s.label}</span>
@@ -285,7 +285,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
       <ConfidenceBanner dq={dataQuality} />
 
       {/* Account Health */}
-      <div className="grid grid-cols-1 items-center gap-8 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6 md:grid-cols-[200px_1fr]">
+      <div className="grid grid-cols-1 items-center gap-8 rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6 md:grid-cols-[200px_1fr]">
         <HealthRing score={health.score} />
         <div>
           <div className="mb-3.5 flex items-center justify-between gap-3">
@@ -323,7 +323,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
         {/* MER + nCAC need store revenue (Shopify), so they are always insufficient until a revenue
             source connects. Collapse the two permanently-dead cards into one honest affordance
             spanning both slots instead of two decoy tiles. Restore as real cards with plan-04. */}
-        <div className="col-span-2 flex flex-col justify-center rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+        <div className="col-span-2 flex flex-col justify-center rounded-xl border border-border bg-card text-card-foreground shadow-sm p-5">
           <div className="mb-1 text-[13px] font-medium text-[var(--ink-muted)]">Store economics · MER &amp; nCAC</div>
           <div className="text-[13px] text-[var(--ink)]">
             Connect Shopify to unlock marketing-efficiency ratio (revenue ÷ spend) and new-customer acquisition cost.
@@ -349,7 +349,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
 
       {/* Wasted spend */}
       {view.waste.status === "ok" && (
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
           <div className="mb-1 text-base font-normal">Budget waste</div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
             High spend plus poor economics. Small-spend low-ROAS ads are excluded. Insufficient data is not waste.
@@ -370,7 +370,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
 
       {/* Opportunity loss: money actively bleeding (wasted + at-risk / fatiguing spend) */}
       {view.opportunity.totalLossRs > 0 && (
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
           <div className="mb-1 text-base font-normal">Opportunity loss</div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">{view.opportunity.basis}</div>
           <div className="flex flex-wrap items-end gap-8 border-t border-[var(--surface-alt)] pt-4">

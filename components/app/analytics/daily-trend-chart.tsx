@@ -52,7 +52,7 @@ export function DailyTrendChart({ series, headline }: { series: DailyPoint[]; he
             ? headline[k.key]
             : [...values].reverse().find((v) => v !== null && Number.isFinite(v)) ?? null;
           return (
-            <div key={k.key} className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-3">
+            <div key={k.key} className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-3">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[11px] uppercase tracking-wide text-[var(--ink-muted)]">{k.label}</span>
                 <span className="text-[11px] text-[var(--ink-muted)]">{trendGlyph(values)}</span>

@@ -160,13 +160,13 @@ export function CreativeStudio() {
           <h2 className="text-[16px] font-medium">Add your store</h2>
           <p className="text-[13px] text-[var(--ink-muted)]">Just paste your store website. If it is a Shopify store, Studio pulls in every published product automatically. No login or API key needed.</p>
           <div className="flex flex-wrap gap-2">
-            <input value={formDomain} onChange={(e) => setFormDomain(e.target.value)} placeholder="your-store.com" className="min-w-[280px] flex-1 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-[13px]" />
+            <input value={formDomain} onChange={(e) => setFormDomain(e.target.value)} placeholder="your-store.com" className="min-w-[280px] flex-1 rounded-xl border border-border bg-card text-card-foreground shadow-sm px-3 py-2 text-[13px]" />
             <button className={BTN_PRIMARY} disabled={busy === "connect" || !formDomain.trim()} onClick={connect}>{busy === "connect" ? "Fetching products…" : "Fetch products"}</button>
           </div>
           <details className="text-[12px] text-[var(--ink-muted)]">
             <summary className="cursor-pointer select-none">Have an Admin API token? (optional — for private/full data)</summary>
             <div className="mt-2 flex flex-wrap gap-2">
-              <input value={formToken} onChange={(e) => setFormToken(e.target.value)} placeholder="shpat_… (Admin API token)" className="min-w-[280px] flex-1 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-[13px]" />
+              <input value={formToken} onChange={(e) => setFormToken(e.target.value)} placeholder="shpat_… (Admin API token)" className="min-w-[280px] flex-1 rounded-xl border border-border bg-card text-card-foreground shadow-sm px-3 py-2 text-[13px]" />
               <span className="text-[11px]">A token also pulls unpublished products, inventory and metafields. The public feed covers published products, prices and images.</span>
             </div>
           </details>

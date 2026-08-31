@@ -87,14 +87,14 @@ export function PositioningSection() {
       {booting ? (
         <p className="text-[13px] text-[var(--ink-muted)]">Loading...</p>
       ) : !content ? (
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6 text-sm text-[var(--ink-muted)]">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6 text-sm text-[var(--ink-muted)]">
           No positioning read yet. Hit Generate - it reads your live ads, brand profile, and website to describe your ICP
           and content pillars, and compares them to any competitors you have tracked.
         </div>
       ) : (
         <div className="space-y-4">
           {sections.map((s, i) => (
-            <div key={i} className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+            <div key={i} className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
               {s.title && <div className="mb-2 text-[13px] font-semibold uppercase tracking-wide text-[var(--accent)]">{s.title}</div>}
               <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-[var(--ink)]">{s.body}</p>
             </div>

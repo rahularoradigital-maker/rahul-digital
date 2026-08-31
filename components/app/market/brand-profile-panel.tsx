@@ -70,7 +70,7 @@ export function BrandProfilePanel({ initial }: { initial: EditableProfile | null
 
   if (!p) {
     return (
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
         <h2 className="text-[22px] font-normal tracking-tight">Brand understanding</h2>
         <p className="mt-1.5 max-w-2xl text-sm text-[var(--ink-muted)]">
           Learn this brand from its own live ads - category, products, price positioning, market and voice - to build the
@@ -92,7 +92,7 @@ export function BrandProfilePanel({ initial }: { initial: EditableProfile | null
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-[22px] font-normal tracking-tight">Brand understanding</h2>
           <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${p.status === "confirmed" ? "bg-[var(--good-bg)] text-[var(--good-ink)]" : "bg-[var(--warn-bg)] text-[var(--warn-ink)]"}`}>

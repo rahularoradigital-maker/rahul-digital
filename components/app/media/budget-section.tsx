@@ -41,7 +41,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
 
       {/* Concentration + Waste */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
           <div className="mb-1 text-base font-normal">Budget concentration</div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
             Share of spend riding on a single ad. Internal calculation over your account.
@@ -67,7 +67,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
         </div>
 
         {waste.status === "ok" && (
-          <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+          <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
             <div className="mb-1 text-base font-normal">Budget waste</div>
             <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
               High spend plus poor economics. Small-spend low-ROAS ads are excluded. Insufficient data is not waste.
@@ -87,7 +87,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
       </div>
 
       {/* Scaling candidates */}
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
         <div className="mb-1 text-base font-normal">Scaling candidates</div>
         <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
           Ads that clear the winner gate this window. Scale by 30% at a time, not more, to avoid a learning reset.
@@ -116,7 +116,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
 
       {/* Spend distribution + Marginal ROAS honest gate */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
           <div className="mb-1 flex items-center gap-1.5">
             <span className="text-base font-normal">Spend distribution</span>
             <span
@@ -168,7 +168,7 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
           )}
         </div>
 
-        <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+        <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-5">
           <div className="mb-2 text-[13px] text-[var(--ink-muted)]">Marginal ROAS - needs spend-response history</div>
           <div className="text-[15px] font-medium text-[var(--ink-muted)]">insufficient_data</div>
           <div className="mt-1 text-xs text-[var(--ink-muted)]">

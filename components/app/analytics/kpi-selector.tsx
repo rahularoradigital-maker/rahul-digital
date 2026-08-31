@@ -101,7 +101,7 @@ export function KpiSelector({ catalog, liveValues }: { catalog: Kpi[]; liveValue
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-4">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card text-card-foreground shadow-sm p-4">
         <label className="flex items-center gap-2 text-sm font-medium text-[var(--ink)]">
           <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={allSelected} onChange={(e) => toggleAll(e.target.checked)} />
           Select all
@@ -117,7 +117,7 @@ export function KpiSelector({ catalog, liveValues }: { catalog: Kpi[]; liveValue
         const groupSelectedCount = codes.filter((c) => selected.has(c)).length;
 
         return (
-          <div key={group} className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)]">
+          <div key={group} className="rounded-xl border border-border bg-card text-card-foreground shadow-sm">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--hairline)] px-4 py-3">
               <label className="flex items-center gap-2 text-sm font-semibold text-[var(--ink)]">
                 <input

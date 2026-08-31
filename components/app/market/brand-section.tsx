@@ -14,7 +14,7 @@ export async function BrandSection() {
 
   if (!session) {
     return (
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6 text-sm text-[var(--ink-muted)]">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6 text-sm text-[var(--ink-muted)]">
         Connect a Meta ad account first - brand understanding is derived from that account&apos;s live ads.
       </div>
     );

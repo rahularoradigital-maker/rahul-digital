@@ -25,7 +25,7 @@ export function DiversitySection({ data, days, competitors }: { data: CockpitDat
       {/* The strategist's read - winning DNA, portfolio fragility, proven white-space, and what to make next. */}
       {data.ownStrategy && <CreativeStrategyCard s={data.ownStrategy} />}
 
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
         <div className="mb-1 text-base font-normal">Portfolio spread</div>
         <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
           Real numbers from your connected account. Not diversity yet, just how many ads are live and how concentrated
@@ -69,7 +69,7 @@ export function DiversitySection({ data, days, competitors }: { data: CockpitDat
           );
         }
         return (
-          <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+          <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
             <div className="mb-1 flex items-center justify-between gap-3">
               <div className="text-base font-normal">Creative format diversity</div>
               <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">Real assets</span>
@@ -127,7 +127,7 @@ function CompetitorCompare({ cmp }: { cmp: DiversityComparison | null }) {
   const rows = cmp.formats.filter((f) => (f.ownShare ?? 0) > 0 || (f.competitorShare ?? 0) > 0);
 
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="mb-1 flex items-center justify-between gap-3">
         <div className="text-base font-normal">You vs competitors</div>
         <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">Ad Library</span>

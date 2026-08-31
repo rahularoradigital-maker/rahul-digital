@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/app/user";
+import { requireProductAccess } from "@/lib/app/access";
 import { signOut } from "@/app/(auth)/actions";
 import { Logo } from "@/components/site-header";
 import { SidebarNav } from "@/components/app/sidebar-nav";
@@ -28,6 +29,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // their own guard.
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  // Private beta: authenticated is not authorized. A non-entitled user is redirected to /waitlist.
+  // Admins short-circuit inside the gate, so staff are never locked out. One cached service-role read.
+  await requireProductAccess();
 
   return (
     <div className="flex min-h-full flex-1">

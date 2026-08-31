@@ -14,7 +14,7 @@ const FRAG = {
 export function CreativeStrategyCard({ s }: { s: CreativeStrategy }) {
   const frag = FRAG[s.fragility.level];
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="mb-1 flex items-center justify-between gap-3">
         <div className="text-base font-normal">Creative strategy</div>
         <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${frag.cls}`}>{frag.label}</span>

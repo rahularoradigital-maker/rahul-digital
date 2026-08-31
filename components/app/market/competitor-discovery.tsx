@@ -74,7 +74,7 @@ export function CompetitorDiscovery() {
   }
 
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+    <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="mb-1 text-base font-normal">Find competitors automatically</div>
       <p className="mb-4 max-w-2xl text-[13px] text-[var(--ink-muted)]">
         Searches Meta&apos;s Ad Library for the brands actually running ads for your category and products, then you pick the

@@ -22,7 +22,7 @@ export async function CompetitorsSection() {
     return (
       <div className="space-y-6">
         <CompetitorDashboard data={data} />
-        <details className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+        <details className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
           <summary className="cursor-pointer text-sm font-medium text-[var(--ink)]">Re-run or add competitors</summary>
           <div className="mt-4">
             <CompetitorInput market={market} />
@@ -67,7 +67,7 @@ function CompetitorsIntro({ market }: { market: string }) {
 
       <CompetitorInput market={market} />
 
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
         <div className="mb-1 text-base font-normal">Pipeline</div>
         <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
           Stage 1 is live. The automated stages light up as the ScrapeCreators data layer and the Gemini creative-analysis

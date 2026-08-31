@@ -41,7 +41,7 @@ export function ConceptsSection({ initialContent }: { initialContent: string | n
       </div>
 
       {/* The recipe formula, straight from the spec, so the working is visible not hidden */}
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
         <div className="mb-3 text-base font-normal">The formula</div>
         <pre className="overflow-x-auto rounded-[10px] bg-[var(--bg)] p-4 text-[13px] leading-relaxed text-[var(--ink)]">
 {`recipe = pick(SKU) + pick(format) + pick(concept) + pick(offer) + pick(landing)
@@ -65,7 +65,7 @@ each pick = argmax over candidates of:
       </div>
 
       {/* The 5 recipe parts and which sources feed each pick */}
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
+      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
         <div className="mb-1 text-base font-normal">The five parts</div>
         <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
           Every part below is scored against the same four sources before a pick is made. This is the label and
