@@ -5,7 +5,7 @@
 
 import { BRAND } from "./knowledge.ts";
 
-const SITE = BRAND.url.replace(/\/$/, ""); // https://rahul-digital.vercel.app
+const SITE = BRAND.url.replace(/\/$/, ""); // https://adscaledigital.co
 
 // Build a UTM-tagged AdBrain URL. source = the platform/community; content = the topic or conversation id.
 export function utmLink(path: string, opts: { source: string; content?: string; campaign?: string; medium?: string }): string {
@@ -21,7 +21,7 @@ function clean(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "scout";
 }
 
-// Post-process markdown/text: any bare or markdown link to rahul-digital.vercel.app gets UTMs appended (unless it
+// Post-process markdown/text: any bare or markdown link to adscaledigital.co gets UTMs appended (unless it
 // already carries a utm_source). Idempotent. This makes every product link Scout writes attributable, without
 // the AI having to remember the tags.
 export function tagAdBrainLinks(text: string, opts: { source: string; content?: string }): string {

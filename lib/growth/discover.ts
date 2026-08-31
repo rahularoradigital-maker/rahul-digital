@@ -14,7 +14,7 @@ type RedditChild = { data: { id: string; subreddit: string; author: string; perm
 async function searchSub(sub: string, query: string, limit: number): Promise<Conversation[]> {
   const url = `https://www.reddit.com/r/${encodeURIComponent(sub)}/search.json?q=${encodeURIComponent(query)}&restrict_sr=1&sort=new&limit=${limit}`;
   try {
-    const res = await fetch(url, { headers: { "User-Agent": "AdBrainGrowthAgent/1.0 (read-only listening; contact rahul-digital.vercel.app)" } });
+    const res = await fetch(url, { headers: { "User-Agent": "AdBrainGrowthAgent/1.0 (read-only listening; contact adscaledigital.co)" } });
     if (!res.ok) return [];
     const json = (await res.json()) as { data?: { children?: RedditChild[] } };
     return (json.data?.children ?? [])

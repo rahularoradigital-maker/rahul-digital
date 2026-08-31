@@ -9,7 +9,10 @@ import assert from "node:assert/strict";
 const ROOT = new URL("..", import.meta.url).pathname;
 const DIRS = ["app", "components", "lib", "scripts"];
 const EXT = /\.(ts|tsx|mjs)$/;
-const BANNED = /adscale|adscaledigital/i;
+// Ban the obsolete brand NAME as a word (\badscale\b), NOT the live domain "adscaledigital.co" - the site is
+// really served there (NEXT_PUBLIC_SITE_URL), so it legitimately appears in canonicals + attribution. The word
+// boundary means "AdScale"/"adscale" is caught while "adscaledigital" (domain) is not.
+const BANNED = /\badscale\b/i;
 
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -39,4 +42,4 @@ for (const dir of DIRS) {
 }
 
 assert.equal(hits.length, 0, `brand consistency: ${hits.length} banned brand token(s) present - the product is "AdBrain", never "AdScale":\n${hits.join("\n")}`);
-console.log(`OK check-brand-consistency: no banned brand tokens (adscale/adscaledigital) across ${DIRS.join("/")}.`);
+console.log(`OK check-brand-consistency: the obsolete brand word "AdScale" appears nowhere across ${DIRS.join("/")} (the live domain adscaledigital.co is allowed).`);

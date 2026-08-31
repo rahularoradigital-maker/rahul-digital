@@ -10,15 +10,15 @@ function ok(cond: boolean, msg: string) {
 }
 
 const link = utmLink("/", { source: "Reddit", content: "creative fatigue" });
-ok(link.startsWith("https://rahul-digital.vercel.app/"), "utmLink points at rahul-digital.vercel.app");
+ok(link.startsWith("https://adscaledigital.co/"), "utmLink points at adscaledigital.co");
 ok(link.includes("utm_source=reddit"), "source is set + cleaned to lowercase");
 ok(link.includes("utm_medium=scout"), "medium defaults to scout");
 ok(link.includes("utm_campaign=growth"), "campaign defaults to growth");
 ok(link.includes("utm_content=creative-fatigue"), "content set + slugified");
 
-const tagged = tagAdBrainLinks("Try https://rahul-digital.vercel.app/app for this.", { source: "hackernews", content: "t1" });
+const tagged = tagAdBrainLinks("Try https://adscaledigital.co/app for this.", { source: "hackernews", content: "t1" });
 ok(tagged.includes("utm_source=hackernews"), "a bare AdBrain link in text gets tagged");
-ok(/rahul-digital\.vercel\.app\/app\?/.test(tagged), "the app path is preserved + query appended");
+ok(/adscaledigital\.co\/app\?/.test(tagged), "the app path is preserved + query appended");
 
 // idempotent: re-tagging doesn't double-append
 const twice = tagAdBrainLinks(tagged, { source: "hackernews", content: "t1" });

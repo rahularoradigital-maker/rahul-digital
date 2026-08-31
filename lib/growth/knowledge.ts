@@ -1,14 +1,14 @@
 // Growth-agent knowledge base (spec sections 1, 2, 3, 33, 34). The single source of truth for WHO AdBrain is,
 // WHO it serves, WHAT signals to look for, and WHAT the agent must never do. Versioned - never overwrite,
 // bump VERSION on a real change. NOTHING here invents a product capability: every brand fact below is a real,
-// shipped part of AdBrain (rahul-digital.vercel.app). If a capability is not real, it does not go here.
+// shipped part of AdBrain (adscaledigital.co). If a capability is not real, it does not go here.
 
 export const KNOWLEDGE_VERSION = "1.0.0";
 
 // --- BRAND KNOWLEDGE (section 1) - honest capabilities only ---
 export const BRAND = {
   name: "AdBrain",
-  url: "https://rahul-digital.vercel.app",
+  url: "https://adscaledigital.co",
   oneLiner: "Creative decision intelligence for Meta + Google ads - it reads your day-wise account data and tells you what to act on today, with a reason for every verdict, and never auto-changes your account.",
   does: [
     "Connects a Meta / Google ad account (read-only, encrypted tokens) and reads day-wise performance.",
