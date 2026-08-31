@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
+import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 import { loadFunnelReport } from "@/lib/funnel/store";
 import { FunnelReportView } from "@/components/app/funnel/funnel-report";
 
@@ -34,7 +36,16 @@ export default async function FunnelPage() {
     );
   }
 
-  const bundle = await loadFunnelReport(user.id);
+  // Honor the topbar filters (Catalog / Objective / Campaign / Window), the same ones the Cockpit applies, so
+  // "Catalog: Excluded" actually hides catalog ads here and the selected date range drives the diagnosis.
+  const scope = resolveCockpitScope(await cookies(), 90);
+  const bundle = await loadFunnelReport(user.id, {
+    catalog: scope.catalog,
+    objectives: scope.objectives,
+    campaignIds: scope.campaignId ? scope.campaignId.split(",").filter(Boolean) : undefined,
+    explicitWindow: scope.explicitWindow,
+    lookbackDays: scope.explicitWindow ? undefined : scope.lookbackDays,
+  });
 
   return (
     <div className="space-y-6">
