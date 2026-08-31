@@ -65,6 +65,19 @@ function ScoreBreakdown({ score }: { score: TransparentScore }) {
   );
 }
 
+// The raw reel numbers behind the reach + consistency scores, e.g. "avg 62K views/reel · 5.1x reach · 3
+// reels/week · posted 2d ago". Null when the creator has no usable reel sample.
+function reelLine(c: NormalizedCreator): string | null {
+  const r = c.reels;
+  if (!r || r.confidence === "none") return null;
+  const parts: string[] = [];
+  if (r.avgViews != null) parts.push(`avg ${fmt(r.avgViews)} views/reel`);
+  if (r.reachRatio != null) parts.push(`${r.reachRatio.toFixed(1)}x reach`);
+  if (r.postsPerWeek != null) parts.push(`${r.postsPerWeek} reels/week`);
+  if (r.daysSinceLastPost != null) parts.push(r.daysSinceLastPost === 0 ? "posted today" : `posted ${r.daysSinceLastPost}d ago`);
+  return parts.length ? parts.join(" · ") : null;
+}
+
 function audienceLine(c: NormalizedCreator): string {
   const a = c.audience;
   if (a.basis === "none" || a.source === "UNKNOWN") return "Audience data unavailable";
@@ -113,6 +126,12 @@ function CreatorCard({ r }: { r: RankedCreator }) {
               <ConfPill c={c.audience.confidence} />
             </span>
           </div>
+
+          {reelLine(c) ? (
+            <div className="mt-1.5 text-[12px] text-[var(--ink-muted)]">
+              <span className="font-medium text-[var(--ink)]">Reels</span> · {reelLine(c)}
+            </div>
+          ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
             <span className={`rounded-full px-2 py-0.5 font-medium ${risk.score < 30 ? "bg-[var(--good-bg)] text-[var(--good-ink)]" : risk.score < 55 ? "bg-[var(--warn-bg)] text-[var(--warn-ink)]" : "bg-[var(--surface-alt)] text-[var(--ink-muted)]"}`}>

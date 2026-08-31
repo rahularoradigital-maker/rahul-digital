@@ -15,9 +15,10 @@ import { consistencyScore } from "./consistency.ts";
 import { risk } from "./risk.ts";
 
 export type QualityWeights = { brandFit: number; audienceFit: number; contentFit: number; engagement: number; reach: number; consistency: number; safety: number };
-// Richer 7-signal formula. Audience is down-weighted because it is usually unavailable without a paid provider
-// (it then drops out and the rest rebalance); reach + consistency are the new reel-derived signals.
-export const DEFAULT_QUALITY_WEIGHTS: QualityWeights = { brandFit: 0.22, audienceFit: 0.1, contentFit: 0.13, engagement: 0.15, reach: 0.15, consistency: 0.1, safety: 0.15 };
+// Richer 7-signal formula. REACH is the highest-weighted signal: reels travelling beyond the follower base is
+// the best predictor of paid-amplification potential (the end goal). Audience is down-weighted because it is
+// usually unavailable from public data (it then drops out and the rest rebalance).
+export const DEFAULT_QUALITY_WEIGHTS: QualityWeights = { brandFit: 0.2, audienceFit: 0.08, contentFit: 0.12, engagement: 0.15, reach: 0.22, consistency: 0.1, safety: 0.13 };
 
 export type CreatorScorecard = {
   quality: TransparentScore;
