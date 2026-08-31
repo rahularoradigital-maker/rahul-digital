@@ -255,6 +255,22 @@ export async function listAdSetEnds(accountExternalId: string, adsetIds: string[
   return map;
 }
 
+// CURRENT effective_status for a set of ads, in ONE filtered call (id IN [...]) rather than one request per
+// ad. Used to verify liveness for the action queue so a recently-paused/ended ad never gets an action nudge.
+// Returns id -> effective_status (e.g. ACTIVE / PAUSED / ADSET_PAUSED / CAMPAIGN_PAUSED / ARCHIVED). Robust
+// and light: a single paged account-level call, so it does not rate-limit the way N per-ad calls would.
+export async function fetchAdStatuses(accountExternalId: string, adIds: string[], token: TokenSet): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (adIds.length === 0) return map;
+  const rows = await graphGetAll<{ id: string; effective_status?: string }>(`act_${accountExternalId}/ads`, token.accessToken, {
+    fields: "id,effective_status",
+    filtering: JSON.stringify([{ field: "ad.id", operator: "IN", value: adIds }]),
+    limit: "200",
+  });
+  for (const a of rows) if (a.effective_status) map.set(a.id, a.effective_status);
+  return map;
+}
+
 // Ad-set OPTIMIZATION GOAL (what Meta actually delivers against, e.g. OFFSITE_CONVERSIONS, LINK_CLICKS,
 // LANDING_PAGE_VIEWS, REACH). The funnel stage classifier trusts this over the campaign objective. Same
 // shape as listAdSetEnds: one filtered adsets query, id -> goal. Returns an empty map on no ids.

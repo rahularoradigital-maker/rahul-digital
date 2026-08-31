@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapMetaObjective, fetchAdMeta, type ScopeInsights } from "@/lib/meta-source";
+import { mapMetaObjective, fetchAdStatuses, type ScopeInsights } from "@/lib/meta-source";
 import type { MetricsRow, TokenSet } from "@/lib/ad-source";
 import { toCockpitInputs, type RealAd } from "@/lib/scoring";
 import { analyzeAccount } from "@/lib/cockpit/analyze";
@@ -245,13 +245,13 @@ export async function buildCockpitFromStore(opts: {
       const verifyIds = new Set<string>(candidate.doThis.map((a) => a.adId)); // every ad shown as an action, regardless of spend
       const spendOf = (a: RealAd) => a.rows.reduce((s, r) => s + r.spend, 0);
       for (const a of [...realAds].sort((x, y) => spendOf(y) - spendOf(x)).slice(0, 60)) verifyIds.add(a.externalId);
-      const fresh = await fetchAdMeta(accountExternalId, [...verifyIds], opts.token);
+      const fresh = await fetchAdStatuses(accountExternalId, [...verifyIds], opts.token); // ONE batched call: id -> current effective_status
       if (fresh.size > 0) {
         let changed = false;
         for (const ad of realAds) {
-          const f = fresh.get(ad.externalId);
-          if (f && f.status !== undefined) {
-            const nowActive = f.status === "ACTIVE";
+          const s = fresh.get(ad.externalId);
+          if (s !== undefined) {
+            const nowActive = s === "ACTIVE";
             if (ad.active !== nowActive) { ad.active = nowActive; changed = true; } // fresh status wins over the stale stored one
           }
         }
