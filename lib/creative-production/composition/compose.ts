@@ -101,6 +101,15 @@ export function compose(brief: GenerationBrief, approved: ApprovedText, visualDa
   if (visualDataUri) {
     parts.push(`<image href="${esc(visualDataUri)}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/>`);
   }
+
+  // SCENE PASS-THROUGH: for an executional format whose native chrome text (search results, message bubbles,
+  // review cards) is rendered INTO the image, do not overlay our own scrim/headline/CTA - that would double
+  // the text and cover the format. Show the scene as-is. (Only when we actually have the AI scene; if the
+  // model failed we fall through to the text fallback below so the ad is never blank.)
+  if (brief.sceneText === "render" && visualDataUri) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${parts.join("")}</svg>`;
+    return { formatId: format.id, width, height, svg };
+  }
   // Legibility scrim behind the text zone (bottom of tall/square, right column of wide).
   const scrim = L.headline;
   parts.push(

@@ -123,6 +123,12 @@ export type GenerationBrief = {
   negativeInstructions: string[];
   referenceImages: string[]; // product image urls to preserve fidelity
   promptVersion: string;
+  // ---- Executional format directives (from the 42-format library; optional so stub/probe briefs still build) ----
+  // When set, the image model renders the SPECIFIC format scene (a Reddit post, an iMessage thread, a Google
+  // search page) instead of a generic background. See lib/creative-production/formats/ad-format-library.ts.
+  renderRecipe?: string; // the explicit scene the model must build (the whole format look)
+  sceneText?: "render" | "space"; // render = the model draws the format's native chrome text; space = leave a clean copy zone
+  productMode?: "composite" | "in-scene" | "none"; // how the real product appears in the scene
 };
 
 // ---------- Image provider abstraction (Phase 6) ----------

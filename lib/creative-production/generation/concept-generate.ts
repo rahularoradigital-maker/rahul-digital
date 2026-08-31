@@ -2,7 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveBrandId } from "@/lib/tenancy/resolve";
 import { deriveJSON } from "@/lib/creative-production/intelligence/llm-json.ts";
-import { CONCEPT_FORMATS } from "@/lib/creative-production/formats/concept-formats.ts";
+import { primaryFormats } from "@/lib/creative-production/formats/ad-format-library.ts";
 import { scoreConcept, rankConcepts, formatSuitability } from "@/lib/creative-production/strategy/concept-engine.ts";
 import type { BrandDNA, ConceptFormat, CreativeConcept, ProductDNA, StrategySignals } from "@/lib/creative-production/types";
 
@@ -65,14 +65,15 @@ function copyPrompt(product: ProductDNA, brand: BrandDNA, formats: ConceptFormat
     `PRICING (use ONLY these exact numbers, never invent a price): currency=${cur || "unknown"}, sellingPrice=${sellingPrice ?? "unknown"}, mrp=${mrp ?? "unknown"}. mrp is the crossed-out original; sellingPrice is what the customer pays. If an offer references price, write it as "${cur}${mrp ?? ""} ${cur}${sellingPrice ?? ""}" (original then current). If mrp is unknown, do not state an MRP.`,
     `PRODUCT: ${JSON.stringify({ name: product.name, category: product.category, primaryBenefit: product.primaryBenefit, benefits: product.secondaryBenefits, problem: product.problemSolved, persona: product.targetPersona, usps: product.usps, proof: product.proof })}`,
     `BRAND TONE: ${brand.tone}`,
-    `FORMATS (write copy matching each format's structure): ${JSON.stringify(formats.map((f) => ({ formatId: f.id, name: f.name, structure: f.structure })))}`,
+    `FORMATS (write copy that fits each format's structure and visual execution - e.g. a Reddit post reads like a real post, a text-message ad reads like a real chat): ${JSON.stringify(formats.map((f) => ({ formatId: f.id, name: f.name, structure: f.structure, visual: f.visualPattern })))}`,
     'Output a JSON ARRAY. Each item: {formatId, hook, angle, coreMessage, visualDirection, headline, supportingCopy, cta, offer (string or null), persona, problem, desire, whyThisConcept, whyNow, evidence (string[])}.',
   ].join("\n");
 }
 
 export async function generateConcepts(userId: string, product: ProductDNA, brand: BrandDNA, currency: string | null = null): Promise<CreativeConcept[]> {
-  // 1) score every archetype deterministically, 2) rank, 3) keep the top K to write copy for.
-  const scored = CONCEPT_FORMATS.map((fmt) => ({ fmt, score: scoreConcept(signalsFor(product, brand, fmt)) }));
+  // 1) score every executional format deterministically, 2) rank, 3) keep the top K to write copy for.
+  // Pool = the 42 best-performing ad formats (source of truth); concept-formats.ts stays the extended fallback.
+  const scored = primaryFormats().map((fmt) => ({ fmt, score: scoreConcept(signalsFor(product, brand, fmt)) }));
   const top = rankConcepts(scored).slice(0, TOP_K);
 
   // 4) batched grounded copy for the top K (one LLM call to keep tokens/cost down).

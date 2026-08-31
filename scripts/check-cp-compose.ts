@@ -49,4 +49,15 @@ assert.ok(!a.svg.includes("<image"), "no visual element when none provided (logo
 // 5) deterministic: same inputs -> byte-identical output (cache-safe).
 assert.equal(compose(brief, approved, null).svg, a.svg, "compose is deterministic");
 
+// 6) SCENE PASS-THROUGH: an executional format whose native text is rendered INTO the image (sceneText
+//    "render") must NOT get our overlay text on top - that would double the text and cover the format.
+const sceneBrief: GenerationBrief = { ...brief, sceneText: "render", renderRecipe: "a realistic reddit post card", productMode: "none" };
+const scene = compose(sceneBrief, approved, "data:image/png;base64,AAAA");
+assert.ok(scene.svg.includes("<image"), "scene mode: the AI scene is embedded");
+assert.ok(!scene.svg.includes("<text"), "scene mode: no compositor text overlaid (the scene already has its text)");
+assert.ok(!scene.svg.includes("Meet the Widget"), "scene mode: headline not double-drawn");
+// But a scene format whose model call FAILED (no visual) still falls back to drawing text, so the ad is never blank.
+const sceneNoVisual = compose(sceneBrief, approved, null);
+assert.ok(sceneNoVisual.svg.includes("Meet the Widget"), "scene mode with no visual: text fallback so ad is not blank");
+
 console.log("PASS: check-cp-compose");

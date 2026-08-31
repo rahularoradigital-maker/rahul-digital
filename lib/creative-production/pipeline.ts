@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveBrandId } from "@/lib/tenancy/resolve";
 import { getImageProvider } from "./providers/registry.ts";
 import { getFormat } from "./formats/ad-formats.ts";
+import { getAdFormat } from "./formats/ad-format-library.ts";
 import { briefHash } from "./generation/brief-hash.ts";
 import { compose } from "./composition/compose.ts";
 import { runQA } from "./qa/qa-engine.ts";
@@ -23,6 +24,11 @@ function nativeAspect(format: AdFormat): string {
 }
 
 function buildBrief(product: ProductDNA, brand: BrandDNA, concept: CreativeConcept, format: AdFormat): GenerationBrief {
+  // If the concept was generated from the 42-format executional library, carry its render recipe through so
+  // the image model builds the actual format scene. Unknown/legacy formatIds -> undefined -> background mode.
+  const tpl = getAdFormat(concept.formatId);
+  // A "none" format (pure UI/typographic, no physical product) never needs product fidelity even if we have an image.
+  const needsProduct = product.images.length > 0 && tpl?.productMode !== "none";
   return {
     brandDNA: brand,
     productDNA: { productId: product.productId, name: product.name, images: product.images, price: product.price, discount: product.discount },
@@ -30,10 +36,13 @@ function buildBrief(product: ProductDNA, brand: BrandDNA, concept: CreativeConce
     concept: { id: concept.id, formatId: concept.formatId, hook: concept.hook, angle: concept.angle, headline: concept.headline, supportingCopy: concept.supportingCopy, cta: concept.cta, offer: concept.offer, visualDirection: concept.visualDirection },
     aspectRatioRequest: nativeAspect(format),
     restrictions: product.creativeRestrictions,
-    requiredProductFidelity: product.images.length > 0, // preserve a real SKU; nothing to preserve if no image
+    requiredProductFidelity: needsProduct,
     negativeInstructions: [],
     referenceImages: product.images,
     promptVersion: PROMPT_VERSION,
+    renderRecipe: tpl?.renderRecipe,
+    sceneText: tpl?.sceneText,
+    productMode: tpl?.productMode,
   };
 }
 

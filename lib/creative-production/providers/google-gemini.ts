@@ -30,17 +30,64 @@ function nativeRatio(request: string): string {
   return NATIVE_RATIOS.has(request) ? request : "16:9";
 }
 
-// Build the image prompt from the brief. The VISUAL only - text is composed deterministically downstream,
-// so we forbid words. Product fidelity is anchored by the reference image + an explicit instruction.
+// Fill a format renderRecipe's bracket tokens with the real product name; blank any leftover placeholders so
+// no literal "[thing]" reaches the model. Keeps recipes product-agnostic in the library, concrete at runtime.
+function fillRecipe(recipe: string, productName: string): string {
+  return recipe
+    .replace(/\[product\]/gi, productName)
+    .replace(/\[(x|thing)\]/gi, "product")
+    .replace(/\[(routine|category|benefit|result)\]/gi, (_m, w: string) => w.toLowerCase())
+    .replace(/\[[^\]]*\]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+// Build the image prompt from the brief. Two modes:
+//  - SCENE mode (brief.renderRecipe set, from the 42-format library): the model builds the ACTUAL format scene
+//    (a Reddit post, an iMessage thread, a Google-search page). When the format's chrome text is part of the
+//    scene (sceneText "render") the model draws the copy verbatim; when it is not (sceneText "space") we still
+//    forbid text and the deterministic compositor adds it. This is what makes ads look like real ad formats.
+//  - BACKGROUND mode (no recipe / legacy concept): the original behaviour - a text-free background the
+//    compositor draws exact copy over. Product fidelity is anchored by the reference image + instruction.
 function buildPrompt(brief: GenerationBrief): string {
   const b = brief.brandDNA;
+  const c = brief.concept;
   const style = [b.imageStyle, b.designStyle].filter((s) => s && s !== "UNKNOWN").join(", ");
   const palette = [b.palette.primary, b.palette.secondary, b.palette.background].filter((c) => c && c !== "UNKNOWN").join(", ");
+  const productLine = brief.requiredProductFidelity
+    ? "Feature the product EXACTLY as in the reference image - same packaging, label, shape, colour and on-pack text; do not redesign or restyle it."
+    : "";
+
+  if (brief.renderRecipe) {
+    const scene = fillRecipe(brief.renderRecipe, brief.productDNA.name);
+    const renderText = brief.sceneText === "render";
+    const copy = renderText
+      ? [
+          c.headline ? `Headline / main line: "${c.headline}".` : "",
+          c.supportingCopy ? `Supporting copy: "${c.supportingCopy}".` : "",
+          c.offer ? `Offer badge text: "${c.offer}".` : "",
+          c.cta ? `Button / call-to-action text: "${c.cta}".` : "",
+        ].filter(Boolean).join(" ")
+      : "";
+    return [
+      `Create a Meta/Instagram static ad for the product "${brief.productDNA.name}" in this EXACT format:`,
+      scene,
+      style ? `Visual style: ${style}.` : "",
+      palette ? `Use the brand colours: ${palette}.` : "",
+      productLine,
+      renderText
+        ? `Render all text in the scene crisply and CORRECTLY SPELLED, high-contrast and legible on a phone. Use this copy verbatim where the layout calls for words: ${copy}`
+        : "Leave clean negative space for a headline and a call-to-action button to be added later. Render NO text, NO words, NO letters, NO watermarks - text is added separately.",
+      "Photorealistic where the format is a real-world scene; pixel-accurate UI where the format mimics an app or interface.",
+      ...brief.negativeInstructions.map((n) => `Avoid: ${n}.`),
+    ].filter(Boolean).join(" ");
+  }
+
   return [
-    `Advertising background visual for "${brief.productDNA.name}". Concept: ${brief.concept.visualDirection}. Angle: ${brief.concept.angle}.`,
+    `Advertising background visual for "${brief.productDNA.name}". Concept: ${c.visualDirection}. Angle: ${c.angle}.`,
     style ? `Visual style: ${style}.` : "",
     palette ? `Brand colours to feature: ${palette}.` : "",
-    brief.requiredProductFidelity ? "Keep the product EXACTLY as in the reference image - same packaging, label, shape, colour; do not redesign it." : "",
+    productLine,
     "Leave clean negative space for a headline and a call-to-action button to be added later.",
     "IMPORTANT: render NO text, NO words, NO letters, NO logos, NO watermarks in the image - text is added separately.",
     ...brief.negativeInstructions.map((n) => `Avoid: ${n}.`),
