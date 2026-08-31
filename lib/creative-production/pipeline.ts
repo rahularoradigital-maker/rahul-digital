@@ -8,7 +8,7 @@ import { productCutout } from "./media/background-removal.ts";
 import { briefHash } from "./generation/brief-hash.ts";
 import { compose } from "./composition/compose.ts";
 import { runQA } from "./qa/qa-engine.ts";
-import type { AdFormat, BrandDNA, CreativeAssetRecord, CreativeConcept, GenerationBrief, ProductDNA } from "@/lib/creative-production/types";
+import type { AdFormat, BrandDNA, CreativeAssetRecord, CreativeConcept, GenerationBrief, GenerationResult, ProductDNA } from "@/lib/creative-production/types";
 import { deriveGenerationState } from "@/lib/creative-production/generation-state";
 
 // Creative Production - ORCHESTRATION (Phases 6-10). Turns one approved concept into finished, QA'd,
@@ -81,31 +81,43 @@ export async function generateAssetsForConcept(
       continue;
     }
 
-    // 1) AI VISUAL (provider draws no text). Stub/degraded provider returns a placeholder so the pipeline
-    //    still completes end-to-end without an image key.
-    const gen = await provider.generateCreative(brief);
+    // 1) AI VISUAL. Prefer IN-SCENE generation: fetch the real Shopify product (background-removed when a
+    //    removal key is set) and feed it to the provider's edit endpoint, so the model builds the scene AROUND
+    //    the actual product - no pasted-card look. Falls back to plain generation + a composited cutout when
+    //    editing is unavailable or fails, so output is never worse than before.
+    const caps = provider.getCapabilities();
+    const cutout = brief.requiredProductFidelity && brief.productMode !== "none" ? await productCutout(product.images[0]) : null;
+    const canEditInScene = !!cutout && caps.editing && caps.referenceImages >= 1;
+
+    let gen: GenerationResult | undefined;
+    let productInScene = false;
+    if (canEditInScene) {
+      // ponytail: base image is sent as image/png; a no-removal-key source keeps its original bytes (usually
+      // JPEG) and OpenAI sniffs the actual content, so this holds in practice. Revisit if a live edit 400s.
+      const edited = await provider.editCreative(brief, cutout!.dataUri.split(",")[1] ?? "");
+      if (edited.ok && edited.imageBase64) { gen = edited; productInScene = true; }
+    }
+    if (!gen) gen = await provider.generateCreative(brief); // stub/degraded provider returns a placeholder so the pipeline still completes end-to-end without an image key.
     const visualDataUri = gen.ok && gen.imageBase64 ? `data:${gen.mimeType ?? "image/png"};base64,${gen.imageBase64}` : null;
 
-    // 1b) PRODUCT FIDELITY: for a "composite" format, fetch the REAL product as a cutout so compose() places
-    //     actual Shopify pixels - the model never redraws the SKU. Keyless-graceful (uncut real image on no key).
-    const cutout = brief.productMode === "composite" && brief.requiredProductFidelity ? await productCutout(product.images[0]) : null;
+    // 1b) Composite the real product ONLY when the model did NOT place it in-scene. In-scene -> the product is
+    //     already in the visual (compositing again would double it); otherwise keep the old product-card path.
+    const composeCutout = !productInScene && brief.productMode === "composite" && brief.requiredProductFidelity ? cutout : null;
 
     // TRUTHFUL STATE: never let a compositor-only fallback claim to be an AI ad. Drives QA, the stored record,
     // and the UI badge.
     const generationState = deriveGenerationState(!!visualDataUri, gen.fallbackUsed);
 
     // 2) DETERMINISTIC COMPOSE (exact approved text + real product over the visual).
-    const composed = compose(brief, approved, visualDataUri, cutout);
+    const composed = compose(brief, approved, visualDataUri, composeCutout);
 
     // 3) QA.
     const qa = runQA(composed, brief, approved, {
       textPixelsPresent: true,
-      // Fidelity is at risk when a composite format could not obtain the real product, or (non-composite) the
-      // model produced no visual to carry the reference.
-      // Fidelity is at risk when the real product could not be placed cleanly: no cutout at all, OR only an
-      // UNCUT photo (which the compositor frames as a white card - the pasted-tile look). Either way -> not
-      // silently READY. The real fix (in-scene generation from the Shopify reference) is the next architecture step.
-      productFidelityRisk: brief.productMode === "composite" ? brief.requiredProductFidelity && (!cutout || !cutout.removed) : !gen.ok && brief.requiredProductFidelity,
+      // In-scene: the real product was placed by the model from the actual Shopify reference (fidelity kept;
+      // the human reviews the draft). Fallback composite: risk when the real product could not be placed
+      // cleanly - no cutout, or only an UNCUT photo framed as a white card. Non-composite: risk when no visual.
+      productFidelityRisk: productInScene ? false : brief.productMode === "composite" ? brief.requiredProductFidelity && (!composeCutout || !composeCutout.removed) : !gen.ok && brief.requiredProductFidelity,
       // STRICT Nano Banana: a missing AI visual (flat fallback) fails QA, so an amateur flat ad is never READY.
       visualMissing: !visualDataUri,
       fileBytes: Buffer.byteLength(composed.svg, "utf8"),
