@@ -9,9 +9,11 @@ const initialsOf = (name: string) => name.replace(/[^a-zA-Z ]/g, "").split(/\s+/
 export function CreatorAvatar({ src, name, size = 44, className }: { src?: string | null; name: string; size?: number; className?: string }) {
   const [failed, setFailed] = useState(false);
   const px = { width: size, height: size };
-  if (src && !failed) {
+  // Route the Instagram CDN URL through our proxy so it isn't hotlink-blocked; fall back to initials on error.
+  const proxied = src ? `/api/influencer/avatar?u=${encodeURIComponent(src)}` : null;
+  if (proxied && !failed) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={name} style={px} referrerPolicy="no-referrer" onError={() => setFailed(true)} className={cn("shrink-0 rounded-full object-cover", className)} />;
+    return <img src={proxied} alt={name} style={px} onError={() => setFailed(true)} className={cn("shrink-0 rounded-full object-cover", className)} />;
   }
   return (
     <span style={px} className={cn("grid shrink-0 place-items-center rounded-full bg-secondary font-semibold text-secondary-foreground", className)}>
