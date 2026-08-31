@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapMetaObjective } from "@/lib/meta-source";
+import { mapMetaObjective, listAdSetOptimizationGoals } from "@/lib/meta-source";
+import { getUserMetaSession } from "@/lib/meta-sync";
 import { resolveUserContext } from "@/lib/tenancy/resolve";
 import { diagnoseFunnel, type FunnelAd, type FunnelReport } from "@/lib/funnel/diagnosis";
 import type { ExtendedMetricsRow } from "@/lib/metrics/funnel-metrics";
@@ -13,7 +14,7 @@ const PAGE = 1000;
 const DEFAULT_LOOKBACK_DAYS = 30;
 
 type Db = {
-  ad_id: string; date: string; objective: string | null; spend: number; impressions: number; clicks: number;
+  ad_id: string; date: string; objective: string | null; adset_id: string | null; spend: number; impressions: number; clicks: number;
   outbound_clicks: number; video_3s: number; video_thruplays: number; landing_page_views: number;
   add_to_carts: number; initiate_checkouts: number; purchases: number;
 };
@@ -44,7 +45,7 @@ export async function loadFunnelReport(userId: string, opts: { lookbackDays?: nu
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await admin
       .from("ad_metrics")
-      .select("ad_id,date,objective,spend,impressions,clicks,outbound_clicks,video_3s,video_thruplays,landing_page_views,add_to_carts,initiate_checkouts,purchases")
+      .select("ad_id,date,objective,adset_id,spend,impressions,clicks,outbound_clicks,video_3s,video_thruplays,landing_page_views,add_to_carts,initiate_checkouts,purchases")
       .eq("user_id", userId)
       .eq("account_external_id", accountExternalId)
       .gte("date", since)
@@ -73,21 +74,37 @@ export async function loadFunnelReport(userId: string, opts: { lookbackDays?: nu
     if (page.length < PAGE) break;
   }
 
-  // Group day rows by ad -> FunnelAd[].
+  // Group day rows by ad, tracking each ad's ad-set.
   const byAd = new Map<string, Db[]>();
+  const adsetByAd = new Map<string, string>();
   for (const r of rows) {
     const l = byAd.get(r.ad_id) ?? [];
     l.push(r);
     byAd.set(r.ad_id, l);
+    if (r.adset_id && !adsetByAd.has(r.ad_id)) adsetByAd.set(r.ad_id, r.adset_id);
   }
+
+  // Live-fetch ad-set optimization goals for higher-confidence TOF/MOF/BOF (what Meta actually delivers
+  // against). Graceful: no Meta session or any failure -> empty map -> classifyStage falls back to the
+  // campaign objective (carrying its lower confidence + review flag). One filtered query, not per-ad-set.
+  let goalByAdset = new Map<string, string>();
+  try {
+    const session = await getUserMetaSession(userId);
+    const adsetIds = [...new Set([...adsetByAd.values()])];
+    if (session && adsetIds.length) goalByAdset = await listAdSetOptimizationGoals(session.activeExternalId, adsetIds, session.token);
+  } catch {
+    goalByAdset = new Map();
+  }
+
   const ads: FunnelAd[] = [];
   for (const [adId, rs] of byAd) {
     const rawObjective = rs.find((r) => r.objective)?.objective ?? "";
+    const adsetId = adsetByAd.get(adId);
     ads.push({
       adId,
       name: names.get(adId) ?? adId,
       objective: mapMetaObjective(rawObjective),
-      optimizationGoal: null, // not persisted yet -> stage from objective (classifier flags this)
+      optimizationGoal: adsetId ? goalByAdset.get(adsetId) ?? null : null,
       rows: rs.map(toExt),
     });
   }

@@ -255,6 +255,21 @@ export async function listAdSetEnds(accountExternalId: string, adsetIds: string[
   return map;
 }
 
+// Ad-set OPTIMIZATION GOAL (what Meta actually delivers against, e.g. OFFSITE_CONVERSIONS, LINK_CLICKS,
+// LANDING_PAGE_VIEWS, REACH). The funnel stage classifier trusts this over the campaign objective. Same
+// shape as listAdSetEnds: one filtered adsets query, id -> goal. Returns an empty map on no ids.
+export async function listAdSetOptimizationGoals(accountExternalId: string, adsetIds: string[], token: TokenSet): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (adsetIds.length === 0) return map;
+  const rows = await graphGetAll<{ id: string; optimization_goal?: string }>(`act_${accountExternalId}/adsets`, token.accessToken, {
+    fields: "id,optimization_goal",
+    filtering: JSON.stringify([{ field: "id", operator: "IN", value: adsetIds }]),
+    limit: "200",
+  });
+  for (const a of rows) if (a.optimization_goal) map.set(a.id, a.optimization_goal);
+  return map;
+}
+
 // Raw Graph creative shape (only the fields we normalize). object_story_spec / asset_feed_spec
 // are where the real copy + CTA + carousel structure live; the top-level image_url/body/title
 // are unreliable, so we read from the spec first and fall back.
