@@ -34,7 +34,7 @@ function buildBrief(product: ProductDNA, brand: BrandDNA, concept: CreativeConce
     brandDNA: brand,
     productDNA: { productId: product.productId, name: product.name, images: product.images, price: product.price, discount: product.discount },
     format,
-    concept: { id: concept.id, formatId: concept.formatId, hook: concept.hook, angle: concept.angle, headline: concept.headline, supportingCopy: concept.supportingCopy, cta: concept.cta, offer: concept.offer, visualDirection: concept.visualDirection },
+    concept: { id: concept.id, formatId: concept.formatId, hook: concept.hook, angle: concept.angle, headline: concept.headline, supportingCopy: concept.supportingCopy, cta: concept.cta, offer: concept.offer, visualDirection: concept.visualDirection, persona: concept.persona, desire: concept.desire, problem: concept.problem, coreMessage: concept.coreMessage },
     aspectRatioRequest: nativeAspect(format),
     restrictions: product.creativeRestrictions,
     requiredProductFidelity: needsProduct,

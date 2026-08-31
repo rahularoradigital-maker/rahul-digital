@@ -60,7 +60,9 @@ function copyPrompt(product: ProductDNA, brand: BrandDNA, formats: ConceptFormat
   const sellingPrice = product.price;
   const mrp = product.price != null && product.discount != null && product.discount > 0 ? product.price + product.discount : null;
   return [
-    "You are a senior DTC creative strategist. Write ad copy for the product below, one entry per format.",
+    "You are a world-class DTC creative director (the level that ships winning ads at scale). For the product below, create ONE strong ad concept per format - each built on a single big idea, visual-first, scroll-stopping.",
+    "CREATIVE BAR: lead with ONE idea, not a feature list. Show, don't tell. The hook must work in the first second. Make it specific and human - a real moment, tension, or transformation, never generic 'product on a gradient'.",
+    "visualDirection is the MOST IMPORTANT field: write it as a specific, shootable ART-DIRECTION BRIEF - the exact scene, the hero subject and what it's doing, the setting, composition and focal point, the mood, the lighting, and 1-2 concrete props or details. A photographer should be able to shoot it from your words. Never vague ('nice background'), never a bare product on a colour.",
     "RULES: ground every line in the product facts. Never invent a claim, review, or statistic that is not in the product data. No em dashes. Keep headlines under 40 characters, CTA 2-3 words.",
     `PRICING (use ONLY these exact numbers, never invent a price): currency=${cur || "unknown"}, sellingPrice=${sellingPrice ?? "unknown"}, mrp=${mrp ?? "unknown"}. mrp is the crossed-out original; sellingPrice is what the customer pays. If an offer references price, write it as "${cur}${mrp ?? ""} ${cur}${sellingPrice ?? ""}" (original then current). If mrp is unknown, do not state an MRP.`,
     `PRODUCT: ${JSON.stringify({ name: product.name, category: product.category, primaryBenefit: product.primaryBenefit, benefits: product.secondaryBenefits, problem: product.problemSolved, persona: product.targetPersona, usps: product.usps, proof: product.proof })}`,

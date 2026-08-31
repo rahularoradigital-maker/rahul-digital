@@ -86,12 +86,22 @@ function buildPrompt(brief: GenerationBrief): string {
     ].filter(Boolean).join(" ");
   }
 
+  // BACKGROUND mode, art-directed. A short "advertising background" line produces generic wallpaper; a real
+  // creative director briefs a SINGLE big idea, a hero focal point, and specific composition/mood/light. Build
+  // that brief from the concept so the model renders a scroll-stopping campaign visual, not a stock backdrop.
+  const bigIdea = [c.angle, c.hook].filter(Boolean).join(" - ") || c.coreMessage || brief.productDNA.name;
+  const feel = [c.desire, c.problem ? `speaks to someone dealing with ${c.problem}` : ""].filter(Boolean).join("; ");
   return [
-    `Advertising background visual for "${brief.productDNA.name}". Concept: ${c.visualDirection}. Angle: ${c.angle}.`,
+    `A scroll-stopping, editorial-grade advertising visual for "${brief.productDNA.name}" - the quality of a top DTC creative studio's campaign, NOT a generic stock background.`,
+    `The single big idea to express visually: ${bigIdea}.`,
+    c.visualDirection ? `Art direction / scene: ${c.visualDirection}.` : "",
+    feel ? `It should make the viewer feel: ${feel}.` : "",
+    brief.concept.persona && brief.concept.persona !== "UNKNOWN" ? `Speak to this person's world: ${brief.concept.persona}.` : "",
+    "Composition: ONE clear hero focal point, deliberate rule-of-thirds placement, cinematic depth of field, rich lighting with real shadows and highlights, tactile materials and texture, a considered colour story. Intentional clean negative space in the upper-central frame for a headline and a call-to-action button added later.",
     style ? `Visual style: ${style}.` : "",
-    palette ? `Brand colours to feature: ${palette}.` : "",
+    palette ? `Build the colour story around the brand colours: ${palette}.` : "",
     productLine,
-    "Leave clean negative space for a headline and a call-to-action button to be added later.",
+    "Photorealistic, premium, art-directed - it should stop the thumb.",
     "IMPORTANT: render NO text, NO words, NO letters, NO logos, NO watermarks in the image - text is added separately.",
     ...brief.negativeInstructions.map((n) => `Avoid: ${n}.`),
   ].filter(Boolean).join(" ");
@@ -184,7 +194,7 @@ export async function probeImageProvider(): Promise<{ ok: boolean; model: string
     brandDNA: { palette: { primary: "UNKNOWN", secondary: "UNKNOWN", background: "UNKNOWN", text: "UNKNOWN" }, fonts: { heading: "UNKNOWN", body: "UNKNOWN" }, logoUrl: null, imageStyle: "UNKNOWN", designStyle: "UNKNOWN", ctaStyle: "UNKNOWN", tone: "UNKNOWN", density: "UNKNOWN", source: "derived", version: 1 },
     productDNA: { productId: "probe", name: "a red apple on a plain background", images: [], price: null, discount: null },
     format: { id: "probe", platform: "meta", name: "probe", width: 1080, height: 1080, aspectRatio: "1:1", purpose: "probe", safeZone: { top: 0.05, right: 0.05, bottom: 0.05, left: 0.05 }, textConstraints: "", exportFormat: "png", version: "2026-07", source: "" },
-    concept: { id: "probe", formatId: "probe", hook: "", angle: "clean studio product shot", headline: "", supportingCopy: "", cta: "", offer: null, visualDirection: "a red apple, studio lighting" },
+    concept: { id: "probe", formatId: "probe", hook: "", angle: "clean studio product shot", headline: "", supportingCopy: "", cta: "", offer: null, visualDirection: "a red apple, studio lighting", persona: "", desire: "", problem: "", coreMessage: "" },
     aspectRatioRequest: "1:1",
     restrictions: [],
     requiredProductFidelity: false,

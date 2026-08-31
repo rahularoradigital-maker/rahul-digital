@@ -116,7 +116,7 @@ export type GenerationBrief = {
   brandDNA: BrandDNA;
   productDNA: Pick<ProductDNA, "productId" | "name" | "images" | "price" | "discount">;
   format: AdFormat;
-  concept: Pick<CreativeConcept, "id" | "formatId" | "hook" | "angle" | "headline" | "supportingCopy" | "cta" | "offer" | "visualDirection">;
+  concept: Pick<CreativeConcept, "id" | "formatId" | "hook" | "angle" | "headline" | "supportingCopy" | "cta" | "offer" | "visualDirection" | "persona" | "desire" | "problem" | "coreMessage">;
   aspectRatioRequest: string; // native ratio to ask the model for (1.91:1 -> "16:9" then crop)
   restrictions: string[];
   requiredProductFidelity: boolean;

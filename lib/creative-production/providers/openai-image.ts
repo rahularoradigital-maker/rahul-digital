@@ -32,12 +32,19 @@ function buildPrompt(brief: GenerationBrief): string {
   const b = brief.brandDNA;
   const style = [b.imageStyle, b.designStyle].filter((s) => s && s !== "UNKNOWN").join(", ");
   const palette = [b.palette.primary, b.palette.secondary, b.palette.background].filter((c) => c && c !== "UNKNOWN").join(", ");
+  const c = brief.concept;
+  const bigIdea = [c.angle, c.hook].filter(Boolean).join(" - ") || c.coreMessage || brief.productDNA.name;
+  const feel = [c.desire, c.problem ? `speaks to someone dealing with ${c.problem}` : ""].filter(Boolean).join("; ");
   return [
-    `Advertising background visual for "${brief.productDNA.name}". Concept: ${brief.concept.visualDirection}. Angle: ${brief.concept.angle}.`,
+    `A scroll-stopping, editorial-grade advertising visual for "${brief.productDNA.name}" - top DTC creative-studio quality, NOT a generic stock background.`,
+    `The single big idea to express visually: ${bigIdea}.`,
+    c.visualDirection ? `Art direction / scene: ${c.visualDirection}.` : "",
+    feel ? `It should make the viewer feel: ${feel}.` : "",
+    "Composition: one clear hero focal point, rule-of-thirds, cinematic depth of field, rich lighting with real shadows, tactile texture, a considered colour story, and intentional clean negative space in the upper-central frame for a headline and CTA added later.",
     style ? `Visual style: ${style}.` : "",
-    palette ? `Brand colours to feature: ${palette}.` : "",
+    palette ? `Build the colour story around the brand colours: ${palette}.` : "",
     brief.requiredProductFidelity ? "Keep the product exactly as in the reference - same packaging, label, shape, colour." : "",
-    "Leave clean negative space for a headline and a call-to-action button to be added later.",
+    "Photorealistic, premium, art-directed - it should stop the thumb.",
     "Render NO text, NO words, NO letters, NO logos, NO watermarks - text is added separately.",
     ...brief.negativeInstructions.map((n) => `Avoid: ${n}.`),
   ].filter(Boolean).join(" ");
