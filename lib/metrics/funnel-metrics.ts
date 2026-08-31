@@ -41,7 +41,7 @@ function ratio(numerator: number, denominator: number, scale = 1): number | null
 }
 
 // Compute the 9 funnel ratios from a single already-summed set of totals.
-function funnelFromTotals(t: ExtendedMetricsRow): FunnelMetrics {
+export function funnelFromTotals(t: ExtendedMetricsRow): FunnelMetrics {
   return {
     ctr: ratio(t.clicks, t.impressions, 100),
     cpm: ratio(t.spend, t.impressions, 1000),
@@ -58,7 +58,7 @@ function funnelFromTotals(t: ExtendedMetricsRow): FunnelMetrics {
 // Sum the counting fields across all day rows. Ratios must be computed from
 // summed totals, never averaged from per-day ratios - averaging ratios weights
 // low-volume days equally with high-volume ones and distorts the real window.
-function sumRows(rows: ExtendedMetricsRow[]): ExtendedMetricsRow {
+export function sumRows(rows: ExtendedMetricsRow[]): ExtendedMetricsRow {
   return rows.reduce<ExtendedMetricsRow>(
     (acc, r) => ({
       date: "",
