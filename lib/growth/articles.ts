@@ -4,6 +4,7 @@ import { runTaskJson } from "../ai/router.ts";
 import { compose } from "../ai/compose.ts";
 import { BRAND } from "./knowledge.ts";
 import { tagAdScaleLinks } from "./attribution.ts";
+import { checkContent } from "./quality.ts";
 
 // Scout's content engine. From a recurring topic it writes a genuinely useful, sourced article (AI), stored as
 // a DRAFT. You one-tap publish; then it renders publicly at /blog/<slug>. No fabrication: the article is
@@ -34,6 +35,9 @@ export async function generateArticle(topic: string): Promise<{ title: string; d
   const title = String(out.title).trim();
   const body = String(out.body).trim();
   if (title.length < 8 || body.length < 300) return null; // reject an empty/degenerate generation
+  // Quality gate: don't even draft an article with a CRITICAL flaw (unsupported claim / undisclosed mention).
+  // Articles are on our own site, so a mention is allowed - but only WITH disclosure, which the gate enforces.
+  if (!checkContent(body, { mayMention: true }).pass) return null;
   return { title, dek: String(out.dek ?? "").trim(), body };
 }
 

@@ -3,6 +3,7 @@ import { runTaskText } from "../ai/router.ts";
 import { compose } from "../ai/compose.ts";
 import { BRAND } from "./knowledge.ts";
 import { tagAdScaleLinks } from "./attribution.ts";
+import { checkContent } from "./quality.ts";
 import type { Opportunity } from "./engine.ts";
 
 // Scout's draft-writer: for an opportunity worth a reply, the AI writes a SHORT, genuinely useful, human reply
@@ -24,6 +25,8 @@ export async function writeDraft(o: Opportunity): Promise<string | null> {
   if (!draft) return null;
   const t = draft.trim();
   if (t === "SKIP" || t.length < 20) return null;
+  // Quality gate: never queue a draft with a CRITICAL flaw (unsupported claim, undisclosed/disallowed mention).
+  if (!checkContent(t, { mayMention }).pass) return null;
   // Attribution: tag any AdScale link in the reply so a click from this thread is traceable to its source.
   return tagAdScaleLinks(t, { source: o.conversation.platform, content: o.conversation.conversationId });
 }
