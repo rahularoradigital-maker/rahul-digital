@@ -5,6 +5,7 @@ import { compose } from "../ai/compose.ts";
 import { BRAND } from "./knowledge.ts";
 import { tagAdBrainLinks } from "./attribution.ts";
 import { checkContent } from "./quality.ts";
+import { getCuratedArticles, getCuratedArticleBySlug } from "../blog/file-articles.ts";
 
 // Scout's content engine. From a recurring topic it writes a genuinely useful, sourced article (AI), stored as
 // a DRAFT. You one-tap publish; then it renders publicly at /blog/<slug>. No fabrication: the article is
@@ -61,7 +62,13 @@ export async function listDraftArticles(): Promise<Article[]> {
   return listByStatus("draft");
 }
 export async function listPublishedArticles(): Promise<Article[]> {
-  return listByStatus("published");
+  // Curated (version-controlled) articles + Scout's DB-published ones, newest first, deduped by slug
+  // (curated win). Curated are always present even if the DB is unreachable.
+  const curated = getCuratedArticles();
+  const db = await listByStatus("published");
+  const seen = new Set(curated.map((a) => a.slug));
+  const merged = [...curated, ...db.filter((a) => !seen.has(a.slug))];
+  return merged.sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
 }
 async function listByStatus(status: string): Promise<Article[]> {
   try {
@@ -85,6 +92,8 @@ export async function topicHasArticle(topic: string): Promise<boolean> {
 }
 
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  const curated = getCuratedArticleBySlug(slug); // curated articles take precedence and need no DB
+  if (curated) return curated;
   try {
     const admin = createAdminClient();
     const { data } = await admin.from("growth_articles").select("id,slug,title,topic,dek,body_md,status,published_at").eq("slug", slug).eq("status", "published").maybeSingle();
