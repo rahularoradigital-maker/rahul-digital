@@ -11,6 +11,7 @@ import { marginalScaling } from "@/lib/scoring/marginal";
 import { assessDataQuality } from "@/lib/scoring/data-quality";
 import { daysUntilEnd } from "@/lib/scoring/fatigue";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "@/lib/creative/diversity";
+import { readSemanticsCache } from "@/lib/creative/decode";
 import type { CreativeFormat } from "@/lib/creative/fingerprint";
 import { VERDICT_WEIGHTS, type ScoreWeights } from "@/lib/rules/verdict";
 import type { LiveCockpit, AccountMetrics, ProcessedCounts, CatalogMode } from "@/lib/meta-sync";
@@ -53,6 +54,7 @@ type MetaRowDb = {
   thumb_url: string | null;
   is_catalog: boolean | null;
   format: string | null;
+  content_hash: string | null;
   adset_end_unix: number | null;
 };
 
@@ -93,7 +95,7 @@ async function readAllMetaRows(admin: ReturnType<typeof createAdminClient>, user
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await admin
       .from("ad_meta")
-      .select("ad_id,name,effective_status,campaign_id,campaign_name,adset_id,adset_name,thumb_url,is_catalog,format,adset_end_unix")
+      .select("ad_id,name,effective_status,campaign_id,campaign_name,adset_id,adset_name,thumb_url,is_catalog,format,content_hash,adset_end_unix")
       .eq("user_id", userId)
       .eq("account_external_id", accountExternalId)
       .order("ad_id", { ascending: true })
@@ -309,17 +311,28 @@ export async function buildCockpitFromStore(opts: {
   };
   const scopeTotals = { spendRs: Math.round(sSpend), revenueRs: Math.round(sRev), roas: sSpend > 0 ? sRev / sSpend : null };
 
-  // Creative diversity from the stored format (deterministic layer; semantic dims stay null).
+  // Creative diversity from the stored format + the fingerprint-once semantic decode cache (keyed by
+  // content_hash the ingestion stored). Cache hits fill hook/emotion/subject/funnel-stage; the decode itself
+  // runs on the live path, so the store path reads whatever has been decoded so far. Best-effort.
   let ownDiversity: DiversityRead | null = null;
   try {
-    const records: CreativeRecord[] = view.leaderboard.map((ad) => ({
-      adId: ad.id,
-      adName: ad.name,
-      spendRs: ad.spendRs,
-      winner: ad.winner?.overall ?? 0,
-      format: (metaById.get(ad.id)?.format ?? "unknown") as CreativeFormat,
-      funnelStage: null, hookType: null, emotion: null, subject: null,
-    }));
+    const hashes = view.leaderboard.map((ad) => metaById.get(ad.id)?.content_hash).filter((h): h is string => Boolean(h));
+    const sem = await readSemanticsCache(userId, hashes);
+    const records: CreativeRecord[] = view.leaderboard.map((ad) => {
+      const h = metaById.get(ad.id)?.content_hash ?? null;
+      const s = h ? sem.get(h) : undefined;
+      return {
+        adId: ad.id,
+        adName: ad.name,
+        spendRs: ad.spendRs,
+        winner: ad.winner?.overall ?? 0,
+        format: (metaById.get(ad.id)?.format ?? "unknown") as CreativeFormat,
+        funnelStage: s?.funnelStage ?? null,
+        hookType: s?.hookType ?? null,
+        emotion: s?.emotion ?? null,
+        subject: s?.subject ?? null,
+      };
+    });
     ownDiversity = records.length > 0 ? assessDiversity(records) : null;
   } catch {
     ownDiversity = null;

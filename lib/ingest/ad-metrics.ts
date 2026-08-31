@@ -172,11 +172,14 @@ async function syncAdMeta(
     // fingerprint/thumb just leaves those two fields null - the ad is still stored, still analyzable.
     let thumb: string | null = null;
     let format: string | null = null;
+    let contentHash: string | null = null;
     let isCatalog = false;
     if (c) {
       try {
         thumb = thumbUrlOf(c);
-        format = deterministicFingerprint(c).format; // for the creative-diversity read off the store
+        const fp = deterministicFingerprint(c); // for the creative-diversity read off the store
+        format = fp.format;
+        contentHash = fp.contentHash; // fingerprint-once key into creative_semantics (hook/emotion/subject)
         isCatalog = c.isCatalog ?? false;
       } catch {
         /* malformed creative -> leave format/thumb null, keep the row */
@@ -195,6 +198,7 @@ async function syncAdMeta(
       thumb_url: thumb,
       is_catalog: isCatalog,
       format,
+      content_hash: contentHash,
       adset_end_unix: ids?.adsetId ? (ends.get(ids.adsetId) ?? null) : null,
       updated_at: new Date().toISOString(),
     };

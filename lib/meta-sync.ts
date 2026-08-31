@@ -12,6 +12,7 @@ import { isRenderableShape } from "./cockpit/renderable.ts";
 import { todayIn, daysAgo } from "./date-window.ts";
 import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, fetchAccountTimezone, fetchAccountCurrency, fetchLevelNative, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { deterministicFingerprint, excludeCatalogAds, thumbUrlOf, type CreativeAsset } from "./creative/fingerprint.ts";
+import { readSemanticsCache, decodeMissing } from "./creative/decode.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
@@ -352,24 +353,38 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     tp = perfMark("analyzeAccount", tp);
     perfMark("COLD-PULL-TOTAL", t0);
 
-    // Own-ad creative diversity (DETERMINISTIC layer only: real creative FORMAT per ad; the
-    // semantic dimensions - hook/angle/persona - stay null until the Gemini decoder runs, so
-    // `coverage` honestly reports 0 there). Best-effort; null if the creative pull failed.
+    // Own-ad creative diversity: real FORMAT per ad (free) + the SEMANTIC dimensions (funnel stage / hook /
+    // emotion / subject) from the fingerprint-once decode cache. Cache hits fill those dimensions now; misses
+    // are decoded in the BACKGROUND (bounded, fire-and-forget) so the cache fills over loads without ever
+    // slowing this one. Best-effort; format-only (nulls) if the creative pull or cache read fails.
     let ownDiversity: DiversityRead | null = null;
     try {
       const assets = await creativesPromise;
-      const records: CreativeRecord[] = view.leaderboard.map((ad) => ({
-        adId: ad.id,
-        adName: ad.name,
-        spendRs: ad.spendRs,
-        winner: ad.winner?.overall ?? 0,
-        format: assets.has(ad.id) ? deterministicFingerprint(assets.get(ad.id)!).format : "unknown",
-        funnelStage: null,
-        hookType: null,
-        emotion: null,
-        subject: null,
-      }));
+      const fpByAd = new Map<string, string>(); // adId -> content_hash, for the decode cache
+      for (const ad of view.leaderboard) {
+        const a = assets.get(ad.id);
+        if (a) fpByAd.set(ad.id, deterministicFingerprint(a).contentHash);
+      }
+      const sem = await readSemanticsCache(userId, [...fpByAd.values()]);
+      const records: CreativeRecord[] = view.leaderboard.map((ad) => {
+        const s = fpByAd.has(ad.id) ? sem.get(fpByAd.get(ad.id)!) : undefined;
+        return {
+          adId: ad.id,
+          adName: ad.name,
+          spendRs: ad.spendRs,
+          winner: ad.winner?.overall ?? 0,
+          format: assets.has(ad.id) ? deterministicFingerprint(assets.get(ad.id)!).format : "unknown",
+          funnelStage: s?.funnelStage ?? null,
+          hookType: s?.hookType ?? null,
+          emotion: s?.emotion ?? null,
+          subject: s?.subject ?? null,
+        };
+      });
       ownDiversity = records.length > 0 ? assessDiversity(records) : null;
+      // Fill the decode cache for un-decoded creatives in the background (never blocks this response).
+      const have = new Set(sem.keys());
+      const toDecode = [...fpByAd.entries()].map(([adId, contentHash]) => ({ contentHash, asset: assets.get(adId)! })).filter((x) => x.asset && !have.has(x.contentHash));
+      if (toDecode.length) after(() => decodeMissing(userId, toDecode, have));
     } catch {
       ownDiversity = null;
     }
