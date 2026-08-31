@@ -8,6 +8,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 const COOKIE = "adbrain.weights";
 const MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -83,61 +87,48 @@ export function SettingsPanel() {
   }
 
   return (
-    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-      <div className="mb-1 flex items-center justify-between gap-3">
-        <div className="text-base font-normal">Verdict weights</div>
-        <button
-          type="button"
-          onClick={reset}
-          className="rounded-full border border-[var(--hairline)] px-3 py-1.5 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
-        >
-          Reset to defaults
-        </button>
-      </div>
-      <div className="mb-5 text-[13px] text-[var(--ink-muted)]">
-        Source of truth is the Measurement Canon; these are per-account overrides.
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {FIELDS.map((f) => (
-          <label key={f.key} className="block">
-            <span className="mb-1.5 block text-[13px] font-medium text-[var(--ink)]">{f.label}</span>
-            <input
-              type="number"
-              step={0.05}
-              min={0}
-              max={1}
-              value={weights[f.key]}
-              onChange={(e) => setField(f.key, e.target.value)}
-              className="w-full rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] px-3 py-2 text-sm tabular-nums text-[var(--ink)] focus:border-[var(--accent)] focus:outline-none"
-            />
-            <span className="mt-1 block text-xs text-[var(--ink-muted)]">{f.hint}</span>
-          </label>
-        ))}
-      </div>
-
-      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--surface-alt)] pt-4">
-        <span className="text-sm text-[var(--ink-muted)]">
-          Sum <span className="font-semibold tabular-nums text-[var(--ink)]">{sum.toFixed(2)}</span>
-        </span>
-        <div className="flex items-center gap-3">
-          {!balanced ? (
-            <span className="rounded-full bg-[var(--warn-bg)] px-3 py-1 text-xs font-semibold text-[var(--warn-ink)]">
-              Weights must add to 1.00 to apply
-            </span>
-          ) : applied ? (
-            <span className="text-xs font-semibold text-[var(--good-ink)]">Applied — scores updated</span>
-          ) : null}
-          <button
-            type="button"
-            onClick={apply}
-            disabled={!balanced}
-            className="rounded-full bg-[var(--ink)] px-4 py-1.5 text-xs font-medium text-white transition hover:opacity-90 disabled:opacity-50"
-          >
-            Apply to scoring
-          </button>
+    <Card>
+      <CardContent className="p-6">
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <div className="text-base font-normal">Verdict weights</div>
+          <Button type="button" variant="outline" size="sm" className="rounded-full" onClick={reset}>Reset to defaults</Button>
         </div>
-      </div>
-    </div>
+        <div className="mb-5 text-[13px] text-muted-foreground">
+          Source of truth is the Measurement Canon; these are per-account overrides.
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {FIELDS.map((f) => (
+            <label key={f.key} className="block">
+              <span className="mb-1.5 block text-[13px] font-medium">{f.label}</span>
+              <Input
+                type="number"
+                step={0.05}
+                min={0}
+                max={1}
+                value={weights[f.key]}
+                onChange={(e) => setField(f.key, e.target.value)}
+                className="tabular-nums"
+              />
+              <span className="mt-1 block text-xs text-muted-foreground">{f.hint}</span>
+            </label>
+          ))}
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+          <span className="text-sm text-muted-foreground">
+            Sum <span className="font-semibold tabular-nums text-foreground">{sum.toFixed(2)}</span>
+          </span>
+          <div className="flex items-center gap-3">
+            {!balanced ? (
+              <Badge variant="warning">Weights must add to 1.00 to apply</Badge>
+            ) : applied ? (
+              <span className="text-xs font-semibold text-[var(--good-ink)]">Applied — scores updated</span>
+            ) : null}
+            <Button type="button" size="sm" className="rounded-full" onClick={apply} disabled={!balanced}>Apply to scoring</Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

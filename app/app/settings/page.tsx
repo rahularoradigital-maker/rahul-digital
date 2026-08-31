@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { SettingsPanel } from "@/components/app/settings-panel";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 // Settings: connected account, an honest per-source status list (no fake connections), and the
 // editable CreativeScore verdict weights. This page only needs connection state + account name, so
@@ -23,51 +25,45 @@ export default async function SettingsPage() {
       </div>
 
       {/* Connected account */}
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-        <div className="mb-1 text-base font-normal">Connected account</div>
-        {data.connected ? (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
-              <span className="font-medium text-[var(--ink)]">{data.accountName}</span>
+      <Card>
+        <CardContent className="p-6">
+          <div className="mb-1 text-base font-normal">Connected account</div>
+          {data.connected ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
+                <span className="font-medium">{data.accountName}</span>
+              </div>
+              <Button asChild variant="outline" className="rounded-full"><a href="/api/connect/meta/authorize">Switch account</a></Button>
             </div>
-            <a
-              href="/api/connect/meta/authorize"
-              className="rounded-full border border-[var(--hairline)] px-4 py-2 text-sm font-medium text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
-            >
-              Switch account
-            </a>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-sm text-[var(--ink-muted)]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--ink-muted)]" />
-              No account connected
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--ink-muted)]" />
+                No account connected
+              </div>
+              <Button asChild className="rounded-full"><a href="/api/connect/meta/authorize">Connect Meta</a></Button>
             </div>
-            <a
-              href="/api/connect/meta/authorize"
-              className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-            >
-              Connect Meta
-            </a>
-          </div>
-        )}
-      </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Data sources: honest status, no fake connections */}
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
-        <div className="mb-1 text-base font-normal">Data sources</div>
-        <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
-          Only what is actually connected shows as connected. Nothing here is simulated.
-        </div>
-        <div className="divide-y divide-[var(--surface-alt)]">
-          <SourceRow label="Meta" connected={data.connected} />
-          <SourceRow label="Shopify" connected={false} />
-          <SourceRow label="GA4" connected={false} />
-          <SourceRow label="Finance sheet" connected={false} />
-          <SourceRow label="Creative decoder" connected={false} />
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="mb-1 text-base font-normal">Data sources</div>
+          <div className="mb-4 text-[13px] text-muted-foreground">
+            Only what is actually connected shows as connected. Nothing here is simulated.
+          </div>
+          <div className="divide-y divide-border">
+            <SourceRow label="Meta" connected={data.connected} />
+            <SourceRow label="Shopify" connected={false} />
+            <SourceRow label="GA4" connected={false} />
+            <SourceRow label="Finance sheet" connected={false} />
+            <SourceRow label="Creative decoder" connected={false} />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Editable verdict weights */}
       <SettingsPanel />
