@@ -20,6 +20,7 @@ export const NAV_GROUPS: { group: string; items: NavItem[] }[] = [
       { label: "Funnel", icon: "⧗", href: "/app/funnel" },
       { label: "Media", icon: "▲", href: "/app/media" },
       { label: "Change Impact", icon: "⇄", href: "/app/changes" },
+      { label: "Reconcile", icon: "=", href: "/app/reconcile" },
       { label: "Market", icon: "⚑", href: "/app/market" },
       { label: "Influencer Hunt", icon: "◇", href: "/app/influencer" },
     ],

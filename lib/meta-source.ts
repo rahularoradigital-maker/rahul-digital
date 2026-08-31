@@ -152,6 +152,7 @@ export const metaSource: AdSource = {
       fields: "spend,impressions,clicks,frequency,actions,action_values",
       time_range: timeRange,
       time_increment: "1",
+      use_account_attribution_setting: "true", // match Ads Manager: attribute conversions with the account's own attribution setting, not the API default
     });
     return (data.data ?? []).map((row) => ({
       adExternalId,
@@ -736,6 +737,7 @@ export async function fetchScopeInsights(
     level: "campaign",
     fields: "spend,impressions,clicks,actions,action_values",
     time_range: JSON.stringify({ since, until: until ?? today() }),
+    use_account_attribution_setting: "true", // match Ads Manager: use the account's attribution setting, not the API default
     limit: "500",
   };
   // undefined campaignIds = whole account (one unfiltered call); otherwise one call per id-chunk.
@@ -892,6 +894,7 @@ export async function fetchAdInsights(
     // until defaults to today so existing preset callers are unaffected; a range passes both.
     time_range: JSON.stringify({ since, until: until ?? today() }),
     time_increment: "1",
+    use_account_attribution_setting: "true", // match Ads Manager: use the account's attribution setting, not the API default
     limit: "500",
     filtering: JSON.stringify([{ field: "ad.id", operator: "IN", value: adExternalIds }]),
   };
@@ -1054,6 +1057,7 @@ export async function streamAccountDayWiseRows(
       "ad_id,campaign_id,adset_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective,video_play_actions,video_thruplay_watched_actions,outbound_clicks",
     time_range: JSON.stringify({ since, until: until ?? today() }),
     time_increment: "1",
+    use_account_attribution_setting: "true", // match Ads Manager: use the account's attribution setting, not the API default
     limit: "500",
   };
   // Filter to a CHUNK of ad ids: the unfiltered whole-account day-wise query is too heavy for Meta to
