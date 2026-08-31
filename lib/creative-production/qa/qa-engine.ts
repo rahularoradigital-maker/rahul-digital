@@ -11,6 +11,7 @@ type QAOpts = {
   textPixelsPresent?: boolean;
   contrastRatio?: number;
   fileBytes?: number;
+  visualMissing?: boolean; // the real image model produced NO visual -> a flat-colour fallback was used
 };
 
 // Platform file-size caps (bytes). Meta allows large images; Google Ads is much tighter.
@@ -36,6 +37,16 @@ export function runQA(
     detail: dimsMatch
       ? `${asset.width}x${asset.height} matches ${fmt.id}`
       : `asset ${asset.width}x${asset.height} != format ${fmt.width}x${fmt.height}`,
+  });
+
+  // (1b) STRICT AI VISUAL: the background MUST come from the real image model (Nano Banana). If it did not,
+  // the composer used a flat brand-colour fallback - which reads as an amateur, non-AI ad. Fail it hard so it
+  // is never presented as READY; the user regenerates instead.
+  checks.push({
+    name: "ai_visual_present",
+    pass: opts.visualMissing !== true,
+    severity: "critical",
+    detail: opts.visualMissing === true ? "no AI-generated visual (image model failed) - regenerate; flat fallback is not shippable" : "AI-generated visual present",
   });
 
   // (2) safe zone: enforced by the layout module; we can only assert the asset was composed at the

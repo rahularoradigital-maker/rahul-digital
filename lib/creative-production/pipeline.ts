@@ -98,6 +98,8 @@ export async function generateAssetsForConcept(
       // Fidelity is at risk when a composite format could not obtain the real product, or (non-composite) the
       // model produced no visual to carry the reference.
       productFidelityRisk: brief.productMode === "composite" ? brief.requiredProductFidelity && !cutout : !gen.ok && brief.requiredProductFidelity,
+      // STRICT Nano Banana: a missing AI visual (flat fallback) fails QA, so an amateur flat ad is never READY.
+      visualMissing: !visualDataUri,
       fileBytes: Buffer.byteLength(composed.svg, "utf8"),
     });
 
@@ -127,7 +129,7 @@ export async function generateAssetsForConcept(
     };
 
     await admin.from("cp_generations").upsert(
-      { id: generationId, user_id: userId, brand_id: brandId, concept_id: concept.id, brief_hash: hash, provider: gen.provider, model: gen.model, prompt_version: PROMPT_VERSION, cost_usd: gen.costUsd, status: gen.ok ? "done" : "placeholder", created_at: now },
+      { id: generationId, user_id: userId, brand_id: brandId, concept_id: concept.id, brief_hash: hash, provider: gen.provider, model: gen.model, prompt_version: PROMPT_VERSION, cost_usd: gen.costUsd, status: visualDataUri ? "done" : "failed", created_at: now },
       { onConflict: "user_id,id" },
     ).then(undefined, () => {});
 
