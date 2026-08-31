@@ -85,6 +85,77 @@ export async function discoverHN(queries: string[], perQuery = 15): Promise<Conv
   return out;
 }
 
+// StackExchange (webmasters) - free, no key, works from a server. Lower volume but real practitioner Q&A.
+type SeItem = { title: string; link: string; creation_date: number; question_id: number; owner?: { display_name?: string } };
+export async function discoverStackExchange(queries: string[], perQuery = 10): Promise<Conversation[]> {
+  const seen = new Set<string>();
+  const out: Conversation[] = [];
+  for (const q of queries) {
+    try {
+      const res = await fetch(`https://api.stackexchange.com/2.3/search/advanced?order=desc&sort=creation&q=${encodeURIComponent(q)}&site=webmasters&pagesize=${perQuery}`);
+      if (!res.ok) continue;
+      const json = (await res.json()) as { items?: SeItem[] };
+      for (const it of json.items ?? []) {
+        const id = `se:${it.question_id}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        out.push({
+          conversationId: id,
+          platform: "stackexchange",
+          community: "StackExchange/webmasters",
+          author: it.owner?.display_name ?? null,
+          url: it.link,
+          timestamp: new Date(it.creation_date * 1000).toISOString(),
+          content: it.title,
+          title: it.title,
+          question: true,
+        });
+      }
+    } catch {
+      /* best-effort per query */
+    }
+  }
+  return out;
+}
+
+// Google News RSS - free, no key. For trend detection (spec section 28): fresh articles matching intent terms.
+export async function discoverGoogleNews(queries: string[], perQuery = 8): Promise<Conversation[]> {
+  const seen = new Set<string>();
+  const out: Conversation[] = [];
+  const decode = (s: string) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/<[^>]+>/g, "").trim();
+  for (const q of queries) {
+    try {
+      const res = await fetch(`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`, { headers: { "User-Agent": "AdScaleScout/1.0" } });
+      if (!res.ok) continue;
+      const xml = await res.text();
+      const items = xml.match(/<item>[\s\S]*?<\/item>/g) ?? [];
+      for (const item of items.slice(0, perQuery)) {
+        const title = decode(item.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "");
+        const link = (item.match(/<link>([\s\S]*?)<\/link>/)?.[1] ?? "").trim();
+        const pub = item.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1] ?? "";
+        if (!title || !link) continue;
+        const id = `gnews:${link}`;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        out.push({
+          conversationId: id,
+          platform: "googlenews",
+          community: "Google News",
+          author: null,
+          url: link,
+          timestamp: pub ? new Date(pub).toISOString() : new Date().toISOString(),
+          content: title,
+          title,
+          question: false,
+        });
+      }
+    } catch {
+      /* best-effort per query */
+    }
+  }
+  return out;
+}
+
 // --- Deterministic factor extraction (documented heuristics). AI can later refine, but the base is auditable.
 const STRONG_COMMUNITIES = new Set(["r/PPC", "r/FacebookAds", "r/GoogleAds", "r/advertising"]);
 const SEVERITY = /(tanked|collapsed|dropped|plummeted|wasting|burning|broken|dying|help|desperate|urgent)/i;

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { discoverHN, discoverReddit } from "@/lib/growth/discover";
+import { discoverHN, discoverReddit, discoverStackExchange, discoverGoogleNews } from "@/lib/growth/discover";
 import { generateBrief } from "@/lib/growth/brief";
 import { draftTop } from "@/lib/growth/draft";
 import { saveBrief } from "@/lib/growth/store";
@@ -23,9 +23,15 @@ export async function GET(request: NextRequest) {
   if (a.length !== b.length || !timingSafeEqual(a, b)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const queries = INTENT_SIGNALS.map((s) => s.phrases[0]).slice(0, 6);
-  // Every free source that works from a server. HN is live; Reddit joins when its official app is configured.
-  const [hn, reddit] = await Promise.all([discoverHN(queries), discoverReddit(queries)]);
-  const brief = generateBrief([...hn, ...reddit], Date.now());
+  // Every free source that works from a server. HN + StackExchange + Google News are live; Reddit joins when
+  // its official app is configured. All best-effort - a failing source never breaks the run.
+  const [hn, se, gnews, reddit] = await Promise.all([
+    discoverHN(queries),
+    discoverStackExchange(queries),
+    discoverGoogleNews(queries),
+    discoverReddit(queries),
+  ]);
+  const brief = generateBrief([...hn, ...se, ...gnews, ...reddit], Date.now());
   // Scout writes a reply DRAFT for the top opportunities (for review only - never posted). Best-effort.
   await draftTop(brief.topOpportunities);
   await saveBrief(brief);
