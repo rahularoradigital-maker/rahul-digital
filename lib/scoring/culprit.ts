@@ -3,10 +3,13 @@
 // recent decline. A top-1% buyer's first instinct when the account dips: "what did I turn off?" This encodes
 // that. Pure, no I/O (scripts/check-culprit.ts). Never fabricates: every number comes from the day-wise rows.
 
-export type CulpritGroup = { id: string; name: string; daily: { date: string; spend: number }[] };
+// A group carries BOTH spend and revenue per day, because the culprit must be attributed on the metric that
+// actually dropped: a revenue drop can only be caused by an entity that was EARNING revenue and stopped - a
+// high-spend, zero-revenue awareness campaign that stops cannot lower revenue, so it must not be blamed for one.
+export type CulpritGroup = { id: string; name: string; daily: { date: string; spend: number; revenue: number }[] };
 export type DayPoint = { date: string; spend: number; revenue: number; purchases: number };
 
-export type Culprit = { id: string; name: string; priorSpendRs: number; recentSpendRs: number; stoppedOn: string | null; shareOfPriorSpend: number };
+export type Culprit = { id: string; name: string; priorSpendRs: number; recentSpendRs: number; stoppedOn: string | null; shareOfPrior: number };
 export type CulpritDiagnosis = {
   dropped: boolean;
   metric: "revenue" | "spend";
@@ -24,14 +27,10 @@ const MIN_DROP = 0.2; // a >=20% fall is a real drop worth explaining (below thi
 const STOPPED_RATIO = 0.15; // a contributor that fell to <=15% of its prior spend has effectively stopped
 const MIN_SHARE = 0.1; // and only matters if it was >=10% of the account's prior spend
 
-function daysBetween(a: string, b: string): number {
-  return Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
-}
-
-// Sum a group's spend inside [fromDate, toDate] inclusive.
-function spendIn(daily: { date: string; spend: number }[], fromDate: string, toDate: string): number {
+// Sum a group's spend (or revenue) inside [fromDate, toDate] inclusive.
+function sumIn(daily: CulpritGroup["daily"], fromDate: string, toDate: string, field: "spend" | "revenue"): number {
   let s = 0;
-  for (const d of daily) if (d.date >= fromDate && d.date <= toDate) s += d.spend;
+  for (const d of daily) if (d.date >= fromDate && d.date <= toDate) s += d[field];
   return s;
 }
 
@@ -62,20 +61,29 @@ export function diagnoseCulprit(account: DayPoint[], groups: CulpritGroup[], asO
   const dropPct = priorRs > 0 ? Math.max(0, (priorRs - recentRs) / priorRs) : 0;
   if (dropPct < MIN_DROP) return { ...none, metric, dropPct, recentRs, priorRs };
 
-  // Which contributors were material before AND have effectively stopped now?
-  const totalPriorSpend = groups.reduce((s, g) => s + spendIn(g.daily, priorFrom, priorTo), 0);
+  // Attribute on the DROPPED metric: a contributor only explains the drop if it was a material share of that
+  // metric before AND that metric collapsed for it now. So a revenue drop is pinned on an entity that was
+  // EARNING revenue and stopped - never on a zero-revenue awareness campaign that merely spent a lot.
+  const totalPrior = groups.reduce((s, g) => s + sumIn(g.daily, priorFrom, priorTo, metric), 0);
   const culprits: Culprit[] = [];
   for (const g of groups) {
-    const priorSpendRs = spendIn(g.daily, priorFrom, priorTo);
-    const recentSpendRs = spendIn(g.daily, recentFrom, asOf);
-    const share = totalPriorSpend > 0 ? priorSpendRs / totalPriorSpend : 0;
-    if (share >= MIN_SHARE && priorSpendRs > 0 && recentSpendRs <= priorSpendRs * STOPPED_RATIO) {
-      let stoppedOn: string | null = null;
+    const priorM = sumIn(g.daily, priorFrom, priorTo, metric);
+    const recentM = sumIn(g.daily, recentFrom, asOf, metric);
+    const share = totalPrior > 0 ? priorM / totalPrior : 0;
+    if (share >= MIN_SHARE && priorM > 0 && recentM <= priorM * STOPPED_RATIO) {
+      let stoppedOn: string | null = null; // "stopped delivering" = the last day it actually spent
       for (const d of g.daily) if (d.spend > 0 && (stoppedOn === null || d.date > stoppedOn)) stoppedOn = d.date;
-      culprits.push({ id: g.id, name: g.name, priorSpendRs: Math.round(priorSpendRs), recentSpendRs: Math.round(recentSpendRs), stoppedOn, shareOfPriorSpend: share });
+      culprits.push({
+        id: g.id,
+        name: g.name,
+        priorSpendRs: Math.round(sumIn(g.daily, priorFrom, priorTo, "spend")),
+        recentSpendRs: Math.round(sumIn(g.daily, recentFrom, asOf, "spend")),
+        stoppedOn,
+        shareOfPrior: share,
+      });
     }
   }
-  culprits.sort((a, b) => b.priorSpendRs - a.priorSpendRs);
+  culprits.sort((a, b) => b.shareOfPrior - a.shareOfPrior);
 
   // Corroborate the top culprit's inferred stop with a LOGGED status change, when one exists for it - who
   // changed it, and when. Authoritative beats inferred; silently falls back to the inferred wording otherwise.
@@ -86,7 +94,7 @@ export function diagnoseCulprit(account: DayPoint[], groups: CulpritGroup[], asO
     : "";
 
   const summary = culprits.length
-    ? `${metric === "revenue" ? "Revenue" : "Spend"} fell ${Math.round(dropPct * 100)}% in the last ${WINDOW} days. The ${entityLabel} "${top.name}" (${Math.round(top.shareOfPriorSpend * 100)}% of prior spend) stopped delivering${top.stoppedOn ? ` after ${top.stoppedOn}` : ""}${loggedNote} - the most likely cause. It is paused/ended, so there is nothing to fix on it; relaunch or reallocate if that result still matters.`
+    ? `${metric === "revenue" ? "Revenue" : "Spend"} fell ${Math.round(dropPct * 100)}% in the last ${WINDOW} days. The ${entityLabel} "${top.name}" (${Math.round(top.shareOfPrior * 100)}% of prior ${metric}) stopped delivering${top.stoppedOn ? ` after ${top.stoppedOn}` : ""}${loggedNote} - the most likely cause. It is paused/ended, so there is nothing to fix on it; relaunch or reallocate if that result still matters.`
     : null;
 
   return { dropped: true, metric, dropPct, recentRs, priorRs, culprits, summary };

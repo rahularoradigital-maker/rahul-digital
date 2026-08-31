@@ -15,7 +15,9 @@ export async function CulpritBanner({ dailySeries, funnelLevels, accountId }: { 
   const asOf = dailySeries.reduce<string | null>((m, p) => (m === null || p.date > m ? p.date : m), null);
   const since = dailySeries.reduce<string | null>((m, p) => (m === null || p.date < m ? p.date : m), null);
   const account = dailySeries.map((p) => ({ date: p.date, spend: p.spend, revenue: p.revenue, purchases: p.purchases }));
-  const toGroups = (gs: typeof campaigns) => gs.map((g) => ({ id: g.id, name: g.name, daily: g.daily }));
+  // Build each group's daily spend+revenue from its per-day series, so the culprit is attributed on the metric
+  // that actually dropped (revenue can only be caused by an entity that was earning it).
+  const toGroups = (gs: typeof campaigns) => gs.map((g) => ({ id: g.id, name: g.name, daily: g.series.map((p) => ({ date: p.date, spend: p.spend, revenue: p.revenue })) }));
 
   // Logged status changes (who paused what, when) to corroborate the inferred stop. Best-effort - an empty map
   // just means the diagnostic uses its inferred wording. Tenant-scoped by the signed-in user.
