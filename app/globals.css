@@ -28,6 +28,22 @@
   --border: var(--hairline);
   --brand: var(--ink); /* primary buttons = ink fill (telli) */
   --brand-foreground: #ffffff;
+
+  /* shadcn/ui tokens, mapped onto the app palette so shadcn components look native, not a second theme */
+  --primary: var(--ink);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-alt);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--ink-muted);
+  --accent-foreground: var(--ink);
+  --destructive: var(--bad-ink);
+  --destructive-foreground: #ffffff;
+  --ring: var(--accent);
+  --input: var(--hairline);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --radius: 0.625rem;
 }
 
 @theme inline {
@@ -46,6 +62,22 @@
   --color-border: var(--border);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
   --font-sans: var(--font-inter);
   --radius-card: 10px;
   --radius-pill: 70px;
