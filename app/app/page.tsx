@@ -1,4 +1,7 @@
+import { cookies } from "next/headers";
 import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
+import { getCurrentUser } from "@/lib/app/user";
+import { buildGoogleCockpitData } from "@/lib/google/cockpit";
 import { ConnectState } from "@/components/app/connect-state";
 import { type CockpitView, type Verdict, type SpendContributor } from "@/lib/cockpit/analyze";
 import { AdLink } from "@/components/cockpit/AdLink";
@@ -32,23 +35,54 @@ export const maxDuration = 300;
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ days?: string; perf?: string }> }) {
   const { days, perf } = await searchParams;
-  const data = await loadCockpit(parseDays(days));
+  const lookback = parseDays(days);
 
-  if (!data.connected) {
-    return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
+  // Platform selector (Meta / Google / Both). Meta and Google stay SEPARATE sections for now (merged later):
+  // "meta" shows the Meta section only, "google" the Google section only, "both" stacks the two. The Meta path
+  // is untouched (loadCockpit); Google runs the SAME brain over its own source, badged "Demo data" until the
+  // real Google Ads API is wired. Default = meta, so nothing changes for anyone who never touches the selector.
+  const platform = (await cookies()).get("adbrain.platform")?.value;
+  const showGoogle = platform === "google" || platform === "both";
+  const showMeta = platform !== "google";
+
+  const [metaData, googleData] = await Promise.all([
+    showMeta ? loadCockpit(lookback) : Promise.resolve(null),
+    showGoogle ? getCurrentUser().then((u) => (u ? buildGoogleCockpitData(u.id, lookback) : null)) : Promise.resolve(null),
+  ]);
+
+  // Sole-selected-platform empty state -> Connect screen. When BOTH are selected, one platform being empty
+  // must NOT block the other, so the connect screen only shows when the empty platform is the only one chosen.
+  if (showMeta && !showGoogle && metaData && !metaData.connected) {
+    return <ConnectState reason={metaData.reason} errorNote={metaData.errorNote} accountName={metaData.accountName} days={metaData.days} />;
+  }
+  if (showGoogle && !showMeta && (!googleData || !googleData.connected)) {
+    return <ConnectState reason={googleData?.reason ?? "not_connected"} accountName={googleData?.accountName ?? "Google Ads"} days={googleData?.days ?? lookback} />;
   }
 
   // ?perf=1 surfaces the server-side warm-path breakdown so it can be read in the browser (measure
   // before optimizing). Rendered as machine-readable text; harmless and invisible-ish for normal use.
-  const perfEl = perf === "1" && data.perf ? (
-    <pre id="perf-data" data-perf={JSON.stringify(data.perf)} className="fixed bottom-1 right-1 z-50 rounded bg-black/80 px-2 py-1 text-[10px] text-white">{JSON.stringify(data.perf)}</pre>
+  const perfEl = perf === "1" && metaData?.connected && metaData.perf ? (
+    <pre id="perf-data" data-perf={JSON.stringify(metaData.perf)} className="fixed bottom-1 right-1 z-50 rounded bg-black/80 px-2 py-1 text-[10px] text-white">{JSON.stringify(metaData.perf)}</pre>
   ) : null;
 
+  const sectionLabel = "text-[13px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]";
+
   return (
-    <>
+    <div className="space-y-10">
       {perfEl}
-      <Cockpit view={data.view} accountName={data.accountName} accountId={data.accountId} dateParam={data.dateParam} adsAnalyzed={data.adsAnalyzed} processed={data.processed} funnel={data.funnel} marginal={data.marginal} dataQuality={data.dataQuality} scopeTotals={data.scopeTotals} dailySeries={data.dailySeries} funnelLevels={data.funnelLevels} days={data.days} syncedAt={data.syncedAt} stale={data.stale} />
-    </>
+      {showMeta && metaData?.connected ? (
+        <section className="space-y-3">
+          {showGoogle ? <h2 className={sectionLabel}>Facebook / Instagram</h2> : null}
+          <Cockpit view={metaData.view} accountName={metaData.accountName} accountId={metaData.accountId} dateParam={metaData.dateParam} adsAnalyzed={metaData.adsAnalyzed} processed={metaData.processed} funnel={metaData.funnel} marginal={metaData.marginal} dataQuality={metaData.dataQuality} scopeTotals={metaData.scopeTotals} dailySeries={metaData.dailySeries} funnelLevels={metaData.funnelLevels} days={metaData.days} syncedAt={metaData.syncedAt} stale={metaData.stale} />
+        </section>
+      ) : null}
+      {showGoogle && googleData?.connected ? (
+        <section className="space-y-3">
+          <h2 className={sectionLabel}>Google Ads</h2>
+          <Cockpit view={googleData.view} accountName={googleData.accountName} accountId={googleData.accountId} dateParam={googleData.dateParam} adsAnalyzed={googleData.adsAnalyzed} processed={googleData.processed} funnel={googleData.funnel} marginal={googleData.marginal} dataQuality={googleData.dataQuality} scopeTotals={googleData.scopeTotals} dailySeries={googleData.dailySeries} funnelLevels={googleData.funnelLevels} days={googleData.days} syncedAt={googleData.syncedAt} stale={googleData.stale} demo />
+        </section>
+      ) : null}
+    </div>
   );
 }
 
@@ -178,7 +212,7 @@ function syncedLabel(iso?: string): string {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, funnelLevels, days, syncedAt, stale }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; days: number; syncedAt?: string; stale?: boolean }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, funnelLevels, days, syncedAt, stale, demo }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; days: number; syncedAt?: string; stale?: boolean; demo?: boolean }) {
   const health = view.accountHealth;
   // Headline KPIs use the TRUE scope totals (all campaigns/ads of the selected objective),
   // so spend / revenue / ROAS match Ads Manager - not the analyzed-ads subset in view.totals.
@@ -227,6 +261,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
           <span>{`Connected · ${accountName} · ${processed.campaigns} campaign${processed.campaigns === 1 ? "" : "s"} · ${processed.adSets} ad set${processed.adSets === 1 ? "" : "s"} · ${adsAnalyzed} ads · last ${days} days${syncedAt ? ` · synced ${syncedLabel(syncedAt)}` : ""}`}</span>
           {stale ? <span className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">refreshing…</span> : null}
+          {demo ? <span className="rounded-full bg-[var(--warn-bg)] px-2 py-0.5 text-[11px] font-medium text-[var(--warn-ink)]">Demo data</span> : null}
         </div>
         <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">Here&apos;s what to ship this week.</h1>
         <p className="mt-1 max-w-3xl text-[15px] text-[var(--ink)]">
