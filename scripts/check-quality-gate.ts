@@ -1,5 +1,5 @@
 // Proof for the content quality gate: it BLOCKS critical brand risks (unsupported claims, undisclosed/
-// disallowed AdScale mentions) and only WARNS on softer issues (hype, unsourced stat, salesy).
+// disallowed AdBrain mentions) and only WARNS on softer issues (hype, unsourced stat, salesy).
 // Run: node --experimental-strip-types scripts/check-quality-gate.ts
 
 import { checkContent } from "../lib/growth/quality.ts";
@@ -17,14 +17,14 @@ ok(clean.pass && clean.flags.length === 0, "a clean, useful reply passes with no
 
 // unsupported absolute claim -> BLOCKED
 ok(!checkContent("This will guarantee you double your ROAS.", { mayMention: true }).pass, "a 'guarantee/double ROAS' claim is blocked");
-ok(!checkContent("AdScale is the best tool and always works.", { mayMention: true }).pass, "'the best / always works' is blocked");
+ok(!checkContent("AdBrain is the best tool and always works.", { mayMention: true }).pass, "'the best / always works' is blocked");
 
-// AdScale mention without disclosure -> BLOCKED
-ok(!checkContent("You should try AdScale for this.", { mayMention: true }).pass, "mentioning AdScale without disclosure is blocked");
+// AdBrain mention without disclosure -> BLOCKED
+ok(!checkContent("You should try AdBrain for this.", { mayMention: true }).pass, "mentioning AdBrain without disclosure is blocked");
 // with disclosure -> allowed
-ok(checkContent("Full disclosure, I work on AdScale - it reads your day-wise data and flags this.", { mayMention: true }).pass, "an AdScale mention WITH disclosure + allowed context passes");
+ok(checkContent("Full disclosure, I work on AdBrain - it reads your day-wise data and flags this.", { mayMention: true }).pass, "an AdBrain mention WITH disclosure + allowed context passes");
 // mention where not allowed -> BLOCKED even with disclosure
-ok(!checkContent("Full disclosure, I work on AdScale, give it a try.", { mayMention: false }).pass, "an AdScale mention where not permitted is blocked");
+ok(!checkContent("Full disclosure, I work on AdBrain, give it a try.", { mayMention: false }).pass, "an AdBrain mention where not permitted is blocked");
 
 // soft issues are WARN, not blocking
 const hype = checkContent("This will supercharge and revolutionize your funnel.", { mayMention: false });

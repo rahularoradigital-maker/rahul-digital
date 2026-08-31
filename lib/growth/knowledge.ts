@@ -1,14 +1,14 @@
-// Growth-agent knowledge base (spec sections 1, 2, 3, 33, 34). The single source of truth for WHO AdScale is,
+// Growth-agent knowledge base (spec sections 1, 2, 3, 33, 34). The single source of truth for WHO AdBrain is,
 // WHO it serves, WHAT signals to look for, and WHAT the agent must never do. Versioned - never overwrite,
 // bump VERSION on a real change. NOTHING here invents a product capability: every brand fact below is a real,
-// shipped part of AdScale (adscaledigital.co). If a capability is not real, it does not go here.
+// shipped part of AdBrain (rahul-digital.vercel.app). If a capability is not real, it does not go here.
 
 export const KNOWLEDGE_VERSION = "1.0.0";
 
 // --- BRAND KNOWLEDGE (section 1) - honest capabilities only ---
 export const BRAND = {
-  name: "AdScale",
-  url: "https://adscaledigital.co",
+  name: "AdBrain",
+  url: "https://rahul-digital.vercel.app",
   oneLiner: "Creative decision intelligence for Meta + Google ads - it reads your day-wise account data and tells you what to act on today, with a reason for every verdict, and never auto-changes your account.",
   does: [
     "Connects a Meta / Google ad account (read-only, encrypted tokens) and reads day-wise performance.",
@@ -36,14 +36,14 @@ export const ICPS = [
 ] as const;
 
 // --- INTENT SIGNALS (section 3) - search for INTENT, not just keywords. Grouped by problem the product solves.
-export const INTENT_SIGNALS: { topic: string; phrases: string[]; adscaleFit: number }[] = [
-  { topic: "creative fatigue", phrases: ["creative fatigue", "ads fatiguing faster", "frequency too high", "ad creative dying", "when to refresh creative"], adscaleFit: 0.95 },
-  { topic: "what to scale/kill", phrases: ["when to kill an ad", "when to scale", "should i pause this ad", "how to know if an ad is working"], adscaleFit: 0.95 },
-  { topic: "ROAS / efficiency drop", phrases: ["roas dropped", "cpa went up", "meta performance tanked", "why did my ads stop working"], adscaleFit: 0.85 },
-  { topic: "reporting / dashboards", phrases: ["ads manager is confusing", "which metric matters", "dashboard i can trust", "how to report on ads"], adscaleFit: 0.7 },
-  { topic: "attribution", phrases: ["attribution is broken", "ios attribution", "can't trust meta numbers"], adscaleFit: 0.5 },
-  { topic: "tool comparison", phrases: ["alternative to", "vs triple whale", "best ad analytics tool", "tool for creative testing"], adscaleFit: 0.8 },
-  { topic: "AI advertising / automation", phrases: ["ai for ads", "automate ad decisions", "ai media buyer"], adscaleFit: 0.75 },
+export const INTENT_SIGNALS: { topic: string; phrases: string[]; adbrainFit: number }[] = [
+  { topic: "creative fatigue", phrases: ["creative fatigue", "ads fatiguing faster", "frequency too high", "ad creative dying", "when to refresh creative"], adbrainFit: 0.95 },
+  { topic: "what to scale/kill", phrases: ["when to kill an ad", "when to scale", "should i pause this ad", "how to know if an ad is working"], adbrainFit: 0.95 },
+  { topic: "ROAS / efficiency drop", phrases: ["roas dropped", "cpa went up", "meta performance tanked", "why did my ads stop working"], adbrainFit: 0.85 },
+  { topic: "reporting / dashboards", phrases: ["ads manager is confusing", "which metric matters", "dashboard i can trust", "how to report on ads"], adbrainFit: 0.7 },
+  { topic: "attribution", phrases: ["attribution is broken", "ios attribution", "can't trust meta numbers"], adbrainFit: 0.5 },
+  { topic: "tool comparison", phrases: ["alternative to", "vs triple whale", "best ad analytics tool", "tool for creative testing"], adbrainFit: 0.8 },
+  { topic: "AI advertising / automation", phrases: ["ai for ads", "automate ad decisions", "ai media buyer"], adbrainFit: 0.75 },
 ];
 
 // --- SAFETY: the permanent DO-NOT-DO list (section 34). Guardrails every draft is checked against. ---
@@ -53,9 +53,9 @@ export const SAFETY_DONOTDO = [
   "Do not invent testimonials, customers, or fake conversations.",
   "Do not impersonate a customer, a competitor, or misrepresent affiliation.",
   "Do not mass-post identical content or spam links.",
-  "Do not promote where the community forbids it - be useful without forcing AdScale in.",
+  "Do not promote where the community forbids it - be useful without forcing AdBrain in.",
   "Do not manipulate votes, evade moderation, or bypass platform rules / rate limits.",
-  "Always disclose affiliation when mentioning AdScale.",
+  "Always disclose affiliation when mentioning AdBrain.",
 ] as const;
 
 // Seed communities to LISTEN to (read-only discovery). Not for joining-to-promote.

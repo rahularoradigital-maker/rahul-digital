@@ -3,7 +3,7 @@ import { createAdminClient } from "../supabase/admin.ts";
 import { runTaskJson } from "../ai/router.ts";
 import { compose } from "../ai/compose.ts";
 import { BRAND } from "./knowledge.ts";
-import { tagAdScaleLinks } from "./attribution.ts";
+import { tagAdBrainLinks } from "./attribution.ts";
 import { checkContent } from "./quality.ts";
 
 // Scout's content engine. From a recurring topic it writes a genuinely useful, sourced article (AI), stored as
@@ -48,8 +48,8 @@ export async function saveDraftArticle(a: { title: string; dek: string; body: st
     let slug = slugify(a.title);
     const { data: existing } = await admin.from("growth_articles").select("id").eq("slug", slug).maybeSingle();
     if (existing) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
-    // Attribution: tag any AdScale link in the article body so blog-driven signups trace back to the content.
-    const body = tagAdScaleLinks(a.body, { source: "blog", content: a.topic });
+    // Attribution: tag any AdBrain link in the article body so blog-driven signups trace back to the content.
+    const body = tagAdBrainLinks(a.body, { source: "blog", content: a.topic });
     const { error } = await admin.from("growth_articles").insert({ slug, title: a.title, dek: a.dek, body_md: body, topic: a.topic, status: "draft" });
     if (error) console.warn(`[growth] saveDraftArticle failed: ${error.message}`);
   } catch (err) {

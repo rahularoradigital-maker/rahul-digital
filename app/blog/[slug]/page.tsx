@@ -5,11 +5,22 @@ import { Markdown } from "../md";
 
 export const dynamic = "force-dynamic";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const a = await getArticleBySlug(slug);
-  if (!a) return { title: "AdScale Blog" };
-  return { title: `${a.title} — AdScale`, description: a.dek ?? undefined };
+  if (!a) return { title: "AdBrain Blog", robots: { index: false, follow: true } };
+  const url = `${SITE_URL}/blog/${slug}`;
+  const title = `${a.title} — AdBrain`;
+  const description = a.dek ?? undefined;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/blog/${slug}` },
+    openGraph: { type: "article", title, description, url, siteName: "AdBrain AI", publishedTime: a.published_at ?? undefined },
+    twitter: { card: "summary_large_image", title, description },
+  };
 }
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -17,16 +28,52 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const a = await getArticleBySlug(slug);
   if (!a) notFound();
 
+  const url = `${SITE_URL}/blog/${slug}`;
+  // Article + breadcrumb entity signals. Honest only: author is the AdBrain organization (no fabricated
+  // person), dates come from the real published_at, no images/ratings we cannot substantiate.
+  const jsonLd = JSON.stringify([
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: a.title,
+      description: a.dek ?? undefined,
+      datePublished: a.published_at ?? undefined,
+      dateModified: a.published_at ?? undefined,
+      author: { "@type": "Organization", name: "AdBrain AI", url: SITE_URL },
+      publisher: { "@type": "Organization", name: "AdBrain AI", url: SITE_URL, logo: { "@type": "ImageObject", url: `${SITE_URL}/icon.svg` } },
+      mainEntityOfPage: { "@type": "WebPage", "@id": url },
+      url,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Blog", item: `${SITE_URL}/blog` },
+        { "@type": "ListItem", position: 2, name: a.title, item: url },
+      ],
+    },
+  ]);
+
   return (
     <main className="mx-auto max-w-2xl px-5 py-12">
+      <script type="application/ld+json">{jsonLd}</script>
       <Link href="/blog" className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">← All posts</Link>
       <article className="mt-6">
         <h1 className="text-[28px] font-normal leading-tight tracking-tight text-balance">{a.title}</h1>
         {a.dek && <p className="mt-2 text-[16px] text-[var(--ink-muted)]">{a.dek}</p>}
-        {a.published_at && <p className="mt-2 text-[12px] text-[var(--ink-muted)]">{a.published_at.slice(0, 10)}</p>}
+        {a.published_at && (
+          <p className="mt-2 text-[12px] text-[var(--ink-muted)]">
+            <time dateTime={a.published_at}>{a.published_at.slice(0, 10)}</time>
+          </p>
+        )}
         <div className="mt-8">
           <Markdown md={a.body_md} />
         </div>
+        {/* Intent-appropriate next action: an informational reader learns, then can try the product. */}
+        <aside className="mt-12 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface-alt)] p-5">
+          <p className="text-[14px] text-[var(--ink)]">See what AdBrain flags in your own ad account - what to scale, refresh, or kill, with a reason for every call.</p>
+          <Link href="/product" className="mt-3 inline-block text-[14px] font-medium text-[var(--accent)] hover:underline">How AdBrain works →</Link>
+        </aside>
       </article>
     </main>
   );

@@ -10,10 +10,10 @@
 //   node scripts/loadtest.mjs                          # gentle smoke vs SMOKE_BASE or the live site
 //   BASE=https://<preview-url> COUNT=500 CONCURRENCY=25 node scripts/loadtest.mjs
 //
-// Env: BASE (default https://www.adscaledigital.co), COUNT (default 30), CONCURRENCY (default 5),
+// Env: BASE (default https://rahul-digital.vercel.app), COUNT (default 30), CONCURRENCY (default 5),
 //      PATHS (comma-separated, default the public set below).
 
-const BASE = process.env.BASE || process.env.SMOKE_BASE || "https://www.adscaledigital.co";
+const BASE = process.env.BASE || process.env.SMOKE_BASE || "https://rahul-digital.vercel.app";
 const COUNT = Number(process.env.COUNT || 30);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 5);
 const PATHS = (process.env.PATHS || "/,/product,/privacy,/api/health,/sitemap.xml").split(",").map((p) => p.trim());

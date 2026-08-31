@@ -14,7 +14,7 @@ type RedditChild = { data: { id: string; subreddit: string; author: string; perm
 async function searchSub(sub: string, query: string, limit: number): Promise<Conversation[]> {
   const url = `https://www.reddit.com/r/${encodeURIComponent(sub)}/search.json?q=${encodeURIComponent(query)}&restrict_sr=1&sort=new&limit=${limit}`;
   try {
-    const res = await fetch(url, { headers: { "User-Agent": "AdScaleGrowthAgent/1.0 (read-only listening; contact adscaledigital.co)" } });
+    const res = await fetch(url, { headers: { "User-Agent": "AdBrainGrowthAgent/1.0 (read-only listening; contact rahul-digital.vercel.app)" } });
     if (!res.ok) return [];
     const json = (await res.json()) as { data?: { children?: RedditChild[] } };
     return (json.data?.children ?? [])
@@ -125,7 +125,7 @@ export async function discoverGoogleNews(queries: string[], perQuery = 8): Promi
   const decode = (s: string) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/<[^>]+>/g, "").trim();
   for (const q of queries) {
     try {
-      const res = await fetch(`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`, { headers: { "User-Agent": "AdScaleScout/1.0" } });
+      const res = await fetch(`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-US&gl=US&ceid=US:en`, { headers: { "User-Agent": "AdBrainScout/1.0" } });
       if (!res.ok) continue;
       const xml = await res.text();
       const items = xml.match(/<item>[\s\S]*?<\/item>/g) ?? [];

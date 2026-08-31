@@ -12,9 +12,9 @@ const HYPE = /\b(unleash|game[- ]?chang(er|ing)|revolutioni[sz]e|revolutionary|s
 const UNSUPPORTED = /\b(guarantee(d|s)?|#\s?1\b|the best\b|always works|never fails?|proven to (double|triple|10x)|instant(ly)? results?|risk[- ]free)\b/i;
 // A specific performance number stated as fact - WARN (Scout must not invent stats; a real one needs a source).
 const HARD_STAT = /\b\d{1,3}(\.\d+)?\s?%|\b\d+(\.\d+)?x\b|[₹$]\s?\d{3,}/;
-// Disclosure phrases that must accompany an AdScale mention.
+// Disclosure phrases that must accompany an AdBrain mention.
 const DISCLOSURE = /(i work on|i(?:'m| am) (?:on|with|from)|full disclosure|disclosure:|team behind|i help build)/i;
-const MENTIONS_ADSCALE = /\badscale\b|adscaledigital\.co/i;
+const MENTIONS_ADBRAIN = /\badbrain\b|rahul-digital\.vercel\.app/i;
 // Salesy signals - WARN (community replies must be useful-first).
 const SALESY = /\b(check (?:it|us|this) out|sign up (?:now|today)|click (?:here|the link)|dm me|link in bio)\b/i;
 
@@ -24,9 +24,9 @@ export function checkContent(text: string, opts: { mayMention: boolean } = { may
 
   if (UNSUPPORTED.test(t)) flags.push({ code: "unsupported_claim", severity: "critical", detail: "contains an absolute/guarantee claim we cannot defend" });
 
-  const mentions = MENTIONS_ADSCALE.test(t);
-  if (mentions && !DISCLOSURE.test(t)) flags.push({ code: "undisclosed_mention", severity: "critical", detail: "mentions AdScale without disclosing affiliation" });
-  if (mentions && !opts.mayMention) flags.push({ code: "mention_not_allowed", severity: "critical", detail: "mentions AdScale where the community/context does not permit it" });
+  const mentions = MENTIONS_ADBRAIN.test(t);
+  if (mentions && !DISCLOSURE.test(t)) flags.push({ code: "undisclosed_mention", severity: "critical", detail: "mentions AdBrain without disclosing affiliation" });
+  if (mentions && !opts.mayMention) flags.push({ code: "mention_not_allowed", severity: "critical", detail: "mentions AdBrain where the community/context does not permit it" });
 
   if (HARD_STAT.test(t)) flags.push({ code: "unsourced_stat", severity: "warn", detail: "states a specific number/stat - verify it is real + sourced, not invented" });
   if (HYPE.test(t)) flags.push({ code: "hype", severity: "warn", detail: "uses AI-cliche/hype wording - off the 'shows its work' voice" });
