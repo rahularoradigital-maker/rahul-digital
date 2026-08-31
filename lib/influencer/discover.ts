@@ -8,8 +8,9 @@ import type { BrandTarget, NormalizedCreator } from "./types.ts";
 import { creatorSearchSpecFrom, discoveryHashtags } from "./spec.ts";
 import { rankCreators, type RankedCreator } from "./rank.ts";
 import { canonicalKey } from "./dedup.ts";
+import { looksLikeBrand } from "./derive.ts";
 
-const DEFAULT_ENRICH = 24; // profiles fetched per run (= credits); affordable now that hashtags fetch in parallel
+const DEFAULT_ENRICH = 32; // profiles fetched per run (= credits); a bigger pool so real creators remain after brands are dropped
 const DEFAULT_CONCURRENCY = 8; // parallel profile fetches: keeps the whole run fast (well under the ~60s serverless cap)
 const DEFAULT_MIN_FOLLOWERS = 10_000; // influencer floor: drop tiny shops/resellers. Adjustable per run.
 // Plausible engagement band. Below the floor = dead/bought-follower BRAND pages (a real creator engages its
@@ -82,7 +83,9 @@ export async function discoverAndRank(
   const creators = enriched
     .filter((c): c is NormalizedCreator => c !== null)
     .filter((c) => c.followers.value == null || c.followers.value >= floor)
-    // Drop dead/bought BRAND pages: known engagement outside the plausible band. Unknown engagement is kept.
+    // Drop BRANDS / shops / resellers (competitors) - we want influencers, not other apparel labels.
+    .filter((c) => !looksLikeBrand(c.name.value, c.bio.value))
+    // Drop dead/bought pages: known engagement outside the plausible band. Unknown engagement is kept.
     .filter((c) => {
       const er = c.engagementRate.value;
       return er == null || (er >= minEng && er <= maxEng);

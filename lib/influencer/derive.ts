@@ -43,6 +43,22 @@ export function inEngBand(er: number | null, band: EngBand): boolean {
   return pct >= 10;
 }
 
+// Selling/commerce signals that mark a BRAND, SHOP, or RESELLER (i.e. a competitor) rather than an influencer.
+const SELLING = /(shop now|order now|dm to order|dm for order|whatsapp to order|to order|\bcod\b|cash on delivery|shipping|ships? worldwide|worldwide shipping|wholesale|resellers?|manufacturer|\bstore\b|buy now|shop link|link to shop|shop the|designer label|clothing brand|fashion label|our label|new collection|new arrivals|sale live|shop online|order on whatsapp|™|®)/i;
+// Signals that mark a real PERSON / creator - if present we keep the account even if it also sells a little.
+const CREATOR_SELF = /(content creator|\bcreator\b|influencer|blogger|vlogger|\bugc\b|dm for collab|for collabs?|founder|artist|actor|actress|\bmodel\b|coach|makeup artist|\bmua\b|stylist|personal blog)/i;
+// Brand-y words in the account NAME (a person is rarely called "X Clothing" / "X Label" / "X Boutique").
+const BRAND_NAME = /(clothing|apparel|couture|boutique|\blabel\b|fashion house|\bstore\b|\bbrand\b|\bco\.?\b|\bpvt\b|\bllp\b|enterprises?|exports?|creations?|collections?)/i;
+
+/** True when the account looks like a BRAND / shop / reseller (a competitor) rather than an influencer. Used
+ * to drop competitors from the creator shortlist. Conservative: an explicit creator self-description wins. */
+export function looksLikeBrand(name: string | null, bio: string | null): boolean {
+  const text = `${name ?? ""} ${bio ?? ""}`.toLowerCase();
+  if (CREATOR_SELF.test(text)) return false; // clearly a person/creator
+  if (BRAND_NAME.test((name ?? "").toLowerCase())) return true; // "X Clothing" / "X Label" etc.
+  return SELLING.test(text); // selling/shipping/ordering language => shop or brand
+}
+
 export const CONF_RANK: Record<Confidence, number> = { high: 3, medium: 2, low: 1, none: 0 };
 export type MinConfidence = "any" | "low" | "medium" | "high";
 /** Confidence gate: keep only creators whose overall score confidence meets the minimum. */

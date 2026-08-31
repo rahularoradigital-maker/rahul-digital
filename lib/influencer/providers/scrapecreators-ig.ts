@@ -177,7 +177,7 @@ export function scrapeCreatorsIgProvider(apiKey: string): CreatorDataProvider {
 
     async discover(spec: CreatorSearchSpec, limit: number): Promise<CreatorIdentity[]> {
       const floor = spec.minFollowers ?? DEFAULT_DISCOVER_FLOOR;
-      const hashtags = [...new Set(spec.keywords.map(compact).filter((h) => h.length >= 4))].slice(0, 6);
+      const hashtags = [...new Set(spec.keywords.map(compact).filter((h) => h.length >= 4))].slice(0, 10);
 
       // Primary discovery = HASHTAG search: the AUTHORS of posts under the brand's hashtags are real creators
       // making relevant content, NOT shops that merely put the category in their name. Each owner carries a

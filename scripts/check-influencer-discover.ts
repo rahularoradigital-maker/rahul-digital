@@ -7,6 +7,7 @@ import { unknown, evidence, type NormalizedCreator, type BrandTarget, type Creat
 import type { CreatorDataProvider, ProviderCapability } from "../lib/influencer/provider.ts";
 import { discoverAndRank } from "../lib/influencer/discover.ts";
 import { bandOf, inBand } from "../lib/influencer/bands.ts";
+import { looksLikeBrand } from "../lib/influencer/derive.ts";
 
 const NOW = "2026-08-29";
 function creator(id: string, handle: string, followers: number, er: number, bio: string): NormalizedCreator {
@@ -112,5 +113,16 @@ assert.equal(inBand(120_000, bandOf("50-500k")), true);
 assert.equal(inBand(750_000, bandOf("500k+")), true);
 assert.equal(inBand(null, bandOf("all")), true);
 assert.equal(inBand(null, bandOf("50-500k")), false);
+
+// --- BRANDS / shops (competitors) are excluded; real creators are kept. ---
+assert.equal(looksLikeBrand("V.O.I.D", "Premium Designer Label Shipping worldwide"), true, "an apparel label is a brand");
+assert.equal(looksLikeBrand("Rank1 Clothing", "resellers welcome, budget fashion"), true, "a clothing shop is a brand");
+assert.equal(looksLikeBrand("Yamini Polnati", "fashion creator, dm for collab"), false, "a fashion creator is kept");
+const brandProvider: CreatorDataProvider = {
+  ...fake,
+  async discover() { return [{ platform: "instagram", platformUserId: "brand", handle: "somelabel", profileUrl: "" }]; },
+  async profile() { return creator("brand", "somelabel", 80_000, 0.04, "Premium designer label · shipping worldwide · dm to order"); },
+};
+assert.equal((await discoverAndRank(brandProvider, target, "S", { enrich: 3 })).ranked.length, 0, "a brand/shop account is dropped from the creator shortlist");
 
 console.log("PASS: influencer discovery (search->enrich->dedupe->rank, failure isolation, zero-result path)");
