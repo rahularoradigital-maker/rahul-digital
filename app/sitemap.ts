@@ -10,7 +10,7 @@ export const revalidate = 3600;
 // disallowed in robots.ts). The blog index + every PUBLISHED article are included dynamically so new
 // posts are discoverable without a code change. A DB hiccup degrades to the static pages - never a build break.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticPaths = ["", "/product", "/blog", "/book-demo", "/privacy", "/terms", "/cookie-policy", "/data-deletion"];
+  const staticPaths = ["", "/product", "/integrations/meta", "/blog", "/book-demo", "/privacy", "/terms", "/cookie-policy", "/data-deletion"];
   const staticEntries: MetadataRoute.Sitemap = staticPaths.map((p) => ({
     url: `${SITE_URL}${p}`,
     changeFrequency: p === "/blog" ? "weekly" : "monthly",
