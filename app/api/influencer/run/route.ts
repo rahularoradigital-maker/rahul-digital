@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadBrandProfile } from "@/lib/brand/profile";
@@ -37,6 +38,8 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Not signed in" }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
 
   const session = await getUserMetaSession(user.id);
   if (!session) return NextResponse.json({ ok: false, error: "Connect a Meta account first (Settings)." }, { status: 400 });
@@ -59,8 +62,10 @@ export async function POST(request: Request) {
     const { ranked, stats } = await discoverAndRank(scrapeCreatorsIgProvider(key), target, profile.accountName ?? session.activeAccountName, { minFollowers, minEngagement: minEng, maxEngagement: maxEng });
     // Apply the criteria the discovery stage can't (gender/region are read from name/bio; confidence from the score).
     let out = ranked;
-    if (filters.gender === "f" || filters.gender === "m") out = out.filter((r) => guessGender(r.creator.name.value).gender === filters.gender);
-    if (filters.region && filters.region !== "any") out = out.filter((r) => extractRegion(r.creator.bio.value) === filters.region);
+    // Gender/region are INFERRED - only exclude a CONFIRMED non-match, keep unknowns (never drop someone we
+    // couldn't classify), so combining these filters doesn't silently return zero.
+    if (filters.gender === "f" || filters.gender === "m") out = out.filter((r) => { const g = guessGender(r.creator.name.value).gender; return g === null || g === filters.gender; });
+    if (filters.region && filters.region !== "any") out = out.filter((r) => { const rr = extractRegion(r.creator.bio.value); return rr === null || rr === filters.region; });
     if (filters.minConfidence && filters.minConfidence !== "any") out = out.filter((r) => meetsConfidence(r.scorecard.quality.confidence, filters.minConfidence!));
     out = out.map((r, i) => ({ ...r, rank: i + 1 }));
 

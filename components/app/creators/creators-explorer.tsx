@@ -49,8 +49,10 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
         const c = r.creator;
         if (!inEngBand(c.engagementRate.value, eng)) return false;
         if (Number.isFinite(minF) && (c.followers.value ?? 0) < minF) return false;
-        if (gender !== "any" && guessGender(c.name.value).gender !== gender) return false;
-        if (region !== "any" && extractRegion(c.bio.value) !== region) return false;
+        // Gender/region are INFERRED (name/bio). Only drop a CONFIRMED non-match; keep unknowns, so picking a
+        // value never silently removes everyone we couldn't classify.
+        if (gender !== "any") { const g = guessGender(c.name.value).gender; if (g && g !== gender) return false; }
+        if (region !== "any") { const rr = extractRegion(c.bio.value); if (rr && rr !== region) return false; }
         if (!meetsConfidence(r.scorecard.quality.confidence, minConf)) return false;
         return true;
       })
