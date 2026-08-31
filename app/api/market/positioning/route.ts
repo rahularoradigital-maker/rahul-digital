@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -32,6 +33,8 @@ export async function POST() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
   setAiUser(user.id); // attribute AI spend to this user
   if ((await enforceRateLimit(`positioning:${user.id}`, { windowMs: 600_000, max: 30 })).limited) {
     return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });

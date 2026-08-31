@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { setAiUser } from "@/lib/ai/context";
@@ -16,6 +17,8 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
   setAiUser(user.id); // attribute AI spend to this user
   const session = await getUserMetaSession(user.id);
   if (!session) return NextResponse.json({ profile: null });

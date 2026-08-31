@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { signedAssetUrl } from "@/lib/creative-production/pipeline";
@@ -15,6 +16,8 @@ export async function GET(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
 
   // Brand isolation: only the CURRENT brand's assets (not every brand this user can touch). No active brand
   // means no creative to show.

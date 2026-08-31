@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { saveShopifyConnection } from "@/lib/creative-production/shopify/store";
 import { shopifyGraphQL } from "@/lib/creative-production/shopify/client";
@@ -17,6 +18,8 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
 
   let body: { shopDomain?: string; accessToken?: string; urlOnly?: boolean } = {};
   try {

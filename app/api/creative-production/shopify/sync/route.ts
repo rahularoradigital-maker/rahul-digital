@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { syncShopifyProducts } from "@/lib/creative-production/shopify/sync";
 import { syncPublicShopifyProducts } from "@/lib/creative-production/shopify/public-sync";
@@ -14,6 +15,8 @@ export async function POST() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
 
   // Token connection -> Admin API sync. Otherwise fall back to the public-feed re-read.
   const token = await readShopifyConnection(user.id);

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { listAllAccessibleAdAccounts } from "@/lib/meta-source";
@@ -12,6 +13,8 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ connected: false, accounts: [] }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
 
   const session = await getUserMetaSession(user.id);
   if (!session) return NextResponse.json({ connected: false, accounts: [] });

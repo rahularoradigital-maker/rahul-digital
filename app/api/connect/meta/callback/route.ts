@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { storeToken } from "@/lib/oauth-store";
@@ -35,6 +36,8 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(new URL("/login", request.url));
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
 
   // Exchange the code for an access token.
   const tokenUrl = new URL("https://graph.facebook.com/v21.0/oauth/access_token");

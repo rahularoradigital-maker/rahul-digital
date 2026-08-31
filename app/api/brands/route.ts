@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { resolveUserContext } from "@/lib/tenancy/resolve";
 
@@ -11,6 +12,8 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
 
   const ctx = await resolveUserContext(user.id);
   const activeBrandId = ctx.accounts.find((a) => a.isActive)?.brandId ?? null;

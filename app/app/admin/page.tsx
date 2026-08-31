@@ -3,6 +3,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { loadAdminDashboard } from "@/lib/admin/dashboard";
 import { keyStatus } from "@/lib/keys";
 import { AdminControls } from "@/components/app/admin/admin-controls";
+import { AccessAdmin } from "@/components/app/admin/access-admin";
 
 // Internal admin cost/ops console. Not in the nav; reachable at /app/admin. Gated by the ADMIN_EMAILS
 // allowlist (defaults to the founder). Shows per-user + per-provider + per-task AI spend and job health.
@@ -94,6 +95,10 @@ export default async function AdminPage() {
       </div>
 
       <AdminControls keys={keys} />
+
+      <Card title="Beta access" sub="Private beta: approve who can use the product. New signups start on the waitlist.">
+        <AccessAdmin />
+      </Card>
 
       <Card title="Connectors & integrations" sub="What's wired and working right now.">
         <div className="flex flex-wrap gap-2">

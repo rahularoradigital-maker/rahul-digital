@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { listNotifications, unreadCount, markRead } from "@/lib/notifications/store";
 
@@ -12,6 +13,8 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
 
   const [items, unread] = await Promise.all([listNotifications(user.id, 30), unreadCount(user.id)]);
   return NextResponse.json({ items, unread });

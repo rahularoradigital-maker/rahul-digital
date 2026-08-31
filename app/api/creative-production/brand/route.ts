@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
 import { deriveBrandDNA, saveBrandOverride, loadEffectiveBrandDNA } from "@/lib/creative-production/intelligence/brand-dna";
@@ -20,6 +21,8 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const _denied = await guardProductApi();
+  if (_denied) return _denied;
   const scopeKey = await scope(user.id);
   if (!scopeKey) return NextResponse.json({ error: "No connected store." }, { status: 400 });
   return NextResponse.json({ brand: await loadEffectiveBrandDNA(user.id, scopeKey) });
