@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import { latestBrief, pendingDrafts } from "@/lib/growth/store";
+import { listDraftArticles } from "@/lib/growth/articles";
 import { ReviewQueue } from "@/components/app/growth/ReviewQueue";
+import { ArticleDrafts } from "@/components/app/growth/ArticleDrafts";
 
 // Scout - the growth agent's owner console. Not in the nav; reachable at /app/growth. Gated by ADMIN_EMAILS.
 // Shows the latest daily brief: what Scout discovered, scored, and decided - with conversation LINKS and any
@@ -30,7 +32,7 @@ export default async function GrowthPage() {
     );
   }
 
-  const [brief, queue] = await Promise.all([latestBrief(), pendingDrafts()]);
+  const [brief, queue, articleDrafts] = await Promise.all([latestBrief(), pendingDrafts(), listDraftArticles()]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -46,6 +48,12 @@ export default async function GrowthPage() {
         <h2 className="text-[15px] font-semibold">Review queue{queue.length > 0 ? ` (${queue.length})` : ""}</h2>
         <p className="mt-1 mb-3 text-[13px] text-[var(--ink-muted)]">Scout drafted these for you. Read, then &quot;Copy reply &amp; open thread&quot; to post it yourself, or Dismiss. Scout never posts.</p>
         <ReviewQueue initial={queue} />
+      </div>
+
+      <div className="rounded-[12px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+        <h2 className="text-[15px] font-semibold">Article drafts{articleDrafts.length > 0 ? ` (${articleDrafts.length})` : ""}</h2>
+        <p className="mt-1 mb-3 text-[13px] text-[var(--ink-muted)]">Scout wrote these from recurring topics. Preview, then Publish to make it live at <a href="/blog" className="text-[var(--accent)] underline">/blog</a> — or Dismiss. Nothing is public until you publish.</p>
+        <ArticleDrafts initial={articleDrafts.map((a) => ({ id: a.id, slug: a.slug, title: a.title, dek: a.dek, body_md: a.body_md, topic: a.topic }))} />
       </div>
 
       {!brief ? (

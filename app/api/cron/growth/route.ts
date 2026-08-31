@@ -4,6 +4,8 @@ import { discoverHN, discoverReddit, discoverStackExchange, discoverGoogleNews }
 import { generateBrief } from "@/lib/growth/brief";
 import { draftTop } from "@/lib/growth/draft";
 import { saveBrief, saveDrafts } from "@/lib/growth/store";
+import { generateArticle, saveDraftArticle, topicHasArticle } from "@/lib/growth/articles";
+import { matchIntent } from "@/lib/growth/engine";
 import { INTENT_SIGNALS } from "@/lib/growth/knowledge";
 
 // The 24/7 no-touch growth run (Vercel Cron). Discovers high-intent conversations from FREE sources, scores +
@@ -37,12 +39,29 @@ export async function GET(request: NextRequest) {
   await saveBrief(brief);
   await saveDrafts(brief.generatedAt.slice(0, 10), brief.topOpportunities); // queue them for your review
 
+  // Content engine: write ONE draft article for the strongest fresh topic this run (never public until you
+  // one-tap publish). Best-effort; skips a topic already covered so it never re-writes the same piece.
+  let articleTopic: string | null = null;
+  try {
+    const topic = brief.demandSignals[0]?.topic ?? matchIntent(brief.topOpportunities[0]?.conversation.content ?? "").topic;
+    if (topic && !(await topicHasArticle(topic))) {
+      const art = await generateArticle(topic);
+      if (art) {
+        await saveDraftArticle({ ...art, topic });
+        articleTopic = topic;
+      }
+    }
+  } catch {
+    /* content engine is best-effort - a failure never breaks the discovery run */
+  }
+
   return NextResponse.json({
     ok: true,
     day: brief.generatedAt.slice(0, 10),
     discovered: brief.discovered,
     draftable: brief.topOpportunities.length,
     demandSignals: brief.demandSignals.length,
+    articleDrafted: articleTopic,
     note: "drafts only; nothing published",
   });
 }
