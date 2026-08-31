@@ -9,6 +9,7 @@ import { briefHash } from "./generation/brief-hash.ts";
 import { compose } from "./composition/compose.ts";
 import { runQA } from "./qa/qa-engine.ts";
 import type { AdFormat, BrandDNA, CreativeAssetRecord, CreativeConcept, GenerationBrief, ProductDNA } from "@/lib/creative-production/types";
+import { deriveGenerationState } from "@/lib/creative-production/generation-state";
 
 // Creative Production - ORCHESTRATION (Phases 6-10). Turns one approved concept into finished, QA'd,
 // stored assets across the requested formats. The heavy provider call and the deterministic compositor
@@ -89,6 +90,10 @@ export async function generateAssetsForConcept(
     //     actual Shopify pixels - the model never redraws the SKU. Keyless-graceful (uncut real image on no key).
     const cutout = brief.productMode === "composite" && brief.requiredProductFidelity ? await productCutout(product.images[0]) : null;
 
+    // TRUTHFUL STATE: never let a compositor-only fallback claim to be an AI ad. Drives QA, the stored record,
+    // and the UI badge.
+    const generationState = deriveGenerationState(!!visualDataUri, gen.fallbackUsed);
+
     // 2) DETERMINISTIC COMPOSE (exact approved text + real product over the visual).
     const composed = compose(brief, approved, visualDataUri, cutout);
 
@@ -97,7 +102,10 @@ export async function generateAssetsForConcept(
       textPixelsPresent: true,
       // Fidelity is at risk when a composite format could not obtain the real product, or (non-composite) the
       // model produced no visual to carry the reference.
-      productFidelityRisk: brief.productMode === "composite" ? brief.requiredProductFidelity && !cutout : !gen.ok && brief.requiredProductFidelity,
+      // Fidelity is at risk when the real product could not be placed cleanly: no cutout at all, OR only an
+      // UNCUT photo (which the compositor frames as a white card - the pasted-tile look). Either way -> not
+      // silently READY. The real fix (in-scene generation from the Shopify reference) is the next architecture step.
+      productFidelityRisk: brief.productMode === "composite" ? brief.requiredProductFidelity && (!cutout || !cutout.removed) : !gen.ok && brief.requiredProductFidelity,
       // STRICT Nano Banana: a missing AI visual (flat fallback) fails QA, so an amateur flat ad is never READY.
       visualMissing: !visualDataUri,
       fileBytes: Buffer.byteLength(composed.svg, "utf8"),
@@ -129,14 +137,14 @@ export async function generateAssetsForConcept(
     };
 
     await admin.from("cp_generations").upsert(
-      { id: generationId, user_id: userId, brand_id: brandId, concept_id: concept.id, brief_hash: hash, provider: gen.provider, model: gen.model, prompt_version: PROMPT_VERSION, cost_usd: gen.costUsd, status: visualDataUri ? "done" : "failed", created_at: now },
+      { id: generationId, user_id: userId, brand_id: brandId, concept_id: concept.id, brief_hash: hash, provider: gen.provider, model: gen.model, requested_model: gen.requestedModel ?? gen.model, fallback_used: gen.fallbackUsed ?? false, fallback_reason: gen.fallbackReason ?? null, generation_state: generationState, prompt_version: PROMPT_VERSION, cost_usd: gen.costUsd, status: visualDataUri ? "done" : "failed", created_at: now },
       { onConflict: "user_id,id" },
     ).then(undefined, () => {});
 
     await admin.from("cp_assets").upsert(
       {
         creative_id: creativeId, user_id: userId, brand_id: brandId, version: 1, parent_creative_id: null, concept_id: concept.id, product_id: product.productId,
-        generation_id: generationId, format_id: format.id, provider: gen.provider, model: gen.model, prompt_version: PROMPT_VERSION,
+        generation_id: generationId, format_id: format.id, provider: gen.provider, model: gen.model, requested_model: gen.requestedModel ?? gen.model, fallback_used: gen.fallbackUsed ?? false, generation_state: generationState, prompt_version: PROMPT_VERSION,
         brand_dna_version: brand.version, product_dna_version: 1, storage_path: storagePath, qa, approval: "draft", cost_usd: gen.costUsd, edits: null, created_at: now,
       },
       { onConflict: "user_id,creative_id,version" },

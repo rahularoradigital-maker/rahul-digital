@@ -139,11 +139,21 @@ export type GenerationResult = {
   imageBase64?: string;
   mimeType?: string;
   provider: string;
-  model: string;
+  model: string; // the model that ACTUALLY produced the image (may differ from requestedModel on a fallback)
+  requestedModel?: string; // the model we asked for first
+  fallbackUsed?: boolean; // true when the primary model failed and a fallback model produced the image
+  fallbackReason?: string; // why the primary failed (e.g. "HTTP 404")
   costUsd: number;
   promptVersion: string;
   error?: string;
 };
+
+// The truthful state of a produced asset - so the UI never calls a compositor-only fallback an AI ad.
+//   AI_GENERATED               - the requested image model produced the visual
+//   AI_GENERATED_WITH_FALLBACK - a fallback image model produced it (primary failed)
+//   COMPOSITOR_ONLY            - NO image model succeeded; deterministic flat compositor was used
+//   FAILED                     - could not produce a usable asset at all
+export type GenerationState = "AI_GENERATED" | "AI_GENERATED_WITH_FALLBACK" | "COMPOSITOR_ONLY" | "FAILED";
 export interface ImageProvider {
   readonly name: string;
   getCapabilities(): ProviderCapabilities;

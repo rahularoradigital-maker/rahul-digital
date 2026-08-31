@@ -13,7 +13,7 @@ import { FormatCoveragePanel } from "./format-coverage-panel";
 type Product = { productId: string; title: string; description: string; price: number | null; compareAtPrice: number | null; image: string | null; status: string | null; productType: string | null };
 type Concept = { id: string; formatId: string; headline: string; supportingCopy: string; cta: string; offer: string | null; angle: string; whyThisConcept: string; whyNow: string; score: number; awarenessStage: string; visualDirection: string };
 type QA = { status: "READY" | "REVIEW" | "FAILED"; checks: { name: string; pass: boolean; severity: string; detail: string }[] };
-type Asset = { creativeId: string; conceptId?: string; productId?: string; formatId: string; provider: string; qa: QA; approval: string; costUsd: number; url: string | null };
+type Asset = { creativeId: string; conceptId?: string; productId?: string; formatId: string; provider: string; model?: string; generationState?: string; qa: QA; approval: string; costUsd: number; url: string | null };
 type Brand = { palette: { primary: string; secondary: string; background: string; text: string }; fonts: { heading: string; body: string }; imageStyle: string; designStyle: string; ctaStyle: string; tone: string; density: string; source: string; version: number };
 type Step = "products" | "concepts" | "review";
 
@@ -303,6 +303,19 @@ export function CreativeStudio() {
   );
 }
 
+// The TRUTHFUL generation state - so a compositor-only fallback is never shown as a premium AI ad.
+const MODEL_NAME: Record<string, string> = { "gemini-3-pro-image": "Nano Banana Pro", "gemini-3.1-flash-image": "Nano Banana 2", "gemini-2.5-flash-image": "Nano Banana" };
+function genStateLabel(state: string | undefined, model: string | undefined): string {
+  const m = model ? MODEL_NAME[model] ?? model : "AI";
+  if (state === "AI_GENERATED") return m;
+  if (state === "AI_GENERATED_WITH_FALLBACK") return `${m} · fallback`;
+  if (state === "COMPOSITOR_ONLY") return "Compositor only · no AI image";
+  if (state === "FAILED") return "Generation failed";
+  return model ? m : "";
+}
+function genStateColor(state: string | undefined): string {
+  return state === "COMPOSITOR_ONLY" || state === "FAILED" ? "text-red-500" : state === "AI_GENERATED_WITH_FALLBACK" ? "text-amber-500" : "text-[var(--ink-muted)]";
+}
 function qaColor(status: string): string {
   return status === "READY" ? "text-emerald-500" : status === "REVIEW" ? "text-amber-500" : "text-red-500";
 }
@@ -316,6 +329,7 @@ function AssetCard({ asset, busy, label, onApprove, onReject }: { asset: Asset; 
       {label ? <p className="mt-1 truncate text-[11px] font-medium">{label}</p> : null}
       <p className="mt-1 truncate text-[11px] text-[var(--ink-muted)]">{asset.formatId}</p>
       <p className={`text-[11px] font-medium ${qaColor(asset.qa?.status ?? "")}`}>QA {asset.qa?.status ?? "?"}{asset.provider === "stub" ? " · placeholder" : ""}</p>
+      <p className={`truncate text-[10px] ${genStateColor(asset.generationState)}`} title={asset.model ?? ""}>{genStateLabel(asset.generationState, asset.model)}</p>
       <div className="mt-1.5 flex gap-1">
         <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "approved" ? "bg-emerald-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onApprove} title="Approve">✓</button>
         <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "rejected" ? "bg-red-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onReject} title="Reject">✕</button>

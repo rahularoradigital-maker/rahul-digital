@@ -32,6 +32,8 @@ export async function GET(req: Request) {
       productId: r.product_id as string,
       formatId: r.format_id as string,
       provider: r.provider as string,
+      model: (r.model as string) ?? undefined,
+      generationState: (r.generation_state as string) ?? undefined,
       qa: r.qa,
       approval: r.approval as string,
       costUsd: Number(r.cost_usd ?? 0),

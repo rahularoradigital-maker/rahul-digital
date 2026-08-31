@@ -161,6 +161,17 @@ async function callModel(model: string, brief: GenerationBrief, extraImageBase64
   }
 }
 
+// Try the requested model; on a HARD failure, try the fallback - and RECORD which one actually ran, so the
+// asset never claims the premium model when a fallback produced it. All three generation paths use this, so
+// edit/variant get the same safety net + transparency as generateCreative.
+async function generateWithFallback(brief: GenerationBrief, extraImage?: { mimeType: string; data: string }): Promise<GenerationResult> {
+  const { model, fallback } = env();
+  const first = await callModel(model, brief, extraImage);
+  if (first.ok || model === fallback) return { ...first, requestedModel: model, fallbackUsed: false };
+  const second = await callModel(fallback, brief, extraImage);
+  return { ...second, requestedModel: model, fallbackUsed: true, fallbackReason: first.error ?? "primary model failed" };
+}
+
 export const googleImageProvider: ImageProvider = {
   name: "google",
   getCapabilities(): ProviderCapabilities {
@@ -170,20 +181,13 @@ export const googleImageProvider: ImageProvider = {
     return estimateCost(briefs, "google", env().model);
   },
   async generateCreative(brief: GenerationBrief): Promise<GenerationResult> {
-    const { model, fallback } = env();
-    const first = await callModel(model, brief);
-    if (first.ok || model === fallback) return first;
-    // Fallback model on a hard failure (e.g. a preview id that 404s) - the ⚠️ id-verification safety net.
-    const second = await callModel(fallback, brief);
-    return second.ok ? second : first;
+    return generateWithFallback(brief);
   },
   async editCreative(brief, baseImageBase64): Promise<GenerationResult> {
-    const { model } = env();
-    return callModel(model, brief, { mimeType: "image/png", data: baseImageBase64 });
+    return generateWithFallback(brief, { mimeType: "image/png", data: baseImageBase64 });
   },
   async generateVariant(brief, parentImageBase64): Promise<GenerationResult> {
-    const { model } = env();
-    return callModel(model, { ...brief, negativeInstructions: [...brief.negativeInstructions, "make it visibly different from the reference composition"] }, { mimeType: "image/png", data: parentImageBase64 });
+    return generateWithFallback({ ...brief, negativeInstructions: [...brief.negativeInstructions, "make it visibly different from the reference composition"] }, { mimeType: "image/png", data: parentImageBase64 });
   },
   async getGenerationStatus(): Promise<"done"> {
     return "done"; // generateContent is synchronous; no async job to poll
