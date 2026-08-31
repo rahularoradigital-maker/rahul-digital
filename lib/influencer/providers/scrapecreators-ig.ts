@@ -116,9 +116,20 @@ function mapProfile(identity: CreatorIdentity, body: Record<string, unknown>): N
 /** Build the ScrapeCreators Instagram provider. `apiKey` is the funded SCRAPECREATORS_API_KEY. */
 export function scrapeCreatorsIgProvider(apiKey: string): CreatorDataProvider {
   const capabilities = new Set<ProviderCapability>(["discover", "profile"]);
+  // Captions of the relevant-hashtag posts each creator authored, keyed by canonicalKey. Gathered free during
+  // discovery and fed to the scorers so content/brand fit reflect a creator's ACTUAL posts, not just their bio.
+  const captions = new Map<string, string[]>();
+  const addCaption = (id: string, caption: string | null) => {
+    if (!caption) return;
+    const k = `instagram:${id}`;
+    const arr = captions.get(k) ?? [];
+    if (arr.length < 5) arr.push(caption.slice(0, 300));
+    captions.set(k, arr);
+  };
   return {
     name: "scrapecreators-instagram",
     capabilities,
+    postContext: () => captions,
 
     async discover(spec: CreatorSearchSpec, limit: number): Promise<CreatorIdentity[]> {
       const floor = spec.minFollowers ?? DEFAULT_DISCOVER_FLOOR;
@@ -147,6 +158,7 @@ export function scrapeCreatorsIgProvider(apiKey: string): CreatorDataProvider {
             if (!id || !handle) continue;
             const foll = num(o.follower_count);
             if (foll != null && foll < floor) continue; // skip tiny shops/resellers
+            addCaption(id, str(p.caption)); // capture what they actually posted under this brand hashtag
             const prev = owners.get(id);
             if (prev) prev.hits += 1;
             else owners.set(id, { identity: { platform: "instagram", platformUserId: id, handle, profileUrl: igUrl(handle) }, followers: foll ?? 0, hits: 1 });

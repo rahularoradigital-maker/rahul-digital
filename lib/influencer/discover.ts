@@ -75,7 +75,8 @@ export async function discoverAndRank(
     .filter((c): c is NormalizedCreator => c !== null)
     .filter((c) => c.followers.value == null || c.followers.value >= floor);
 
-  // rankCreators dedupes (same platform user id) and orders purely by the quality formula.
-  const ranked = rankCreators(creators, target);
+  // rankCreators dedupes (same platform user id) and orders purely by the quality formula. Feed the post
+  // captions gathered during discovery so content/brand fit judge real posts, not just the bio.
+  const ranked = rankCreators(creators, target, { recentPostText: provider.postContext?.() });
   return { ranked, stats: { queries, candidates: identities.length, enriched: creators.length, failed } };
 }

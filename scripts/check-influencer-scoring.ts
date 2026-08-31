@@ -80,4 +80,13 @@ assert.ok(/implausibly high/i.test(engagementScore(creator({ engagementRate: evi
 // --- No double-count: audience is a top-level quality component, so brand-fit must NOT also carry audience. ---
 assert.ok(!brandFit(goodAud, target).components.some((c) => /audience/i.test(c.key)), "brand-fit no longer double-counts audience");
 
+// --- Recent posts drive relevance: an off-topic BIO but on-brand POSTS must score on the posts, not read 0. ---
+const offBio = creator({ bio: evidence("just vibes ✨", "PUBLIC_WEB", "medium", NOW) });
+const onTopicPosts = ["festive kurta styling saree ethnic ootd reel", "new ethnic wear haul with kurta sets"];
+const withPosts = scoreCreator(offBio, target, undefined, onTopicPosts);
+const bioOnly = scoreCreator(offBio, target);
+assert.ok(withPosts.brandFit.score > bioOnly.brandFit.score, "on-brand recent posts raise brand fit above a bio-only read");
+assert.ok(withPosts.contentFit.score > bioOnly.contentFit.score, "on-brand recent posts raise content fit");
+assert.ok(withPosts.quality.score > bioOnly.quality.score, "overall quality reflects real post relevance, not just the bio");
+
 console.log("PASS: influencer scoring (brand-fit is relevance not reach, honest confidence, no fabrication)");

@@ -26,7 +26,7 @@ export type CreatorScorecard = {
 
 /** Score one creator against a brand target. Returns the composite + every sub-score for full transparency. */
 export function scoreCreator(creator: NormalizedCreator, target: BrandTarget, weights: QualityWeights = DEFAULT_QUALITY_WEIGHTS, recentPostText?: string[]): CreatorScorecard {
-  const bf = brandFit(creator, target);
+  const bf = brandFit(creator, target, recentPostText);
   const af = audienceFit(creator, target);
   const cf = contentFit(creator, target, recentPostText);
   const eng = engagementScore(creator);

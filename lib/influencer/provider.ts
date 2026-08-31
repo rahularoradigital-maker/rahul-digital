@@ -18,6 +18,10 @@ export interface CreatorDataProvider {
   profile(identity: CreatorIdentity): Promise<NormalizedCreator>;
   /** A sample of public engagers (commenters) for the Path A audience estimate. [] when unsupported/empty. */
   engagers(identity: CreatorIdentity, sample: number): Promise<EngagerSignal[]>;
+  /** Optional: recent post captions gathered as a side effect of discovery (keyed by canonicalKey), so the
+   * scorers can judge content/brand relevance from a creator's ACTUAL posts, not just their bio. A creator
+   * found under a brand hashtag is relevant even when the bio never repeats the category words. */
+  postContext?(): Map<string, string[]>;
 }
 
 /** Does this provider support a capability? (Keeps routing in one place.) */
