@@ -61,8 +61,12 @@ export function formatSuitability(
     /review|testimonial|rating/.test(hay) || slots.includes("rating") || slots.includes("quote");
   const isComparisonFormat = /compar|versus|(^|[^a-z])vs([^a-z]|$)|before[- ]?after/.test(hay);
 
-  // Hard requirement: a review format with no reviews can't run -> 0.
+  // HARD requirements: a format that must SHOW proof cannot run without that proof, or it fabricates - which
+  // is exactly how a soundbar ended up with fake till-receipts. A review/rating format needs real reviews; a
+  // comparison/versus/before-after format needs genuine comparison evidence. Missing -> 0, so the engine
+  // never auto-selects a fake-proof ad. (Spec: do not fabricate competitive or product proof.)
   if (isReviewFormat && !hasReviews) return 0;
+  if (isComparisonFormat && !hasComparison) return 0;
 
   const requirementMet = (isReviewFormat && hasReviews) || (isComparisonFormat && hasComparison);
   return 0.6 + (requirementMet ? 0.4 : 0);

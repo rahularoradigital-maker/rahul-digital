@@ -69,10 +69,10 @@ export const AD_FORMAT_LIBRARY: AdFormatTemplate[] = [
     productMode: "composite", sceneText: "render", bestFor: "Brand-building moments where an emotional, art-directed line matters more than an offer." },
 
   { id: "us-versus-them", name: "Us versus them", awarenessStage: "solution", category: "comparison",
-    structure: "Two receipts side by side: same outcome, very different price.", textSlots: ["headline", "offer", "cta"],
-    visualPattern: "Two till receipts hanging side by side, an expensive competitor vs the affordable brand, tagline above.",
-    renderRecipe: "Two paper till-receipts printed from registers, hanging side by side against a clean pastel background. Left receipt shows a high price, right receipt shows a much lower price, each with a barcode. An elegant tagline above frames the contrast ('Same [benefit]. Different receipt.'). Soft studio light.",
-    productMode: "composite", sceneText: "render", bestFor: "Value positioning against a pricier incumbent." },
+    structure: "A clean split comparison that makes the brand the obvious better-value choice - the PRODUCT is the hero, never a fake receipt.", textSlots: ["headline", "offer", "cta"],
+    visualPattern: "Premium split-frame: the ordinary/expensive way on one side (muted, secondary) vs the brand product presented beautifully on the other; a short value line above, price/CTA space below.",
+    renderRecipe: "A premium editorial split-frame advertising visual. LEFT third: a muted, understated, desaturated hint of the ordinary or overpriced alternative, kept secondary. RIGHT two-thirds: the hero product presented beautifully in warm aspirational light as the clear better choice, one strong focal point, cinematic depth, real materials and texture. Generous clean negative space above for a short headline and below for a price and CTA added later. NO receipts, NO barcodes, NO fake interfaces, NO invented competitor prices.",
+    productMode: "composite", sceneText: "space", bestFor: "Value positioning against a pricier incumbent." },
 
   { id: "ai-podcast", name: "AI podcast", awarenessStage: "solution", category: "ugc",
     structure: "A talking-head podcast still with a burned-in caption word.", textSlots: ["headline", "cta"],

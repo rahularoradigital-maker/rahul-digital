@@ -10,19 +10,20 @@ import type { ImageProvider, GenerationBrief, GenerationResult, ProviderCapabili
 // renders the VISUAL only - the deterministic composition layer draws precise text (Google's own docs warn
 // the model misspells), so the prompt explicitly forbids text. Key is server-side only (x-goog-api-key).
 //
-// Model id: gemini-2.5-flash-image is the GA "Nano Banana" image model. The previous default
-// (gemini-3.1-flash-image-preview) does not exist, so every generateContent 404'd and the pipeline fell back
-// to the flat brand-colour compositor - the "these don't look AI-generated" bug. GA id is the safe default;
-// override with IMAGE_MODEL if a newer id ships. probeImageProvider() below is the live check.
-
+// Model ids VERIFIED against Google's docs (ai.google.dev/gemini-api/docs/models, Aug 2026):
+//   gemini-3-pro-image     = Nano Banana Pro   (RICH: brand consistency + precision creative control) - default
+//   gemini-3.1-flash-image = Nano Banana 2      (4K generalist, reliable text) - fallback
+//   gemini-2.5-flash-image = Nano Banana (legacy)
+// The old default `gemini-3.1-flash-image-preview` had a wrong `-preview` suffix -> 404 -> flat compositor
+// fallback (the "not AI-generated" bug). Override with IMAGE_MODEL / IMAGE_FALLBACK_MODEL if newer ids ship.
 const GEN_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-const IMAGE_TIMEOUT_MS = 60_000;
+const IMAGE_TIMEOUT_MS = 90_000; // Pro image is slower/heavier than flash; give it room before timing out
 
 function env() {
   return {
     apiKey: process.env.GEMINI_API_KEY ?? "",
-    model: process.env.IMAGE_MODEL ?? "gemini-2.5-flash-image",
-    fallback: process.env.IMAGE_FALLBACK_MODEL ?? "gemini-2.5-flash-image-preview",
+    model: process.env.IMAGE_MODEL ?? "gemini-3-pro-image",
+    fallback: process.env.IMAGE_FALLBACK_MODEL ?? "gemini-3.1-flash-image",
   };
 }
 
