@@ -8,6 +8,7 @@ import { audienceFit } from "../lib/influencer/scoring/audience-fit.ts";
 import { brandFit } from "../lib/influencer/scoring/brand-fit.ts";
 import { scoreCreator } from "../lib/influencer/scoring/quality.ts";
 import { risk } from "../lib/influencer/scoring/risk.ts";
+import { engagementScore } from "../lib/influencer/scoring/engagement.ts";
 
 const NOW = "2026-08-29";
 function creator(over: Partial<NormalizedCreator> = {}, audience?: Partial<AudienceEstimate>): NormalizedCreator {
@@ -66,5 +67,17 @@ const card = scoreCreator(goodAud, target);
 assert.ok(card.quality.components.length === 5, "quality decomposes into 5 sub-scores");
 assert.ok(card.quality.score >= 0 && card.quality.score <= 100);
 assert.ok(["low", "medium"].includes(card.quality.confidence), "composite confidence tracks the weakest usable input, capped by the proxy");
+
+// --- Engagement QUALITY: implausibly-high (bought-looking) engagement must NOT out-score a healthy rate. ---
+const eHealthy = engagementScore(creator({ engagementRate: evidence(0.06, "CALCULATED", "medium", NOW) })).score;
+const eNano = engagementScore(creator({ engagementRate: evidence(0.12, "CALCULATED", "medium", NOW) })).score;
+const eBought = engagementScore(creator({ engagementRate: evidence(0.40, "CALCULATED", "medium", NOW) })).score;
+assert.ok(eBought < eHealthy, "40% engagement scores BELOW a healthy 6% (implausible rate penalized, not rewarded)");
+assert.ok(eNano >= 90, "a legitimately high-engagement nano (12%) is NOT punished");
+assert.ok(eHealthy >= 90, "a healthy 6% is a strong engagement score");
+assert.ok(/implausibly high/i.test(engagementScore(creator({ engagementRate: evidence(0.40, "CALCULATED", "medium", NOW) })).reason), "implausible engagement is flagged transparently");
+
+// --- No double-count: audience is a top-level quality component, so brand-fit must NOT also carry audience. ---
+assert.ok(!brandFit(goodAud, target).components.some((c) => /audience/i.test(c.key)), "brand-fit no longer double-counts audience");
 
 console.log("PASS: influencer scoring (brand-fit is relevance not reach, honest confidence, no fabrication)");
