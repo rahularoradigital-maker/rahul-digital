@@ -130,3 +130,29 @@ placeholders): **~1.5 sessions.** Shopify is the only thing that could stretch i
 - 🟨 **`/app/creative` 504'd once on a cold load** — a cold cockpit pull can exceed Vercel's function
   timeout; the background sync (once `CRON_SECRET` is set) keeps the cache warm and avoids this.
 - Brand Brain + Concepts are honest, well-designed "coming next" placeholders (need the decoder).
+
+---
+
+## 5. Session 2026-08-31 — shipped (reinforced: full `check:all` green, `next build` clean)
+
+Every item below is committed to `validation-v0-v1` (prod → adscaledigital.co) and passes the whole gate
+(~80 check scripts pass together; tsc + build green). Items 5–8 are **not yet verified on Rahul's live
+account** — that is the one open gap and Rahul's own hard rule (verify to 100% live).
+
+| # | Asked | Shipped | Status |
+|---|---|---|---|
+| 1 | 1,000 decision rules | 1,061-rule corpus (Excel + JSON) in `docs/decision-rules/` | 🟢 |
+| 2 | Triple-Labelled judgment engine | Parallel Judge agent (`lib/judgment/`, Evidence·Agreement·Confidence); live API verified | 🟢 |
+| 3 | Show the triple label on cards | `ActionList` shows Evidence ✓ · N/3 agree · Conf tier; render verified | 🟢 |
+| 4 | Enterprise control-plane / security | 5-plane audit + immutable audit log (0015), kill switches (0016), RBAC catalog, data classification, plane-boundary guard; **migrations applied + immutability verified live**; red-team fixes (SSRF on Shopify, prompt-injection in 4 AI routes, cost-DoS on /api/judgment) | 🟢 |
+| 5 | No actions on paused/ended ads | Action queue gated to `active !== false && delivering !== false` (recent-spend liveness) | 🟠 live check |
+| 6 | Ad-set/campaign strike graphs + native metrics | Delivery sparklines + native reach/frequency/budget (Meta `level=adset/campaign` pull, best-effort) | 🟠 live check |
+| 7 | Per-entity drill-in + buyer metrics + picker | Entity drill-in card grid, per-level buyer-native metric sets, metric picker (per-level, persisted, full KPI-sheet menu) | 🟠 live check |
+| 8 | "Paused campaign caused the drop" | Culprit-diagnostic (`lib/scoring/culprit.ts`): account-drop + stopped material contributor, ad-set + campaign grain, corroborated with the real logged change (`ad_changes`) | 🟠 live check |
+
+**Global liveness rule (Rahul, 2026-08-31):** the app never points to a paused/ended entity as a to-do,
+but MAY name it as the cause of a recent drop. Applied across the action queue (5), the level view's
+"not delivering" tags (6–7), and the "Why results dropped" banner (8).
+
+**New checks in the gate:** check:judgment, check:audit, check:flags, check:rbac, check:plane,
+check:classification, check:compose, check:delivering, check:culprit (+ background-agent additions).
