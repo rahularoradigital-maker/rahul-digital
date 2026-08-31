@@ -22,6 +22,9 @@ export type CreativeRecord = {
   hookType: string | null;
   emotion: string | null; // primary emotion
   subject: string | null; // product-led vs human/UGC-led
+  // Liveness (for the strategy layer): a top strategist never counts dead/fatigued creatives as "working".
+  delivering?: boolean; // spending recently (not paused/ended)
+  fatigued?: boolean; // creative is worn out (fatigue state fatiguing/fatigued)
 };
 
 export type BucketStat = { name: string; spendShare: number; count: number; avgWinner: number };

@@ -11,6 +11,7 @@ import { marginalScaling } from "@/lib/scoring/marginal";
 import { assessDataQuality } from "@/lib/scoring/data-quality";
 import { daysUntilEnd } from "@/lib/scoring/fatigue";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "@/lib/creative/diversity";
+import { buildCreativeStrategy, type CreativeStrategy } from "@/lib/creative/strategy";
 import { readSemanticsCache } from "@/lib/creative/decode";
 import type { CreativeFormat } from "@/lib/creative/fingerprint";
 import { VERDICT_WEIGHTS, type ScoreWeights } from "@/lib/rules/verdict";
@@ -315,6 +316,7 @@ export async function buildCockpitFromStore(opts: {
   // content_hash the ingestion stored). Cache hits fill hook/emotion/subject/funnel-stage; the decode itself
   // runs on the live path, so the store path reads whatever has been decoded so far. Best-effort.
   let ownDiversity: DiversityRead | null = null;
+  let ownStrategy: CreativeStrategy | null = null;
   try {
     const hashes = view.leaderboard.map((ad) => metaById.get(ad.id)?.content_hash).filter((h): h is string => Boolean(h));
     const sem = await readSemanticsCache(userId, hashes);
@@ -331,9 +333,12 @@ export async function buildCockpitFromStore(opts: {
         hookType: s?.hookType ?? null,
         emotion: s?.emotion ?? null,
         subject: s?.subject ?? null,
+        delivering: ad.delivering,
+        fatigued: ad.fatigueRead?.state === "fatiguing" || ad.fatigueRead?.state === "fatigued",
       };
     });
     ownDiversity = records.length > 0 ? assessDiversity(records) : null;
+    ownStrategy = ownDiversity ? buildCreativeStrategy(records, ownDiversity) : null;
   } catch {
     ownDiversity = null;
   }
@@ -361,6 +366,7 @@ export async function buildCockpitFromStore(opts: {
     marginal,
     dataQuality,
     ownDiversity,
+    ownStrategy,
     dailySeries,
     funnelLevels,
     syncedAt: opts.syncedAt,

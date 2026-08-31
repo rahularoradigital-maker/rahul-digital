@@ -14,6 +14,7 @@ import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fe
 import { deterministicFingerprint, excludeCatalogAds, thumbUrlOf, type CreativeAsset } from "./creative/fingerprint.ts";
 import { readSemanticsCache, decodeMissing } from "./creative/decode.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
+import { buildCreativeStrategy, type CreativeStrategy } from "./creative/strategy.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
 import { VERDICT_WEIGHTS, type ScoreWeights } from "./rules/verdict.ts";
@@ -119,7 +120,7 @@ export type LiveCockpit =
   // from Meta; stale=true means a day-old cache is being shown while a background refresh runs. Optional
   // so the deep pull (fetchLiveCockpitUncached) and non-UI callers need not set them; fetchLiveCockpit
   // attaches them at the serving boundary where the fresh/stale/cold path is known.
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; syncedAt?: string; stale?: boolean }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; ownStrategy?: CreativeStrategy | null; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; syncedAt?: string; stale?: boolean }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -358,6 +359,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // are decoded in the BACKGROUND (bounded, fire-and-forget) so the cache fills over loads without ever
     // slowing this one. Best-effort; format-only (nulls) if the creative pull or cache read fails.
     let ownDiversity: DiversityRead | null = null;
+    let ownStrategy: CreativeStrategy | null = null;
     try {
       const assets = await creativesPromise;
       const fpByAd = new Map<string, string>(); // adId -> content_hash, for the decode cache
@@ -378,9 +380,12 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
           hookType: s?.hookType ?? null,
           emotion: s?.emotion ?? null,
           subject: s?.subject ?? null,
+          delivering: ad.delivering,
+          fatigued: ad.fatigueRead?.state === "fatiguing" || ad.fatigueRead?.state === "fatigued",
         };
       });
       ownDiversity = records.length > 0 ? assessDiversity(records) : null;
+      ownStrategy = ownDiversity ? buildCreativeStrategy(records, ownDiversity) : null;
       // Fill the decode cache for un-decoded creatives in the background (never blocks this response).
       const have = new Set(sem.keys());
       const toDecode = [...fpByAd.entries()].map(([adId, contentHash]) => ({ contentHash, asset: assets.get(adId)! })).filter((x) => x.asset && !have.has(x.contentHash));
@@ -512,7 +517,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // separate from view.totals, which is the analyzed-ads subset the leaderboard breaks down.
     const scopeTotals = { spendRs: Math.round(sSpend), revenueRs: Math.round(sRev), roas: sSpend > 0 ? sRev / sSpend : null };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality, ownDiversity, dailySeries, funnelLevels };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality, ownDiversity, ownStrategy, dailySeries, funnelLevels };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }

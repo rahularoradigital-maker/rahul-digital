@@ -1,5 +1,6 @@
 import { ConnectState } from "@/components/app/connect-state";
 import { GatedSection } from "@/components/app/gated-section";
+import { CreativeStrategyCard } from "@/components/app/creative/CreativeStrategyCard";
 import type { CockpitData } from "@/lib/app/cockpit-data";
 import type { DiversityComparison } from "@/lib/creative/diversity-vs-competitors";
 
@@ -21,6 +22,9 @@ export function DiversitySection({ data, days, competitors }: { data: CockpitDat
 
   return (
     <div className="space-y-6">
+      {/* The strategist's read - winning DNA, portfolio fragility, proven white-space, and what to make next. */}
+      {data.ownStrategy && <CreativeStrategyCard s={data.ownStrategy} />}
+
       <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
         <div className="mb-1 text-base font-normal">Portfolio spread</div>
         <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
