@@ -39,7 +39,7 @@ export default async function ReconcilePage() {
         <ReconcileView report={bundle.report} accountName={bundle.accountName} since={bundle.since} until={bundle.until} />
       ) : (
         <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-[14px] text-[var(--ink-muted)]">
-          No stored ad data for the active account yet. This brand needs a sync first (only the active account is synced today).
+          This brand hasn&apos;t synced yet. It syncs automatically in the background - check back shortly and the reconciliation will appear here.
         </div>
       )}
     </div>

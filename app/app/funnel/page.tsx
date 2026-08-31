@@ -43,7 +43,7 @@ export default async function FunnelPage() {
         <FunnelReportView report={bundle.report} accountName={bundle.accountName} accountId={bundle.accountId} since={bundle.since} until={bundle.until} />
       ) : (
         <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-[14px] text-[var(--ink-muted)]">
-          No stored ad data for the active account yet. Once a sync has run, your funnel diagnosis appears here.
+          This brand hasn&apos;t synced yet. It syncs automatically in the background - check back shortly and your funnel diagnosis will appear here.
         </div>
       )}
     </div>

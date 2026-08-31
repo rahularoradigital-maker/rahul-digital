@@ -1,24 +1,19 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapMetaObjective, listAdSetOptimizationGoals, listTopSpendingAds, fetchAdInsights } from "@/lib/meta-source";
+import { mapMetaObjective, listAdSetOptimizationGoals } from "@/lib/meta-source";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { diagnoseFunnel, type FunnelAd, type FunnelReport } from "@/lib/funnel/diagnosis";
 import type { ExtendedMetricsRow } from "@/lib/metrics/funnel-metrics";
-import type { MetricsRow } from "@/lib/ad-source";
 
-// Funnel diagnosis - READ PATH. Runs the deterministic engine over the user's active account. Prefers the
-// stored ad_metrics (whole account, no cap) and falls back to a LIVE Meta pull when the store is empty (a
-// brand whose nightly sync has not run yet) - mirroring the cockpit, so the funnel works on any connected
-// brand immediately. The account is resolved via getUserMetaSession, the SAME resolver the cockpit uses, so
-// the funnel always matches the brand shown in the topbar. Objective -> internal union via mapMetaObjective;
-// ad-set optimization goal fetched live for higher-confidence staging (graceful: falls back to objective).
+// Funnel diagnosis - READ PATH. Reads the STORE (ad_metrics) only. The store is filled in the background by
+// the nightly sync (which now covers EVERY connected brand, not just the active one), so a page load never
+// blocks on a large live Meta pull - it reads the already-ingested, account-attribution-correct rows and
+// returns null when a brand has not synced yet (the page then shows a "syncing" state). This is the
+// deliberate 2021-style shape: background jobs fill the store, requests read the store. The account is
+// resolved via getUserMetaSession (same resolver the cockpit uses, so Funnel always matches the topbar
+// brand). Objective -> internal union via mapMetaObjective; ad-set optimization goal fetched for staging.
 const PAGE = 1000;
 const DEFAULT_LOOKBACK_DAYS = 30;
-const LIVE_MAX_ADS = 200; // live-pull cap (one account-level insights call); the store path has no cap
-
-// A source path returns the ads (optimizationGoal not yet set) plus each ad's ad-set id, so the caller can
-// fetch ad-set optimization goals ONCE and apply them uniformly.
-type PathResult = { ads: FunnelAd[]; adsetByAd: Map<string, string> };
 
 type Db = {
   ad_id: string; date: string; objective: string | null; adset_id: string | null; campaign_id: string | null; spend: number; impressions: number; clicks: number;
@@ -34,20 +29,13 @@ function dbToExt(r: Db): ExtendedMetricsRow {
   };
 }
 
-function metricToExt(r: MetricsRow): ExtendedMetricsRow {
-  return {
-    date: r.date, spend: r.spend, impressions: r.impressions, clicks: r.clicks, outboundClicks: r.outboundClicks ?? 0,
-    video3sViews: r.video3sViews ?? 0, videoThruplays: r.videoThruplays ?? 0, landingPageViews: r.landingPageViews ?? 0,
-    addToCarts: r.addToCarts ?? 0, initiateCheckouts: r.initiateCheckouts ?? 0, purchases: r.purchases,
-  };
-}
-
-export type FunnelReportBundle = { report: FunnelReport; accountName: string; accountId: string; since: string; until: string; lookbackDays: number; source: "store" | "live" } | null;
+export type FunnelReportBundle = { report: FunnelReport; accountName: string; accountId: string; since: string; until: string; lookbackDays: number; source: "store" } | null;
 
 type Session = NonNullable<Awaited<ReturnType<typeof getUserMetaSession>>>;
 
-// STORE path: every ad_metrics row for the account in-window, grouped by ad. Empty => store not populated.
-async function fromStore(userId: string, accountExternalId: string, since: string, until: string): Promise<PathResult> {
+// Read every ad_metrics row for the account in-window, grouped by ad. Returns { ads:[], ... } when the store
+// is empty (brand not synced yet) so the caller returns null and the page shows a "syncing" state.
+async function readStore(userId: string, accountExternalId: string, since: string, until: string): Promise<{ ads: FunnelAd[]; adsetByAd: Map<string, string> }> {
   const admin = createAdminClient();
   const rows: Db[] = [];
   for (let from = 0; ; from += PAGE) {
@@ -98,46 +86,18 @@ async function fromStore(userId: string, accountExternalId: string, since: strin
   return { ads, adsetByAd };
 }
 
-// LIVE path (store empty): top spenders + one account-level insights call.
-async function fromLive(session: Session, since: string, until: string): Promise<PathResult> {
-  const account = session.activeExternalId;
-  let top: { externalId: string; name?: string }[] = [];
-  try {
-    top = await listTopSpendingAds(account, since, session.token, undefined, LIVE_MAX_ADS, until);
-  } catch {
-    return { ads: [], adsetByAd: new Map() };
-  }
-  if (!top.length) return { ads: [], adsetByAd: new Map() };
-  const rowsByAd = await fetchAdInsights(account, top.map((a) => a.externalId), since, session.token, until);
-  const adsetByAd = new Map<string, string>();
-  const ads: FunnelAd[] = top.map((ad) => {
-    const entry = rowsByAd.get(ad.externalId);
-    if (entry?.adsetId) adsetByAd.set(ad.externalId, entry.adsetId);
-    return {
-      adId: ad.externalId,
-      name: ad.name ?? ad.externalId,
-      objective: mapMetaObjective(entry?.objective),
-      optimizationGoal: null,
-      adSetId: entry?.adsetId ?? null,
-      campaignId: entry?.campaignId ?? null,
-      rows: (entry?.rows ?? []).map(metricToExt),
-    };
-  });
-  return { ads, adsetByAd };
-}
-
 // Fetch ad-set optimization goals once and stamp each ad's optimizationGoal (higher-confidence staging).
-// Graceful: any failure -> goals stay null -> classifier falls back to the objective.
-async function applyGoals(result: PathResult, session: Session): Promise<FunnelAd[]> {
-  const adsetIds = [...new Set([...result.adsetByAd.values()])];
+// Graceful: any failure -> goals stay null -> the classifier falls back to the campaign objective.
+async function applyGoals(ads: FunnelAd[], adsetByAd: Map<string, string>, session: Session): Promise<FunnelAd[]> {
+  const adsetIds = [...new Set([...adsetByAd.values()])];
   let goalByAdset = new Map<string, string>();
   try {
     if (adsetIds.length) goalByAdset = await listAdSetOptimizationGoals(session.activeExternalId, adsetIds, session.token);
   } catch {
     goalByAdset = new Map();
   }
-  return result.ads.map((a) => {
-    const adsetId = result.adsetByAd.get(a.adId);
+  return ads.map((a) => {
+    const adsetId = adsetByAd.get(a.adId);
     return adsetId ? { ...a, optimizationGoal: goalByAdset.get(adsetId) ?? null } : a;
   });
 }
@@ -152,12 +112,9 @@ export async function loadFunnelReport(userId: string, opts: { lookbackDays?: nu
   const until = new Date().toISOString().slice(0, 10);
   const since = new Date(Date.now() - lookbackDays * 86_400_000).toISOString().slice(0, 10);
 
-  // Prefer the store (whole account, no cap); fall back to a live pull when it is empty.
-  const store = await fromStore(userId, accountExternalId, since, until);
-  const source: "store" | "live" = store.ads.length ? "store" : "live";
-  const result = store.ads.length ? store : await fromLive(session, since, until);
-  if (!result.ads.length) return null;
+  const { ads: storeAds, adsetByAd } = await readStore(userId, accountExternalId, since, until);
+  if (!storeAds.length) return null; // brand not synced yet -> page shows "syncing" state (no request-path live pull)
 
-  const ads = await applyGoals(result, session);
-  return { report: diagnoseFunnel(ads, {}), accountName, accountId: accountExternalId, since, until, lookbackDays, source };
+  const ads = await applyGoals(storeAds, adsetByAd, session);
+  return { report: diagnoseFunnel(ads, {}), accountName, accountId: accountExternalId, since, until, lookbackDays, source: "store" };
 }
