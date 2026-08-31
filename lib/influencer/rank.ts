@@ -78,11 +78,15 @@ function passesSpec(c: NormalizedCreator, spec: CreatorSearchSpec): boolean {
   return true;
 }
 
-/** The one-line "why" = the highest-scoring weighted component of the composite. */
+/** The one-line "why this creator" = the strongest FIT reason. Safety is excluded: it is inverted risk, and
+ * its reason is a caveat ("fake-follower analysis needs a paid provider"), never a reason to pick someone -
+ * so a low-scoring creator whose only high sub-score is safety must not headline with it. Falls back to the
+ * strongest of everything (incl. safety) only if no fit/engagement component carries weight. */
 function topReasonOf(card: CreatorScorecard): string {
-  const best = card.quality.components
-    .filter((x) => x.weight > 0)
-    .reduce((a, b) => (b.score * b.weight > a.score * a.weight ? b : a));
+  const weighted = card.quality.components.filter((x) => x.weight > 0);
+  const fit = weighted.filter((x) => x.key !== "safety");
+  const pool = fit.length ? fit : weighted;
+  const best = pool.reduce((a, b) => (b.score * b.weight > a.score * a.weight ? b : a));
   return best.reason;
 }
 

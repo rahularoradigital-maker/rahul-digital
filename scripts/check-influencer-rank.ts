@@ -72,4 +72,11 @@ const noFollowers = creator("nofoll", { followers: unknown() });
 const gated2 = rankCreators([noFollowers], target, { spec });
 assert.equal(gated2.length, 1, "unknown followers is not treated as failing the follower floor");
 
+// --- "Why this creator" never headlines with the safety caveat, even when safety is the top weighted score. ---
+// A weak-fit creator with no risk: safety=100 is its highest weighted component, but the headline must be a
+// FIT reason, not "inverse of risk / fake-follower analysis needs a paid provider".
+const weakFit = creator("weak", { bio: evidence("crypto stocks trading", "PUBLIC_WEB", "medium", NOW), engagementRate: evidence(0.03, "CALCULATED", "medium", NOW) });
+const wf = rankCreators([weakFit], target)[0];
+assert.ok(!/inverse of risk|fake-follower/i.test(wf.topReason), "the 'why' is a fit reason, never the safety caveat");
+
 console.log("PASS: influencer ranking (quality over reach, deterministic, dedup, hard gates, missing != reject)");
