@@ -250,6 +250,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
         campaignIds: campaignId ? campaignId.split(",").filter(Boolean) : undefined,
         scopePromise: storeScopePromise,
         nativePromise,
+        token, // lets the store path refresh CURRENT status for the top spenders so paused/ended ads never get an action
       });
       if (fromStore) {
         perfMark("from-store (complete-coverage)", tp);

@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapMetaObjective, type ScopeInsights } from "@/lib/meta-source";
-import type { MetricsRow } from "@/lib/ad-source";
+import { mapMetaObjective, fetchAdMeta, type ScopeInsights } from "@/lib/meta-source";
+import type { MetricsRow, TokenSet } from "@/lib/ad-source";
 import { toCockpitInputs, type RealAd } from "@/lib/scoring";
 import { analyzeAccount } from "@/lib/cockpit/analyze";
 import { windowFunnel, type ExtendedMetricsRow } from "@/lib/metrics/funnel-metrics";
@@ -126,6 +126,10 @@ export async function buildCockpitFromStore(opts: {
   // Level-native metrics (reach/frequency/budget) the caller fetched live (the store has no token). Best-effort;
   // absent/empty -> the level cards show "n/a" as before. This is what makes the PRIMARY (store) path show them.
   nativePromise?: Promise<NativeByLevel>;
+  // The user's Meta token. When present, the store path refreshes the CURRENT effective_status for the top
+  // spenders (the ads that surface as actions) so a recently-paused/ended ad - whose stored status is only as
+  // fresh as the last sync - never gets an action nudge. Best-effort; absent/failure -> stored status is used.
+  token?: TokenSet;
 }): Promise<LiveCockpit | null> {
   const { userId, accountExternalId, accountName, since, until, catalog } = opts;
   const weights = opts.weights ?? VERDICT_WEIGHTS;
@@ -222,6 +226,28 @@ export async function buildCockpitFromStore(opts: {
   // (metrics for 1000 ads, metadata for 200) would otherwise render nameless ads and mis-read catalog
   // status, which is worse than the clean live pull. Until the sync fully covers the window, fall back.
   for (const adId of rowsByAd.keys()) if (!metaById.has(adId)) return null;
+
+  // LIVENESS FIX: the store's effective_status is only as fresh as the last ad_meta sync (which can be many
+  // hours stale on the daily cron), so a recently-paused/ended ad can still read ACTIVE and wrongly get an
+  // action. Refresh the CURRENT status for the top spenders (the ads that actually surface as actions) via ONE
+  // bounded Meta call and override `active`. Best-effort + bounded: any failure or no token leaves the stored
+  // status (previous behavior); only the top-N by window spend are refreshed, so it is a light status-only call.
+  if (opts.token) {
+    try {
+      const STATUS_REFRESH_N = 60;
+      const spendOf = (a: RealAd) => a.rows.reduce((s, r) => s + r.spend, 0);
+      const topIds = [...realAds].sort((a, b) => spendOf(b) - spendOf(a)).slice(0, STATUS_REFRESH_N).map((a) => a.externalId);
+      const fresh = await fetchAdMeta(accountExternalId, topIds, opts.token);
+      if (fresh.size > 0) {
+        for (const ad of realAds) {
+          const f = fresh.get(ad.externalId);
+          if (f && f.status !== undefined) ad.active = f.status === "ACTIVE"; // fresh status wins over the stale stored one
+        }
+      }
+    } catch {
+      // keep the stored status - the action queue is never worse than before
+    }
+  }
 
   // Same source-level gate as the live path: judge only ads that spent AND are not paused/ended.
   const inputs = toCockpitInputs(realAds).filter((a) => (a.impressions ?? 0) > 0 && a.spendRs > 0 && a.active !== false);
