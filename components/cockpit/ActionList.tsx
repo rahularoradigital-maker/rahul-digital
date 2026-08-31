@@ -6,6 +6,7 @@ import type { CockpitAction, CockpitAd } from "@/lib/cockpit/analyze";
 import type { AdJudgment } from "@/lib/judgment/agent";
 import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
+import { ObjectiveMeta } from "./ObjectiveMeta";
 import { CollapsibleRows } from "./CollapsibleRows";
 import { rupees } from "@/lib/format";
 
@@ -75,13 +76,10 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
                   <AdLink accountId={accountId} adId={a.adId} adSetId={ad?.adSetId} campaignId={ad?.campaignId} name={a.adName} className="min-w-0 truncate text-sm font-medium" dateParam={dateParam} />
                   <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${v.cls}`}>{v.label}</span>
                 </div>
-                {/* Line 2: objective + confidence, wraps instead of overlapping */}
+                {/* Line 2: every action carries its campaign objective + current ROAS + whether results trend up or down */}
+                {ad && <ObjectiveMeta ad={ad} className="mt-1.5" />}
+                {/* Line 2b: money at stake + confidence, wraps instead of overlapping */}
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                  {ad && (
-                    <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
-                      {ad.objective}
-                    </span>
-                  )}
                   {a.moneyAtStakeRs > 0 && (
                     <span className="shrink-0 rounded-full bg-[var(--bad-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--bad-ink)] tabular-nums">
                       {rupees.format(a.moneyAtStakeRs)} at stake

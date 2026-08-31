@@ -3,9 +3,10 @@ import { ConnectState } from "@/components/app/connect-state";
 import type { CockpitAd, CockpitView, Priority } from "@/lib/cockpit/analyze";
 import { VERDICT_STYLE, PRIORITY_STYLE } from "@/components/cockpit/styles";
 import { AdLink } from "@/components/cockpit/AdLink";
+import { ObjectiveMeta } from "@/components/cockpit/ObjectiveMeta";
 import { JudgmentButtons } from "@/components/app/judgment-buttons";
 import { rupees } from "@/lib/format";
-import { objectiveHeadline, objectiveFamily } from "@/lib/rules/objective-metrics";
+import { objectiveHeadline } from "@/lib/rules/objective-metrics";
 
 // Action Center: the full ranked action queue (rulebook 7.1 Scale/Continue/Stop
 // gates + 5.6 law "every screen ends in a ranked action with a number"). Renders
@@ -124,13 +125,9 @@ function ActionSection({
                   <AdLink accountId={accountId} adId={item.adId} adSetId={ad?.adSetId} campaignId={ad?.campaignId} name={item.adName} className="truncate text-sm font-medium" dateParam={dateParam} />
                   <span className="shrink-0 text-sm text-[var(--ink-muted)]">·</span>
                   <span className="shrink-0 truncate text-sm text-[var(--ink)]">{item.label}</span>
-                  {/* Objective chip for awareness/engagement/traffic ads, so it is obvious this is NOT a ROAS ad. */}
-                  {ad && objectiveFamily(ad.objective) === "awareness" && (
-                    <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]" title="Judged on its objective (CPM/CTR/CPC), not ROAS">
-                      {ad.objective}
-                    </span>
-                  )}
                 </div>
+                {/* Every action carries its campaign objective + current ROAS + whether results trend up or down */}
+                {ad && <ObjectiveMeta ad={ad} className="mt-1" />}
                 <div className="mt-1 text-[13px] text-[var(--ink-muted)]">{item.why}</div>
                 {dateParam && (
                   <div className="mt-2">

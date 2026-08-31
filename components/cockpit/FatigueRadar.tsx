@@ -6,6 +6,7 @@ import type { CockpitAd, CreativeHalfLife } from "@/lib/cockpit/analyze";
 import type { FatigueState } from "@/lib/scoring/fatigue";
 import { forecastFatigue, frameFatigue } from "@/lib/scoring/fatigue-forecast";
 import { AdLink } from "./AdLink";
+import { ObjectiveMeta } from "./ObjectiveMeta";
 
 const STATE_STYLE: Record<FatigueState, { label: string; cls: string }> = {
   fresh: { label: "Fresh", cls: "bg-[var(--good-bg)] text-[var(--good-ink)]" },
@@ -64,6 +65,8 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
               </div>
               {/* Framed sentence: countdown + mechanism, in plain English. */}
               <div className="mt-1 text-xs text-[var(--ink)]">{frame.headline}</div>
+              {/* Campaign objective + current ROAS + whether the objective's results are trending up or down */}
+              <ObjectiveMeta ad={ad} className="mt-1" />
               {frame.hasSignal ? (
                 <>
                   {/* Cost impact: the real observed decline the countdown is extrapolated from. */}
