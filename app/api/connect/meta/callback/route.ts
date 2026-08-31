@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { storeToken } from "@/lib/oauth-store";
-import { listMetaAdAccounts } from "@/lib/meta-source";
+import { listAllAccessibleAdAccounts } from "@/lib/meta-source";
 import { recordAudit } from "@/lib/security/audit-log";
 
 // Meta OAuth callback: exchange the code for a token, create an ad_accounts row, store the
@@ -81,7 +81,9 @@ export async function GET(request: NextRequest) {
   const token = { accessToken };
   let accounts: { externalId: string; name: string }[] = [];
   try {
-    accounts = await listMetaAdAccounts(token);
+    // Full accessible list (direct + Business Manager owned/client accounts), so a user whose accounts
+    // all live under a BM can still connect, and the initial pick is not limited to directly-assigned ones.
+    accounts = await listAllAccessibleAdAccounts(token);
   } catch {
     return NextResponse.redirect(new URL("/app?connect=error", request.url));
   }

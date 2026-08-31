@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
-import { listMetaAdAccounts } from "@/lib/meta-source";
+import { listAllAccessibleAdAccounts } from "@/lib/meta-source";
 
 // Lists the ad accounts the connected user can access, for the topbar account
 // switcher. Client-fetched (non-blocking) so the layout stays fast. Never leaks the
@@ -18,7 +18,10 @@ export async function GET() {
 
   const activeOnly = [{ externalId: session.activeExternalId, name: session.activeAccountName }];
   try {
-    const accounts = await listMetaAdAccounts(session.token);
+    // FULL accessible list: direct accounts PLUS every account under the user's Business Managers
+    // (owned_ad_accounts + client_ad_accounts). me/adaccounts alone only returns directly-assigned
+    // accounts, which is why an agency user with 300+ BM accounts previously saw only a handful.
+    const accounts = await listAllAccessibleAdAccounts(session.token);
     // If the token can only see the one granted account (no business_management yet),
     // still return that active account so the switcher renders and offers "connect more".
     return NextResponse.json({

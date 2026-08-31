@@ -175,10 +175,10 @@ export const metaSource: AdSource = {
 export type MetaAccountRef = { externalId: string; name: string; businessId?: string; businessName?: string };
 
 /**
- * List the ad accounts the connected user can access (for the account picker). Plain
- * fields only: the nested business{} expansion could fail on large rosters and drop the
- * whole list, and /me/adaccounts already returns every account the token can reach (210
- * on a real agency user). Higher limit so nothing paginates off the end.
+ * The user's DIRECTLY-ASSIGNED ad accounts only (/me/adaccounts). This does NOT include accounts a user
+ * can reach through a Business Manager (owned_ad_accounts / client_ad_accounts) - an agency user with 300+
+ * BM accounts gets only the handful assigned straight to them here. For any user-facing "which accounts can
+ * I use" list, call listAllAccessibleAdAccounts (which unions this with the BM edges). Fully paginated.
  */
 export async function listMetaAdAccounts(token: TokenSet): Promise<MetaAccountRef[]> {
   // ISSUE 05: fully paginate (an agency user can have 200+ accounts). graphGetAll follows the cursor
