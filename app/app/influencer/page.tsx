@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadLatestDiscovery } from "@/lib/influencer/store";
 import { InfluencerHunt, MatchingPanel, CreatorCards } from "@/components/app/influencer/influencer-hunt";
 import { RunButton } from "@/components/app/influencer/run-button";
+import { BANDS, bandOf, inBand } from "@/lib/influencer/bands";
 
 // Influencer Hunt: brand-matched creator discovery + transparent, formula-driven ranking. If the account has
 // a stored run, we render the real ranked creators instantly (a re-run is an explicit button). Otherwise we
@@ -21,10 +23,14 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)} days ago`;
 }
 
-export default async function InfluencerPage() {
+export default async function InfluencerPage({ searchParams }: { searchParams: Promise<{ band?: string }> }) {
   const user = await getCurrentUser();
   const session = user ? await getUserMetaSession(user.id) : null;
   const run = user && session ? await loadLatestDiscovery(user.id, session.activeExternalId) : null;
+
+  const band = bandOf((await searchParams).band);
+  // Filter the ranked run to the chosen size band (instant, no re-run), then renumber for a clean 1..N view.
+  const shown = run ? run.ranked.filter((r) => inBand(r.creator.followers.value, band)).map((r, i) => ({ ...r, rank: i + 1 })) : [];
 
   return (
     <div className="space-y-6">
@@ -40,14 +46,43 @@ export default async function InfluencerPage() {
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-[13px] text-[var(--ink-muted)]">
-              <span className="font-medium text-[var(--ink)]">{run.ranked.length} creators</span> ranked for{" "}
+              <span className="font-medium text-[var(--ink)]">{shown.length} creators</span>
+              {band.key !== "all" ? ` in ${band.label}` : ""} for{" "}
               <span className="font-medium text-[var(--ink)]">{session?.activeAccountName ?? "your account"}</span> · refreshed {timeAgo(run.createdAt)}
               {run.stats ? ` · from ${run.stats.enriched} profiles` : ""}
             </div>
             <RunButton label="Re-run hunt" hunting="Hunting..." />
           </div>
+
+          {/* Size-band filter: set the follower range you want; excludes micro-brands / mega pages instantly. */}
+          <div className="flex flex-wrap gap-2">
+            {BANDS.map((b) => {
+              const n = run.ranked.filter((r) => inBand(r.creator.followers.value, b)).length;
+              const active = b.key === band.key;
+              return (
+                <Link
+                  key={b.key}
+                  href={b.key === "all" ? "/app/influencer" : `/app/influencer?band=${b.key}`}
+                  className={
+                    active
+                      ? "rounded-full bg-[var(--ink)] px-3.5 py-1.5 text-[13px] font-medium text-white"
+                      : "rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-1.5 text-[13px] font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+                  }
+                >
+                  {b.label} <span className={active ? "opacity-70" : "opacity-60"}>({n})</span>
+                </Link>
+              );
+            })}
+          </div>
+
           {run.target ? <MatchingPanel target={run.target} /> : null}
-          <CreatorCards ranked={run.ranked} />
+          {shown.length > 0 ? (
+            <CreatorCards ranked={shown} />
+          ) : (
+            <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6 text-[13px] text-[var(--ink-muted)]">
+              No creators in the {band.label} band from this run. Try another band, or re-run the hunt.
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-6">

@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { unknown, evidence, type NormalizedCreator, type BrandTarget, type CreatorIdentity, type CreatorSearchSpec, type EngagerSignal } from "../lib/influencer/types.ts";
 import type { CreatorDataProvider, ProviderCapability } from "../lib/influencer/provider.ts";
 import { discoverAndRank } from "../lib/influencer/discover.ts";
+import { bandOf, inBand } from "../lib/influencer/bands.ts";
 
 const NOW = "2026-08-29";
 function creator(id: string, handle: string, followers: number, er: number, bio: string): NormalizedCreator {
@@ -86,5 +87,29 @@ const tinyProvider: CreatorDataProvider = {
 };
 assert.equal((await discoverAndRank(tinyProvider, target, "Soch", { enrich: 5 })).ranked.length, 0, "a 3K account is dropped by the default 10K follower floor");
 assert.equal((await discoverAndRank(tinyProvider, target, "Soch", { enrich: 5, minFollowers: 1_000 })).ranked.length, 1, "a lower explicit floor keeps the 3K account");
+
+// --- Engagement band: dead/bought BRAND pages (near-0%) and bought-engagement (>35%) are dropped; a normal
+// rate is kept; unknown engagement is kept (never guessed as dead). ---
+const engProvider = (er: number | null): CreatorDataProvider => ({
+  ...fake,
+  async discover() { return [{ platform: "instagram", platformUserId: "e", handle: "e", profileUrl: "" }]; },
+  async profile() {
+    const c = creator("e", "e", 50_000, er ?? 0.03, "women ethnic wear kurta saree festive");
+    if (er == null) return { ...c, engagementRate: unknown<number>() };
+    return c;
+  },
+});
+assert.equal((await discoverAndRank(engProvider(0.0001), target, "S", { enrich: 3 })).ranked.length, 0, "a ~0% (dead/bought) brand page is dropped");
+assert.equal((await discoverAndRank(engProvider(0.6), target, "S", { enrich: 3 })).ranked.length, 0, "a 60% bought-engagement account is dropped");
+assert.equal((await discoverAndRank(engProvider(0.03), target, "S", { enrich: 3 })).ranked.length, 1, "a normal 3% engagement creator is kept");
+assert.equal((await discoverAndRank(engProvider(null), target, "S", { enrich: 3 })).ranked.length, 1, "unknown engagement is kept, never treated as dead");
+
+// --- Size bands: a creator only shows in its follower band; unknown followers show only under "All". ---
+assert.equal(inBand(30_000, bandOf("10-50k")), true);
+assert.equal(inBand(30_000, bandOf("50-500k")), false);
+assert.equal(inBand(120_000, bandOf("50-500k")), true);
+assert.equal(inBand(750_000, bandOf("500k+")), true);
+assert.equal(inBand(null, bandOf("all")), true);
+assert.equal(inBand(null, bandOf("50-500k")), false);
 
 console.log("PASS: influencer discovery (search->enrich->dedupe->rank, failure isolation, zero-result path)");

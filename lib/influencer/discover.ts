@@ -9,8 +9,13 @@ import { creatorSearchSpecFrom, discoveryHashtags } from "./spec.ts";
 import { rankCreators, type RankedCreator } from "./rank.ts";
 import { canonicalKey } from "./dedup.ts";
 
-const DEFAULT_ENRICH = 18; // profiles fetched per run (= credits); enough to rank a real shortlist, bounded for cost
+const DEFAULT_ENRICH = 24; // profiles fetched per run (= credits); enough to rank a real shortlist, bounded for cost
 const DEFAULT_MIN_FOLLOWERS = 10_000; // influencer floor: drop tiny shops/resellers. Adjustable per run.
+// Plausible engagement band. Below the floor = dead/bought-follower BRAND pages (a real creator engages its
+// audience); above the ceiling = bought-engagement. Both are dropped so only real creators remain. A creator
+// with UNKNOWN engagement is kept (unknown != dead - never guessed).
+const DEFAULT_MIN_ENGAGEMENT = 0.005; // 0.5%
+const DEFAULT_MAX_ENGAGEMENT = 0.35; //  35%
 
 export type DiscoverStats = { queries: string[]; candidates: number; enriched: number; failed: number };
 export type DiscoverResult = { ranked: RankedCreator[]; stats: DiscoverStats };
@@ -40,10 +45,12 @@ export async function discoverAndRank(
   provider: CreatorDataProvider,
   target: BrandTarget,
   accountName: string | null,
-  opts: { enrich?: number; concurrency?: number; minFollowers?: number } = {},
+  opts: { enrich?: number; concurrency?: number; minFollowers?: number; minEngagement?: number; maxEngagement?: number } = {},
 ): Promise<DiscoverResult> {
   const enrich = opts.enrich ?? DEFAULT_ENRICH;
   const floor = opts.minFollowers ?? DEFAULT_MIN_FOLLOWERS;
+  const minEng = opts.minEngagement ?? DEFAULT_MIN_ENGAGEMENT;
+  const maxEng = opts.maxEngagement ?? DEFAULT_MAX_ENGAGEMENT;
   // Discover creators from the brand's hashtags (authors of relevant posts), not shops named after the
   // category. The provider treats these keywords as hashtags, and honors the follower floor where the
   // hashtag record carries a follower count.
@@ -73,7 +80,12 @@ export async function discoverAndRank(
   // the floor so a 2K reseller can never rank above real creators. (Unknown followers are kept, not guessed.)
   const creators = enriched
     .filter((c): c is NormalizedCreator => c !== null)
-    .filter((c) => c.followers.value == null || c.followers.value >= floor);
+    .filter((c) => c.followers.value == null || c.followers.value >= floor)
+    // Drop dead/bought BRAND pages: known engagement outside the plausible band. Unknown engagement is kept.
+    .filter((c) => {
+      const er = c.engagementRate.value;
+      return er == null || (er >= minEng && er <= maxEng);
+    });
 
   // rankCreators dedupes (same platform user id) and orders purely by the quality formula. Feed the post
   // captions gathered during discovery so content/brand fit judge real posts, not just the bio.
