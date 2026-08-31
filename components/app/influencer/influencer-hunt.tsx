@@ -1,12 +1,12 @@
 import { rankCreators, type RankedCreator } from "@/lib/influencer/rank";
 import { tierOf } from "@/lib/influencer/tiers";
 import { SAMPLE_CREATORS, SAMPLE_TARGET } from "@/lib/influencer/sample";
-import type { Confidence, TransparentScore, NormalizedCreator } from "@/lib/influencer/types";
+import type { Confidence, TransparentScore, NormalizedCreator, BrandTarget } from "@/lib/influencer/types";
 
-// Influencer Hunt (preview). Runs the REAL ranking engine on a clearly-labelled sample set, so the screen
-// shows the true product UX - formula-driven ranking, transparent per-component scores, evidence +
-// confidence on every field, and an honest "why this creator" - before a data provider is connected. When
-// ScrapeCreators/Modash is wired, the same engine ranks the user's real creators with no UI change.
+// Influencer Hunt result rendering. The SAME cards render real ScrapeCreators results and the sample preview -
+// formula-driven ranking, transparent per-component scores, evidence + confidence on every field, and an
+// honest "why this creator". `InfluencerHunt` is the sample preview (used before a run exists); `CreatorCards`
+// + `MatchingPanel` are reused by the real results view.
 
 const fmt = (n: number | null): string => {
   if (n === null) return "n/a";
@@ -69,10 +69,7 @@ function audienceLine(c: NormalizedCreator): string {
   const top = a.topCountries[0];
   const parts: string[] = [];
   if (top) parts.push(`${Math.round(top.share * 100)}% ${top.countryCode}`);
-  if (a.genderLean) {
-    const f = Math.round(a.genderLean.female * 100);
-    parts.push(`${f}% women`);
-  }
+  if (a.genderLean) parts.push(`${Math.round(a.genderLean.female * 100)}% women`);
   const lang = a.topLanguages[0];
   if (lang) parts.push(`${Math.round(lang.share * 100)}% ${lang.language}`);
   return parts.join(" · ") || "Directional estimate";
@@ -86,18 +83,16 @@ function CreatorCard({ r }: { r: RankedCreator }) {
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
       <div className="flex items-start gap-4">
-        {/* Rank + quality */}
         <div className="flex w-14 shrink-0 flex-col items-center gap-1">
           <span className="grid h-8 w-8 place-items-center rounded-full bg-[var(--ink)] text-[13px] font-semibold text-white">{r.rank}</span>
           <span className={`text-[22px] font-semibold leading-none ${scoreCls(q.score)}`}>{Math.round(q.score)}</span>
           <span className="text-[10px] uppercase tracking-wide text-[var(--ink-muted)]">quality</span>
         </div>
 
-        {/* Identity + why + audience */}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <a href={c.identity.profileUrl} target="_blank" rel="noopener noreferrer" className="text-[15px] font-semibold hover:underline">
-              {c.name.value}
+              {c.name.value ?? `@${c.identity.handle}`}
             </a>
             {c.verified.value ? <span title="verified" className="text-[var(--accent)]">✓</span> : null}
             <span className="text-[13px] text-[var(--ink-muted)]">@{c.identity.handle}</span>
@@ -127,7 +122,6 @@ function CreatorCard({ r }: { r: RankedCreator }) {
           </div>
         </div>
 
-        {/* Transparent breakdown */}
         <div className="hidden w-[280px] shrink-0 border-l border-[var(--hairline)] pl-4 lg:block">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Score breakdown</span>
@@ -140,40 +134,48 @@ function CreatorCard({ r }: { r: RankedCreator }) {
   );
 }
 
+/** The ranked shortlist. Reused by the real results view and the sample preview. */
+export function CreatorCards({ ranked }: { ranked: RankedCreator[] }) {
+  return (
+    <div className="space-y-3">
+      {ranked.map((r) => (
+        <CreatorCard key={r.creator.identity.platformUserId} r={r} />
+      ))}
+    </div>
+  );
+}
+
+/** "Matching creators against" panel - shows the brand target the engine ranked against. */
+export function MatchingPanel({ target }: { target: BrandTarget }) {
+  return (
+    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Matching creators against</div>
+      <div className="mt-2 grid gap-x-8 gap-y-2 text-[13px] sm:grid-cols-2">
+        <div><span className="text-[var(--ink-muted)]">Category:</span> <span className="font-medium">{target.category ?? "n/a"}</span></div>
+        <div><span className="text-[var(--ink-muted)]">Sells to:</span> <span className="font-medium">{target.targetCountry ?? "n/a"}{target.personaGender ? ` · ${target.personaGender === "f" ? "women" : "men"}` : ""}</span></div>
+        <div><span className="text-[var(--ink-muted)]">Products:</span> <span className="font-medium">{target.keyProducts.length ? target.keyProducts.join(", ") : "n/a"}</span></div>
+        <div><span className="text-[var(--ink-muted)]">Needs formats:</span> <span className="font-medium">{target.requiredFormats.join(", ")}</span></div>
+      </div>
+      <p className="mt-3 text-[12px] text-[var(--ink-muted)]">
+        Ranked purely by the quality formula (brand fit, audience fit, content fit, engagement, safety) - never by follower count, so a
+        smaller, on-brand creator can outrank a large off-brand one.
+      </p>
+    </div>
+  );
+}
+
+/** Sample preview - used before any real run exists. Runs the real engine on clearly-labelled sample data. */
 export function InfluencerHunt() {
   const ranked = rankCreators(SAMPLE_CREATORS, SAMPLE_TARGET);
-
   return (
     <div className="space-y-6">
-      {/* Honest provenance banner - this is the honesty rule made visible. */}
       <div className="rounded-[10px] border border-[var(--warn-ink)]/25 bg-[var(--warn-bg)] px-4 py-3 text-[13px] text-[var(--warn-ink)]">
-        <span className="font-semibold">Preview with sample creators.</span> The ranking, scores, and confidence you see are produced by
-        the real engine, but the creators below are sample data, not real accounts. Connect a creator-data provider (ScrapeCreators, or
-        Modash/HypeAuditor for verified audience data) to rank your brand&apos;s real creators here. Nothing is fabricated: every field
-        carries its source and confidence.
+        <span className="font-semibold">Preview with sample creators.</span> The ranking, scores, and confidence are produced by the real
+        engine, but these creators are sample data, not real accounts. Run a hunt above to rank your brand&apos;s real creators. Nothing is
+        fabricated: every field carries its source and confidence.
       </div>
-
-      {/* What the engine is matching against */}
-      <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Matching creators against</div>
-        <div className="mt-2 grid gap-x-8 gap-y-2 text-[13px] sm:grid-cols-2">
-          <div><span className="text-[var(--ink-muted)]">Category:</span> <span className="font-medium">{SAMPLE_TARGET.category}</span></div>
-          <div><span className="text-[var(--ink-muted)]">Sells to:</span> <span className="font-medium">{SAMPLE_TARGET.targetCountry} · {SAMPLE_TARGET.personaGender === "f" ? "women" : "men"}</span></div>
-          <div><span className="text-[var(--ink-muted)]">Products:</span> <span className="font-medium">{SAMPLE_TARGET.keyProducts.join(", ")}</span></div>
-          <div><span className="text-[var(--ink-muted)]">Needs formats:</span> <span className="font-medium">{SAMPLE_TARGET.requiredFormats.join(", ")}</span></div>
-        </div>
-        <p className="mt-3 text-[12px] text-[var(--ink-muted)]">
-          Ranked purely by the quality formula (brand fit, audience fit, content fit, engagement, safety) - never by follower count, so a
-          smaller, on-brand creator can outrank a large off-brand one.
-        </p>
-      </div>
-
-      {/* The ranked shortlist */}
-      <div className="space-y-3">
-        {ranked.map((r) => (
-          <CreatorCard key={r.creator.identity.platformUserId} r={r} />
-        ))}
-      </div>
+      <MatchingPanel target={SAMPLE_TARGET} />
+      <CreatorCards ranked={ranked} />
     </div>
   );
 }

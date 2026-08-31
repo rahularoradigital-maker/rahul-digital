@@ -1,0 +1,71 @@
+// Discovery orchestration: brand target -> search -> progressive enrichment -> dedupe -> formula rank.
+// PURE given a CreatorDataProvider (the provider does all I/O), so the whole flow is testable with a fake
+// provider and works identically for ScrapeCreators today or Modash tomorrow. Cost-aware: we only fetch full
+// profiles for the bounded candidate set, and one creator's fetch failing never sinks the run.
+
+import type { CreatorDataProvider } from "./provider.ts";
+import type { BrandTarget, NormalizedCreator } from "./types.ts";
+import { creatorSearchSpecFrom, discoveryQueries } from "./spec.ts";
+import { rankCreators, type RankedCreator } from "./rank.ts";
+import { canonicalKey } from "./dedup.ts";
+
+const DEFAULT_ENRICH = 18; // profiles fetched per run (= credits); enough to rank a real shortlist, bounded for cost
+
+export type DiscoverStats = { queries: string[]; candidates: number; enriched: number; failed: number };
+export type DiscoverResult = { ranked: RankedCreator[]; stats: DiscoverStats };
+
+// Bounded-concurrency map: run `fn` over items at most `n` at a time. Keeps us well under provider rate limits
+// and avoids opening 18 sockets at once, without pulling in a dependency.
+async function mapPool<T, R>(items: T[], n: number, fn: (item: T, i: number) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
+/**
+ * Find and rank creators for a brand using the given provider. Throws only on a hard discovery failure
+ * (e.g. provider out of credits / bad key) so the caller can report it honestly; a per-creator profile
+ * failure is swallowed (that creator is dropped, the run continues).
+ */
+export async function discoverAndRank(
+  provider: CreatorDataProvider,
+  target: BrandTarget,
+  accountName: string | null,
+  opts: { enrich?: number; concurrency?: number } = {},
+): Promise<DiscoverResult> {
+  const enrich = opts.enrich ?? DEFAULT_ENRICH;
+  const queries = discoveryQueries(target, accountName);
+  const spec = { ...creatorSearchSpecFrom(target), keywords: queries };
+
+  // Cheap, broad discovery first. Bounded to `enrich` so we never fetch a profile we won't use.
+  const discovered = await provider.discover(spec, enrich);
+  // Dedupe candidates by canonical id BEFORE enriching, so a provider that returns the same creator twice
+  // never costs us two profile credits for one person.
+  const byKey = new Map<string, (typeof discovered)[number]>();
+  for (const id of discovered) if (!byKey.has(canonicalKey(id))) byKey.set(canonicalKey(id), id);
+  const identities = [...byKey.values()];
+
+  // Progressive enrichment: full profile only for the candidate set. Failures isolate to that creator.
+  let failed = 0;
+  const enriched = await mapPool(identities, opts.concurrency ?? 5, async (id) => {
+    try {
+      return await provider.profile(id);
+    } catch {
+      failed++;
+      return null;
+    }
+  });
+  const creators = enriched.filter((c): c is NormalizedCreator => c !== null);
+
+  // rankCreators dedupes (same platform user id) and orders purely by the quality formula.
+  const ranked = rankCreators(creators, target);
+  return { ranked, stats: { queries, candidates: identities.length, enriched: creators.length, failed } };
+}
