@@ -9,6 +9,9 @@ import { brandFit } from "../lib/influencer/scoring/brand-fit.ts";
 import { scoreCreator } from "../lib/influencer/scoring/quality.ts";
 import { risk } from "../lib/influencer/scoring/risk.ts";
 import { engagementScore } from "../lib/influencer/scoring/engagement.ts";
+import { reachScore } from "../lib/influencer/scoring/reach.ts";
+import { consistencyScore } from "../lib/influencer/scoring/consistency.ts";
+import type { ReelSignals } from "../lib/influencer/types.ts";
 
 const NOW = "2026-08-29";
 function creator(over: Partial<NormalizedCreator> = {}, audience?: Partial<AudienceEstimate>): NormalizedCreator {
@@ -64,7 +67,7 @@ assert.ok(risk(creator()).components.some((c) => c.key === "fake_followers" && c
 
 // Quality composite: fully decomposed + confidence = weakest usable sub-score.
 const card = scoreCreator(goodAud, target);
-assert.ok(card.quality.components.length === 5, "quality decomposes into 5 sub-scores");
+assert.ok(card.quality.components.length === 7, "quality decomposes into 7 sub-scores (brand/audience/content/engagement/reach/consistency/safety)");
 assert.ok(card.quality.score >= 0 && card.quality.score <= 100);
 assert.ok(["low", "medium"].includes(card.quality.confidence), "composite confidence tracks the weakest usable input, capped by the proxy");
 
@@ -75,7 +78,7 @@ const eBought = engagementScore(creator({ engagementRate: evidence(0.40, "CALCUL
 assert.ok(eBought < eHealthy, "40% engagement scores BELOW a healthy 6% (implausible rate penalized, not rewarded)");
 assert.ok(eNano >= 90, "a legitimately high-engagement nano (12%) is NOT punished");
 assert.ok(eHealthy >= 90, "a healthy 6% is a strong engagement score");
-assert.ok(/implausibly high/i.test(engagementScore(creator({ engagementRate: evidence(0.40, "CALCULATED", "medium", NOW) })).reason), "implausible engagement is flagged transparently");
+assert.ok(engagementScore(creator({ engagementRate: evidence(0.40, "CALCULATED", "medium", NOW) })).components.some((c) => /implausibly high/i.test(c.reason)), "implausible engagement is flagged transparently");
 
 // --- No double-count: audience is a top-level quality component, so brand-fit must NOT also carry audience. ---
 assert.ok(!brandFit(goodAud, target).components.some((c) => /audience/i.test(c.key)), "brand-fit no longer double-counts audience");
@@ -88,5 +91,24 @@ const bioOnly = scoreCreator(offBio, target);
 assert.ok(withPosts.brandFit.score > bioOnly.brandFit.score, "on-brand recent posts raise brand fit above a bio-only read");
 assert.ok(withPosts.contentFit.score > bioOnly.contentFit.score, "on-brand recent posts raise content fit");
 assert.ok(withPosts.quality.score > bioOnly.quality.score, "overall quality reflects real post relevance, not just the bio");
+
+// --- Reel signals: reach (views/followers) + consistency + reel engagement are scored, and drive quality. ---
+const reels = (over: Partial<ReelSignals>): ReelSignals => ({ avgViews: 100_000, reelEngagementRate: 0.05, reachRatio: 1.2, postsPerWeek: 3, daysSinceLastPost: 3, sampled: 12, source: "CALCULATED", confidence: "medium", note: "from 12 reels", ...over });
+
+// Reach: content that travels beyond followers (2x) beats content that barely reaches them (0.2x).
+assert.ok(reachScore(creator({ reels: reels({ reachRatio: 2 }) })).score > reachScore(creator({ reels: reels({ reachRatio: 0.2 }) })).score, "higher reel reach ratio scores higher");
+assert.equal(reachScore(creator()).confidence, "none", "no reels -> reach is UNKNOWN, not a fabricated 0-with-confidence");
+
+// Consistency: a fresh, frequent poster beats a dormant one.
+assert.ok(consistencyScore(creator({ reels: reels({ daysSinceLastPost: 2, postsPerWeek: 4 }) })).score > consistencyScore(creator({ reels: reels({ daysSinceLastPost: 40, postsPerWeek: 0.2 }) })).score, "active+frequent beats dormant+sporadic");
+
+// Reel engagement enriches the engagement score (a creator with reels has a 2-part engagement read).
+assert.ok(engagementScore(creator({ reels: reels({}) })).components.length === 2, "engagement blends post + reel rates when reels exist");
+assert.ok(engagementScore(creator({ reels: null })).components.length === 1, "engagement is post-only when no reels");
+
+// Quality reflects the reel layer: a strong-reach, consistent creator outranks the same creator with no reels.
+const withReels = scoreCreator(creator({ reels: reels({ reachRatio: 1.8, daysSinceLastPost: 2, postsPerWeek: 4 }) }), target);
+const noReels = scoreCreator(creator({ reels: null }), target);
+assert.ok(withReels.quality.score > noReels.quality.score, "strong reel reach + consistency lift the overall quality");
 
 console.log("PASS: influencer scoring (brand-fit is relevance not reach, honest confidence, no fabrication)");

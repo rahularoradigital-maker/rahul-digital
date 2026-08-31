@@ -62,8 +62,25 @@ export type AudienceEstimate = {
   note: string; // e.g. "estimated from 63 sampled commenters - directional, not verified follower data"
 };
 
+/** Reel-derived signals (all computed from a sample of the creator's recent reels). This is the "10x richer"
+ * layer the public scraper CAN give us without a paid audience provider: real reach (views, which travel
+ * beyond followers), reel-specific engagement, and posting consistency. Every number is real or null - never
+ * fabricated. `reachRatio` = avg reel views / followers (>1 means content travels beyond the follower base). */
+export type ReelSignals = {
+  avgViews: number | null;
+  reelEngagementRate: number | null; // (likes + comments) / views, averaged over the sampled reels
+  reachRatio: number | null; // avg reel views / followers
+  postsPerWeek: number | null; // cadence inferred from the sampled reels' timestamps
+  daysSinceLastPost: number | null; // recency at fetch time
+  sampled: number; // how many reels fed these numbers (0 = none)
+  source: Extract<EvidenceSource, "PROVIDER" | "CALCULATED" | "UNKNOWN">;
+  confidence: Confidence;
+  note: string;
+};
+
 /** The normalized creator every provider adapter maps into. Metrics are Evidence-wrapped so provenance +
- * confidence travel with the number everywhere. Audience is the Path A estimate (or an UNKNOWN-equivalent). */
+ * confidence travel with the number everywhere. Audience is the Path A estimate (or an UNKNOWN-equivalent).
+ * `reels` is the optional reel-signals layer (null/absent when a provider does not fetch reels). */
 export type NormalizedCreator = {
   identity: CreatorIdentity;
   name: Evidence<string>;
@@ -82,6 +99,7 @@ export type NormalizedCreator = {
   engagementMethod: string; // documented denominator, e.g. "(likes+comments)/followers over last 12 posts"
   businessEmail: Evidence<string>; // ONLY a self-published public business email; else UNKNOWN
   audience: AudienceEstimate; // Path A
+  reels?: ReelSignals | null; // reel reach + engagement + consistency (optional; null when not fetched)
 };
 
 /** Configurable follower tiers (never one universal band - varies by platform/geo/campaign/brand). */

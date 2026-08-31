@@ -38,6 +38,8 @@ const COMPONENT_LABEL: Record<string, string> = {
   audience_fit: "Audience fit",
   content_fit: "Content fit",
   engagement: "Engagement",
+  reach: "Reach",
+  consistency: "Consistency",
   safety: "Safety",
 };
 

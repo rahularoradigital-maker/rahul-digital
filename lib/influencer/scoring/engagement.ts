@@ -2,7 +2,7 @@
 // Engagement has no universal cross-platform formula, so we carry the denominator we used; we never present
 // one platform's calculation as universal truth (APP-CANON). Pure.
 
-import type { NormalizedCreator, TransparentScore } from "../types.ts";
+import type { NormalizedCreator, TransparentScore, ScoreComponent } from "../types.ts";
 import { compose } from "./util.ts";
 
 // Engagement QUALITY, not raw magnitude. Two regimes:
@@ -22,19 +22,37 @@ function erToScore(er: number): number {
   return Math.max(0, Math.round(rising - penalty));
 }
 
-/** True when the engagement rate is high enough to read as likely inflated rather than genuinely strong. */
+/** True when a FOLLOWER-based engagement rate is high enough to read as likely inflated. */
 function isImplausible(er: number): boolean {
   return er > PLAUSIBLE_CEIL;
 }
 
+// Reel engagement rate is (likes+comments)/VIEWS - a different denominator than follower ER, and a legitimately
+// engaging reel can hit double digits, so it uses the plain rising curve (no turn-over penalty).
+function reelErToScore(er: number): number {
+  if (er <= 0) return 0;
+  return Math.min(100, Math.round(100 * (1 - Math.exp(-er / 0.02))));
+}
+
 export function engagementScore(creator: NormalizedCreator): TransparentScore {
+  // Blend the POST engagement rate (interactions/followers, plausibility-penalized) with the REEL engagement
+  // rate (interactions/views) when we have it - a richer, harder-to-fake read than either alone.
+  const components: ScoreComponent[] = [];
+
   const er = creator.engagementRate.value;
-  if (er == null || creator.engagementRate.confidence === "none") {
+  if (er != null && creator.engagementRate.confidence !== "none") {
+    const flag = isImplausible(er) ? " - implausibly high, likely inflated, so scored down" : "";
+    components.push({ key: "post_engagement", score: erToScore(er), weight: 1, confidence: creator.engagementRate.confidence, reason: `posts ${(er * 100).toFixed(1)}% via ${creator.engagementMethod}${flag}` });
+  }
+
+  const reelEr = creator.reels?.reelEngagementRate ?? null;
+  if (reelEr != null && creator.reels && creator.reels.confidence !== "none") {
+    components.push({ key: "reel_engagement", score: reelErToScore(reelEr), weight: 1, confidence: creator.reels.confidence, reason: `reels ${(reelEr * 100).toFixed(1)}% (likes+comments per view over ${creator.reels.sampled} reels)` });
+  }
+
+  if (components.length === 0) {
     return compose([{ key: "engagement", score: 0, weight: 1, confidence: "none", reason: "no engagement data" }], "Engagement unknown.");
   }
-  const flag = isImplausible(er) ? " - implausibly high, likely inflated, so scored down" : "";
-  return compose(
-    [{ key: "engagement", score: erToScore(er), weight: 1, confidence: creator.engagementRate.confidence, reason: `${(er * 100).toFixed(1)}% via ${creator.engagementMethod}${flag}` }],
-    `Engagement ${(er * 100).toFixed(1)}% (${creator.engagementMethod})${flag}.`,
-  );
+  const labels = components.map((c) => (c.key === "reel_engagement" ? "reel" : "post")).join(" + ");
+  return compose(components, `Engagement from ${labels} rates.`);
 }

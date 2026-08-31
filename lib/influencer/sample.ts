@@ -42,6 +42,19 @@ function sample(
     engagementMethod: "(likes+comments)/followers over last 12 posts",
     businessEmail: opts.email ? evidence(opts.email, "PUBLIC_WEB", "medium", AT, "public business email in bio") : unknown("no public business email found"),
     audience,
+    reels: {
+      // Sample reel signals so the preview shows the reach + consistency layer. Higher-engagement creators
+      // tend to travel further, so reach scales loosely with engagement.
+      avgViews: Math.round(followers * Math.min(2.5, 0.5 + er * 8)),
+      reelEngagementRate: Math.round(er * 1.4 * 1000) / 1000,
+      reachRatio: Math.round(Math.min(2.5, 0.5 + er * 8) * 100) / 100,
+      postsPerWeek: 3,
+      daysSinceLastPost: 4,
+      sampled: 12,
+      source: "CALCULATED",
+      confidence: "medium",
+      note: "from 12 recent reels (sample)",
+    },
   };
 }
 

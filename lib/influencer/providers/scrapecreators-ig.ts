@@ -8,12 +8,13 @@
 // is guarded so a shape surprise degrades to UNKNOWN instead of crashing the run.
 
 import { fetchWithTimeout } from "@/lib/http";
-import { evidence, unknown, type NormalizedCreator, type CreatorIdentity, type CreatorSearchSpec, type EngagerSignal } from "../types";
+import { evidence, unknown, type NormalizedCreator, type CreatorIdentity, type CreatorSearchSpec, type EngagerSignal, type ReelSignals } from "../types";
 import type { CreatorDataProvider, ProviderCapability } from "../provider";
 
 const BASE = "https://api.scrapecreators.com/v1/instagram";
 const TIMEOUT_MS = 12_000; // per call; with parallel fetches this keeps the whole run under the ~60s cap
 const RECENT_POSTS_FOR_ER = 12; // engagement rate is averaged over up to this many recent posts
+const REELS_SAMPLE = 12; // reels sampled per creator for reach + reel engagement + consistency
 const DEFAULT_DISCOVER_FLOOR = 10_000; // skip tiny shops/resellers; a real influencer floor (overridable by spec)
 
 const igUrl = (handle: string) => `https://www.instagram.com/${handle}/`;
@@ -113,6 +114,42 @@ function mapProfile(identity: CreatorIdentity, body: Record<string, unknown>): N
   };
 }
 
+/** Compute the reel-signals layer from a sample of recent reels + the creator's follower count. All numbers
+ * are real (views/likes/comments) or computed from them; missing -> null, never fabricated. Confidence tracks
+ * the sample size. Returns null when there are no usable reels. */
+function computeReelSignals(items: Record<string, unknown>[], followers: number | null): ReelSignals | null {
+  const reels = items
+    .map((it) => (it.media ?? it) as Record<string, unknown>)
+    .map((m) => ({ views: num(m.play_count), likes: num(m.like_count), comments: num(m.comment_count), takenAt: num(m.taken_at) }))
+    .slice(0, REELS_SAMPLE);
+  if (reels.length === 0) return null;
+
+  const views = reels.map((r) => r.views).filter((v): v is number => v !== null && v > 0);
+  const avgViews = views.length ? Math.round(views.reduce((a, b) => a + b, 0) / views.length) : null;
+
+  // Reel engagement rate = (likes + comments) / views, averaged over reels that have both.
+  const ers = reels
+    .filter((r) => r.views && r.views > 0 && (r.likes !== null || r.comments !== null))
+    .map((r) => ((r.likes ?? 0) + (r.comments ?? 0)) / (r.views as number));
+  const reelEngagementRate = ers.length ? ers.reduce((a, b) => a + b, 0) / ers.length : null;
+
+  const reachRatio = avgViews !== null && followers && followers > 0 ? avgViews / followers : null;
+
+  // Cadence + recency from the reel timestamps (unix seconds).
+  const stamps = reels.map((r) => r.takenAt).filter((t): t is number => t !== null).sort((a, b) => b - a);
+  const nowSec = Math.floor(Date.now() / 1000);
+  const daysSinceLastPost = stamps.length ? Math.max(0, Math.round((nowSec - stamps[0]) / 86_400)) : null;
+  const spanDays = stamps.length >= 2 ? (stamps[0] - stamps[stamps.length - 1]) / 86_400 : null;
+  const postsPerWeek = spanDays && spanDays > 0 ? Math.round(((stamps.length - 1) / (spanDays / 7)) * 10) / 10 : null;
+
+  const confidence = reels.length >= 6 ? "medium" : reels.length >= 3 ? "low" : "none";
+  return {
+    avgViews, reelEngagementRate, reachRatio, postsPerWeek, daysSinceLastPost,
+    sampled: reels.length, source: "CALCULATED", confidence,
+    note: `from ${reels.length} recent reels`,
+  };
+}
+
 /** Build the ScrapeCreators Instagram provider. `apiKey` is the funded SCRAPECREATORS_API_KEY. */
 export function scrapeCreatorsIgProvider(apiKey: string): CreatorDataProvider {
   const capabilities = new Set<ProviderCapability>(["discover", "profile"]);
@@ -206,8 +243,16 @@ export function scrapeCreatorsIgProvider(apiKey: string): CreatorDataProvider {
     },
 
     async profile(identity: CreatorIdentity): Promise<NormalizedCreator> {
-      const body = await getJson(`${BASE}/profile?handle=${encodeURIComponent(identity.handle)}`, apiKey);
-      return mapProfile(identity, body);
+      // Fetch profile + recent reels IN PARALLEL. Reels are best-effort: a reels failure must never sink the
+      // profile (the creator is still scorable on the rest), so it degrades to null reel signals.
+      const [body, reelsBody] = await Promise.all([
+        getJson(`${BASE}/profile?handle=${encodeURIComponent(identity.handle)}`, apiKey),
+        getJson(`${BASE}/user/reels?user_id=${encodeURIComponent(identity.platformUserId)}&trim=true`, apiKey).catch(() => null),
+      ]);
+      const creator = mapProfile(identity, body);
+      const items = reelsBody && Array.isArray(reelsBody.items) ? (reelsBody.items as Record<string, unknown>[]) : [];
+      creator.reels = computeReelSignals(items, creator.followers.value);
+      return creator;
     },
 
     // Public engager demographics are not reliably available here. Honest: no capability, empty sample - the
