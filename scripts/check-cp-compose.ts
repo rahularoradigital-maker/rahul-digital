@@ -60,4 +60,16 @@ assert.ok(!scene.svg.includes("Meet the Widget"), "scene mode: headline not doub
 const sceneNoVisual = compose(sceneBrief, approved, null);
 assert.ok(sceneNoVisual.svg.includes("Meet the Widget"), "scene mode with no visual: text fallback so ad is not blank");
 
+// 7) PRODUCT FIDELITY: a "composite" format draws the REAL product cutout into the frame (in scene mode too).
+const cutoutBrief: GenerationBrief = { ...brief, productMode: "composite", requiredProductFidelity: true };
+const withCut = compose(cutoutBrief, approved, "data:image/png;base64,BBBB", { dataUri: "data:image/png;base64,CUTOUTPIX", removed: true });
+assert.ok(withCut.svg.includes("CUTOUTPIX"), "composite: the real product cutout is drawn into the frame");
+// A non-composite format ignores any cutout passed (no accidental product injection).
+const noCut = compose({ ...brief, productMode: "none" }, approved, "data:image/png;base64,BBBB", { dataUri: "data:image/png;base64,CUTOUTPIX", removed: true });
+assert.ok(!noCut.svg.includes("CUTOUTPIX"), "non-composite: cutout is not drawn");
+// A scene-render composite format keeps the scene text (pass-through) AND gets the real product on top.
+const sceneCut = compose({ ...cutoutBrief, sceneText: "render", renderRecipe: "a scene" }, approved, "data:image/png;base64,BBBB", { dataUri: "data:image/png;base64,SCENECUT", removed: true });
+assert.ok(sceneCut.svg.includes("SCENECUT"), "scene+composite: real product drawn");
+assert.ok(!sceneCut.svg.includes("<text"), "scene+composite: still no compositor text overlay");
+
 console.log("PASS: check-cp-compose");

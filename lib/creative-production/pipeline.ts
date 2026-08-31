@@ -4,6 +4,7 @@ import { getActiveBrandId } from "@/lib/tenancy/resolve";
 import { getImageProvider } from "./providers/registry.ts";
 import { getFormat } from "./formats/ad-formats.ts";
 import { getAdFormat } from "./formats/ad-format-library.ts";
+import { productCutout } from "./media/background-removal.ts";
 import { briefHash } from "./generation/brief-hash.ts";
 import { compose } from "./composition/compose.ts";
 import { runQA } from "./qa/qa-engine.ts";
@@ -84,13 +85,19 @@ export async function generateAssetsForConcept(
     const gen = await provider.generateCreative(brief);
     const visualDataUri = gen.ok && gen.imageBase64 ? `data:${gen.mimeType ?? "image/png"};base64,${gen.imageBase64}` : null;
 
-    // 2) DETERMINISTIC COMPOSE (exact approved text over the visual).
-    const composed = compose(brief, approved, visualDataUri);
+    // 1b) PRODUCT FIDELITY: for a "composite" format, fetch the REAL product as a cutout so compose() places
+    //     actual Shopify pixels - the model never redraws the SKU. Keyless-graceful (uncut real image on no key).
+    const cutout = brief.productMode === "composite" && brief.requiredProductFidelity ? await productCutout(product.images[0]) : null;
+
+    // 2) DETERMINISTIC COMPOSE (exact approved text + real product over the visual).
+    const composed = compose(brief, approved, visualDataUri, cutout);
 
     // 3) QA.
     const qa = runQA(composed, brief, approved, {
       textPixelsPresent: true,
-      productFidelityRisk: !gen.ok && brief.requiredProductFidelity, // no real visual -> flag fidelity when required
+      // Fidelity is at risk when a composite format could not obtain the real product, or (non-composite) the
+      // model produced no visual to carry the reference.
+      productFidelityRisk: brief.productMode === "composite" ? brief.requiredProductFidelity && !cutout : !gen.ok && brief.requiredProductFidelity,
       fileBytes: Buffer.byteLength(composed.svg, "utf8"),
     });
 

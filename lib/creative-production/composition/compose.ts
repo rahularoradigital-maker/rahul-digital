@@ -6,8 +6,29 @@
 // URI). PNG export happens in the browser (canvas) at download time, so there is no server raster dep.
 import type { AdFormat, BrandDNA, ComposedAsset, GenerationBrief } from "@/lib/creative-production/types";
 import { layoutFor, type Region } from "./layout.ts";
+import type { Cutout } from "../media/background-removal.ts";
 
 type ApprovedText = { headline: string; subhead: string; cta: string; offer: string | null };
+
+// Composite the REAL product into its region. A transparent cutout floats with a soft shadow; an uncut real
+// image (no removal key) is framed as a clean product card so it reads as intentional, never a pasted photo.
+// preserveAspectRatio "meet" contains the product without distortion inside the box.
+function productLayer(cut: Cutout, box: Region): string {
+  const shadow = `<ellipse cx="${(box.x + box.w / 2).toFixed(1)}" cy="${(box.y + box.h * 0.94).toFixed(1)}" rx="${(box.w * 0.34).toFixed(1)}" ry="${(box.h * 0.045).toFixed(1)}" fill="#000000" opacity="0.18"/>`;
+  if (cut.removed) {
+    return `${shadow}<image href="${esc(cut.dataUri)}" x="${box.x.toFixed(1)}" y="${box.y.toFixed(1)}" width="${box.w.toFixed(1)}" height="${box.h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"/>`;
+  }
+  // Uncut real photo -> frame it as a rounded white card, inset a little, with a soft shadow.
+  const pad = Math.min(box.w, box.h) * 0.06;
+  const cardW = box.w - pad * 2;
+  const cardH = box.h - pad * 2;
+  const r = Math.min(cardW, cardH) * 0.06;
+  return [
+    shadow,
+    `<rect x="${(box.x + pad).toFixed(1)}" y="${(box.y + pad).toFixed(1)}" width="${cardW.toFixed(1)}" height="${cardH.toFixed(1)}" rx="${r.toFixed(1)}" fill="#ffffff"/>`,
+    `<image href="${esc(cut.dataUri)}" x="${(box.x + pad * 1.6).toFixed(1)}" y="${(box.y + pad * 1.6).toFixed(1)}" width="${(cardW - pad * 1.2).toFixed(1)}" height="${(cardH - pad * 1.2).toFixed(1)}" preserveAspectRatio="xMidYMid meet"/>`,
+  ].join("");
+}
 
 // XML-escape any user/derived string before it enters the SVG.
 function esc(s: string): string {
@@ -81,7 +102,7 @@ function pill(label: string, r: Region, fill: string, textColor: string, fontFam
  * @param approved       the approved copy (already generated + reviewed; drawn verbatim)
  * @param visualDataUri  the AI visual as a data URI (data:image/png;base64,...), or null (brand-colour fallback bg)
  */
-export function compose(brief: GenerationBrief, approved: ApprovedText, visualDataUri: string | null): ComposedAsset {
+export function compose(brief: GenerationBrief, approved: ApprovedText, visualDataUri: string | null, productCutout: Cutout | null = null): ComposedAsset {
   const format: AdFormat = brief.format;
   const b: BrandDNA = brief.brandDNA;
   const { width, height } = format;
@@ -100,6 +121,14 @@ export function compose(brief: GenerationBrief, approved: ApprovedText, visualDa
   parts.push(`<rect width="${width}" height="${height}" fill="${bg}"/>`);
   if (visualDataUri) {
     parts.push(`<image href="${esc(visualDataUri)}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/>`);
+  }
+
+  // PRODUCT FIDELITY: for a "composite" format, drop the REAL product (cutout or framed photo) into its
+  // region, on top of the generated scene. The image model is told not to draw the product, so this is the
+  // only product on frame - guaranteeing it matches the Shopify listing exactly. Runs in BOTH scene and
+  // background modes (before the pass-through return below), so scene formats get the real product too.
+  if (brief.productMode === "composite" && productCutout) {
+    parts.push(productLayer(productCutout, L.productBox));
   }
 
   // SCENE PASS-THROUGH: for an executional format whose native chrome text (search results, message bubbles,

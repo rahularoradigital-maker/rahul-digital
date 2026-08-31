@@ -54,9 +54,12 @@ function buildPrompt(brief: GenerationBrief): string {
   const c = brief.concept;
   const style = [b.imageStyle, b.designStyle].filter((s) => s && s !== "UNKNOWN").join(", ");
   const palette = [b.palette.primary, b.palette.secondary, b.palette.background].filter((c) => c && c !== "UNKNOWN").join(", ");
-  const productLine = brief.requiredProductFidelity
-    ? "Feature the product EXACTLY as in the reference image - same packaging, label, shape, colour and on-pack text; do not redesign or restyle it."
-    : "";
+  const productLine =
+    brief.productMode === "composite"
+      ? "Do NOT draw, include, or imagine the product itself. Leave a clean, well-lit, uncluttered empty area in the upper-central part of the frame where the real product image will be composited afterward."
+      : brief.requiredProductFidelity
+        ? "Feature the product EXACTLY as in the reference image - same packaging, label, shape, colour and on-pack text; do not redesign or restyle it."
+        : "";
 
   if (brief.renderRecipe) {
     const scene = fillRecipe(brief.renderRecipe, brief.productDNA.name);
@@ -113,8 +116,11 @@ async function callModel(model: string, brief: GenerationBrief, extraImageBase64
   if (!apiKey) return { ok: false, provider: "google", model, costUsd: 0, promptVersion: brief.promptVersion, error: "GEMINI_API_KEY not set" };
 
   const parts: Record<string, unknown>[] = [{ text: buildPrompt(brief) }];
-  // Reference product image(s) for fidelity + an optional base/parent image (edit/variant).
-  const refs = brief.requiredProductFidelity ? await Promise.all(brief.referenceImages.slice(0, 4).map(inlineReference)) : [];
+  // Attach the product reference only when the MODEL should draw it (in-scene / legacy background fidelity).
+  // For "composite" formats we place the real product ourselves downstream, so feeding it here would only
+  // tempt the model to redraw the SKU - the exact fidelity bug the composite path removes.
+  const attachRefs = brief.requiredProductFidelity && brief.productMode !== "composite";
+  const refs = attachRefs ? await Promise.all(brief.referenceImages.slice(0, 4).map(inlineReference)) : [];
   for (const r of refs) if (r) parts.push({ inlineData: r });
   if (extraImageBase64) parts.push({ inlineData: extraImageBase64 });
 
