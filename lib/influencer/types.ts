@@ -100,6 +100,7 @@ export type NormalizedCreator = {
   businessEmail: Evidence<string>; // ONLY a self-published public business email; else UNKNOWN
   audience: AudienceEstimate; // Path A
   reels?: ReelSignals | null; // reel reach + engagement + consistency (optional; null when not fetched)
+  avatarUrl?: string | null; // public profile picture URL (from the provider); null when unavailable
 };
 
 /** Configurable follower tiers (never one universal band - varies by platform/geo/campaign/brand). */

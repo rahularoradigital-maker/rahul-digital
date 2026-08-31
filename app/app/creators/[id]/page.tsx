@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { CreatorAvatar } from "@/components/ui/creator-avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { tierOf } from "@/lib/influencer/tiers";
@@ -22,7 +23,6 @@ const fmt = (n: number | null): string => {
   if (n >= 1_000) return (n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1) + "K";
   return String(n);
 };
-const initials = (s: string) => s.replace(/[^a-zA-Z ]/g, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
 const confBadge = (c: Confidence) => (c === "high" ? "success" : c === "medium" ? "warning" : "muted") as "success" | "warning" | "muted";
 const tone = (s: number) => (s >= 70 ? "good" : s >= 45 ? "warn" : "muted") as "good" | "warn" | "muted";
 const LABEL: Record<string, string> = { brand_fit: "Brand fit", audience_fit: "Audience fit", content_fit: "Content fit", engagement: "Engagement", reach: "Reach", consistency: "Consistency", safety: "Safety" };
@@ -60,7 +60,7 @@ export default async function CreatorProfilePage({ params }: { params: Promise<{
       {/* Header */}
       <Card>
         <CardContent className="flex flex-col gap-5 p-6 sm:flex-row sm:items-start">
-          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-secondary text-lg font-semibold text-secondary-foreground">{initials(c.name.value ?? c.identity.handle)}</span>
+          <CreatorAvatar src={c.avatarUrl} name={c.name.value ?? c.identity.handle} size={64} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <h1 className="text-[22px] font-medium tracking-tight">{c.name.value ?? `@${c.identity.handle}`}</h1>

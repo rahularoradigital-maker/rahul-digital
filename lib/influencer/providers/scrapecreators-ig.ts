@@ -115,8 +115,9 @@ function mapProfile(identity: CreatorIdentity, body: Record<string, unknown>): N
     audience: {
       topCountries: [], genderLean: null, topLanguages: [], basis: "none", sampleSize: 0,
       source: "UNKNOWN", confidence: "none",
-      note: "audience demographics require a specialist provider (Modash/HypeAuditor); not available from public IG data",
+      note: "audience demographics require a specialist audience provider; not available from public IG data",
     },
+    avatarUrl: str(u.profile_pic_url_hd) ?? str(u.profile_pic_url) ?? null,
   };
 }
 

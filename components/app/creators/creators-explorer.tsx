@@ -1,14 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ExternalLink, Mail, TrendingUp, Users, Activity, MapPin, SlidersHorizontal } from "lucide-react";
+import { ExternalLink, Mail, TrendingUp, Users, Activity, MapPin, SlidersHorizontal, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { CreatorAvatar } from "@/components/ui/creator-avatar";
 import { tierOf } from "@/lib/influencer/tiers";
 import { guessGender, extractRegion, inEngBand, meetsConfidence, type EngBand, type MinConfidence } from "@/lib/influencer/derive";
 import type { RankedCreator } from "@/lib/influencer/rank";
@@ -20,7 +22,6 @@ const fmt = (n: number | null): string => {
   if (n >= 1_000) return (n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1) + "K";
   return String(n);
 };
-const initials = (name: string, handle: string) => (name || handle).replace(/[^a-zA-Z ]/g, "").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
 const confBadge = (c: Confidence) => (c === "high" ? "success" : c === "medium" ? "warning" : "muted") as "success" | "warning" | "muted";
 const scoreTone = (s: number) => (s >= 70 ? "good" : s >= 45 ? "warn" : "muted") as "good" | "warn" | "muted";
 
@@ -58,6 +59,32 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
 
   const active = eng !== "any" || gender !== "any" || region !== "any" || minConf !== "any" || minFollowers !== "";
   const clear = () => { setEng("any"); setGender("any"); setRegion("any"); setMinConf("any"); setMinFollowers(""); };
+
+  // Run a fresh discovery with the current filters as search inputs. min-followers drives what gets found;
+  // the rest are applied server-side so the stored result matches. Costs provider credits, so it is explicit.
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [searching, setSearching] = useState(false);
+  const [searchMsg, setSearchMsg] = useState<string | null>(null);
+  const runSearch = async () => {
+    setSearching(true);
+    setSearchMsg(null);
+    try {
+      const res = await fetch("/api/influencer/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ minFollowers: parseInt(minFollowers.replace(/[^\d]/g, ""), 10) || undefined, engagement: eng, gender, region, minConfidence: minConf }),
+      });
+      const d = (await res.json()) as { ok?: boolean; error?: string; count?: number };
+      if (!d.ok) { setSearchMsg(d.error ?? "Search failed."); return; }
+      startTransition(() => router.refresh());
+    } catch {
+      setSearchMsg("Search failed. Please try again.");
+    } finally {
+      setSearching(false);
+    }
+  };
+  const busy = searching || pending;
 
   return (
     <div className="space-y-5">
@@ -117,10 +144,15 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
               </Select>
             </label>
           </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-[13px] text-muted-foreground"><span className="font-medium text-foreground">{filtered.length}</span> of {creators.length} creators{eng !== "any" ? ` · ${eng.replace("+", "%+").replace("-", "–")}% eng` : ""}</span>
-            {active ? <Button variant="ghost" size="sm" onClick={clear}>Clear filters</Button> : null}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[13px] text-muted-foreground"><span className="font-medium text-foreground">{filtered.length}</span> of {creators.length} shown{eng !== "any" ? ` · ${eng.replace("+", "%+").replace("-", "–")}% eng` : ""}</span>
+            <div className="flex items-center gap-2">
+              {active ? <Button variant="ghost" size="sm" onClick={clear} disabled={busy}>Clear</Button> : null}
+              <Button size="sm" onClick={runSearch} disabled={busy}><Search /> {busy ? "Searching…" : "Run search with these filters"}</Button>
+            </div>
           </div>
+          {searchMsg ? <div className="mt-2 rounded-md border border-[var(--warn-ink)]/25 bg-[var(--warn-bg)] px-3 py-2 text-[12.5px] text-[var(--warn-ink)]">{searchMsg}</div> : null}
+          <p className="mt-2 text-[11px] text-muted-foreground">Filters narrow the list instantly. <span className="font-medium">Run search</span> fetches a fresh set using min-followers as the search floor and applies the rest (uses provider credits).</p>
         </CardContent>
       </Card>
 
@@ -149,7 +181,7 @@ function CreatorRow({ r }: { r: RankedCreator }) {
         {/* Left: identity */}
         <div className="flex min-w-0 flex-1 gap-4">
           <div className="flex flex-col items-center gap-1">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">{initials(c.name.value ?? "", c.identity.handle)}</span>
+            <CreatorAvatar src={c.avatarUrl} name={c.name.value ?? c.identity.handle} size={44} />
             <span className="text-[10px] font-medium text-muted-foreground">#{r.rank}</span>
           </div>
           <div className="min-w-0 flex-1">
