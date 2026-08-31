@@ -114,7 +114,13 @@ function CreatorCard({ r }: { r: RankedCreator }) {
             {tier ? <span className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] font-medium capitalize text-[var(--ink-muted)]">{tier}</span> : null}
           </div>
 
-          <p className="mt-1 text-[13px] leading-relaxed text-[var(--ink)]">
+          {c.bio.value ? (
+            <p className="mt-0.5 text-[12px] leading-snug text-[var(--ink-muted)]">
+              {c.bio.value.length > 140 ? c.bio.value.slice(0, 140) + "…" : c.bio.value}
+            </p>
+          ) : null}
+
+          <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--ink)]">
             <span className="font-medium">Why: </span>{r.topReason}
           </p>
 
@@ -137,9 +143,12 @@ function CreatorCard({ r }: { r: RankedCreator }) {
             <span className={`rounded-full px-2 py-0.5 font-medium ${risk.score < 30 ? "bg-[var(--good-bg)] text-[var(--good-ink)]" : risk.score < 55 ? "bg-[var(--warn-bg)] text-[var(--warn-ink)]" : "bg-[var(--surface-alt)] text-[var(--ink-muted)]"}`}>
               Risk {Math.round(risk.score)}
             </span>
-            <span className={`rounded-full px-2 py-0.5 font-medium ${c.businessEmail.value ? "bg-[var(--good-bg)] text-[var(--good-ink)]" : "bg-[var(--surface-alt)] text-[var(--ink-muted)]"}`}>
-              {c.businessEmail.value ? "Public email listed" : "No public email"}
-            </span>
+            {c.businessEmail.value ? (
+              <a href={`mailto:${c.businessEmail.value}`} className="rounded-full bg-[var(--good-bg)] px-2 py-0.5 font-medium text-[var(--good-ink)] hover:underline">✉ {c.businessEmail.value}</a>
+            ) : (
+              <span className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 font-medium text-[var(--ink-muted)]">No public email</span>
+            )}
+            <a href={c.identity.profileUrl} target="_blank" rel="noopener noreferrer" className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]">Open on Instagram ↗</a>
           </div>
         </div>
 

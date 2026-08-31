@@ -52,6 +52,12 @@ function mapProfile(identity: CreatorIdentity, body: Record<string, unknown>): N
   const u = (data.user ?? {}) as Record<string, unknown>;
 
   const username = str(u.username) ?? identity.handle;
+  const bioText = str(u.biography) ?? "";
+  // Contact: prefer a structured public/business email, else pull one out of the bio text (creators very often
+  // put "collabs@..." right in their bio). This is real, public, self-published contact info - never inferred.
+  const structuredEmail = str(u.public_email) ?? str(u.business_email);
+  const bioEmail = bioText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] ?? null;
+  const email = structuredEmail ?? bioEmail;
   const followers = num((u.edge_followed_by as Record<string, unknown> | undefined)?.count);
   const following = num((u.edge_follow as Record<string, unknown> | undefined)?.count);
   const media = (u.edge_owner_to_timeline_media ?? {}) as Record<string, unknown>;
@@ -105,7 +111,7 @@ function mapProfile(identity: CreatorIdentity, body: Record<string, unknown>): N
     avgViews: unknown("not available from the IG profile endpoint"),
     engagementRate,
     engagementMethod: "(mean likes + comments)/followers over recent posts",
-    businessEmail: unknown("public IG profile does not expose a business email"),
+    businessEmail: email ? evidence(email, structuredEmail ? "PROVIDER" : "PUBLIC_WEB", "medium", at, structuredEmail ? "public business email" : "email published in bio") : unknown("no public email in profile or bio"),
     audience: {
       topCountries: [], genderLean: null, topLanguages: [], basis: "none", sampleSize: 0,
       source: "UNKNOWN", confidence: "none",
