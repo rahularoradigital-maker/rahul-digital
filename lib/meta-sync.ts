@@ -10,7 +10,7 @@ import { LruMap } from "./lru.ts";
 import { createSingleFlight } from "./single-flight.ts";
 import { isRenderableShape } from "./cockpit/renderable.ts";
 import { todayIn, daysAgo } from "./date-window.ts";
-import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, fetchAccountTimezone, fetchLevelNative, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
+import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, fetchAccountTimezone, fetchAccountCurrency, fetchLevelNative, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { deterministicFingerprint, excludeCatalogAds, thumbUrlOf, type CreativeAsset } from "./creative/fingerprint.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
@@ -399,9 +399,11 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // CACHE_SCHEMA bump and no forced cold pull.
     // LEVEL-NATIVE metrics (reach/frequency/budget) that cannot be rolled up from ad rows - pulled from Meta
     // at level=adset/campaign, in parallel + best-effort (any failure -> empty map -> the card shows "n/a").
+    // The account currency drives the budget minor-unit divisor (paise for INR, whole yen for JPY, ...).
+    const currency = await fetchAccountCurrency(acct.external_id, token).catch(() => null);
     const [adsetNative, campaignNative] = await Promise.all([
-      fetchLevelNative(acct.external_id, token, "adset", since, until),
-      fetchLevelNative(acct.external_id, token, "campaign", since, until),
+      fetchLevelNative(acct.external_id, token, "adset", since, until, currency),
+      fetchLevelNative(acct.external_id, token, "campaign", since, until, currency),
     ]);
     const funnelLevels = levelFunnels(
       realAds.map((ad) => ({

@@ -145,10 +145,10 @@ account** — that is the one open gap and Rahul's own hard rule (verify to 100%
 | 2 | Triple-Labelled judgment engine | Parallel Judge agent (`lib/judgment/`, Evidence·Agreement·Confidence); live API verified | 🟢 |
 | 3 | Show the triple label on cards | `ActionList` shows Evidence ✓ · N/3 agree · Conf tier; render verified | 🟢 |
 | 4 | Enterprise control-plane / security | 5-plane audit + immutable audit log (0015), kill switches (0016), RBAC catalog, data classification, plane-boundary guard; **migrations applied + immutability verified live**; red-team fixes (SSRF on Shopify, prompt-injection in 4 AI routes, cost-DoS on /api/judgment) | 🟢 |
-| 5 | No actions on paused/ended ads | Action queue gated to `active !== false && delivering !== false` (recent-spend liveness) | 🟠 live check |
-| 6 | Ad-set/campaign strike graphs + native metrics | Delivery sparklines + native reach/frequency/budget (Meta `level=adset/campaign` pull, best-effort) | 🟠 live check |
-| 7 | Per-entity drill-in + buyer metrics + picker | Entity drill-in card grid, per-level buyer-native metric sets, metric picker (per-level, persisted, full KPI-sheet menu) | 🟠 live check |
-| 8 | "Paused campaign caused the drop" | Culprit-diagnostic (`lib/scoring/culprit.ts`): account-drop + stopped material contributor, ad-set + campaign grain, corroborated with the real logged change (`ad_changes`) | 🟠 live check |
+| 5 | No actions on paused/ended ads | Action queue gated to `active !== false && delivering !== false` (recent-spend liveness) | 🟢 live-verified 2026-08-31 |
+| 6 | Ad-set/campaign strike graphs + native metrics | Delivery sparklines + native reach/frequency/budget (Meta `level=adset/campaign` pull, best-effort) | 🟢 live-verified 2026-08-31 |
+| 7 | Per-entity drill-in + buyer metrics + picker | Entity drill-in card grid, per-level buyer-native metric sets, metric picker (per-level, persisted, full KPI-sheet menu) | 🟢 live-verified 2026-08-31 |
+| 8 | "Paused campaign caused the drop" | Culprit-diagnostic (`lib/scoring/culprit.ts`): account-drop + stopped material contributor, ad-set + campaign grain, corroborated with the real logged change (`ad_changes`) | 🟢 live-verified 2026-08-31 |
 
 **Global liveness rule (Rahul, 2026-08-31):** the app never points to a paused/ended entity as a to-do,
 but MAY name it as the cause of a recent drop. Applied across the action queue (5), the level view's

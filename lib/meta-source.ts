@@ -772,7 +772,19 @@ const numOrNull = (v: string | undefined): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-export async function fetchLevelNative(accountExternalId: string, token: TokenSet, level: "adset" | "campaign", since: string, until?: string): Promise<Map<string, LevelNative>> {
+// Meta returns budgets in the account currency's MINOR unit. Most currencies are 2-decimal (paise/cents) -> /100,
+// but zero-decimal currencies (JPY, KRW, VND...) are whole units (/1) and three-decimal (KWD, BHD...) are /1000.
+// Getting this wrong makes a JPY budget look 100x too small. Default /100 when the currency is unknown.
+const ZERO_DECIMAL = new Set(["BIF", "CLP", "DJF", "GNF", "ISK", "JPY", "KMF", "KRW", "PYG", "RWF", "UGX", "VND", "VUV", "XAF", "XOF", "XPF"]);
+const THREE_DECIMAL = new Set(["BHD", "IQD", "JOD", "KWD", "LYD", "OMR", "TND"]);
+export function minorUnitDivisor(currency: string | null | undefined): number {
+  const c = (currency ?? "").toUpperCase();
+  if (ZERO_DECIMAL.has(c)) return 1;
+  if (THREE_DECIMAL.has(c)) return 1000;
+  return 100;
+}
+
+export async function fetchLevelNative(accountExternalId: string, token: TokenSet, level: "adset" | "campaign", since: string, until?: string, currency?: string | null): Promise<Map<string, LevelNative>> {
   const out = new Map<string, LevelNative>();
   const idField = level === "adset" ? "adset_id" : "campaign_id";
   try {
@@ -791,12 +803,14 @@ export async function fetchLevelNative(accountExternalId: string, token: TokenSe
     /* reach/frequency unavailable -> stays n/a */
   }
   try {
-    // Budget lives on the entity, not insights. Meta returns minor units (paise for INR) -> /100 for rupees.
+    // Budget lives on the entity, not insights. Meta returns the account currency's minor unit -> divide by the
+    // right factor for that currency (paise for INR = /100, whole yen for JPY = /1, etc.).
+    const div = minorUnitDivisor(currency);
     const budgets = await graphGetAll<MetaBudgetRow>(`act_${accountExternalId}/${level}s`, token.accessToken, { fields: "id,daily_budget,lifetime_budget", limit: "500" }, 20);
     for (const b of budgets) {
       const daily = numOrNull(b.daily_budget);
       const life = numOrNull(b.lifetime_budget);
-      const budgetRs = daily && daily > 0 ? daily / 100 : life && life > 0 ? life / 100 : null;
+      const budgetRs = daily && daily > 0 ? daily / div : life && life > 0 ? life / div : null;
       const budgetType: LevelNative["budgetType"] = daily && daily > 0 ? "daily" : life && life > 0 ? "lifetime" : null;
       const cur = out.get(b.id);
       if (cur) {
