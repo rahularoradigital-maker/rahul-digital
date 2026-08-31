@@ -13,8 +13,8 @@ const COLS: { title: string; links: { label: string; href: string }[] }[] = [
     { label: "Health & Wellness", href: "/book-demo" }, { label: "Agencies", href: "/book-demo" },
   ] },
   { title: "Resources", links: [
-    { label: "Blog", href: "/book-demo" }, { label: "Trending Ads", href: "/book-demo" },
-    { label: "Attention Heatmap", href: "/book-demo" }, { label: "Documentation", href: "/book-demo" },
+    { label: "Blog", href: "/blog" }, { label: "Meta ads guides", href: "/blog" },
+    { label: "Creative strategy", href: "/blog" }, { label: "Book a demo", href: "/book-demo" },
   ] },
   { title: "Company", links: [
     { label: "Contact us", href: "mailto:hello@adbrain.ai" }, { label: "Book a demo", href: "/book-demo" },

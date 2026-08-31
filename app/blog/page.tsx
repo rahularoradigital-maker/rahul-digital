@@ -25,12 +25,24 @@ export default async function BlogIndex() {
       {articles.length === 0 ? (
         <p className="mt-10 text-[14px] text-[var(--ink-muted)]">No posts yet. Check back soon.</p>
       ) : (
-        <ul className="mt-10 space-y-6">
+        <ul className="mt-10 space-y-8">
           {articles.map((a) => (
-            <li key={a.id} className="border-t border-[var(--hairline)] pt-6 first:border-0 first:pt-0">
-              <Link href={`/blog/${a.slug}`} className="text-[19px] font-semibold text-[var(--ink)] hover:text-[var(--accent)]">{a.title}</Link>
-              {a.dek && <p className="mt-1 text-[14px] text-[var(--ink-muted)]">{a.dek}</p>}
-              {a.published_at && <p className="mt-1 text-[12px] text-[var(--ink-muted)]">{a.published_at.slice(0, 10)}</p>}
+            <li key={a.id} className="border-t border-[var(--hairline)] pt-8 first:border-0 first:pt-0">
+              <Link href={`/blog/${a.slug}`} className="group grid gap-4 sm:grid-cols-[200px_1fr] sm:gap-5">
+                <img
+                  src={`/blog/${a.slug}/opengraph-image`}
+                  alt={a.title}
+                  width={1200}
+                  height={630}
+                  className="aspect-[1200/630] w-full rounded-[10px] border border-[var(--hairline)] object-cover"
+                />
+                <div>
+                  {a.topic && <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--accent)]">{a.topic}</p>}
+                  <p className="mt-1 text-[18px] font-semibold leading-snug text-[var(--ink)] group-hover:text-[var(--accent)]">{a.title}</p>
+                  {a.dek && <p className="mt-1 text-[14px] text-[var(--ink-muted)]">{a.dek}</p>}
+                  {a.published_at && <p className="mt-2 text-[12px] text-[var(--ink-muted)]">{a.published_at.slice(0, 10)}</p>}
+                </div>
+              </Link>
             </li>
           ))}
         </ul>

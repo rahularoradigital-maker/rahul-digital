@@ -12,6 +12,7 @@ export function SiteHeader() {
           <a href="#use-cases" className="hover:text-[var(--ink)]">Use Cases</a>
           <a href="#method" className="hover:text-[var(--ink)]">How it works</a>
           <a href="#features" className="hover:text-[var(--ink)]">Features</a>
+          <Link href="/blog" className="hover:text-[var(--ink)]">Blog</Link>
         </nav>
         <div className="flex items-center gap-4 text-[15px]">
           <Link href="/login" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">

@@ -6,14 +6,29 @@ import React from "react";
 
 function inline(text: string, keyBase: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
-  const re = /(\[([^\]]+)\]\((https?:\/\/[^)]+)\))|(\*\*([^*]+)\*\*)/g;
+  // Links are absolute (https://...) OR root-relative (/blog/...). Root-relative is how articles cross-link into
+  // the same topic cluster - crawlable internal links, so restricting to https:// silently dropped every one of
+  // them. Both forms are safe hrefs (no javascript:); internal links stay in-tab, external open a new tab.
+  const re = /(\[([^\]]+)\]\((https?:\/\/[^)]+|\/[^)]+)\))|(\*\*([^*]+)\*\*)/g;
   let last = 0;
   let i = 0;
   for (const m of text.matchAll(re)) {
     const idx = m.index ?? 0;
     if (idx > last) nodes.push(text.slice(last, idx));
-    if (m[1]) nodes.push(<a key={`${keyBase}-l${i}`} href={m[3]} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] underline">{m[2]}</a>);
-    else if (m[4]) nodes.push(<strong key={`${keyBase}-b${i}`}>{m[5]}</strong>);
+    if (m[1]) {
+      const href = m[3];
+      const external = href.startsWith("http");
+      nodes.push(
+        <a
+          key={`${keyBase}-l${i}`}
+          href={href}
+          {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+          className="text-[var(--accent)] underline"
+        >
+          {m[2]}
+        </a>,
+      );
+    } else if (m[4]) nodes.push(<strong key={`${keyBase}-b${i}`}>{m[5]}</strong>);
     last = idx + m[0].length;
     i++;
   }
