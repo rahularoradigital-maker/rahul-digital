@@ -101,6 +101,7 @@ const engProvider = (er: number | null): CreatorDataProvider => ({
 });
 assert.equal((await discoverAndRank(engProvider(0.0001), target, "S", { enrich: 3 })).ranked.length, 0, "a ~0% (dead/bought) brand page is dropped");
 assert.equal((await discoverAndRank(engProvider(0.6), target, "S", { enrich: 3 })).ranked.length, 0, "a 60% bought-engagement account is dropped");
+assert.equal((await discoverAndRank(engProvider(0.25), target, "S", { enrich: 3 })).ranked.length, 0, "a 25% bought-engagement account is dropped (ceiling 20%)");
 assert.equal((await discoverAndRank(engProvider(0.03), target, "S", { enrich: 3 })).ranked.length, 1, "a normal 3% engagement creator is kept");
 assert.equal((await discoverAndRank(engProvider(null), target, "S", { enrich: 3 })).ranked.length, 1, "unknown engagement is kept, never treated as dead");
 

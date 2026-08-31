@@ -9,14 +9,14 @@ import { creatorSearchSpecFrom, discoveryHashtags } from "./spec.ts";
 import { rankCreators, type RankedCreator } from "./rank.ts";
 import { canonicalKey } from "./dedup.ts";
 
-const DEFAULT_ENRICH = 18; // profiles fetched per run (= credits); bounded so the run stays under the function time cap
+const DEFAULT_ENRICH = 24; // profiles fetched per run (= credits); affordable now that hashtags fetch in parallel
 const DEFAULT_CONCURRENCY = 8; // parallel profile fetches: keeps the whole run fast (well under the ~60s serverless cap)
 const DEFAULT_MIN_FOLLOWERS = 10_000; // influencer floor: drop tiny shops/resellers. Adjustable per run.
 // Plausible engagement band. Below the floor = dead/bought-follower BRAND pages (a real creator engages its
 // audience); above the ceiling = bought-engagement. Both are dropped so only real creators remain. A creator
 // with UNKNOWN engagement is kept (unknown != dead - never guessed).
 const DEFAULT_MIN_ENGAGEMENT = 0.005; // 0.5%
-const DEFAULT_MAX_ENGAGEMENT = 0.35; //  35%
+const DEFAULT_MAX_ENGAGEMENT = 0.2; //   20% - above this at a 10K+ account is almost always bought engagement
 
 export type DiscoverStats = { queries: string[]; candidates: number; enriched: number; failed: number };
 export type DiscoverResult = { ranked: RankedCreator[]; stats: DiscoverStats };
