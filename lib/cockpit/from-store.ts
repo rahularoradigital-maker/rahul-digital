@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapMetaObjective } from "@/lib/meta-source";
+import { mapMetaObjective, type ScopeInsights } from "@/lib/meta-source";
 import type { MetricsRow } from "@/lib/ad-source";
 import { toCockpitInputs, type RealAd } from "@/lib/scoring";
 import { analyzeAccount } from "@/lib/cockpit/analyze";
@@ -117,6 +117,9 @@ export async function buildCockpitFromStore(opts: {
   objectives?: string[];
   campaignIds?: string[];
   syncedAt?: string;
+  // Meta's ACCOUNT-LEVEL scope total (from the caller), used for the headline so spend/revenue match Ads
+  // Manager exactly even when the ad-level store lags the long tail of tiny-spend ads. Best-effort.
+  scopePromise?: Promise<ScopeInsights | null>;
 }): Promise<LiveCockpit | null> {
   const { userId, accountExternalId, accountName, since, until, catalog } = opts;
   const weights = opts.weights ?? VERDICT_WEIGHTS;
@@ -278,11 +281,17 @@ export async function buildCockpitFromStore(opts: {
 
   // Headline totals: the COMPLETE, catalog-correct account totals (realAds are already catalog-filtered),
   // so no separate scope query is needed - the store IS the whole account.
-  const sSpend = dayRows.reduce((a, d) => a + d.spend, 0);
-  const sImpr = dayRows.reduce((a, d) => a + d.impressions, 0);
-  const sClicks = dayRows.reduce((a, d) => a + d.clicks, 0);
-  const sPur = dayRows.reduce((a, d) => a + d.purchases, 0);
-  const sRev = dayRows.reduce((a, d) => a + d.revenue, 0);
+  // Prefer Meta's ACCOUNT-LEVEL total (via the caller) so headline spend/revenue match Ads Manager exactly
+  // even when the ad-level store is missing the long tail of tiny-spend ads. Only fall back to summing the
+  // store ads when catalog is being EXCLUDED (the account-level scope includes catalog) or no scope is
+  // available (previous behavior). Best-effort - a scope failure never breaks the page.
+  const scope = opts.scopePromise ? await opts.scopePromise.catch(() => null) : null;
+  const useScope = scope && catalog !== "exclude";
+  const sSpend = useScope ? scope!.spend : dayRows.reduce((a, d) => a + d.spend, 0);
+  const sImpr = useScope ? scope!.impressions : dayRows.reduce((a, d) => a + d.impressions, 0);
+  const sClicks = useScope ? scope!.clicks : dayRows.reduce((a, d) => a + d.clicks, 0);
+  const sPur = useScope ? scope!.purchases : dayRows.reduce((a, d) => a + d.purchases, 0);
+  const sRev = useScope ? scope!.revenue : dayRows.reduce((a, d) => a + d.revenue, 0);
   const metrics: AccountMetrics = {
     impressions: sImpr,
     clicks: sClicks,

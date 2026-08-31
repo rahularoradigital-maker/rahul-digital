@@ -218,6 +218,13 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // STAGE 2b: serve from the COMPLETE day-wise store when it has data for this account+window - every
     // spending ad, no top-N cap. Returns null when the store is empty (not yet synced), in which case we
     // fall through to the on-demand pull below, so the app is never worse than before, only more complete.
+    // Account-level scope total for the headline, so the store path's spend/revenue match Ads Manager
+    // exactly even if the ad-level store lags the long tail of tiny-spend ads. Resolved concurrently with
+    // the store read; unused on a store miss. Best-effort (null on failure). This is ONE lightweight
+    // account-level call - not the heavy per-ad pull - so it does not reintroduce the slow load.
+    const storeScopePromise = resolveCampaignIds(acct.external_id, token, campaignId, objectives)
+      .then((cids) => fetchScopeInsights(acct.external_id, since, token, cids, until))
+      .catch(() => null);
     try {
       const fromStore = await buildCockpitFromStore({
         userId,
@@ -229,6 +236,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
         weights,
         objectives,
         campaignIds: campaignId ? campaignId.split(",").filter(Boolean) : undefined,
+        scopePromise: storeScopePromise,
       });
       if (fromStore) {
         perfMark("from-store (complete-coverage)", tp);
