@@ -39,7 +39,9 @@ function spendIn(daily: { date: string; spend: number }[], fromDate: string, toD
  * Given the account's day-wise points and the campaign/ad-set groups, decide whether results dropped in the
  * recent window and, if so, which STOPPED contributors best explain it. `asOf` = the window's last data day.
  */
-export function diagnoseCulprit(account: DayPoint[], groups: CulpritGroup[], asOf: string | null, entityLabel: "campaign" | "ad set" = "campaign"): CulpritDiagnosis {
+export type StatusEvent = { date: string; actorName: string | null };
+
+export function diagnoseCulprit(account: DayPoint[], groups: CulpritGroup[], asOf: string | null, entityLabel: "campaign" | "ad set" = "campaign", statusEvents?: Map<string, StatusEvent>): CulpritDiagnosis {
   const none: CulpritDiagnosis = { dropped: false, metric: "revenue", dropPct: 0, recentRs: 0, priorRs: 0, culprits: [], summary: null };
   if (!asOf) return none;
   const days = [...new Set(account.map((p) => p.date))].sort();
@@ -75,8 +77,16 @@ export function diagnoseCulprit(account: DayPoint[], groups: CulpritGroup[], asO
   }
   culprits.sort((a, b) => b.priorSpendRs - a.priorSpendRs);
 
+  // Corroborate the top culprit's inferred stop with a LOGGED status change, when one exists for it - who
+  // changed it, and when. Authoritative beats inferred; silently falls back to the inferred wording otherwise.
+  const top = culprits[0];
+  const logged = top ? statusEvents?.get(top.id) : undefined;
+  const loggedNote = logged
+    ? ` (status changed${logged.actorName ? ` by ${logged.actorName}` : ""} on ${logged.date}, from your change log)`
+    : "";
+
   const summary = culprits.length
-    ? `${metric === "revenue" ? "Revenue" : "Spend"} fell ${Math.round(dropPct * 100)}% in the last ${WINDOW} days. The ${entityLabel} "${culprits[0].name}" (${Math.round(culprits[0].shareOfPriorSpend * 100)}% of prior spend) stopped delivering${culprits[0].stoppedOn ? ` after ${culprits[0].stoppedOn}` : ""} - the most likely cause. It is paused/ended, so there is nothing to fix on it; relaunch or reallocate if that result still matters.`
+    ? `${metric === "revenue" ? "Revenue" : "Spend"} fell ${Math.round(dropPct * 100)}% in the last ${WINDOW} days. The ${entityLabel} "${top.name}" (${Math.round(top.shareOfPriorSpend * 100)}% of prior spend) stopped delivering${top.stoppedOn ? ` after ${top.stoppedOn}` : ""}${loggedNote} - the most likely cause. It is paused/ended, so there is nothing to fix on it; relaunch or reallocate if that result still matters.`
     : null;
 
   return { dropped: true, metric, dropPct, recentRs, priorRs, culprits, summary };

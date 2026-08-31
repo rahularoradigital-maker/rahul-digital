@@ -44,4 +44,11 @@ ok(diagnoseCulprit(short, groups, asOf).summary === null, "too little history ->
 const labelled = diagnoseCulprit(account, groups, asOf, "ad set");
 ok(!!labelled.summary && /the ad set "Big Sale Campaign"/i.test(labelled.summary), "summary uses the given entity label (ad set vs campaign)");
 
+// A LOGGED status change for the culprit corroborates the inferred stop (who + when), when available.
+const withLog = diagnoseCulprit(account, groups, asOf, "campaign", new Map([["big", { date: "2026-08-23", actorName: "Rahul Arora" }]]));
+ok(!!withLog.summary && /by Rahul Arora on 2026-08-23, from your change log/.test(withLog.summary), "summary corroborates with the logged status change (actor + date)");
+// Absent a logged event, it falls back to the inferred wording (no crash, no fabrication).
+const noLog = diagnoseCulprit(account, groups, asOf, "campaign", new Map());
+ok(!!noLog.summary && !/change log/.test(noLog.summary), "no logged event -> inferred wording, no fabricated log reference");
+
 console.log(`check-culprit: ${pass} assertions passed.`);

@@ -297,7 +297,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
       <FunnelCard funnel={funnel} dailySeries={dailySeries} funnelLevels={funnelLevels} />
 
       {/* Why-results-dropped diagnostic: names a paused/ended campaign as the cause (never as a to-do) */}
-      <CulpritBanner dailySeries={dailySeries} funnelLevels={funnelLevels} />
+      <CulpritBanner dailySeries={dailySeries} funnelLevels={funnelLevels} accountId={accountId} />
 
       {/* This week's plan + Fatigue radar */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.55fr_1fr]">
