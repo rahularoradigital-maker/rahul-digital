@@ -3,6 +3,7 @@ import { createAdminClient } from "../supabase/admin.ts";
 import { runTaskJson } from "../ai/router.ts";
 import { compose } from "../ai/compose.ts";
 import { BRAND } from "./knowledge.ts";
+import { tagAdScaleLinks } from "./attribution.ts";
 
 // Scout's content engine. From a recurring topic it writes a genuinely useful, sourced article (AI), stored as
 // a DRAFT. You one-tap publish; then it renders publicly at /blog/<slug>. No fabrication: the article is
@@ -43,7 +44,9 @@ export async function saveDraftArticle(a: { title: string; dek: string; body: st
     let slug = slugify(a.title);
     const { data: existing } = await admin.from("growth_articles").select("id").eq("slug", slug).maybeSingle();
     if (existing) slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
-    const { error } = await admin.from("growth_articles").insert({ slug, title: a.title, dek: a.dek, body_md: a.body, topic: a.topic, status: "draft" });
+    // Attribution: tag any AdScale link in the article body so blog-driven signups trace back to the content.
+    const body = tagAdScaleLinks(a.body, { source: "blog", content: a.topic });
+    const { error } = await admin.from("growth_articles").insert({ slug, title: a.title, dek: a.dek, body_md: body, topic: a.topic, status: "draft" });
     if (error) console.warn(`[growth] saveDraftArticle failed: ${error.message}`);
   } catch (err) {
     console.warn("[growth] saveDraftArticle failed:", err instanceof Error ? err.message : err);

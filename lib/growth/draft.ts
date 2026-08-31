@@ -2,6 +2,7 @@ import "server-only";
 import { runTaskText } from "../ai/router.ts";
 import { compose } from "../ai/compose.ts";
 import { BRAND } from "./knowledge.ts";
+import { tagAdScaleLinks } from "./attribution.ts";
 import type { Opportunity } from "./engine.ts";
 
 // Scout's draft-writer: for an opportunity worth a reply, the AI writes a SHORT, genuinely useful, human reply
@@ -22,7 +23,9 @@ export async function writeDraft(o: Opportunity): Promise<string | null> {
   const draft = await runTaskText("analyze-text", compose(system, [{ label: "conversation", content: `${o.conversation.title ?? ""}\n\n${o.conversation.content}` }]));
   if (!draft) return null;
   const t = draft.trim();
-  return t === "SKIP" || t.length < 20 ? null : t;
+  if (t === "SKIP" || t.length < 20) return null;
+  // Attribution: tag any AdScale link in the reply so a click from this thread is traceable to its source.
+  return tagAdScaleLinks(t, { source: o.conversation.platform, content: o.conversation.conversationId });
 }
 
 // Enrich the top opportunities with drafts, in parallel, capped so a run stays cheap. Never throws.
