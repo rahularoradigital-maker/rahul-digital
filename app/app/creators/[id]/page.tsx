@@ -54,7 +54,7 @@ export default async function CreatorProfilePage({ params }: { params: Promise<{
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <Link href="/app/creators" className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground transition hover:text-foreground">
-        <ArrowLeft className="h-3.5 w-3.5" /> Back to creators
+        <ArrowLeft className="h-3.5 w-3.5" /> Back to Influencer Hunt
       </Link>
 
       {/* Header */}

@@ -19,7 +19,7 @@ export default async function CreatorsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-[26px] font-normal tracking-tight">Creators</h1>
+          <h1 className="text-[26px] font-normal tracking-tight">Influencer Hunt</h1>
           <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
             Brand-matched creator shortlist, scored on a reel-driven formula. Filter by engagement, size, region, gender, and confidence.
           </p>

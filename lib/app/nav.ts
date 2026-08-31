@@ -22,8 +22,7 @@ export const NAV_GROUPS: { group: string; items: NavItem[] }[] = [
       { label: "Change Impact", icon: "⇄", href: "/app/changes" },
       { label: "Reconcile", icon: "=", href: "/app/reconcile" },
       { label: "Market", icon: "⚑", href: "/app/market" },
-      { label: "Influencer Hunt", icon: "◇", href: "/app/influencer" },
-      { label: "Creators", icon: "◈", href: "/app/creators" },
+      { label: "Influencer Hunt", icon: "◇", href: "/app/creators" },
     ],
   },
   {
