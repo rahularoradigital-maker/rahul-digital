@@ -5,7 +5,7 @@
 
 import type { CreatorDataProvider } from "./provider.ts";
 import type { BrandTarget, NormalizedCreator } from "./types.ts";
-import { creatorSearchSpecFrom, discoveryQueries } from "./spec.ts";
+import { creatorSearchSpecFrom, discoveryHashtags } from "./spec.ts";
 import { rankCreators, type RankedCreator } from "./rank.ts";
 import { canonicalKey } from "./dedup.ts";
 
@@ -42,7 +42,9 @@ export async function discoverAndRank(
   opts: { enrich?: number; concurrency?: number } = {},
 ): Promise<DiscoverResult> {
   const enrich = opts.enrich ?? DEFAULT_ENRICH;
-  const queries = discoveryQueries(target, accountName);
+  // Discover creators from the brand's hashtags (authors of relevant posts), not shops named after the
+  // category. The provider treats these keywords as hashtags.
+  const queries = discoveryHashtags(target, accountName);
   const spec = { ...creatorSearchSpecFrom(target), keywords: queries };
 
   // Cheap, broad discovery first. Bounded to `enrich` so we never fetch a profile we won't use.

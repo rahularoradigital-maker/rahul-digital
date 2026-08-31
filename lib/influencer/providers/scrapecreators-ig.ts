@@ -14,6 +14,12 @@ import type { CreatorDataProvider, ProviderCapability } from "../provider";
 const BASE = "https://api.scrapecreators.com/v1/instagram";
 const TIMEOUT_MS = 15_000;
 const RECENT_POSTS_FOR_ER = 12; // engagement rate is averaged over up to this many recent posts
+const DEFAULT_DISCOVER_FLOOR = 10_000; // skip tiny shops/resellers; a real influencer floor (overridable by spec)
+
+const igUrl = (handle: string) => `https://www.instagram.com/${handle}/`;
+const compact = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+// A dead/empty hashtag must not kill the whole run; only a credits/auth failure should propagate.
+const isFatal = (e: unknown) => e instanceof Error && /credit|api[- ]?key|unauthor|forbidden|quota/i.test(e.message);
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -83,7 +89,7 @@ function mapProfile(identity: CreatorIdentity, body: Record<string, unknown>): N
   const accountType = isBusiness ? "business" : isPro ? "creator" : "personal";
 
   return {
-    identity: { ...identity, handle: username, profileUrl: `https://instagram.com/${username}` },
+    identity: { ...identity, handle: username, profileUrl: igUrl(username) },
     name: str(u.full_name) ? evidence(str(u.full_name)!, "PROVIDER", "high", at) : unknown(),
     bio: str(u.biography) ? evidence(str(u.biography)!, "PUBLIC_WEB", "medium", at) : unknown(),
     followers: followers !== null ? evidence(followers, "PROVIDER", "high", at) : unknown(),
@@ -115,24 +121,72 @@ export function scrapeCreatorsIgProvider(apiKey: string): CreatorDataProvider {
     capabilities,
 
     async discover(spec: CreatorSearchSpec, limit: number): Promise<CreatorIdentity[]> {
-      const seen = new Map<string, CreatorIdentity>();
-      // One search per keyword phrase; stop once we have enough unique candidates to keep credit cost bounded.
-      for (const q of spec.keywords) {
-        if (seen.size >= limit) break;
-        const term = q.trim();
-        if (!term) continue;
-        const body = await getJson(`${BASE}/search?query=${encodeURIComponent(term)}`, apiKey);
-        const users =
-          (Array.isArray(body.users) ? body.users : Array.isArray((body.data as Record<string, unknown>)?.users) ? (body.data as Record<string, unknown>).users : []) as Record<string, unknown>[];
-        for (const usr of users) {
-          const id = str(usr.id) ?? str((usr as Record<string, unknown>).pk);
-          const handle = str(usr.username);
-          if (!id || !handle || seen.has(id)) continue;
-          seen.set(id, { platform: "instagram", platformUserId: id, handle, profileUrl: `https://instagram.com/${handle}` });
-          if (seen.size >= limit) break;
+      const floor = spec.minFollowers ?? DEFAULT_DISCOVER_FLOOR;
+      const hashtags = [...new Set(spec.keywords.map(compact).filter((h) => h.length >= 4))].slice(0, 6);
+
+      // Primary discovery = HASHTAG search: the AUTHORS of posts under the brand's hashtags are real creators
+      // making relevant content, NOT shops that merely put the category in their name. Each owner carries a
+      // follower_count, so we drop tiny shops/resellers up front (the floor) without spending a profile credit.
+      // Rank candidates by how many relevant posts they authored (topical dedication), then reach.
+      const owners = new Map<string, { identity: CreatorIdentity; followers: number; hits: number }>();
+      const collect = async (mediaType: "reels" | "all") => {
+        for (const h of hashtags) {
+          if (owners.size >= limit * 3) break;
+          let body: Record<string, unknown>;
+          try {
+            body = await getJson(`${BASE}/search/hashtag?hashtag=${encodeURIComponent(h)}&media_type=${mediaType}`, apiKey);
+          } catch (e) {
+            if (isFatal(e)) throw e; // out of credits / bad key -> surface honestly
+            continue; // a dead or empty hashtag is fine; move on
+          }
+          const posts = Array.isArray(body.posts) ? (body.posts as Record<string, unknown>[]) : [];
+          for (const p of posts) {
+            const o = (p.owner ?? {}) as Record<string, unknown>;
+            const id = str(o.id);
+            const handle = str(o.username);
+            if (!id || !handle) continue;
+            const foll = num(o.follower_count);
+            if (foll != null && foll < floor) continue; // skip tiny shops/resellers
+            const prev = owners.get(id);
+            if (prev) prev.hits += 1;
+            else owners.set(id, { identity: { platform: "instagram", platformUserId: id, handle, profileUrl: igUrl(handle) }, followers: foll ?? 0, hits: 1 });
+          }
         }
+      };
+      await collect("reels"); // reels bias toward creators (shops post catalog statics)
+      if (owners.size < limit) await collect("all"); // widen if reels was thin
+
+      // Fallback: only if hashtag discovery found nobody, fall back to keyword search (name-match). Lower
+      // quality (surfaces shops), so it is a last resort, and we cannot floor-filter it (no follower data).
+      if (owners.size === 0) {
+        const seen = new Map<string, CreatorIdentity>();
+        for (const q of spec.keywords) {
+          if (seen.size >= limit) break;
+          const term = q.trim();
+          if (!term) continue;
+          let body: Record<string, unknown>;
+          try {
+            body = await getJson(`${BASE}/search?query=${encodeURIComponent(term)}`, apiKey);
+          } catch (e) {
+            if (isFatal(e)) throw e;
+            continue;
+          }
+          const users = (Array.isArray(body.users) ? body.users : Array.isArray((body.data as Record<string, unknown>)?.users) ? (body.data as Record<string, unknown>).users : []) as Record<string, unknown>[];
+          for (const usr of users) {
+            const id = str(usr.id) ?? str(usr.pk);
+            const handle = str(usr.username);
+            if (!id || !handle || seen.has(id)) continue;
+            seen.set(id, { platform: "instagram", platformUserId: id, handle, profileUrl: igUrl(handle) });
+            if (seen.size >= limit) break;
+          }
+        }
+        return [...seen.values()];
       }
-      return [...seen.values()];
+
+      return [...owners.values()]
+        .sort((a, b) => b.hits - a.hits || b.followers - a.followers)
+        .slice(0, limit)
+        .map((x) => x.identity);
     },
 
     async profile(identity: CreatorIdentity): Promise<NormalizedCreator> {
