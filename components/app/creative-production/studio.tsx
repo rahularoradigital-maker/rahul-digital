@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { FormatCoveragePanel } from "./format-coverage-panel";
 
 // Creative Studio workflow (Phases 10, 14, 22, 27, 28 UI). A guided 3-step flow drives the whole thing:
 //   STEP 1 Products  — connect/sync, pick up to 10, then Continue
@@ -240,6 +241,10 @@ export function CreativeStudio() {
                   <button className={`${BTN_PRIMARY} py-1.5`} onClick={enterReview}>Review all →</button>
                 </div>
               </div>
+
+              {/* Diversity: which of the 42 formats this brand has tested + what to try next. Refreshes when
+                  new assets are generated (assets.length as the reload key). */}
+              <FormatCoveragePanel reloadKey={assets.length} />
 
               {busy === "concepts:" + active ? <p className="text-[13px] text-[var(--ink-muted)]">Reading the product and ranking creative ideas…</p> : null}
               {(conceptsByProduct[active ?? ""] ?? []).map((c) => {
