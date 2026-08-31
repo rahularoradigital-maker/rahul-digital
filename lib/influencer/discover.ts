@@ -9,7 +9,8 @@ import { creatorSearchSpecFrom, discoveryHashtags } from "./spec.ts";
 import { rankCreators, type RankedCreator } from "./rank.ts";
 import { canonicalKey } from "./dedup.ts";
 
-const DEFAULT_ENRICH = 24; // profiles fetched per run (= credits); enough to rank a real shortlist, bounded for cost
+const DEFAULT_ENRICH = 18; // profiles fetched per run (= credits); bounded so the run stays under the function time cap
+const DEFAULT_CONCURRENCY = 8; // parallel profile fetches: keeps the whole run fast (well under the ~60s serverless cap)
 const DEFAULT_MIN_FOLLOWERS = 10_000; // influencer floor: drop tiny shops/resellers. Adjustable per run.
 // Plausible engagement band. Below the floor = dead/bought-follower BRAND pages (a real creator engages its
 // audience); above the ceiling = bought-engagement. Both are dropped so only real creators remain. A creator
@@ -67,7 +68,7 @@ export async function discoverAndRank(
 
   // Progressive enrichment: full profile only for the candidate set. Failures isolate to that creator.
   let failed = 0;
-  const enriched = await mapPool(identities, opts.concurrency ?? 5, async (id) => {
+  const enriched = await mapPool(identities, opts.concurrency ?? DEFAULT_CONCURRENCY, async (id) => {
     try {
       return await provider.profile(id);
     } catch {

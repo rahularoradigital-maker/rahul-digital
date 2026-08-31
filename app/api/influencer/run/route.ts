@@ -13,7 +13,9 @@ import { saveDiscovery } from "@/lib/influencer/store";
 // page renders it instantly. Auth-gated. Every failure is an honest message (no key / no brand / provider
 // out of credits / no results), never a crash. Heavy (search + N profile pulls) -> needs the 300s budget.
 
-export const maxDuration = 300;
+// Hobby plans cap serverless functions at ~60s regardless of a higher value, so the run is engineered to
+// finish well under that (parallel hashtag search + concurrent profile fetches).
+export const maxDuration = 60;
 
 export async function POST() {
   const supabase = await createClient();

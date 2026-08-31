@@ -12,7 +12,7 @@ import { evidence, unknown, type NormalizedCreator, type CreatorIdentity, type C
 import type { CreatorDataProvider, ProviderCapability } from "../provider";
 
 const BASE = "https://api.scrapecreators.com/v1/instagram";
-const TIMEOUT_MS = 15_000;
+const TIMEOUT_MS = 12_000; // per call; with parallel fetches this keeps the whole run under the ~60s cap
 const RECENT_POSTS_FOR_ER = 12; // engagement rate is averaged over up to this many recent posts
 const DEFAULT_DISCOVER_FLOOR = 10_000; // skip tiny shops/resellers; a real influencer floor (overridable by spec)
 
@@ -140,17 +140,21 @@ export function scrapeCreatorsIgProvider(apiKey: string): CreatorDataProvider {
       // follower_count, so we drop tiny shops/resellers up front (the floor) without spending a profile credit.
       // Rank candidates by how many relevant posts they authored (topical dedication), then reach.
       const owners = new Map<string, { identity: CreatorIdentity; followers: number; hits: number }>();
+      // Fetch all hashtags for a media type IN PARALLEL (one round of latency, not one per hashtag) so the
+      // whole run stays well under the serverless function time limit, then fold the posts into the owner map.
       const collect = async (mediaType: "reels" | "all") => {
-        for (const h of hashtags) {
-          if (owners.size >= limit * 3) break;
-          let body: Record<string, unknown>;
-          try {
-            body = await getJson(`${BASE}/search/hashtag?hashtag=${encodeURIComponent(h)}&media_type=${mediaType}`, apiKey);
-          } catch (e) {
-            if (isFatal(e)) throw e; // out of credits / bad key -> surface honestly
-            continue; // a dead or empty hashtag is fine; move on
-          }
-          const posts = Array.isArray(body.posts) ? (body.posts as Record<string, unknown>[]) : [];
+        const bodies = await Promise.all(
+          hashtags.map(async (h) => {
+            try {
+              return await getJson(`${BASE}/search/hashtag?hashtag=${encodeURIComponent(h)}&media_type=${mediaType}`, apiKey);
+            } catch (e) {
+              if (isFatal(e)) throw e; // out of credits / bad key -> surface honestly
+              return null; // a dead or empty hashtag is fine
+            }
+          }),
+        );
+        for (const body of bodies) {
+          const posts = body && Array.isArray(body.posts) ? (body.posts as Record<string, unknown>[]) : [];
           for (const p of posts) {
             const o = (p.owner ?? {}) as Record<string, unknown>;
             const id = str(o.id);
