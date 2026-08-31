@@ -10,6 +10,7 @@ import { rankCreators, type RankedCreator } from "./rank.ts";
 import { canonicalKey } from "./dedup.ts";
 
 const DEFAULT_ENRICH = 18; // profiles fetched per run (= credits); enough to rank a real shortlist, bounded for cost
+const DEFAULT_MIN_FOLLOWERS = 10_000; // influencer floor: drop tiny shops/resellers. Adjustable per run.
 
 export type DiscoverStats = { queries: string[]; candidates: number; enriched: number; failed: number };
 export type DiscoverResult = { ranked: RankedCreator[]; stats: DiscoverStats };
@@ -39,13 +40,15 @@ export async function discoverAndRank(
   provider: CreatorDataProvider,
   target: BrandTarget,
   accountName: string | null,
-  opts: { enrich?: number; concurrency?: number } = {},
+  opts: { enrich?: number; concurrency?: number; minFollowers?: number } = {},
 ): Promise<DiscoverResult> {
   const enrich = opts.enrich ?? DEFAULT_ENRICH;
+  const floor = opts.minFollowers ?? DEFAULT_MIN_FOLLOWERS;
   // Discover creators from the brand's hashtags (authors of relevant posts), not shops named after the
-  // category. The provider treats these keywords as hashtags.
+  // category. The provider treats these keywords as hashtags, and honors the follower floor where the
+  // hashtag record carries a follower count.
   const queries = discoveryHashtags(target, accountName);
-  const spec = { ...creatorSearchSpecFrom(target), keywords: queries };
+  const spec = { ...creatorSearchSpecFrom(target), keywords: queries, minFollowers: floor };
 
   // Cheap, broad discovery first. Bounded to `enrich` so we never fetch a profile we won't use.
   const discovered = await provider.discover(spec, enrich);
@@ -65,7 +68,12 @@ export async function discoverAndRank(
       return null;
     }
   });
-  const creators = enriched.filter((c): c is NormalizedCreator => c !== null);
+  // Re-apply the follower floor AFTER enrichment: some hashtag records carry no follower_count, so a tiny
+  // shop can slip past the discovery-stage floor. Now that we have real follower counts, drop anyone below
+  // the floor so a 2K reseller can never rank above real creators. (Unknown followers are kept, not guessed.)
+  const creators = enriched
+    .filter((c): c is NormalizedCreator => c !== null)
+    .filter((c) => c.followers.value == null || c.followers.value >= floor);
 
   // rankCreators dedupes (same platform user id) and orders purely by the quality formula.
   const ranked = rankCreators(creators, target);

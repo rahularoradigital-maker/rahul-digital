@@ -77,4 +77,14 @@ const empty = await discoverAndRank(
 assert.equal(empty.ranked.length, 0, "no candidates -> empty ranking, not a crash");
 assert.equal(empty.stats.enriched, 0);
 
+// --- Follower floor is re-applied AFTER enrichment: a tiny shop that slipped past discovery (no follower
+// count in its hashtag record) is dropped once we learn its real, sub-floor follower count. ---
+const tinyProvider: CreatorDataProvider = {
+  ...fake,
+  async discover() { return [{ platform: "instagram", platformUserId: "tiny", handle: "tiny_shop", profileUrl: "" }]; },
+  async profile() { return creator("tiny", "tiny_shop", 3_000, 0.05, "women ethnic wear kurta saree festive"); },
+};
+assert.equal((await discoverAndRank(tinyProvider, target, "Soch", { enrich: 5 })).ranked.length, 0, "a 3K account is dropped by the default 10K follower floor");
+assert.equal((await discoverAndRank(tinyProvider, target, "Soch", { enrich: 5, minFollowers: 1_000 })).ranked.length, 1, "a lower explicit floor keeps the 3K account");
+
 console.log("PASS: influencer discovery (search->enrich->dedupe->rank, failure isolation, zero-result path)");
