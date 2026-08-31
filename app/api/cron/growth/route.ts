@@ -6,6 +6,7 @@ import { draftTop } from "@/lib/growth/draft";
 import { saveBrief, saveDrafts } from "@/lib/growth/store";
 import { generateArticle, saveDraftArticle, topicHasArticle } from "@/lib/growth/articles";
 import { matchIntent } from "@/lib/growth/engine";
+import { recordSourceRun } from "@/lib/growth/sources";
 import { INTENT_SIGNALS } from "@/lib/growth/knowledge";
 
 // The 24/7 no-touch growth run (Vercel Cron). Discovers high-intent conversations from FREE sources, scores +
@@ -32,6 +33,13 @@ export async function GET(request: NextRequest) {
     discoverStackExchange(queries),
     discoverGoogleNews(queries),
     discoverReddit(queries),
+  ]);
+  // Source Registry (spec section 5): record each source's health so the owner sees what's working.
+  await Promise.all([
+    recordSourceRun("hackernews", true, hn.length),
+    recordSourceRun("stackexchange", true, se.length),
+    recordSourceRun("googlenews", true, gnews.length),
+    recordSourceRun("reddit", reddit.length > 0, reddit.length),
   ]);
   const brief = generateBrief([...hn, ...se, ...gnews, ...reddit], Date.now());
   // Scout writes a reply DRAFT for the top opportunities (for review only - never posted). Best-effort.

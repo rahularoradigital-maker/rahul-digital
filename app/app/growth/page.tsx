@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import { latestBrief, pendingDrafts } from "@/lib/growth/store";
 import { listDraftArticles } from "@/lib/growth/articles";
+import { listSources } from "@/lib/growth/sources";
 import { ReviewQueue } from "@/components/app/growth/ReviewQueue";
 import { ArticleDrafts } from "@/components/app/growth/ArticleDrafts";
 
@@ -32,7 +33,8 @@ export default async function GrowthPage() {
     );
   }
 
-  const [brief, queue, articleDrafts] = await Promise.all([latestBrief(), pendingDrafts(), listDraftArticles()]);
+  const [brief, queue, articleDrafts, sources] = await Promise.all([latestBrief(), pendingDrafts(), listDraftArticles(), listSources()]);
+  const healthDot: Record<string, string> = { healthy: "bg-[var(--good-ink)]", degraded: "bg-[var(--warn-ink)]", down: "bg-[var(--bad-ink)]", unknown: "bg-[var(--ink-muted)]" };
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -54,6 +56,22 @@ export default async function GrowthPage() {
         <h2 className="text-[15px] font-semibold">Article drafts{articleDrafts.length > 0 ? ` (${articleDrafts.length})` : ""}</h2>
         <p className="mt-1 mb-3 text-[13px] text-[var(--ink-muted)]">Scout wrote these from recurring topics. Preview, then Publish to make it live at <a href="/blog" className="text-[var(--accent)] underline">/blog</a> — or Dismiss. Nothing is public until you publish.</p>
         <ArticleDrafts initial={articleDrafts.map((a) => ({ id: a.id, slug: a.slug, title: a.title, dek: a.dek, body_md: a.body_md, topic: a.topic }))} />
+      </div>
+
+      <div className="rounded-[12px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+        <h2 className="text-[15px] font-semibold">Sources</h2>
+        <ul className="mt-3 space-y-2">
+          {sources.map((s) => (
+            <li key={s.source_id} className="flex items-center justify-between gap-3 text-[13px]">
+              <span className="flex items-center gap-2">
+                <span className={`inline-block h-2 w-2 rounded-full ${healthDot[s.health] ?? healthDot.unknown}`} />
+                <span className="font-medium text-[var(--ink)]">{s.platform}</span>
+                <span className="text-[var(--ink-muted)]">({s.method})</span>
+              </span>
+              <span className="text-[12px] text-[var(--ink-muted)]">{s.status === "needs_setup" ? (s.note ?? "needs setup") : s.last_success ? `${s.last_count} items · ${s.last_success.slice(0, 10)}` : "not run yet"}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {!brief ? (
