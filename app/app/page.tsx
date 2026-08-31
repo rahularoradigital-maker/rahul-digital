@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { getCurrentUser } from "@/lib/app/user";
 import { buildGoogleCockpitData } from "@/lib/google/cockpit";
+import { buildGoogleNative } from "@/lib/google/native";
+import { GoogleNativePanel } from "@/components/app/google/google-native-panel";
 import { ConnectState } from "@/components/app/connect-state";
 import { type CockpitView, type Verdict, type SpendContributor } from "@/lib/cockpit/analyze";
 import { AdLink } from "@/components/cockpit/AdLink";
@@ -79,6 +81,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {showGoogle && googleData?.connected ? (
         <section className="space-y-3">
           <h2 className={sectionLabel}>Google Ads</h2>
+          {/* Google-native levers first (impression share, budget-vs-rank, Quality Score, tROAS) - NOT the Meta funnel */}
+          <GoogleNativePanel native={buildGoogleNative()} />
           <Cockpit view={googleData.view} accountName={googleData.accountName} accountId={googleData.accountId} dateParam={googleData.dateParam} adsAnalyzed={googleData.adsAnalyzed} processed={googleData.processed} funnel={googleData.funnel} marginal={googleData.marginal} dataQuality={googleData.dataQuality} scopeTotals={googleData.scopeTotals} dailySeries={googleData.dailySeries} funnelLevels={googleData.funnelLevels} days={googleData.days} syncedAt={googleData.syncedAt} stale={googleData.stale} demo />
         </section>
       ) : null}
