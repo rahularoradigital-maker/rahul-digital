@@ -49,6 +49,7 @@ export type Opportunity = {
   promote: PromotionVerdict;
   decision: GrowthAction;
   why: string[];
+  draft?: string | null; // AI-written reply DRAFT for your review - never posted. Set by lib/growth/draft.ts.
 };
 
 export type GrowthAction = "IGNORE" | "MONITOR" | "LEARN" | "DRAFT" | "REQUEST_APPROVAL";

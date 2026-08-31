@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { discoverHN, discoverReddit } from "@/lib/growth/discover";
 import { generateBrief } from "@/lib/growth/brief";
+import { draftTop } from "@/lib/growth/draft";
 import { saveBrief } from "@/lib/growth/store";
 import { INTENT_SIGNALS } from "@/lib/growth/knowledge";
 
@@ -25,6 +26,8 @@ export async function GET(request: NextRequest) {
   // Every free source that works from a server. HN is live; Reddit joins when its official app is configured.
   const [hn, reddit] = await Promise.all([discoverHN(queries), discoverReddit(queries)]);
   const brief = generateBrief([...hn, ...reddit], Date.now());
+  // Scout writes a reply DRAFT for the top opportunities (for review only - never posted). Best-effort.
+  await draftTop(brief.topOpportunities);
   await saveBrief(brief);
 
   return NextResponse.json({
