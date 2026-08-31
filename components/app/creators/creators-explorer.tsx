@@ -75,7 +75,7 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
       const res = await fetch("/api/influencer/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ minFollowers: parseInt(minFollowers.replace(/[^\d]/g, ""), 10) || undefined, engagement: eng, gender, region, minConfidence: minConf }),
+        body: JSON.stringify({ minFollowers: parseInt(minFollowers.replace(/[^\d]/g, ""), 10) || undefined }),
       });
       const d = (await res.json()) as { ok?: boolean; error?: string; count?: number };
       if (!d.ok) { setSearchMsg(d.error ?? "Search failed."); return; }
@@ -141,7 +141,6 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
                 <SelectContent>
                   <SelectItem value="any">Any</SelectItem>
                   <SelectItem value="medium">Medium+</SelectItem>
-                  <SelectItem value="high">High only</SelectItem>
                 </SelectContent>
               </Select>
             </label>
@@ -154,7 +153,7 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
             </div>
           </div>
           {searchMsg ? <div className="mt-2 rounded-md border border-[var(--warn-ink)]/25 bg-[var(--warn-bg)] px-3 py-2 text-[12.5px] text-[var(--warn-ink)]">{searchMsg}</div> : null}
-          <p className="mt-2 text-[11px] text-muted-foreground">Filters narrow the list instantly. <span className="font-medium">Run search</span> fetches a fresh set using min-followers as the search floor and applies the rest (uses provider credits).</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">All filters narrow the list instantly (they never remove your results). <span className="font-medium">Run search</span> fetches a fresh set of creators using min-followers as the search floor (uses provider credits). Gender &amp; region are inferred and best-effort, so they keep creators we can&apos;t classify rather than dropping them.</p>
         </CardContent>
       </Card>
 

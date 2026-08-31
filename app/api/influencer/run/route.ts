@@ -8,15 +8,6 @@ import { brandTargetFromProfile } from "@/lib/influencer/brand-target";
 import { scrapeCreatorsIgProvider } from "@/lib/influencer/providers/scrapecreators-ig";
 import { discoverAndRank } from "@/lib/influencer/discover";
 import { saveDiscovery } from "@/lib/influencer/store";
-import { guessGender, extractRegion, meetsConfidence, type EngBand, type MinConfidence } from "@/lib/influencer/derive";
-
-// Map an engagement band to the [min,max] rate the discovery filter uses. undefined = use the pipeline default.
-function engBandRange(band: EngBand | undefined): [number | undefined, number | undefined] {
-  if (band === "1-5") return [0.01, 0.05];
-  if (band === "5-10") return [0.05, 0.1];
-  if (band === "10+") return [0.1, undefined];
-  return [undefined, undefined];
-}
 
 // Run one Influencer Hunt discovery for the user's ACTIVE account: derive the brand target from the account's
 // confirmed brand profile, discover + rank real creators via ScrapeCreators, and store the ranked run so the
@@ -28,12 +19,10 @@ function engBandRange(band: EngBand | undefined): [number | undefined, number | 
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
-  // Optional filter inputs from the Creators page's "Run search". min-followers drives the discovery floor
-  // (what gets found); engagement band is applied during discovery; gender/region/confidence are applied to
-  // the ranked result so the stored set matches the user's criteria.
-  const filters = (await request.json().catch(() => ({}))) as {
-    minFollowers?: number; engagement?: EngBand; gender?: "any" | "f" | "m"; region?: string; minConfidence?: MinConfidence;
-  };
+  // Only min-followers is a SEARCH input (it sets the discovery floor - what gets found). Every other filter
+  // (engagement band, gender, region, confidence) is applied as an instant DISPLAY filter on the page, never
+  // here - so a narrow filter can never overwrite/shrink the stored pool. A search always stores the FULL set.
+  const filters = (await request.json().catch(() => ({}))) as { minFollowers?: number };
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -57,24 +46,15 @@ export async function POST(request: Request) {
 
   const target = brandTargetFromProfile(profile);
   const minFollowers = Number.isFinite(Number(filters.minFollowers)) && Number(filters.minFollowers) > 0 ? Number(filters.minFollowers) : undefined;
-  const [minEng, maxEng] = engBandRange(filters.engagement);
   try {
-    const { ranked, stats } = await discoverAndRank(scrapeCreatorsIgProvider(key), target, profile.accountName ?? session.activeAccountName, { minFollowers, minEngagement: minEng, maxEngagement: maxEng });
-    // Apply the criteria the discovery stage can't (gender/region are read from name/bio; confidence from the score).
-    let out = ranked;
-    // Gender/region are INFERRED - only exclude a CONFIRMED non-match, keep unknowns (never drop someone we
-    // couldn't classify), so combining these filters doesn't silently return zero.
-    if (filters.gender === "f" || filters.gender === "m") out = out.filter((r) => { const g = guessGender(r.creator.name.value).gender; return g === null || g === filters.gender; });
-    if (filters.region && filters.region !== "any") out = out.filter((r) => { const rr = extractRegion(r.creator.bio.value); return rr === null || rr === filters.region; });
-    if (filters.minConfidence && filters.minConfidence !== "any") out = out.filter((r) => meetsConfidence(r.scorecard.quality.confidence, filters.minConfidence!));
-    out = out.map((r, i) => ({ ...r, rank: i + 1 }));
-
-    if (out.length === 0) {
-      const why = ranked.length === 0 ? "No creators found for this brand's search terms." : "No creators match those filters. Loosen them and search again.";
-      return NextResponse.json({ ok: false, error: why, stats }, { status: 200 });
+    const { ranked, stats } = await discoverAndRank(scrapeCreatorsIgProvider(key), target, profile.accountName ?? session.activeAccountName, { minFollowers });
+    if (ranked.length === 0) {
+      return NextResponse.json({ ok: false, error: "No creators found for this brand's search terms. Try refining the brand category/products in Market.", stats }, { status: 200 });
     }
-    await saveDiscovery(user.id, session.activeExternalId, target, out, stats);
-    return NextResponse.json({ ok: true, count: out.length, stats });
+    // Always store the FULL discovered set. Narrowing (engagement/gender/region/confidence) happens on the
+    // page as instant display filters, so a search can never overwrite or shrink the pool.
+    await saveDiscovery(user.id, session.activeExternalId, target, ranked, stats);
+    return NextResponse.json({ ok: true, count: ranked.length, stats });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Discovery failed";
     return NextResponse.json({ ok: false, error: msg }, { status: 502 });
