@@ -6,7 +6,7 @@ import { toCockpitInputs, type RealAd } from "@/lib/scoring";
 import { analyzeAccount } from "@/lib/cockpit/analyze";
 import { windowFunnel, type ExtendedMetricsRow } from "@/lib/metrics/funnel-metrics";
 import { buildDailySeries, type DailyInputRow } from "@/lib/cockpit/daily-series";
-import { levelFunnels } from "@/lib/cockpit/level-funnel";
+import { levelFunnels, type NativeByLevel } from "@/lib/cockpit/level-funnel";
 import { marginalScaling } from "@/lib/scoring/marginal";
 import { assessDataQuality } from "@/lib/scoring/data-quality";
 import { daysUntilEnd } from "@/lib/scoring/fatigue";
@@ -120,6 +120,9 @@ export async function buildCockpitFromStore(opts: {
   // Meta's ACCOUNT-LEVEL scope total (from the caller), used for the headline so spend/revenue match Ads
   // Manager exactly even when the ad-level store lags the long tail of tiny-spend ads. Best-effort.
   scopePromise?: Promise<ScopeInsights | null>;
+  // Level-native metrics (reach/frequency/budget) the caller fetched live (the store has no token). Best-effort;
+  // absent/empty -> the level cards show "n/a" as before. This is what makes the PRIMARY (store) path show them.
+  nativePromise?: Promise<NativeByLevel>;
 }): Promise<LiveCockpit | null> {
   const { userId, accountExternalId, accountName, since, until, catalog } = opts;
   const weights = opts.weights ?? VERDICT_WEIGHTS;
@@ -239,6 +242,7 @@ export async function buildCockpitFromStore(opts: {
     })),
   );
   const funnel = windowFunnel(extRows);
+  const native = opts.nativePromise ? await opts.nativePromise.catch(() => undefined) : undefined;
   const funnelLevels = levelFunnels(
     realAds.map((ad) => ({
       adSetId: ad.adSetId,
@@ -252,6 +256,8 @@ export async function buildCockpitFromStore(opts: {
         purchases: r.purchases, revenue: r.revenue ?? 0,
       })),
     })),
+    8,
+    native,
   );
 
   // Per-day aggregation. Built twice on purpose: the DISPLAY window drives the headline totals + trend

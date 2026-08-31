@@ -225,6 +225,16 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     const storeScopePromise = resolveCampaignIds(acct.external_id, token, campaignId, objectives)
       .then((cids) => fetchScopeInsights(acct.external_id, since, token, cids, until))
       .catch(() => null);
+    // Level-native metrics (reach/frequency/budget) fetched ONCE and shared by BOTH the store path (primary,
+    // was showing "n/a" for these) and the live-pull fallback. Best-effort: any failure -> empty maps -> "n/a".
+    const nativePromise = (async () => {
+      const currency = await fetchAccountCurrency(acct.external_id, token).catch(() => null);
+      const [adset, campaign] = await Promise.all([
+        fetchLevelNative(acct.external_id, token, "adset", since, until, currency),
+        fetchLevelNative(acct.external_id, token, "campaign", since, until, currency),
+      ]);
+      return { adset, campaign };
+    })().catch(() => ({ adset: new Map<string, import("./cockpit/level-funnel.ts").LevelNative>(), campaign: new Map<string, import("./cockpit/level-funnel.ts").LevelNative>() }));
     try {
       const fromStore = await buildCockpitFromStore({
         userId,
@@ -237,6 +247,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
         objectives,
         campaignIds: campaignId ? campaignId.split(",").filter(Boolean) : undefined,
         scopePromise: storeScopePromise,
+        nativePromise,
       });
       if (fromStore) {
         perfMark("from-store (complete-coverage)", tp);
@@ -397,14 +408,9 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // Campaign. Reuses the same ExtendedMetricsRow shape, grouped per ad's parent ids. OPTIONAL on the
     // payload: older cached blobs omit it and the card falls back to the ad-level view, so no
     // CACHE_SCHEMA bump and no forced cold pull.
-    // LEVEL-NATIVE metrics (reach/frequency/budget) that cannot be rolled up from ad rows - pulled from Meta
-    // at level=adset/campaign, in parallel + best-effort (any failure -> empty map -> the card shows "n/a").
-    // The account currency drives the budget minor-unit divisor (paise for INR, whole yen for JPY, ...).
-    const currency = await fetchAccountCurrency(acct.external_id, token).catch(() => null);
-    const [adsetNative, campaignNative] = await Promise.all([
-      fetchLevelNative(acct.external_id, token, "adset", since, until, currency),
-      fetchLevelNative(acct.external_id, token, "campaign", since, until, currency),
-    ]);
+    // LEVEL-NATIVE metrics (reach/frequency/budget): reuse the SAME promise the store path used, so a cold
+    // load that falls through to the live pull does not fetch them twice.
+    const { adset: adsetNative, campaign: campaignNative } = await nativePromise;
     const funnelLevels = levelFunnels(
       realAds.map((ad) => ({
         adSetId: ad.adSetId,
