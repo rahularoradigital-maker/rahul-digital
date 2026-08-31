@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
-const TITLE = "Meta Ads integration — AdBrain";
+const TITLE = "Meta Ads integration for AdBrain";
 const DESCRIPTION =
   "Connect your Meta ad account (read-only) and AdBrain reads your day-wise performance and tells you what to scale, refresh, or kill, with a reason for every call. It never changes your account.";
 
