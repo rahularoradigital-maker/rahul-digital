@@ -40,4 +40,8 @@ ok(!dxFlat.dropped && dxFlat.summary === null, "no drop -> no culprit, no summar
 const short = account.slice(0, 6);
 ok(diagnoseCulprit(short, groups, asOf).summary === null, "too little history -> silent");
 
+// entityLabel flows into the plain-English summary, so ad-set-grain culprits read as "the ad set ...".
+const labelled = diagnoseCulprit(account, groups, asOf, "ad set");
+ok(!!labelled.summary && /the ad set "Big Sale Campaign"/i.test(labelled.summary), "summary uses the given entity label (ad set vs campaign)");
+
 console.log(`check-culprit: ${pass} assertions passed.`);
