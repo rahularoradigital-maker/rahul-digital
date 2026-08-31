@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
-import { latestBrief } from "@/lib/growth/store";
+import { latestBrief, pendingDrafts } from "@/lib/growth/store";
+import { ReviewQueue } from "@/components/app/growth/ReviewQueue";
 
 // Scout - the growth agent's owner console. Not in the nav; reachable at /app/growth. Gated by ADMIN_EMAILS.
 // Shows the latest daily brief: what Scout discovered, scored, and decided - with conversation LINKS and any
@@ -29,7 +30,7 @@ export default async function GrowthPage() {
     );
   }
 
-  const brief = await latestBrief();
+  const [brief, queue] = await Promise.all([latestBrief(), pendingDrafts()]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -39,6 +40,12 @@ export default async function GrowthPage() {
           <span className="rounded-full bg-[var(--good-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--good-ink)]">0 posted</span>
         </div>
         <p className="mt-1 text-[13px] text-[var(--ink-muted)]">The growth agent. It listens for high-intent conversations, scores them, and drafts replies for your review. It never posts anything - every reply is yours to send.</p>
+      </div>
+
+      <div className="rounded-[12px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
+        <h2 className="text-[15px] font-semibold">Review queue{queue.length > 0 ? ` (${queue.length})` : ""}</h2>
+        <p className="mt-1 mb-3 text-[13px] text-[var(--ink-muted)]">Scout drafted these for you. Read, then &quot;Copy reply &amp; open thread&quot; to post it yourself, or Dismiss. Scout never posts.</p>
+        <ReviewQueue initial={queue} />
       </div>
 
       {!brief ? (

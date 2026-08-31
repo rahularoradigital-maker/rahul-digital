@@ -3,7 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { discoverHN, discoverReddit, discoverStackExchange, discoverGoogleNews } from "@/lib/growth/discover";
 import { generateBrief } from "@/lib/growth/brief";
 import { draftTop } from "@/lib/growth/draft";
-import { saveBrief } from "@/lib/growth/store";
+import { saveBrief, saveDrafts } from "@/lib/growth/store";
 import { INTENT_SIGNALS } from "@/lib/growth/knowledge";
 
 // The 24/7 no-touch growth run (Vercel Cron). Discovers high-intent conversations from FREE sources, scores +
@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
   // Scout writes a reply DRAFT for the top opportunities (for review only - never posted). Best-effort.
   await draftTop(brief.topOpportunities);
   await saveBrief(brief);
+  await saveDrafts(brief.generatedAt.slice(0, 10), brief.topOpportunities); // queue them for your review
 
   return NextResponse.json({
     ok: true,
