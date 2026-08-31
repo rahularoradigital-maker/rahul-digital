@@ -736,6 +736,10 @@ export async function fetchScopeInsights(
     level: "campaign",
     fields: "spend,impressions,clicks,actions,action_values",
     time_range: JSON.stringify({ since, until: until ?? today() }),
+    // Account-level HEADLINE total only (ONE aggregate call, not the per-ad pull) - match Ads Manager's
+    // revenue/ROAS by using the account's attribution setting. Kept OFF the heavy per-ad fetchAdInsights,
+    // which is what caused the ~5x slow load, so this stays a small cost on a single query.
+    use_account_attribution_setting: "true",
     limit: "500",
   };
   // undefined campaignIds = whole account (one unfiltered call); otherwise one call per id-chunk.
