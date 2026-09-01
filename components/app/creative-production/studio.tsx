@@ -421,7 +421,8 @@ export function CreativeStudio() {
                 {i < 2 ? <span className="text-[var(--ink-muted)]">→</span> : null}
               </div>
             ))}
-            <span className="ml-auto text-[12px] text-[var(--ink-muted)]">{shopDomain} · {products.length} products</span>
+            {selected.length > 0 || step !== "products" ? <button className="ml-auto text-[12px] text-[var(--accent)] hover:underline" onClick={() => { setSelected([]); setCampaignName(""); setDeselFormats(new Set()); setActive(null); setEditingCopy(null); setStep("products"); }}>Start new batch</button> : null}
+            <span className={`${selected.length > 0 || step !== "products" ? "" : "ml-auto"} text-[12px] text-[var(--ink-muted)]`}>{shopDomain} · {products.length} products</span>
           </div>
 
           {step === "products" ? (
@@ -548,6 +549,8 @@ export function CreativeStudio() {
                   );
                 })}
                 <span className="text-[11px] text-[var(--ink-muted)]">{activeFormatIds().length} of {(platform === "google" ? GOOGLE_DEFAULT_SET : META_DEFAULT_SET).length} selected</span>
+                <button className="text-[11px] text-[var(--accent)] hover:underline" onClick={() => setDeselFormats(new Set())}>All</button>
+                {platform === "meta" ? <button className="text-[11px] text-[var(--accent)] hover:underline" onClick={() => setDeselFormats(new Set(["meta-story-9x16", "meta-link-1.91x1"]))}>Feed only</button> : null}
               </div>
 
               {/* Batch: generate the top concept for every selected product in one go, cost shown up front. */}
