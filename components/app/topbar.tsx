@@ -8,6 +8,7 @@ import { PlatformSwitcher } from "@/components/app/platform-switcher";
 import { WindowSwitcher } from "@/components/app/window-switcher";
 import { CampaignSwitcher } from "@/components/app/campaign-switcher";
 import { ObjectiveSwitcher } from "@/components/app/objective-switcher";
+import { EventSwitcher } from "@/components/app/event-switcher";
 import { CatalogSwitcher } from "@/components/app/catalog-switcher";
 import { NotificationBell } from "@/components/app/notification-bell";
 import { FILTER_TRIGGER, FILTER_LABEL } from "@/components/app/control-styles";
@@ -146,6 +147,9 @@ export function Topbar() {
             fixed 90-day baseline regardless (enforced in the store), so switching is instant + no re-pull. */}
         <WindowSwitcher />
         <ObjectiveSwitcher />
+        {/* Optimization-event filter (global): scopes every screen to campaigns optimizing for the chosen
+            events (e.g. Add to cart, Purchase). Sibling of Objective; options are the events actually synced. */}
+        <EventSwitcher />
         <CatalogSwitcher />
         <CampaignSwitcher />
       </div>
