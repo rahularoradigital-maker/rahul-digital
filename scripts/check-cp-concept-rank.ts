@@ -65,7 +65,7 @@ const compareFmt: ConceptFormat = {
   visualPattern: "two states",
   bestFor: "transformation",
 };
-assert.equal(formatSuitability(compareFmt, "product", false, false), 0.6, "comparison w/o data -> base 0.6");
+assert.equal(formatSuitability(compareFmt, "product", false, false), 0, "comparison format w/o comparison data -> 0 (hard requirement, never fabricate proof)");
 assert.equal(formatSuitability(compareFmt, "product", false, true), 1, "comparison WITH data -> 1.0");
 
 // A generic format sits at base 0.6.
