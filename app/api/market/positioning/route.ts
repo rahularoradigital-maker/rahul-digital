@@ -3,6 +3,7 @@ import { guardProductApi } from "@/lib/app/access";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { loadLatestInsight } from "@/lib/insights";
 import { runTaskText } from "@/lib/ai/router";
 import { compose } from "@/lib/ai/compose";
 import { setAiUser } from "@/lib/ai/context";
@@ -115,13 +116,6 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ content: null });
-  const admin = createAdminClient();
-  const { data: rows } = await admin
-    .from("creative_insights")
-    .select("content, account_external_id")
-    .eq("user_id", user.id)
-    .eq("type", "positioning")
-    .order("updated_at", { ascending: false })
-    .limit(1);
-  return NextResponse.json({ content: rows?.[0]?.content ?? null });
+  // Consolidated read (cleanup #6): the same query the server positioning section uses.
+  return NextResponse.json({ content: await loadLatestInsight(user.id, "positioning") });
 }

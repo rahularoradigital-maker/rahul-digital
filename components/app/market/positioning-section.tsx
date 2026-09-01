@@ -1,5 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/app/user";
+import { loadLatestInsight } from "@/lib/insights";
 import { GeneratePositioning } from "./generate-positioning";
 
 // Positioning intelligence: OUR ICP + content pillars vs THEIR ICP + content pillars, from real data only.
@@ -25,17 +25,7 @@ function parseSections(text: string): { title: string; body: string }[] {
 
 export async function PositioningSection() {
   const user = await getCurrentUser();
-  let content: string | null = null;
-  if (user) {
-    const { data } = await createAdminClient()
-      .from("creative_insights")
-      .select("content")
-      .eq("user_id", user.id)
-      .eq("type", "positioning")
-      .order("updated_at", { ascending: false })
-      .limit(1);
-    content = (data?.[0]?.content as string | undefined) ?? null;
-  }
+  const content = user ? await loadLatestInsight(user.id, "positioning") : null;
   const sections = content ? parseSections(content) : [];
 
   return (
