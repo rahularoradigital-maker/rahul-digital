@@ -1,17 +1,16 @@
-"use client";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentUser } from "@/lib/app/user";
+import { GeneratePositioning } from "./generate-positioning";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-
-// Positioning intelligence UI: OUR ICP + content pillars vs THEIR ICP + content pillars, all from real
-// data (our live ads + brand profile + website; competitors' real Ad Library copy once tracked). The
-// heavy lifting is the /api/market/positioning route (grounded Gemini synthesis); this just renders it.
-// Works today for the OURS half even with zero competitors - the THEIRS sections fill in once competitors
-// are tracked on the Competitors tab.
+// Positioning intelligence: OUR ICP + content pillars vs THEIR ICP + content pillars, from real data only.
+// SERVER-RENDERED (cleanup #5): the cached synthesis is read on the server (its own user_id row in
+// creative_insights) and the sections render server-side. Only the Generate button is a client island
+// (generate-positioning.tsx). This whole component used to be "use client" and fetched the cached content in
+// a useEffect, flashing "Loading…". The heavy synthesis stays in the POST route (grounded Gemini).
 
 // Split the model's plain-text answer into "N) HEADING" sections so each renders as a titled block. Any
-// preamble before the first numbered heading is kept as an intro. No fabrication: we render exactly what
-// the grounded model returned, just formatted.
+// preamble before the first numbered heading is kept as an intro. No fabrication: we render exactly what the
+// grounded model returned, just formatted.
 function parseSections(text: string): { title: string; body: string }[] {
   const parts = text.split(/\n(?=\d\)\s)/); // split before lines like "2) COMPETITORS' ICP"
   return parts
@@ -24,40 +23,19 @@ function parseSections(text: string): { title: string; body: string }[] {
     });
 }
 
-export function PositioningSection() {
-  const [content, setContent] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [booting, setBooting] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/market/positioning")
-      .then((r) => r.json())
-      .then((d: { content?: string | null }) => { if (alive) setContent(d.content ?? null); })
-      .catch(() => {})
-      .finally(() => { if (alive) setBooting(false); });
-    return () => { alive = false; };
-  }, []);
-
-  async function generate() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/market/positioning", { method: "POST" });
-      const d = (await res.json()) as { content?: string; error?: string };
-      if (!res.ok || !d.content) {
-        setError(d.error ?? "Could not generate right now. Please try again.");
-      } else {
-        setContent(d.content);
-      }
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+export async function PositioningSection() {
+  const user = await getCurrentUser();
+  let content: string | null = null;
+  if (user) {
+    const { data } = await createAdminClient()
+      .from("creative_insights")
+      .select("content")
+      .eq("user_id", user.id)
+      .eq("type", "positioning")
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    content = (data?.[0]?.content as string | undefined) ?? null;
   }
-
   const sections = content ? parseSections(content) : [];
 
   return (
@@ -71,24 +49,9 @@ export function PositioningSection() {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="default"
-          onClick={generate}
-          disabled={loading}
-          className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
-        >
-          {loading ? "Reading your ads and market..." : content ? "Regenerate" : "Generate positioning"}
-        </Button>
-        {content && <span className="text-[13px] text-[var(--ink-muted)]">From your real ads and profile · grounded, not invented</span>}
-      </div>
+      <GeneratePositioning hasContent={!!content} />
 
-      {error && <p className="text-[13px] text-[var(--bad-ink)]">{error}</p>}
-
-      {booting ? (
-        <p className="text-[13px] text-[var(--ink-muted)]">Loading...</p>
-      ) : !content ? (
+      {!content ? (
         <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6 text-sm text-[var(--ink-muted)]">
           No positioning read yet. Hit Generate - it reads your live ads, brand profile, and website to describe your ICP
           and content pillars, and compares them to any competitors you have tracked.
