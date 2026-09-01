@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.verc
 export const metadata = {
   title: "Pricing — AdBrain",
   description:
-    "Simple token-based pricing. Start free with 50 tokens (about 7 ad-account analyses a month), then scale up. Every plan gives a reason for every call, and AdBrain never spends on your account.",
+    "Simple token-based pricing. Start free with 50 tokens (50 ad-account analyses a month), then scale up. Every plan gives a reason for every call, and AdBrain never spends on your account.",
   alternates: { canonical: "/pricing" },
   openGraph: {
     type: "website",
@@ -25,7 +25,7 @@ export const metadata = {
 const FAQS: { q: string; a: string }[] = [
   {
     q: "What is a token?",
-    a: "A token is one AI action. A full ad-account analysis - a scale, refresh, or kill recommendation with the reason behind it - uses about 7 tokens. Every plan shows roughly how many analyses your monthly tokens cover, so you are never guessing.",
+    a: "A token is one AI action. One analysis - a scale, refresh, or kill recommendation with the reason behind it - is 1 token. Creative image generation uses more (about 20 tokens), because it costs more to produce. Every plan shows what your tokens cover, so you are never guessing.",
   },
   {
     q: "What happens when I run out of tokens?",
@@ -37,7 +37,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Is the Free plan really free?",
-    a: "Yes. Free gives you 50 tokens a month, about 7 real analyses on your own ad account, with no card required. It is enough to see genuine recommendations on your data. Creative image generation is not included on Free.",
+    a: "Yes. Free gives you 50 tokens a month - 50 analyses on your own ad account - with no card required. It is enough to see genuine recommendations on your data. Creative image generation is not included on Free.",
   },
   {
     q: "Will AdBrain change my ads automatically?",

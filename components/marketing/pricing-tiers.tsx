@@ -17,7 +17,7 @@ type Tier = {
   annual: Money | null; // per-month, billed annually (null for Free)
   annualBilledUsd: number | null;
   tokens: number;
-  analyses: string;
+  sub: string; // plain-English value under the token count (measured: 1 token = 1 analysis; image gen ~20 tokens)
   popular?: boolean;
   cta: { label: string; href: string };
   features: string[];
@@ -32,7 +32,7 @@ const TIERS: Tier[] = [
     annual: null,
     annualBilledUsd: null,
     tokens: 50,
-    analyses: "~7",
+    sub: "≈ 50 analyses · text only",
     cta: { label: "Start free", href: "/signup" },
     features: ["1 ad account", "Scale / refresh / kill decisions", "A reason for every call", "Text analyses only"],
     footnote: "No card required. Creative image generation is not included on Free.",
@@ -44,7 +44,7 @@ const TIERS: Tier[] = [
     annual: { usd: 82, inr: 6900 },
     annualBilledUsd: 990,
     tokens: 1500,
-    analyses: "~200",
+    sub: "Analyses + creative generation",
     cta: { label: "Get started", href: "/book-demo" },
     features: ["Meta + Google ad accounts", "AI decisions with reasons", "Creative & image generation", "Multiple ad accounts"],
   },
@@ -55,7 +55,7 @@ const TIERS: Tier[] = [
     annual: { usd: 332, inr: 27900 },
     annualBilledUsd: 3990,
     tokens: 7500,
-    analyses: "~1,000",
+    sub: "Analyses + creative generation",
     popular: true,
     cta: { label: "Get started", href: "/book-demo" },
     features: ["Meta + Google ad accounts", "AI decisions with reasons", "Creative & image generation", "Multiple ad accounts"],
@@ -67,7 +67,7 @@ const TIERS: Tier[] = [
     annual: { usd: 832, inr: 69900 },
     annualBilledUsd: 9990,
     tokens: 25000,
-    analyses: "~3,500",
+    sub: "Analyses + creative generation",
     cta: { label: "Talk to sales", href: "/book-demo" },
     features: ["Meta + Google ad accounts", "AI decisions with reasons", "Creative & image generation", "Multiple ad accounts"],
   },
@@ -147,7 +147,7 @@ export function PricingTiers() {
 
               <div className="mt-5 rounded-[10px] bg-[var(--surface)] px-4 py-3">
                 <div className="text-[15px] font-semibold text-[var(--ink)]">{t.tokens.toLocaleString("en-US")} tokens/mo</div>
-                <div className="text-[12px] text-[var(--ink-muted)]">≈ {t.analyses} ad-account analyses</div>
+                <div className="text-[12px] text-[var(--ink-muted)]">{t.sub}</div>
               </div>
 
               <Link
@@ -174,9 +174,9 @@ export function PricingTiers() {
       </div>
 
       <p className="mt-8 text-center text-[12px] text-[var(--ink-muted)]">
-        One token is one AI action; a full ad-account analysis uses about 7 tokens. Rupee prices are an approximate
-        conversion of the US dollar price. All plans include a reason for every recommendation, and AdBrain never
-        edits or spends on your account.
+        One token is one AI action - an analysis, explanation, or chat answer. Creative image generation uses about 20
+        tokens. Rupee prices are an approximate conversion of the US dollar price. Every plan gives a reason for
+        each recommendation, and AdBrain never edits or spends on your account.
       </p>
     </div>
   );
