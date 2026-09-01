@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "@/lib/creative/diversity";
 import { actionGroup, GROUP_LABEL, GROUP_ORDER, type ActionGroup } from "@/lib/creative/action-group";
 import { GatedSection } from "@/components/app/gated-section";
 import { Button } from "@/components/ui/button";
+import { useStickyActionFilter } from "@/components/app/creative/use-sticky-action-filter";
 
 // Creative format diversity + Creative DNA, filterable by the action the ad needs (Pause / Refresh /
 // Hold / Continue). The per-ad decode RECORDS come from the server; here we re-aggregate the diversity
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 // When records are absent (the rare live-pull path), we render the server's aggregated read read-only.
 
 export function CreativeDnaFilterable({ records, actionByAd, fallback }: { records: CreativeRecord[]; actionByAd: Record<string, string>; fallback: DiversityRead | null }) {
-  const [filter, setFilter] = useState<ActionGroup | "all">("all");
+  const [filter, setFilter] = useStickyActionFilter("diversity");
 
   const groupOf = (r: CreativeRecord) => actionGroup(actionByAd[r.adId] ?? "");
 

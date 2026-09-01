@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { CockpitAd } from "@/lib/cockpit/analyze";
 import { FATIGUE_STATE, PRIORITY_STYLE } from "@/components/cockpit/styles";
 import { AdLink } from "@/components/cockpit/AdLink";
 import { Button } from "@/components/ui/button";
 import { actionGroup, GROUP_LABEL, GROUP_ORDER, type ActionGroup } from "@/lib/creative/action-group";
+import { useStickyActionFilter } from "@/components/app/creative/use-sticky-action-filter";
 
 export function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: CockpitAd[]; accountName: string; accountId?: string; dateParam?: string; days: number }) {
-  const [filter, setFilter] = useState<ActionGroup | "all">("all");
+  const [filter, setFilter] = useStickyActionFilter("fatigue");
 
   // Worst first: ascending CreativeScore puts the fatiguing/fatigued ads at the top.
   const sorted = useMemo(() => [...ads].sort((a, b) => a.score - b.score), [ads]);
