@@ -22,7 +22,7 @@ export async function GET() {
 
   const { data } = await createAdminClient().rpc("cp_product_opportunities", { p_user: user.id, p_shop: conn.shopDomain, p_limit: 8 });
 
-  const recommendations = (data ?? []).map((r: { product_id: string; title: string; price: number | null; compare_at_price: number | null; featured_image_url: string | null; product_type: string | null; discount_pct: number; saving: number }) => ({
+  const recommendations = (data ?? []).map((r: { product_id: string; title: string; price: number | null; compare_at_price: number | null; featured_image_url: string | null; product_type: string | null; discount_pct: number; saving: number; advertised: boolean }) => ({
     productId: r.product_id,
     title: r.title ?? "Untitled",
     price: r.price,
@@ -31,13 +31,18 @@ export async function GET() {
     productType: r.product_type,
     discountPct: Number(r.discount_pct ?? 0),
     saving: Number(r.saving ?? 0),
+    advertised: Boolean(r.advertised),
     // Plain-English, grounded reason — no invented performance claim.
-    reason: r.discount_pct > 0 ? `${r.discount_pct}% off — a strong offer to lead with` : "Ad-ready product",
+    reason: r.advertised
+      ? "Already advertised — you have ads for this"
+      : r.discount_pct > 0
+        ? `${r.discount_pct}% off, not advertised yet — a strong offer to test`
+        : "Ad-ready, not advertised yet",
   }));
 
   return NextResponse.json({
     recommendations,
     currency: conn.currency,
-    basis: "Ranked by offer size (discount) and whether the product has an image to build an ad from. Not based on ad performance — connect Meta results to rank by what actually sells.",
+    basis: "Ranked by offer size (discount) + whether the product is ad-ready, with products you have not advertised yet surfaced first. Not based on ad performance — connect Meta results to rank by what actually sells.",
   });
 }

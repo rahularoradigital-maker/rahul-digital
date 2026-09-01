@@ -20,7 +20,7 @@ const IMAGE_TOKENS = ACTION_TOKENS.image;
 // pipeline composes deterministic placeholders so the flow is fully testable end-to-end.
 
 type Product = { productId: string; title: string; description: string; price: number | null; compareAtPrice: number | null; image: string | null; status: string | null; productType: string | null };
-type Rec = { productId: string; title: string; price: number | null; compareAtPrice: number | null; image: string | null; productType: string | null; discountPct: number; saving: number; reason: string };
+type Rec = { productId: string; title: string; price: number | null; compareAtPrice: number | null; image: string | null; productType: string | null; discountPct: number; saving: number; advertised: boolean; reason: string };
 // What Studio derived about a product (a subset of Product DNA). Fields may be the literal "UNKNOWN".
 type ProductDNA = { name: string; category: string; primaryBenefit: string; problemSolved: string; targetPersona: string; usps: string[]; proof: string[]; confidence: number };
 type Concept = { id: string; formatId: string; headline: string; supportingCopy: string; cta: string; offer: string | null; angle: string; whyThisConcept: string; whyNow: string; score: number; awarenessStage: string; visualDirection: string };
@@ -439,6 +439,7 @@ export function CreativeStudio() {
                         <p className="line-clamp-2 min-h-[32px] text-[12px] font-medium">{r.title}</p>
                         <p className="text-[12px] text-[var(--ink-muted)]">{money(r.price)}{r.discountPct > 0 ? <span className="ml-1 rounded-[4px] bg-[var(--accent)]/10 px-1 text-[11px] font-medium text-[var(--accent)]">{r.discountPct}% off</span> : null}</p>
                         {r.saving > 0 ? <p className="text-[11px] text-[var(--ink-muted)]">Save {money(r.saving)}</p> : null}
+                        {r.advertised ? <p className="text-[11px] text-emerald-500">✓ already advertised</p> : <p className="text-[11px] text-[var(--accent)]">new — not advertised yet</p>}
                         <button className={`${isSel ? BTN_PRIMARY : BTN_GHOST} mt-2 py-1.5`} onClick={() => toggleSelect(r.productId)}>{isSel ? "Selected" : "Select"}</button>
                       </div>
                     );
