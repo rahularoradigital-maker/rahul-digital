@@ -62,6 +62,26 @@ The build loop above is the ORDER of operating. This is the COVERAGE: a standing
 
 Flow (never skip the tail): the lanes' findings → **Engineering Memory** (record it, step 9 of the loop) → **Findings / Learnings** → **Change Recommendations** → **Human Review**. The last box is load-bearing and mirrors the product's own law: AdScale (and this OS) RECOMMENDS; Rahul decides and approves. Never auto-apply a change that a human should review; surface it as a recommendation with its reasons.
 
+## THE #1 HARD RULE, part 3 — The Decision Reasoning Chain (Rahul, 2026-09-01)
+
+The build loop is the ORDER, the assurance plane is the COVERAGE; this is the REASONING. Every recommendation the product makes — and every engineering change I make — is reasoned through this exact chain, never short-circuited from data straight to a decision:
+
+**DATA → TRUST → SIGNAL → DIAGNOSIS → ECONOMIC IMPACT → SECOND-ORDER EFFECT → THIRD-ORDER EFFECT → DECISION → ACTION → OUTCOME → LEARNING**
+
+1. **DATA** — the real numbers, from source (never fabricated).
+2. **TRUST** — is the data trustworthy? Enough spend/volume/materiality to judge at all? If not, STOP here and say so (this is the Evidence gate; a number on too little spend is noise).
+3. **SIGNAL** — separate the real signal from noise: a sustained trend, not a one-day blip.
+4. **DIAGNOSIS** — the root cause behind the signal (fatigue? delivery? attribution? a paused winner?), not the symptom.
+5. **ECONOMIC IMPACT** — the money at stake in rupees (waste, opportunity loss). No decision without sizing its ₹ impact.
+6. **SECOND-ORDER EFFECT** — what the obvious action causes next (e.g. killing an ad reallocates budget; a big budget jump resets the learning phase).
+7. **THIRD-ORDER EFFECT** — the downstream of that (e.g. learning reset → temporary dip → mis-read as failure). Think two moves ahead before recommending.
+8. **DECISION** — the call (scale / refresh / kill / leave / wait), with its reason.
+9. **ACTION** — what the human does. AdScale never acts itself; it hands over the action.
+10. **OUTCOME** — measure what actually happened after the action (close the loop against reality).
+11. **LEARNING** — record the outcome-vs-expectation and feed it forward (= step 9/10 of the build loop; the system compounds).
+
+Rules: never jump DATA → DECISION (skipping TRUST, IMPACT, and the order-of-effect steps is exactly how a bad call gets made). If TRUST fails, refuse to decide and say what to connect/wait for. Always state the ₹ economic impact and at least the second-order effect before a DECISION. This chain is the product's brain and my engineering brain; the three parts together are the operating system — Loop (when), Plane (what to check), Chain (how to reason).
+
 ## Critical Operating Rule
 
 Never confuse:
