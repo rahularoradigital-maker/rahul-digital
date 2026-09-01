@@ -3,6 +3,8 @@ import { createAdminClient } from "../supabase/admin.ts";
 import { runTaskJson } from "../ai/router.ts";
 import { compose } from "../ai/compose.ts";
 import { callGemini, fetchInlineImage, stringObjectSchema } from "../gemini.ts";
+import { isKilled } from "../security/flags.ts";
+import { aiBudgetExceeded } from "../ai/budget.ts";
 import type { CreativeAsset } from "./fingerprint.ts";
 import { thumbUrlOf } from "./fingerprint.ts";
 
@@ -101,6 +103,10 @@ const VISUAL_SCHEMA = stringObjectSchema(["sceneType", "setting", "palette", "vi
 // setting, palette, mood, and a plain description of what is shown. Vision, not copy. Fingerprint-once.
 // Degrades to null when there is no image or the model cannot read it, so diversity is never fabricated.
 export async function decodeCreativeVisual(asset: CreativeAsset): Promise<VisualSemantics | null> {
+  // §70/§100: this is a direct-to-Gemini vision call (the router can't carry an inline image), so it must
+  // apply the SAME guards the router does or it escapes the global AI kill-switch + daily cost ceiling.
+  if (await isKilled("ai")) return null;
+  if (await aiBudgetExceeded()) return null;
   const url = thumbUrlOf(asset);
   if (!url) return null;
   const inline = await fetchInlineImage(url);
@@ -123,6 +129,9 @@ export async function decodeCreativeVisual(asset: CreativeAsset): Promise<Visual
 // Decode up to `max` creatives that lack a VISUAL read + persist them (fingerprint-once). Upserts only the
 // visual columns, so a prior copy decode on the same content_hash is preserved. Fire-and-forget; never throws.
 export async function decodeMissingVisual(userId: string, items: { contentHash: string; asset: CreativeAsset }[], haveVisual: Set<string>, max = 10): Promise<void> {
+  // Short-circuit the whole batch once when AI is killed or over daily budget, so we don't pay N flag/usage
+  // reads in the loop (each decodeCreativeVisual re-checks too, as defense-in-depth for any direct caller).
+  if (await isKilled("ai") || await aiBudgetExceeded()) return;
   const admin = createAdminClient();
   const seen = new Set<string>();
   let done = 0;
