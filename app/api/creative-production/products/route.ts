@@ -3,6 +3,7 @@ import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
+import { sanitizeSearchTerm } from "@/lib/creative-production/shopify/search";
 
 // Creative Studio - list the connected store's synced products for the product picker (Phase 10 UI).
 // Returns connection status + a compact product list (image, title, price, short description). Read-only.
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
 
   const params = new URL(req.url).searchParams;
   // Search term: strip PostgREST filter metacharacters so a query can never break the .or() grammar.
-  const q = (params.get("q") ?? "").trim().replace(/[,()%*\\]/g, " ").slice(0, 80);
+  const q = sanitizeSearchTerm(params.get("q") ?? "");
   const type = (params.get("type") ?? "").trim().slice(0, 120);
   // Paging: offset into the current query, PAGE rows per page. "Load more" passes the next offset.
   const offset = Math.max(0, Math.min(Number(params.get("offset")) || 0, 100_000));
