@@ -12,19 +12,32 @@ import { compose } from "./util.ts";
 //     the anomaly separately; this keeps the quality signal itself from rewarding implausible engagement.)
 // A legitimately high-engagement nano (say 12-15%) is barely touched; only clearly implausible rates (>~20%)
 // are pulled down hard. calibrate-at-build (to be ledger-tuned).
-const PLAUSIBLE_CEIL = 0.15; // above this, extra "engagement" is treated as increasingly likely inauthentic
-function erToScore(er: number): number {
+export const BASE_PLAUSIBLE_CEIL = 0.15; // at reach = 1x: above this, extra "engagement" reads as inauthentic
+const MAX_REACH_MULTIPLIER = 4; // a viral spike widens the plausible band, but never enough to excuse ANY rate
+
+/** The plausible ceiling for a FOLLOWER engagement rate, RAISED in proportion to how far the creator's content
+ * travels beyond its follower base. Reels seen by R× the followers legitimately drive ~R× the follower-ER (the
+ * same per-viewer interaction rate over a smaller denominator), so a high follower-ER is EXPECTED, not inflated.
+ * Capped at MAX_REACH_MULTIPLIER so a viral spike can't excuse an arbitrarily high rate. reachRatio null or <=1
+ * (no amplification beyond followers) leaves the base ceiling untouched. */
+export function plausibleErCeil(reachRatio: number | null): number {
+  const mult = reachRatio != null && reachRatio > 1 ? Math.min(reachRatio, MAX_REACH_MULTIPLIER) : 1;
+  return BASE_PLAUSIBLE_CEIL * mult;
+}
+
+function erToScore(er: number, ceil: number): number {
   if (er <= 0) return 0;
   const rising = 100 * (1 - Math.exp(-er / 0.02)); // → ~100 by ~6%
-  if (er <= PLAUSIBLE_CEIL) return Math.min(100, Math.round(rising));
+  if (er <= ceil) return Math.min(100, Math.round(rising));
   // Past the ceiling: subtract a penalty that grows with how far past plausible we are (full 60 at ~2x ceil).
-  const penalty = Math.min(60, ((er - PLAUSIBLE_CEIL) / PLAUSIBLE_CEIL) * 60);
+  const penalty = Math.min(60, ((er - ceil) / ceil) * 60);
   return Math.max(0, Math.round(rising - penalty));
 }
 
-/** True when a FOLLOWER-based engagement rate is high enough to read as likely inflated. */
-function isImplausible(er: number): boolean {
-  return er > PLAUSIBLE_CEIL;
+/** True when a FOLLOWER-based engagement rate is high enough to read as likely inflated, AFTER crediting the
+ * creator's reach beyond its followers (viral reach legitimately lifts the plausible ceiling). */
+export function isImplausibleEr(er: number, reachRatio: number | null): boolean {
+  return er > plausibleErCeil(reachRatio);
 }
 
 // Reel engagement rate is (likes+comments)/VIEWS - a different denominator than follower ER, and a legitimately
@@ -39,10 +52,17 @@ export function engagementScore(creator: NormalizedCreator): TransparentScore {
   // rate (interactions/views) when we have it - a richer, harder-to-fake read than either alone.
   const components: ScoreComponent[] = [];
 
+  const reachRatio = creator.reels?.reachRatio ?? null;
+  const ceil = plausibleErCeil(reachRatio);
   const er = creator.engagementRate.value;
   if (er != null && creator.engagementRate.confidence !== "none") {
-    const flag = isImplausible(er) ? " - implausibly high, likely inflated, so scored down" : "";
-    components.push({ key: "post_engagement", score: erToScore(er), weight: 1, confidence: creator.engagementRate.confidence, reason: `posts ${(er * 100).toFixed(1)}% via ${creator.engagementMethod}${flag}` });
+    const reachLifted = reachRatio != null && reachRatio > 1 && er > BASE_PLAUSIBLE_CEIL && er <= ceil;
+    const flag = isImplausibleEr(er, reachRatio)
+      ? " - implausibly high, likely inflated, so scored down"
+      : reachLifted
+        ? ` - high but expected given ${reachRatio.toFixed(1)}x reach beyond followers`
+        : "";
+    components.push({ key: "post_engagement", score: erToScore(er, ceil), weight: 1, confidence: creator.engagementRate.confidence, reason: `posts ${(er * 100).toFixed(1)}% via ${creator.engagementMethod}${flag}` });
   }
 
   const reelEr = creator.reels?.reelEngagementRate ?? null;

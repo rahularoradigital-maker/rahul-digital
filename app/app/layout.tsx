@@ -7,6 +7,7 @@ import { Logo } from "@/components/site-header";
 import { SidebarNav } from "@/components/app/sidebar-nav";
 import { MobileNav } from "@/components/app/mobile-nav";
 import { Topbar } from "@/components/app/topbar";
+import { UsageMeter } from "@/components/app/usage-meter";
 
 // AdScale app shell: fixed 256px sidebar (grouped nav + user footer) + working
 // sticky topbar. Nav lives in lib/app/nav.ts; the sidebar highlights the active
@@ -50,6 +51,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </Link>
 
         <SidebarNav />
+
+        {/* Token usage meter (pricing Phase 2) - sits above the user footer, pinned to the sidebar bottom. */}
+        <UsageMeter />
 
         {/* User footer */}
         <div className="mt-4 flex items-center gap-2.5 border-t border-[var(--hairline)] pt-3">

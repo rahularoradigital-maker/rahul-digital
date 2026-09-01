@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { unknown, evidence, type NormalizedCreator, type AudienceEstimate, type ReelSignals } from "../lib/influencer/types.ts";
 import { authenticityScore } from "../lib/influencer/scoring/authenticity.ts";
 import { engagementBenchmark } from "../lib/influencer/scoring/benchmark.ts";
+import { plausibleErCeil, isImplausibleEr } from "../lib/influencer/scoring/engagement.ts";
 
 const NOW = "2026-09-01";
 function reels(over: Partial<ReelSignals> = {}): ReelSignals {
@@ -77,4 +78,24 @@ assert.equal(engagementBenchmark(null, 0.03), null, "unknown followers -> no ben
 assert.equal(engagementBenchmark(120_000, null), null, "unknown ER -> no benchmark, not a guess");
 assert.equal(engagementBenchmark(30_000, 0.02)!.tierLabel, "10K–50K", "tier label picked by follower count");
 
-console.log("PASS: influencer authenticity proxy + engagement-vs-size benchmark (no fabrication)");
+// --- Reach-adjusted plausibility: the plausible follower-ER ceiling scales with reach beyond the follower
+//     base, so a viral creator's high follower-ER is credited as EXPECTED, not penalised as inflated. ---
+assert.equal(plausibleErCeil(null), 0.15, "no reach data -> base plausible ceiling (15%)");
+assert.equal(plausibleErCeil(1), 0.15, "reach 1x -> base ceiling");
+assert.ok(Math.abs(plausibleErCeil(2.5) - 0.375) < 1e-9, "reach 2.5x lifts the ceiling proportionally to 37.5%");
+assert.equal(plausibleErCeil(100), 0.6, "reach multiplier is capped at 4x (ceiling never exceeds 60%)");
+// The exact Sakshi case: 17.6% follower ER at 2.5x reach is plausible; the same rate at 1x reach is not.
+assert.equal(isImplausibleEr(0.176, 2.5), false, "17.6% ER at 2.5x reach is plausible (viral reach explains it)");
+assert.equal(isImplausibleEr(0.176, null), true, "17.6% ER with no reach beyond followers is implausible");
+
+// A 30% follower ER: penalised at 1x reach, credited at 3x reach - and the lift is explained transparently.
+const noReach = authenticityScore(creator({ engagementRate: evidence(0.3, "CALCULATED", "medium", NOW), reels: reels({ reachRatio: 1 }) }));
+const withReach = authenticityScore(creator({ engagementRate: evidence(0.3, "CALCULATED", "medium", NOW), reels: reels({ reachRatio: 3 }) }));
+const noReachEng = noReach.components.find((c) => c.key === "engagement_authenticity")!;
+const withReachEng = withReach.components.find((c) => c.key === "engagement_authenticity")!;
+assert.ok(noReachEng.score <= 60, `30% ER at 1x reach reads as inflated (got ${noReachEng.score})`);
+assert.equal(withReachEng.score, 88, "30% ER at 3x reach is credited as expected, not inflated");
+assert.ok(/reach beyond followers/i.test(withReachEng.reason), "the reach lift is explained transparently");
+assert.ok(withReach.score > noReach.score, "reach beyond followers raises overall authenticity for a viral creator");
+
+console.log("PASS: influencer authenticity proxy + engagement-vs-size benchmark + reach-adjusted plausibility (no fabrication)");

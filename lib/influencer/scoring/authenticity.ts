@@ -12,18 +12,19 @@
 
 import type { NormalizedCreator, TransparentScore, ScoreComponent } from "../types.ts";
 import { compose } from "./util.ts";
-
-const IMPLAUSIBLE_ER = 0.15; // follower ER above this is far more likely bought than genuinely better
+import { plausibleErCeil, BASE_PLAUSIBLE_CEIL } from "./engagement.ts";
 
 /** Engagement AUTHENTICITY (not magnitude): healthy in the plausible band, penalised only for the inflated
- * pattern (implausibly high). A LOW rate is NOT punished here - low engagement is normal for big accounts and
- * is judged separately by the size benchmark; authenticity only flags the anomaly, not the ambition. */
-function engagementAuthenticity(er: number): number {
+ * pattern (implausibly high). The plausible ceiling is RAISED by the creator's reach beyond its followers -
+ * a reel seen by 2.5x the followers legitimately drives a high follower-ER, so it must not be misread as
+ * bought. A LOW rate is NOT punished here - low engagement is normal for big accounts and is judged separately
+ * by the size benchmark; authenticity only flags the anomaly, not the ambition. */
+function engagementAuthenticity(er: number, ceil: number): number {
   if (er <= 0) return 0;
   if (er < 0.003) return 55; // very low: mild ghost-audience suspicion, but low ER is often just a large account
-  if (er <= IMPLAUSIBLE_ER) return 88; // healthy, real band
+  if (er <= ceil) return 88; // healthy, real (reach-adjusted) band
   // Past plausible: decline toward 15 as it climbs to ~2x the ceiling (clearly bought).
-  return Math.max(15, Math.round(88 - ((er - IMPLAUSIBLE_ER) / IMPLAUSIBLE_ER) * 73));
+  return Math.max(15, Math.round(88 - ((er - ceil) / ceil) * 73));
 }
 
 /** Comment authenticity from the comment share of interactions. Bought engagement is overwhelmingly likes,
@@ -39,13 +40,16 @@ function commentAuthenticity(share: number): number {
 export function authenticityScore(creator: NormalizedCreator): TransparentScore {
   const components: ScoreComponent[] = [];
 
-  // 1. Engagement authenticity (follower ER shape).
+  // 1. Engagement authenticity (follower ER shape), with the plausible ceiling widened by reach beyond followers.
+  const reachRatio = creator.reels?.reachRatio ?? null;
+  const ceil = plausibleErCeil(reachRatio);
   const er = creator.engagementRate.value;
   if (er != null && creator.engagementRate.confidence !== "none") {
-    const inflated = er > IMPLAUSIBLE_ER;
+    const inflated = er > ceil;
+    const reachLifted = !inflated && reachRatio != null && reachRatio > 1 && er > BASE_PLAUSIBLE_CEIL;
     components.push({
-      key: "engagement_authenticity", score: engagementAuthenticity(er), weight: 0.35, confidence: creator.engagementRate.confidence,
-      reason: `engagement ${(er * 100).toFixed(1)}% ${inflated ? "is implausibly high (likely inflated)" : er < 0.003 ? "is very low for the follower base" : "is in a healthy real band"}`,
+      key: "engagement_authenticity", score: engagementAuthenticity(er, ceil), weight: 0.35, confidence: creator.engagementRate.confidence,
+      reason: `engagement ${(er * 100).toFixed(1)}% ${inflated ? "is implausibly high (likely inflated)" : reachLifted ? `is high but expected given ${reachRatio.toFixed(1)}x reach beyond followers` : er < 0.003 ? "is very low for the follower base" : "is in a healthy real band"}`,
     });
   } else {
     components.push({ key: "engagement_authenticity", score: 0, weight: 0.35, confidence: "none", reason: "no engagement data to judge" });

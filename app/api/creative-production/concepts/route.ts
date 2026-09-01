@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
+import { spendTokens } from "@/lib/billing/meter";
 import { createClient } from "@/lib/supabase/server";
 import { setAiUser } from "@/lib/ai/context";
 import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
@@ -45,6 +46,15 @@ export async function POST(req: Request) {
   const brandSummary = brand.tone !== "UNKNOWN" ? `tone ${brand.tone}` : null;
   const product = await ensureProductDNA(user.id, shopDomain, productId, brandSummary);
   if (!product) return NextResponse.json({ error: "Product not found. Sync the store first." }, { status: 404 });
+
+  // Concept generation is a creative AI action: 2 tokens. Charged before the LLM call; over cap -> 402.
+  const spend = await spendTokens(user.id, "concept");
+  if (!spend.ok) {
+    return NextResponse.json(
+      { error: `You have used all ${spend.allowance} of this month's tokens. Upgrade your plan for more, or wait for your monthly reset.`, code: spend.reason, usage: { used: spend.used, allowance: spend.allowance } },
+      { status: 402 },
+    );
+  }
 
   const concepts = await generateConcepts(user.id, product, brand, conn.currency);
   return NextResponse.json({ product, concepts });
