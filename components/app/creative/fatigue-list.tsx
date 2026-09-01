@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { CockpitAd } from "@/lib/cockpit/analyze";
 import { FATIGUE_STATE, PRIORITY_STYLE } from "@/components/cockpit/styles";
 import { AdLink } from "@/components/cockpit/AdLink";
+import { ObjectiveCardSelect } from "@/components/cockpit/ObjectiveCardSelect";
 import { Button } from "@/components/ui/button";
 import { actionGroup, GROUP_LABEL, GROUP_ORDER, type ActionGroup } from "@/lib/creative/action-group";
 import { useStickyActionFilter } from "@/components/app/creative/use-sticky-action-filter";
@@ -16,9 +17,22 @@ const stakeOf = (ad: CockpitAd) => (ad.wastedRs > 0 ? ad.wastedRs : ad.spendRs);
 export function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: CockpitAd[]; accountName: string; accountId?: string; dateParam?: string; days: number }) {
   const [filter, setFilter] = useStickyActionFilter("fatigue");
 
-  // Worst first: ascending CreativeScore puts the fatiguing/fatigued ads at the top.
-  const sorted = useMemo(() => [...ads].sort((a, b) => a.score - b.score), [ads]);
-  const atRisk = ads.filter((a) => a.verdict === "refresh" || a.verdict === "loser").length;
+  // Objective filter (client-side, reuses the cockpit ObjectiveCardSelect): narrow to ONE campaign objective
+  // so a buyer can work fatigue one objective at a time. Pure local narrowing - no re-fetch (protocol: no added cost).
+  const [obj, setObj] = useState("all");
+  const objectives = useMemo(
+    () => [...new Set(ads.map((a) => (a as { objective?: string }).objective).filter((o): o is string => !!o))],
+    [ads],
+  );
+  const scoped = useMemo(
+    () => (obj === "all" ? ads : ads.filter((a) => (a as { objective?: string }).objective === obj)),
+    [ads, obj],
+  );
+
+  // Critical first (Rahul's rule): biggest money-at-stake on top - the same ordering as the "ranked by money
+  // at stake" plan - with worst CreativeScore as the tiebreak so a severe-but-cheap ad still outranks a calm one.
+  const sorted = useMemo(() => [...scoped].sort((a, b) => stakeOf(b) - stakeOf(a) || a.score - b.score), [scoped]);
+  const atRisk = scoped.filter((a) => a.verdict === "refresh" || a.verdict === "loser").length;
 
   // Count per action group, so each chip shows how many ads it holds (and empty groups are hidden).
   const counts = useMemo(() => {
@@ -37,23 +51,24 @@ export function FatigueList({ ads, accountName, accountId, dateParam, days }: { 
       <div>
         <div className="flex items-center gap-2 text-[13px] text-[var(--ink-muted)]">
           <span className={`h-1.5 w-1.5 rounded-full ${atRisk > 0 ? "bg-[var(--warn-ink)]" : "bg-[var(--good-ink)]"}`} />
-          {`${accountName} · ${ads.length} ads assessed · last ${days} days`}
+          {`${accountName} · ${scoped.length} ads assessed · last ${days} days`}
         </div>
         <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">
-          {ads.length === 0
+          {scoped.length === 0
             ? "No ads assessed yet."
             : atRisk === 0
               ? "Nothing is fatiguing right now."
-              : `${atRisk} of ${ads.length} ad${ads.length === 1 ? "" : "s"} ${atRisk === 1 ? "is" : "are"} fatiguing or fatigued.`}
+              : `${atRisk} of ${scoped.length} ad${scoped.length === 1 ? "" : "s"} ${atRisk === 1 ? "is" : "are"} fatiguing or fatigued.`}
         </h1>
         <p className="mt-1.5 text-[13px] text-[var(--ink-muted)]">
-          Read off the real verdict engine, sorted worst first by CreativeScore.
+          Read off the real verdict engine, sorted by money at stake - biggest first.
         </p>
       </div>
 
       {/* Action filter: show just the ads that need one kind of decision (e.g. only the ones to Pause). */}
       {sorted.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
+          <ObjectiveCardSelect objectives={objectives} value={obj} onChange={setObj} />
           <Button variant={filter === "all" ? "default" : "outline"} size="sm" onClick={() => setFilter("all")}>
             All <span className="ml-1 opacity-70 tabular-nums">{sorted.length}</span>
           </Button>
