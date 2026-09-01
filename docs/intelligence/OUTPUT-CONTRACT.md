@@ -38,12 +38,19 @@ engine** (multi-chat protocol: new files, no hot-file churn). Each has a `check:
 | Money-bleed / culprit (`lib/scoring/culprit.ts`) | `lib/intelligence/from-culprit.ts` | `check:culprit-contract` | Names a paused/ended entity only as the CAUSE, never as a live thing to fix (liveness rule). |
 | Creative fatigue (`lib/cockpit/analyze.ts`) | `lib/intelligence/from-fatigue.ts` | `check:fatigue-contract` | Sales-family ad under 50 conversions → HOLD. Stopped ad → null. |
 | Funnel diagnosis (`lib/funnel/diagnosis.ts`) | `lib/intelligence/from-funnel.ts` | `check:funnel-contract` | Uses the engine's own `hold` reason; names the weakest step vs own-best same-objective ad. |
+| Winner scores (`lib/scoring/winner.ts`) | `lib/intelligence/from-winner.ts` | `check:winner-contract` | §37 taxonomy (PROVEN/EMERGING/FRAGILE/EFFICIENT-LOW-SCALE) from the four sub-reads. Too little proven spend → HOLD (§95). |
+| Creative diversity (`lib/creative/diversity.ts`) | `lib/intelligence/from-diversity.ts` | `check:diversity-contract` | §36 fragility: ≥60% spend in one bucket → Diversify, sized in ₹. Low semantic coverage → HOLD. |
+
+**Cross-adapter safety:** `scripts/check-contract-invariants.ts` (`check:contract-invariants`) runs representative
+outputs from every adapter + both hold/decide paths through `validateOutput` and asserts the universal law —
+so a future adapter that breaks the chain fails the gate.
 
 ## Where it renders (visible today)
 
 | Surface | Component | What it shows |
 |---|---|---|
 | Home cockpit — "Why results dropped" | `components/cockpit/CulpritBanner.tsx` | The bleed contract's full reasoning under the one-liner. |
+| Home cockpit — "This week's ranked plan" | `components/cockpit/ActionList.tsx` | The reasoning behind each ranked action (the main decision surface). |
 | Funnel report — each ad card | `components/app/funnel/funnel-report.tsx` | The funnel contract behind each ad's weakest step or hold. |
 
 Rendering uses the shared `components/intelligence/ReasoningTrace.tsx` — a server component (native
@@ -61,7 +68,9 @@ Rendering uses the shared `components/intelligence/ReasoningTrace.tsx` — a ser
 
 ## Not yet done (honest)
 
-- Adapters for winner/loser (§37/§38), diversity/fragility (§33–36), scaling elasticity (§47–48), account
-  health decomposition (§22) — the pattern is set; each is a new file + gate + optional render.
-- A uniform adoption across every recommendation surface (ActionList ranked plan, health card) — currently
-  two surfaces render it; the rest adopt it as they are next touched.
+- Adapters for scaling elasticity (§47–48) and account health decomposition (§22) — the pattern is set; each
+  is a new file + gate + optional render.
+- Uniform adoption across every recommendation surface — three surfaces render it today (bleed banner, ranked
+  plan, funnel cards); the rest (health card, winners/diversity tabs) adopt it as they are next touched.
+- None of the renders are live-verified on a real account yet (they need the founder's logged-in session);
+  they are code + build + gate verified.
