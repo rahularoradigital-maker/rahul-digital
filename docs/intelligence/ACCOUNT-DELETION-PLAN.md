@@ -46,14 +46,32 @@ schema — an explicit check is the first build step.)
 7. **Write ONE final audit_log entry** (deletion completed, counts per table) BEFORE the actor row is gone,
    with a system actor. Idempotent: re-running finds nothing left and is a no-op.
 
-## 3. Decisions I need from you (gated)
-- **Q1 — Immediate hard-delete, or a soft-delete + N-day grace period then purge?** (Grace is the safer default.)
-- **Q2 — Legal retention:** anything you must keep for law/finance (e.g. billing records once payment exists)?
-  For now there are no billing records; audit_log is retained anonymized. Confirm that's acceptable.
-- **Q3 — Sole-owner orgs/brands:** if the user is the only member of an org, delete the org + its brands +
-  all that brand's data, correct? (Agency members who share an org are only removed from membership.)
-- **Q4 — Meta revocation:** confirm we should call Meta to revoke the token on deletion (Platform-compliant),
-  not just delete our copy.
+## 3. Decisions — ANSWERED by Rahul (2026-09-01)
+- **Q1 — Timing:** SOFT-DELETE + 14-day grace, then purge; re-login within 14 days cancels. (`GRACE_PERIOD_DAYS=14`)
+- **Q2 — Retention:** audit_log RETAINED anonymized (no billing records yet). NOTE: Rahul did not explicitly
+  tick "keep audit_log" in the multi-select; I am defaulting to RETAIN-anonymized (safe/compliance), flagged
+  here to override to hard-delete if he prefers.
+- **Q3 — Sole-owner orgs:** DELETE the org + its brands + all that data. Agency orgs with other members: the
+  user is only removed from membership.
+- **Q4 — Meta revocation:** YES, revoke the token at Meta on delete. (`REVOKE_META_ON_DELETE=true`)
+
+## Built so far (this increment — non-destructive, nothing wired to a trigger)
+- `lib/account/deletion-manifest.ts` — the classification (cascade / explicit-delete / retain) + the decisions
+  above as constants. Single source of truth the executor will read.
+- `scripts/check-account-deletion.ts` (in `check:all`) — the ANTI-ORPHAN guardrail: parses the migrations,
+  finds all 25 user-scoped tables, and FAILS if any is not classified. It already caught 3 mis-classifications
+  while being written (test_plans/test_plan_items, oauth_tokens both cascade via a parent, not user_id-scoped).
+- Corrected the data map: oauth_tokens, test_plans/test_plan_items cascade via a PARENT (ad_accounts / brands),
+  so they are auto-deleted (set A) - but oauth_tokens must be READ to revoke the Meta token BEFORE that cascade.
+
+## Remaining increments (need Rahul's throwaway-account test - I cannot create accounts)
+1. Migration: add `deletion_requested_at` (soft-delete state) to `profiles`; a purge cron for rows past grace.
+2. `lib/account/delete.ts` executor: revoke externals -> explicit-delete set B (resumable) -> anonymize set C
+   -> delete auth user (cascade set A) -> ONE audit_log tombstone. Idempotent.
+3. Settings UI: "Delete account" -> confirm dialog (type email) showing what is removed vs retained + a
+   dry-run count. Immediately sets deletion_requested_at + revokes access; the purge happens after grace.
+4. Live test on a THROWAWAY account only: request -> access revoked -> after grace, every table empty for that
+   user_id, Meta token revoked, tombstone present, re-run is a no-op.
 
 ## 4. Verification plan (before it can be called done)
 - A `check-account-deletion.ts` that asserts every set-B table is covered (fails if a new user-scoped table
