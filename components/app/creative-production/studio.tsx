@@ -20,6 +20,8 @@ const IMAGE_TOKENS = ACTION_TOKENS.image;
 
 type Product = { productId: string; title: string; description: string; price: number | null; compareAtPrice: number | null; image: string | null; status: string | null; productType: string | null };
 type Rec = { productId: string; title: string; price: number | null; compareAtPrice: number | null; image: string | null; productType: string | null; discountPct: number; saving: number; reason: string };
+// What Studio derived about a product (a subset of Product DNA). Fields may be the literal "UNKNOWN".
+type ProductDNA = { name: string; category: string; primaryBenefit: string; problemSolved: string; targetPersona: string; usps: string[]; proof: string[]; confidence: number };
 type Concept = { id: string; formatId: string; headline: string; supportingCopy: string; cta: string; offer: string | null; angle: string; whyThisConcept: string; whyNow: string; score: number; awarenessStage: string; visualDirection: string };
 type QA = { status: "READY" | "REVIEW" | "FAILED"; checks: { name: string; pass: boolean; severity: string; detail: string }[] };
 type Asset = { creativeId: string; conceptId?: string; productId?: string; formatId: string; provider: string; model?: string; generationState?: string; qa: QA; approval: string; costUsd: number; url: string | null };
@@ -112,6 +114,7 @@ export function CreativeStudio() {
   const [selected, setSelected] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [conceptsByProduct, setConceptsByProduct] = useState<Record<string, Concept[]>>({});
+  const [dnaByProduct, setDnaByProduct] = useState<Record<string, ProductDNA>>({});
   const [assets, setAssets] = useState<Asset[]>([]);
   const [brand, setBrand] = useState<Brand | null>(null);
   const [step, setStep] = useState<Step>("products");
@@ -225,8 +228,9 @@ export function CreativeStudio() {
   const openProduct = (id: string) => run("concepts:" + id, async () => {
     setActive(id);
     if (!conceptsByProduct[id]) {
-      const r = await jsonFetch<{ concepts: Concept[] }>("/api/creative-production/concepts", { method: "POST", body: JSON.stringify({ productId: id }) });
+      const r = await jsonFetch<{ product?: ProductDNA; concepts: Concept[] }>("/api/creative-production/concepts", { method: "POST", body: JSON.stringify({ productId: id }) });
       setConceptsByProduct((prev) => ({ ...prev, [id]: r.concepts }));
+      if (r.product) setDnaByProduct((prev) => ({ ...prev, [id]: r.product as ProductDNA }));
     }
     await refreshAssets();
   });
@@ -481,6 +485,8 @@ export function CreativeStudio() {
                   new assets are generated (assets.length as the reload key). */}
               <FormatCoveragePanel reloadKey={assets.length} />
 
+              {active && dnaByProduct[active] ? <ProductDNAPanel dna={dnaByProduct[active]} /> : null}
+
               {busy === "concepts:" + active ? <p className="text-[13px] text-[var(--ink-muted)]">Reading the product and ranking creative ideas…</p> : null}
               {(conceptsByProduct[active ?? ""] ?? []).map((c) => {
                 const cAssets = assets.filter((a) => a.creativeId.includes(c.id));
@@ -591,6 +597,37 @@ function AssetCard({ asset, busy, label, onApprove, onReject, onDownload }: { as
         <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "rejected" ? "bg-red-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onReject} title="Reject">✕</button>
         {asset.url ? <button className="flex-1 rounded-[6px] border border-[var(--hairline)] py-1 text-center text-[11px] font-medium disabled:opacity-40" disabled={busy} onClick={onDownload} title="Download PNG">↧ PNG</button> : null}
       </div>
+    </div>
+  );
+}
+
+// Shows what Studio understood about the product before generating (the "understand" step). Honest:
+// UNKNOWN fields render as "not stated on the page" so the user trusts nothing was invented.
+function ProductDNAPanel({ dna }: { dna: ProductDNA }) {
+  const v = (s: string) => (s && s !== "UNKNOWN" ? s : null);
+  const rows: { label: string; value: string | null }[] = [
+    { label: "Sells because", value: v(dna.primaryBenefit) },
+    { label: "Solves", value: v(dna.problemSolved) },
+    { label: "For", value: v(dna.targetPersona) },
+    { label: "Key points", value: dna.usps.length ? dna.usps.slice(0, 4).join(" · ") : null },
+    { label: "Proof", value: dna.proof.length ? dna.proof.slice(0, 3).join(" · ") : null },
+  ];
+  const conf = Math.round((dna.confidence ?? 0) * 100);
+  return (
+    <div className={`${CARD} space-y-2 p-4`}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-[14px] font-medium">What Studio understood about this product</h3>
+        <span className="text-[11px] text-[var(--ink-muted)]">read confidence {conf}%</span>
+      </div>
+      <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+        {rows.map((r) => (
+          <div key={r.label} className="text-[12px]">
+            <span className="text-[var(--ink-muted)]">{r.label}: </span>
+            {r.value ? <span>{r.value}</span> : <span className="italic text-[var(--ink-muted)]">not stated on the page</span>}
+          </div>
+        ))}
+      </div>
+      <p className="text-[11px] text-[var(--ink-muted)]">Grounded in your product page only. &quot;Not stated&quot; means the page didn&apos;t say it — Studio won&apos;t invent it.</p>
     </div>
   );
 }
