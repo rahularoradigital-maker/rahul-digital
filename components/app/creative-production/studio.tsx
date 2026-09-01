@@ -185,6 +185,22 @@ export function CreativeStudio() {
 
   useEffect(() => { void loadProducts(); }, [loadProducts]);
 
+  // Remember the picked products across refreshes (picking from a large catalogue is real work to redo).
+  // localStorage can throw (private mode / blocked storage), so every access is guarded.
+  const selectionLoaded = useRef(false);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("cp-studio-selected");
+      const arr = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(arr)) setSelected(arr.filter((x) => typeof x === "string").slice(0, MAX_SELECT));
+    } catch { /* storage unavailable - start empty */ }
+    selectionLoaded.current = true;
+  }, []);
+  useEffect(() => {
+    if (!selectionLoaded.current) return; // don't overwrite before the initial read
+    try { localStorage.setItem("cp-studio-selected", JSON.stringify(selected)); } catch { /* ignore */ }
+  }, [selected]);
+
   // Debounced refetch when the search text or the category chip changes (skips the initial mount).
   useEffect(() => {
     if (firstRun.current) { firstRun.current = false; return; }
@@ -415,7 +431,7 @@ export function CreativeStudio() {
               <div className={`${CARD} p-4`}>
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-[15px] font-medium">Pick products to advertise</h2>
-                  <span className="text-[12px] text-[var(--ink-muted)]">{selected.length}/{MAX_SELECT} selected</span>
+                  <span className="text-[12px] text-[var(--ink-muted)]">{selected.length}/{MAX_SELECT} selected{selected.length > 0 ? <button className="ml-2 underline" onClick={() => setSelected([])}>Clear</button> : null}</span>
                 </div>
                 <div className="mb-3 flex items-center gap-2">
                   <Input
