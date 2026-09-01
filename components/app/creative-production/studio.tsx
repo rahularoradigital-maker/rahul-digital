@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FormatCoveragePanel } from "./format-coverage-panel";
 
 // Creative Studio workflow (Phases 10, 14, 22, 27, 28 UI). A guided 3-step flow drives the whole thing:
@@ -37,6 +37,9 @@ export function CreativeStudio() {
   const [shopDomain, setShopDomain] = useState<string | null>(null);
   const [currency, setCurrency] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [total, setTotal] = useState(0);
+  const [query, setQuery] = useState("");
+  const firstRun = useRef(true);
   const [selected, setSelected] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
   const [conceptsByProduct, setConceptsByProduct] = useState<Record<string, Concept[]>>({});
@@ -56,22 +59,35 @@ export function CreativeStudio() {
     return `${sym}${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   }, [currency]);
 
-  const loadProducts = useCallback(async () => {
-    setLoading(true);
+  // term = search text (searches the whole catalogue server-side); silent = don't flip the full-page loader.
+  const fetchProducts = useCallback(async (term: string, silent: boolean) => {
+    if (!silent) setLoading(true);
     try {
-      const r = await jsonFetch<{ connected: boolean; shopDomain: string | null; currency: string | null; products: Product[] }>("/api/creative-production/products");
+      const url = "/api/creative-production/products" + (term ? `?q=${encodeURIComponent(term)}` : "");
+      const r = await jsonFetch<{ connected: boolean; shopDomain: string | null; currency: string | null; products: Product[]; total?: number }>(url);
       setConnected(r.connected);
       setShopDomain(r.shopDomain);
       setCurrency(r.currency);
       setProducts(r.products);
+      setTotal(r.total ?? r.products.length);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load products");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
+  const loadProducts = useCallback(() => fetchProducts("", false), [fetchProducts]);
+
   useEffect(() => { void loadProducts(); }, [loadProducts]);
+
+  // Debounced search: refetch as the user types (skips the initial mount, which loadProducts already handled).
+  useEffect(() => {
+    if (firstRun.current) { firstRun.current = false; return; }
+    if (!connected) return;
+    const t = setTimeout(() => { void fetchProducts(query, true); }, 300);
+    return () => clearTimeout(t);
+  }, [query, connected, fetchProducts]);
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setErr(null);
@@ -197,8 +213,18 @@ export function CreativeStudio() {
                   <h2 className="text-[15px] font-medium">Pick products to advertise</h2>
                   <span className="text-[12px] text-[var(--ink-muted)]">{selected.length}/{MAX_SELECT} selected</span>
                 </div>
+                <div className="mb-3 flex items-center gap-2">
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search products by name or type…"
+                    className="min-w-0 flex-1 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-[13px]"
+                  />
+                  {query ? <button className="text-[12px] text-[var(--ink-muted)] underline" onClick={() => setQuery("")}>Clear</button> : null}
+                  <span className="shrink-0 text-[12px] text-[var(--ink-muted)]">{query ? `${total} match${total === 1 ? "" : "es"}` : `${total} products`}{total > products.length ? ` · showing ${products.length}` : ""}</span>
+                </div>
                 {products.length === 0 ? (
-                  <p className="text-[13px] text-[var(--ink-muted)]">No products yet. <button className="underline" onClick={sync}>Re-sync</button>.</p>
+                  <p className="text-[13px] text-[var(--ink-muted)]">{query ? `No products match "${query}".` : <>No products yet. <button className="underline" onClick={sync}>Re-sync</button>.</>}</p>
                 ) : (
                   <div className="grid max-h-[560px] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                     {products.map((p) => {

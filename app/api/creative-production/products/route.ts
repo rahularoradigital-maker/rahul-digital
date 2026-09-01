@@ -8,7 +8,9 @@ import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/st
 // Returns connection status + a compact product list (image, title, price, short description). Read-only.
 export const maxDuration = 30;
 
-export async function GET() {
+const PAGE = 300;
+
+export async function GET(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
@@ -16,15 +18,20 @@ export async function GET() {
   if (_denied) return _denied;
 
   const conn = await getShopifyConnectionStatus(user.id);
-  if (!conn) return NextResponse.json({ connected: false, shopDomain: null, products: [] });
+  if (!conn) return NextResponse.json({ connected: false, shopDomain: null, products: [], total: 0 });
 
-  const { data } = await createAdminClient()
+  // Search term: strip PostgREST filter metacharacters so a query can never break the .or() grammar.
+  const q = (new URL(req.url).searchParams.get("q") ?? "").trim().replace(/[,()%*\\]/g, " ").slice(0, 80);
+
+  let query = createAdminClient()
     .from("shopify_products")
-    .select("product_id, title, description, price, compare_at_price, featured_image_url, status, product_type")
+    .select("product_id, title, description, price, compare_at_price, featured_image_url, status, product_type", { count: "exact" })
     .eq("user_id", user.id)
-    .eq("shop_domain", conn.shopDomain)
-    .order("updated_at", { ascending: false })
-    .limit(300);
+    .eq("shop_domain", conn.shopDomain);
+  if (q) query = query.or(`title.ilike.%${q}%,product_type.ilike.%${q}%`); // search the WHOLE catalogue, not just the first page
+  query = query.order("updated_at", { ascending: false }).limit(PAGE);
+
+  const { data, count } = await query;
 
   const products = (data ?? []).map((p) => ({
     productId: p.product_id as string,
@@ -38,5 +45,6 @@ export async function GET() {
   }));
 
   const connected = conn.status === "connected" || conn.status === "url_public";
-  return NextResponse.json({ connected, status: conn.status, shopDomain: conn.shopDomain, currency: conn.currency, products });
+  // total = matches for the current query (whole catalogue when q set); products = the first PAGE shown.
+  return NextResponse.json({ connected, status: conn.status, shopDomain: conn.shopDomain, currency: conn.currency, products, total: count ?? products.length, shown: products.length });
 }
