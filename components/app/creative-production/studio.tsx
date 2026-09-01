@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { ACTION_TOKENS } from "@/lib/billing/plans";
 import { FormatCoveragePanel } from "./format-coverage-panel";
+
+// Cost of one image-generation run, from the shared meter weights (single source of truth).
+const IMAGE_TOKENS = ACTION_TOKENS.image;
 
 // Creative Studio workflow (Phases 10, 14, 22, 27, 28 UI). A guided 3-step flow drives the whole thing:
 //   STEP 1 Products  — connect/sync, pick up to 10, then Continue
@@ -31,6 +36,46 @@ async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+// Rasterise the stored SVG ad to a PNG in the browser (canvas) and download it — Meta/Google want PNG, not
+// SVG. No server raster dependency. Falls back to opening the SVG if the canvas is tainted by a cross-origin
+// image (rare: only when a brand logo/product image is an external URL) or toBlob is unsupported.
+async function downloadAssetPng(url: string, filename: string): Promise<"png" | "svg"> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Could not fetch the asset.");
+  const svgText = await res.text();
+  const blobUrl = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }));
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error("SVG render failed"));
+      i.src = blobUrl;
+    });
+    const w = img.naturalWidth || Number(svgText.match(/width="(\d+)"/)?.[1]) || 1080;
+    const h = img.naturalHeight || Number(svgText.match(/height="(\d+)"/)?.[1]) || 1080;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("no 2d context");
+    ctx.drawImage(img, 0, 0, w, h);
+    const png = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png")); // throws SecurityError if tainted
+    if (!png) throw new Error("toBlob returned null");
+    const a = document.createElement("a");
+    const pngUrl = URL.createObjectURL(png);
+    a.href = pngUrl;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(pngUrl);
+    return "png";
+  } catch {
+    window.open(url, "_blank", "noopener"); // graceful fallback: still hand over the asset
+    return "svg";
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
 export function CreativeStudio() {
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
@@ -39,6 +84,8 @@ export function CreativeStudio() {
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [query, setQuery] = useState("");
+  const [types, setTypes] = useState<{ type: string; n: number }[]>([]);
+  const [activeType, setActiveType] = useState("");
   const firstRun = useRef(true);
   const [selected, setSelected] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -53,23 +100,45 @@ export function CreativeStudio() {
   const [formDomain, setFormDomain] = useState("");
   const [formToken, setFormToken] = useState("");
 
+  // Token meter for the point-of-action cost preview (Phase 4). Read-only, best-effort; refreshed after each
+  // generation so "N left" stays honest. Never blocks the UI if /api/usage is unavailable.
+  const [usage, setUsage] = useState<{ remaining: number; imageGen: boolean; planLabel: string } | null>(null);
+  const refreshUsage = useCallback(() => {
+    fetch("/api/usage", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d && typeof d.remaining === "number") setUsage({ remaining: d.remaining, imageGen: !!d.imageGen, planLabel: d.planLabel });
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    refreshUsage();
+  }, [refreshUsage]);
+
   const money = useCallback((n: number | null): string => {
     if (n == null) return "";
     const sym = currency ? CURRENCY_SYMBOL[currency] ?? `${currency} ` : "";
     return `${sym}${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   }, [currency]);
 
-  // term = search text (searches the whole catalogue server-side); silent = don't flip the full-page loader.
-  const fetchProducts = useCallback(async (term: string, silent: boolean) => {
+  // term = search text; typeFilter = category chip; both filter the WHOLE catalogue server-side.
+  // silent = don't flip the full-page loader (used while typing / switching category).
+  const fetchProducts = useCallback(async (term: string, typeFilter: string, silent: boolean) => {
     if (!silent) setLoading(true);
     try {
-      const url = "/api/creative-production/products" + (term ? `?q=${encodeURIComponent(term)}` : "");
-      const r = await jsonFetch<{ connected: boolean; shopDomain: string | null; currency: string | null; products: Product[]; total?: number }>(url);
+      const p = new URLSearchParams();
+      if (term) p.set("q", term);
+      if (typeFilter) p.set("type", typeFilter);
+      const qs = p.toString();
+      const r = await jsonFetch<{ connected: boolean; shopDomain: string | null; currency: string | null; products: Product[]; total?: number; types?: { type: string; n: number }[] | null }>(
+        "/api/creative-production/products" + (qs ? `?${qs}` : ""),
+      );
       setConnected(r.connected);
       setShopDomain(r.shopDomain);
       setCurrency(r.currency);
       setProducts(r.products);
       setTotal(r.total ?? r.products.length);
+      if (r.types) setTypes(r.types); // only returned on the base load; keep the last non-null list
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load products");
     } finally {
@@ -77,17 +146,17 @@ export function CreativeStudio() {
     }
   }, []);
 
-  const loadProducts = useCallback(() => fetchProducts("", false), [fetchProducts]);
+  const loadProducts = useCallback(() => fetchProducts("", "", false), [fetchProducts]);
 
   useEffect(() => { void loadProducts(); }, [loadProducts]);
 
-  // Debounced search: refetch as the user types (skips the initial mount, which loadProducts already handled).
+  // Debounced refetch when the search text or the category chip changes (skips the initial mount).
   useEffect(() => {
     if (firstRun.current) { firstRun.current = false; return; }
     if (!connected) return;
-    const t = setTimeout(() => { void fetchProducts(query, true); }, 300);
+    const t = setTimeout(() => { void fetchProducts(query, activeType, true); }, 300);
     return () => clearTimeout(t);
-  }, [query, connected, fetchProducts]);
+  }, [query, activeType, connected, fetchProducts]);
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setErr(null);
@@ -160,6 +229,12 @@ export function CreativeStudio() {
 
   const enterReview = () => run("review", async () => { await refreshAssets(); setStep("review"); });
 
+  const downloadAsset = (asset: Asset) => run("dl:" + asset.creativeId, async () => {
+    if (!asset.url) return;
+    const kind = await downloadAssetPng(asset.url, `adscale-${asset.formatId}.png`);
+    if (kind === "svg") setErr("Couldn't rasterise this one in the browser (it has an external image) — opened the SVG instead.");
+  });
+
   const productTitle = (id: string) => products.find((p) => p.productId === id)?.title ?? id;
 
   if (loading) return <p className="text-[14px] text-[var(--ink-muted)]">Loading Studio…</p>;
@@ -223,6 +298,14 @@ export function CreativeStudio() {
                   {query ? <button className="text-[12px] text-[var(--ink-muted)] underline" onClick={() => setQuery("")}>Clear</button> : null}
                   <span className="shrink-0 text-[12px] text-[var(--ink-muted)]">{query ? `${total} match${total === 1 ? "" : "es"}` : `${total} products`}{total > products.length ? ` · showing ${products.length}` : ""}</span>
                 </div>
+                {types.length > 1 ? (
+                  <div className="mb-3 flex flex-wrap gap-1.5">
+                    <button className={`rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-medium transition ${activeType === "" ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--accent)]"}`} onClick={() => setActiveType("")}>All</button>
+                    {types.map((t) => (
+                      <button key={t.type} className={`rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-medium transition ${activeType === t.type ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--accent)]"}`} onClick={() => setActiveType(activeType === t.type ? "" : t.type)}>{t.type} <span className="opacity-60">{t.n}</span></button>
+                    ))}
+                  </div>
+                ) : null}
                 {products.length === 0 ? (
                   <p className="text-[13px] text-[var(--ink-muted)]">{query ? `No products match "${query}".` : <>No products yet. <button className="underline" onClick={sync}>Re-sync</button>.</>}</p>
                 ) : (
@@ -292,7 +375,7 @@ export function CreativeStudio() {
                     </div>
                     {cAssets.length ? (
                       <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-4">
-                        {cAssets.map((a) => <AssetCard key={a.creativeId} asset={a} busy={busy === "appr:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} />)}
+                        {cAssets.map((a) => <AssetCard key={a.creativeId} asset={a} busy={busy === "appr:" + a.creativeId || busy === "dl:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} onDownload={() => downloadAsset(a)} />)}
                       </div>
                     ) : null}
                   </div>
@@ -317,7 +400,7 @@ export function CreativeStudio() {
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
                   {assets.filter((a) => reviewFilter === "all" || a.approval === reviewFilter).map((a) => (
-                    <AssetCard key={a.creativeId} asset={a} label={a.productId ? productTitle(a.productId) : undefined} busy={busy === "appr:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} />
+                    <AssetCard key={a.creativeId} asset={a} label={a.productId ? productTitle(a.productId) : undefined} busy={busy === "appr:" + a.creativeId || busy === "dl:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} onDownload={() => downloadAsset(a)} />
                   ))}
                 </div>
               )}
@@ -346,7 +429,7 @@ function qaColor(status: string): string {
   return status === "READY" ? "text-emerald-500" : status === "REVIEW" ? "text-amber-500" : "text-red-500";
 }
 
-function AssetCard({ asset, busy, label, onApprove, onReject }: { asset: Asset; busy: boolean; label?: string; onApprove: () => void; onReject: () => void }) {
+function AssetCard({ asset, busy, label, onApprove, onReject, onDownload }: { asset: Asset; busy: boolean; label?: string; onApprove: () => void; onReject: () => void; onDownload: () => void }) {
   return (
     <div className={`rounded-[10px] border p-2 ${asset.approval === "approved" ? "border-emerald-500/50" : asset.approval === "rejected" ? "border-red-500/40 opacity-60" : "border-[var(--hairline)]"}`}>
       <div className="aspect-square overflow-hidden rounded-[6px] bg-[var(--hairline)]">
@@ -359,7 +442,7 @@ function AssetCard({ asset, busy, label, onApprove, onReject }: { asset: Asset; 
       <div className="mt-1.5 flex gap-1">
         <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "approved" ? "bg-emerald-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onApprove} title="Approve">✓</button>
         <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "rejected" ? "bg-red-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onReject} title="Reject">✕</button>
-        {asset.url ? <a className="flex-1 rounded-[6px] border border-[var(--hairline)] py-1 text-center text-[11px] font-medium" href={asset.url} target="_blank" rel="noreferrer" title="Open / download">↧</a> : null}
+        {asset.url ? <button className="flex-1 rounded-[6px] border border-[var(--hairline)] py-1 text-center text-[11px] font-medium disabled:opacity-40" disabled={busy} onClick={onDownload} title="Download PNG">↧ PNG</button> : null}
       </div>
     </div>
   );

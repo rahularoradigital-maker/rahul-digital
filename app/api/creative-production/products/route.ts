@@ -20,18 +20,30 @@ export async function GET(req: Request) {
   const conn = await getShopifyConnectionStatus(user.id);
   if (!conn) return NextResponse.json({ connected: false, shopDomain: null, products: [], total: 0 });
 
+  const params = new URL(req.url).searchParams;
   // Search term: strip PostgREST filter metacharacters so a query can never break the .or() grammar.
-  const q = (new URL(req.url).searchParams.get("q") ?? "").trim().replace(/[,()%*\\]/g, " ").slice(0, 80);
+  const q = (params.get("q") ?? "").trim().replace(/[,()%*\\]/g, " ").slice(0, 80);
+  const type = (params.get("type") ?? "").trim().slice(0, 120);
 
-  let query = createAdminClient()
+  const admin = createAdminClient();
+  let query = admin
     .from("shopify_products")
     .select("product_id, title, description, price, compare_at_price, featured_image_url, status, product_type", { count: "exact" })
     .eq("user_id", user.id)
     .eq("shop_domain", conn.shopDomain);
+  if (type) query = query.eq("product_type", type);
   if (q) query = query.or(`title.ilike.%${q}%,product_type.ilike.%${q}%`); // search the WHOLE catalogue, not just the first page
   query = query.order("updated_at", { ascending: false }).limit(PAGE);
 
   const { data, count } = await query;
+
+  // Category chips: only fetch the (grouped) type list on the base load, so it isn't recomputed on every
+  // keystroke/filter. The client keeps the last non-null list.
+  let types: { type: string; n: number }[] | null = null;
+  if (!q && !type) {
+    const { data: t } = await admin.rpc("cp_product_types", { p_user: user.id, p_shop: conn.shopDomain });
+    types = (t ?? []).map((r: { product_type: string; n: number }) => ({ type: r.product_type as string, n: Number(r.n) }));
+  }
 
   const products = (data ?? []).map((p) => ({
     productId: p.product_id as string,
@@ -46,5 +58,5 @@ export async function GET(req: Request) {
 
   const connected = conn.status === "connected" || conn.status === "url_public";
   // total = matches for the current query (whole catalogue when q set); products = the first PAGE shown.
-  return NextResponse.json({ connected, status: conn.status, shopDomain: conn.shopDomain, currency: conn.currency, products, total: count ?? products.length, shown: products.length });
+  return NextResponse.json({ connected, status: conn.status, shopDomain: conn.shopDomain, currency: conn.currency, products, total: count ?? products.length, shown: products.length, types });
 }
