@@ -33,7 +33,7 @@ export type FunnelReportBundle = { report: FunnelReport; accountName: string; ac
 
 type Session = NonNullable<Awaited<ReturnType<typeof getUserMetaSession>>>;
 
-type FunnelFilters = { catalog?: "include" | "exclude"; objectives?: string[]; campaignIds?: string[] };
+type FunnelFilters = { catalog?: "include" | "exclude"; objectives?: string[]; campaignIds?: string[]; events?: string[] };
 
 // Read every ad_metrics row for the account in-window, grouped by ad, applying the topbar filters (Catalog /
 // Objective / Campaign) exactly like the Cockpit does. Returns { ads:[], ... } when nothing matches / the
@@ -60,12 +60,14 @@ async function readStore(userId: string, accountExternalId: string, since: strin
 
   const names = new Map<string, string>();
   const catalogById = new Map<string, boolean>();
+  const eventById = new Map<string, string | null>(); // optimization-event filter (topbar, global)
   for (let from = 0; ; from += PAGE) {
-    const { data } = await admin.from("ad_meta").select("ad_id,name,is_catalog").eq("user_id", userId).eq("account_external_id", accountExternalId).order("ad_id", { ascending: true }).range(from, from + PAGE - 1);
-    const page = (data ?? []) as { ad_id: string; name: string | null; is_catalog: boolean | null }[];
+    const { data } = await admin.from("ad_meta").select("ad_id,name,is_catalog,optimization_event").eq("user_id", userId).eq("account_external_id", accountExternalId).order("ad_id", { ascending: true }).range(from, from + PAGE - 1);
+    const page = (data ?? []) as { ad_id: string; name: string | null; is_catalog: boolean | null; optimization_event: string | null }[];
     for (const m of page) {
       if (m.name) names.set(m.ad_id, m.name);
       catalogById.set(m.ad_id, !!m.is_catalog);
+      eventById.set(m.ad_id, m.optimization_event);
     }
     if (page.length < PAGE) break;
   }
@@ -83,10 +85,12 @@ async function readStore(userId: string, accountExternalId: string, since: strin
   const excludeCatalog = filters.catalog === "exclude";
   const objSet = filters.objectives && filters.objectives.length ? new Set(filters.objectives) : null;
   const campSet = filters.campaignIds && filters.campaignIds.length ? new Set(filters.campaignIds) : null;
+  const evSet = filters.events && filters.events.length ? new Set(filters.events) : null;
 
   const ads: FunnelAd[] = [];
   for (const [adId, rs] of byAd) {
     if (excludeCatalog && catalogById.get(adId)) continue; // "Catalog: Excluded" hides dynamic catalog ads
+    if (evSet) { const ev = eventById.get(adId); if (ev == null || !evSet.has(ev)) continue; } // optimization-event scope
     const objective = mapMetaObjective(rs.find((r) => r.objective)?.objective ?? "");
     if (objSet && !objSet.has(objective)) continue;
     const campaignId = rs.find((r) => r.campaign_id)?.campaign_id ?? null;

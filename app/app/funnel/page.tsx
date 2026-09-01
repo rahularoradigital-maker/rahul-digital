@@ -41,6 +41,7 @@ export default async function FunnelPage() {
   const bundle = await loadFunnelReport(user.id, {
     catalog: scope.catalog,
     objectives: scope.objectives,
+    events: scope.events,
     campaignIds: scope.campaignId ? scope.campaignId.split(",").filter(Boolean) : undefined,
     explicitWindow: scope.explicitWindow,
     lookbackDays: scope.explicitWindow ? undefined : scope.lookbackDays,
