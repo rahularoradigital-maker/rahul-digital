@@ -13,8 +13,8 @@ import { looksLikeBrand } from "./derive.ts";
 // Sized to stay safely under the ~60s serverless cap AND under provider rate limits. The pool still beats the
 // old single-tier (~11) because the cheap Tier-1 pass drops brands/floor BEFORE any reels credit is spent, so
 // the reels budget covers real survivors instead of being wasted on brands. Total calls ~= ENRICH + REELS_MAX.
-const DEFAULT_ENRICH = 36; // Tier-1 candidate pool (profile-only, cheap)
-const REELS_MAX = 18; // Tier-2: reels fetched only for this many SURVIVORS (after brands/floor are dropped)
+const DEFAULT_ENRICH = 32; // Tier-1 candidate pool (profile-only, cheap) - sized for a comfortable margin under 60s
+const REELS_MAX = 16; // Tier-2: reels fetched only for this many SURVIVORS (after brands/floor are dropped)
 const DEFAULT_CONCURRENCY = 10; // parallel fetches: fast but gentle on the provider's rate limit
 const DEFAULT_MIN_FOLLOWERS = 10_000; // influencer floor: drop tiny shops/resellers. Adjustable per run.
 // Plausible engagement band. Below the floor = dead/bought-follower BRAND pages (a real creator engages its
