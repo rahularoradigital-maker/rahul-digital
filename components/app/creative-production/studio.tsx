@@ -305,6 +305,11 @@ export function CreativeStudio() {
   const exportApprovedZip = () => run("zip", async () => {
     const approved = assets.filter((a) => a.approval === "approved" && a.url);
     if (approved.length === 0) { setErr("No approved ads yet — approve some in Review first."); return; }
+    // Look up the concept behind each asset (for the manifest copy), from whatever concepts are loaded.
+    const conceptById = new Map(Object.values(conceptsByProduct).flat().map((c) => [c.id, c] as const));
+    const csv = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
+    const manifestRows = ["file,product,format,headline,cta,offer,qa"]; // header
+
     const entries: ZipEntry[] = [];
     let failed = 0;
     for (let i = 0; i < approved.length; i++) {
@@ -313,10 +318,15 @@ export function CreativeStudio() {
       const png = await svgUrlToPngBlob(a.url!);
       if (!png) { failed++; continue; }
       const slug = (a.productId ? productTitle(a.productId) : "ad").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "ad";
-      entries.push({ name: `${slug}-${a.formatId}.png`, data: new Uint8Array(await png.arrayBuffer()) });
+      const file = `${slug}-${a.formatId}.png`;
+      entries.push({ name: file, data: new Uint8Array(await png.arrayBuffer()) });
+      const c = a.conceptId ? conceptById.get(a.conceptId) : undefined;
+      manifestRows.push([file, a.productId ? productTitle(a.productId) : "", a.formatId, c?.headline ?? "", c?.cta ?? "", c?.offer ?? "", a.qa?.status ?? ""].map(csv).join(","));
     }
     setBatchProgress("");
     if (entries.length === 0) { setErr("Could not rasterise the approved ads to PNG."); return; }
+    // A media-buyer manifest: which PNG is which product/concept/format, at the root of the zip.
+    entries.push({ name: "manifest.csv", data: new TextEncoder().encode(manifestRows.join("\r\n") + "\r\n") });
     const stamp = new Date().toISOString().slice(0, 10);
     const zipBytes = makeZip(entries); // fresh exact-size Uint8Array, so .buffer is the whole zip
     triggerDownload(new Blob([zipBytes.buffer as ArrayBuffer], { type: "application/zip" }), `adscale-approved-${stamp}.zip`);
