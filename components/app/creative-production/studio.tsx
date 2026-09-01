@@ -130,6 +130,7 @@ export function CreativeStudio() {
   const [platform, setPlatform] = useState<"meta" | "google">("meta");
   const [deselFormats, setDeselFormats] = useState<Set<string>>(new Set()); // formats the user turned OFF (empty = all on)
   const [reviewFilter, setReviewFilter] = useState<string>("all");
+  const [campaignName, setCampaignName] = useState("");
   const [formDomain, setFormDomain] = useState("");
   const [formToken, setFormToken] = useState("");
 
@@ -350,6 +351,7 @@ export function CreativeStudio() {
     if (approved.length === 0) { setErr("No approved ads yet — approve some in Review first."); return; }
     // Look up the concept behind each asset (for the manifest copy), from whatever concepts are loaded.
     const conceptById = new Map(Object.values(conceptsByProduct).flat().map((c) => [c.id, c] as const));
+    const camp = campaignName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40); // optional campaign prefix
     const csv = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
     const manifestRows = ["file,product,format,headline,cta,offer,qa"]; // header
 
@@ -361,7 +363,7 @@ export function CreativeStudio() {
       const png = await svgUrlToPngBlob(a.url!);
       if (!png) { failed++; continue; }
       const slug = (a.productId ? productTitle(a.productId) : "ad").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "ad";
-      const file = `${slug}-${a.formatId}.png`;
+      const file = `${camp ? camp + "-" : ""}${slug}-${a.formatId}.png`;
       entries.push({ name: file, data: new Uint8Array(await png.arrayBuffer()) });
       const c = a.conceptId ? conceptById.get(a.conceptId) : undefined;
       manifestRows.push([file, a.productId ? productTitle(a.productId) : "", a.formatId, c?.headline ?? "", c?.cta ?? "", c?.offer ?? "", a.qa?.status ?? ""].map(csv).join(","));
@@ -372,7 +374,7 @@ export function CreativeStudio() {
     entries.push({ name: "manifest.csv", data: new TextEncoder().encode(manifestRows.join("\r\n") + "\r\n") });
     const stamp = new Date().toISOString().slice(0, 10);
     const zipBytes = makeZip(entries); // fresh exact-size Uint8Array, so .buffer is the whole zip
-    triggerDownload(new Blob([zipBytes.buffer as ArrayBuffer], { type: "application/zip" }), `adscale-approved-${stamp}.zip`);
+    triggerDownload(new Blob([zipBytes.buffer as ArrayBuffer], { type: "application/zip" }), `adscale-${camp ? camp + "-" : ""}approved-${stamp}.zip`);
     if (failed > 0) setErr(`Exported ${entries.length} PNG${entries.length === 1 ? "" : "s"}; ${failed} couldn't be rasterised (external image) and were skipped.`);
   });
 
@@ -659,7 +661,8 @@ export function CreativeStudio() {
                   );
                 })()}
                 <span className="ml-auto text-[12px] text-[var(--ink-muted)]">{assets.filter((a) => a.approval === "approved").length} approved · {assets.length} total</span>
-                <button className={BTN_PRIMARY} disabled={busy === "zip" || assets.filter((a) => a.approval === "approved").length === 0} onClick={exportApprovedZip} title="Download every approved ad as PNGs in one ZIP">
+                <input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="Campaign name (optional)" className="w-[180px] rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[12px]" />
+                <button className={BTN_PRIMARY} disabled={busy === "zip" || assets.filter((a) => a.approval === "approved").length === 0} onClick={exportApprovedZip} title="Download every approved ad as PNGs in one ZIP, named by campaign">
                   {busy === "zip" ? `Zipping ${batchProgress}…` : "⬇ Export approved (ZIP)"}
                 </button>
               </div>
