@@ -22,5 +22,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-b6 | Objective+EVENT filter feature (Rahul, strict, every screen): ingest Meta ad-set `optimization_goal` + `promoted_object.custom_event_type` → store on `ad_meta` (new column, migration TBD w/ Rahul); add `adbrain.events` to `resolveCockpitScope` (`lib/app/cockpit-data.ts`); add an Event multi-select to the topbar (`components/app/topbar.tsx`, global) next to Objective; ensure every /app screen respects the objective+event scope. HOT files: meta-source, cockpit-data, topbar, meta-sync/from-store. | WIP (planning) | claiming the data-layer scope + topbar for this; migration needs Rahul's go-ahead before prod. Ping me before editing cockpit-data/topbar. |
 
+| rahul-linkedin-2-5a (intelligence) | NEW file only: `lib/intelligence/from-culprit.ts` + `scripts/check-culprit-contract.ts` — adapter mapping the real `CulpritDiagnosis` (money-bleed) into the §110 Output Contract. NOT editing `lib/scoring/culprit.ts`. | DONE | commit 434583e pushed; 10 assertions + wired into check:all; first live-engine proof of the contract |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
