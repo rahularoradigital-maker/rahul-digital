@@ -97,7 +97,7 @@ export function DeepAnalysisCard({ accountId }: { accountId: string }) {
             </Button>
           )}
           {running && (
-            <div className="mt-2 text-[12px] text-[var(--ink-muted)]">Reading each video takes a few seconds - this can take up to a minute. Please keep this tab open.</div>
+            <div className="mt-2 text-[12px] text-[var(--ink-muted)]" role="status" aria-live="polite">Reading each video takes a few seconds - this can take up to a minute. Please keep this tab open.</div>
           )}
           {note && <div className="mt-3 rounded-[8px] border border-[var(--hairline)] bg-[var(--bg)] p-3 text-[13px] text-[var(--ink)]">{note}</div>}
           {error && <div className="mt-3 rounded-[8px] border border-[var(--bad-bg)] bg-[var(--bad-bg)] p-3 text-[13px] text-[var(--bad-ink)]">{error}</div>}
