@@ -2,6 +2,35 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
+
+// Page-specific metadata: /product previously inherited only the site-wide title, so it had no unique title,
+// description, or canonical - a real on-page SEO gap on a key page. No SoftwareApplication node here on purpose:
+// the site-wide one in app/layout.tsx already declares the product entity; a second would duplicate it.
+export const metadata = {
+  title: "The AdBrain AI Platform — Meta & Google ad decisions",
+  description:
+    "AdBrain connects to your Meta and Google ad accounts and hands your team a ranked, reasoned decision on what to scale, refresh, or kill - with the why behind every call.",
+  alternates: { canonical: "/product" },
+  openGraph: {
+    type: "website",
+    title: "The AdBrain AI Platform — Meta & Google ad decisions",
+    description:
+      "AdBrain reads your ad accounts and tells you what to scale, refresh, or kill, with a reason for every call.",
+    url: `${SITE_URL}/product`,
+    siteName: "AdBrain AI",
+  },
+};
+
+const PRODUCT_JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+    { "@type": "ListItem", position: 2, name: "Platform", item: `${SITE_URL}/product` },
+  ],
+});
+
 type Verdict = "scale" | "test" | "kill";
 
 const VERDICT_STYLES: Record<Verdict, string> = {
@@ -83,6 +112,7 @@ const MODULES: {
 export default function ProductPage() {
   return (
     <>
+      <script type="application/ld+json">{PRODUCT_JSON_LD}</script>
       {/* Announcement bar */}
       <div className="bg-[var(--accent)] px-4 py-2 text-center text-sm text-white">
         Meta-first creative and media intelligence. Google coming next.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { listPublishedArticles } from "@/lib/growth/articles";
 
 // Public blog index. Renders PUBLISHED articles only (owner-approved). SEO/AEO surface for rahul-digital.vercel.app.
@@ -29,12 +30,13 @@ export default async function BlogIndex() {
           {articles.map((a) => (
             <li key={a.id} className="border-t border-[var(--hairline)] pt-8 first:border-0 first:pt-0">
               <Link href={`/blog/${a.slug}`} className="group grid gap-4 sm:grid-cols-[200px_1fr] sm:gap-5">
-                <img
+                <Image
                   src={`/blog/${a.slug}/opengraph-image`}
                   alt={a.title}
                   width={1200}
                   height={630}
-                  className="aspect-[1200/630] w-full rounded-[10px] border border-[var(--hairline)] object-cover"
+                  sizes="(min-width: 640px) 200px, 100vw"
+                  className="h-auto w-full rounded-[10px] border border-[var(--hairline)]"
                 />
                 <div>
                   {a.topic && <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--accent)]">{a.topic}</p>}

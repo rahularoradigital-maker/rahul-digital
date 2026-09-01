@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getArticleBySlug } from "@/lib/growth/articles";
 import { Markdown } from "../md";
@@ -80,13 +81,15 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {a.published_at && <span aria-hidden>·</span>}
           <span>{readingMinutes(a.body_md)} min read</span>
         </p>
-        {/* Real image only: the article's own branded share card, matching og:image. No stock photography. */}
-        <img
+        {/* Real image only: the article's own branded share card, matching og:image. No stock photography.
+            next/image so the LCP hero is served right-sized + WebP; priority since it is above the fold. */}
+        <Image
           src={`/blog/${slug}/opengraph-image`}
           alt={`${a.title} — AdBrain`}
           width={1200}
           height={630}
-          className="mt-6 aspect-[1200/630] w-full rounded-[12px] border border-[var(--hairline)] object-cover"
+          priority
+          className="mt-6 h-auto w-full rounded-[12px] border border-[var(--hairline)]"
         />
         <div className="mt-8">
           <Markdown md={a.body_md} />
