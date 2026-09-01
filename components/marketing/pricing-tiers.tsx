@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 // Phase 1 pricing tiers (static, no billing yet - CTAs go to sign-up / book-a-demo). Two toggles: currency
 // (INR default for an India-heavy audience, USD available) and billing period (annual default - research shows
@@ -123,9 +124,9 @@ export function PricingTiers() {
               }`}
             >
               {t.popular && (
-                <span className="absolute -top-3 left-6 rounded-full bg-[var(--accent)] px-3 py-1 text-[12px] font-semibold text-white">
+                <Badge className="absolute -top-3 left-6 rounded-full bg-[var(--accent)] px-3 py-1 text-[12px] font-semibold text-white">
                   Most popular
-                </span>
+                </Badge>
               )}
               <h3 className="text-[20px] font-semibold">{t.name}</h3>
               <p className="mt-1 min-h-[40px] text-[13px] text-[var(--ink-muted)]">{t.tagline}</p>

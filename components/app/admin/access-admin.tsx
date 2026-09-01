@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 // Owner-only private-beta access management. Lists profiles and lets the admin Approve / Suspend / Revoke.
 // All authority is server-side (/api/admin/access is isAdminEmail-gated + service-role); this is only the UI.
@@ -71,10 +72,10 @@ export function AccessAdmin() {
                 <td className={`${td} text-[var(--ink-muted)]`}>{(u.created_at ?? "").slice(0, 10)}</td>
                 <td className={td}>
                   <div className="flex flex-wrap gap-1.5">
-                    {!entitled && <button className={btn} disabled={!!busy} onClick={() => act(u.id, "approve")}>Approve</button>}
-                    {entitled && u.access_state !== "ADMIN" && <button className={btn} disabled={!!busy} onClick={() => act(u.id, "suspend")}>Suspend</button>}
-                    {u.access_state === "SUSPENDED" && <button className={btn} disabled={!!busy} onClick={() => act(u.id, "reinstate")}>Reinstate</button>}
-                    {u.access_state !== "ADMIN" && u.access_state !== "REVOKED" && <button className={btn} disabled={!!busy} onClick={() => act(u.id, "revoke")}>Revoke</button>}
+                    {!entitled && <Button variant="ghost" size="sm" className={btn} disabled={!!busy} onClick={() => act(u.id, "approve")}>Approve</Button>}
+                    {entitled && u.access_state !== "ADMIN" && <Button variant="ghost" size="sm" className={btn} disabled={!!busy} onClick={() => act(u.id, "suspend")}>Suspend</Button>}
+                    {u.access_state === "SUSPENDED" && <Button variant="ghost" size="sm" className={btn} disabled={!!busy} onClick={() => act(u.id, "reinstate")}>Reinstate</Button>}
+                    {u.access_state !== "ADMIN" && u.access_state !== "REVOKED" && <Button variant="ghost" size="sm" className={btn} disabled={!!busy} onClick={() => act(u.id, "revoke")}>Revoke</Button>}
                   </div>
                 </td>
               </tr>

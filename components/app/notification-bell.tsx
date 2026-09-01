@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 // The Notification Center bell: a live activity feed + intelligent failure surfacing for the signed-in
 // user. Polls /api/notifications on mount, on window focus, and while open, so the user sees what's
@@ -73,7 +74,9 @@ export function NotificationBell() {
 
   return (
     <div className="relative" ref={ref}>
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         type="button"
         onClick={() => { const next = !open; setOpen(next); if (next && unread) markAllRead(); }}
         aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
@@ -88,7 +91,7 @@ export function NotificationBell() {
             {unread > 9 ? "9+" : unread}
           </span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-96 overflow-hidden rounded-lg border border-[var(--hairline)] bg-[var(--surface)] text-left shadow-lg">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 // Stage 2 UI: from the confirmed brand profile, find candidate competitors (Ad Library search), let
 // the user review/pick (heuristic - name search is not perfect), then pull the selected ones' ads.
@@ -84,9 +85,9 @@ export function CompetitorDiscovery() {
       {error && <p className="mb-3 text-[13px] text-[var(--bad-ink)]">{error}</p>}
 
       {phase === "idle" && (
-        <button type="button" onClick={find} className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90">
+        <Button type="button" variant="default" onClick={find} className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90">
           Find competitors
-        </button>
+        </Button>
       )}
       {phase === "searching" && <p className="text-[13px] text-[var(--ink-muted)]">Searching the Ad Library from your brand profile...</p>}
 
@@ -127,12 +128,12 @@ export function CompetitorDiscovery() {
                 ))}
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[var(--surface-alt)] pt-4">
-                <button type="button" onClick={track} disabled={phase === "tracking" || selected.size === 0} className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50">
+                <Button type="button" variant="default" onClick={track} disabled={phase === "tracking" || selected.size === 0} className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50">
                   {phase === "tracking" ? "Pulling their ads..." : `Track selected (${selected.size})`}
-                </button>
-                <button type="button" onClick={find} disabled={phase === "tracking"} className="rounded-full border border-[var(--hairline)] px-5 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)] disabled:opacity-50">
+                </Button>
+                <Button type="button" variant="outline" onClick={find} disabled={phase === "tracking"} className="rounded-full border border-[var(--hairline)] px-5 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)] disabled:opacity-50">
                   Re-search
-                </button>
+                </Button>
               </div>
             </>
           )}
@@ -152,9 +153,9 @@ export function CompetitorDiscovery() {
               </li>
             ))}
           </ul>
-          <button type="button" onClick={() => { setPhase("idle"); setCandidates([]); setSelected(new Set()); setTracked([]); }} className="rounded-full border border-[var(--hairline)] px-5 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)]">
+          <Button type="button" variant="outline" onClick={() => { setPhase("idle"); setCandidates([]); setSelected(new Set()); setTracked([]); }} className="rounded-full border border-[var(--hairline)] px-5 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)]">
             Find more
-          </button>
+          </Button>
         </div>
       )}
     </div>

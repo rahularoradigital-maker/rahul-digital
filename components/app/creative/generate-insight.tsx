@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 // The Generate / Regenerate + display surface shared by Brand Brain and Concepts. Posts to
 // /api/creative/analyze, which reads the account's REAL ads and returns a grounded Gemini analysis.
@@ -30,14 +31,15 @@ export function GenerateInsight({ type, initial, emptyCta }: { type: "brand" | "
     <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="mb-3 flex items-center justify-between gap-3">
         <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">From your real ads · grounded, not invented</span>
-        <button
+        <Button
           type="button"
+          variant="default"
           onClick={run}
           disabled={busy}
           className="shrink-0 rounded-full bg-[var(--ink)] px-4 py-1.5 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
         >
           {busy ? "Reading your ads..." : content ? "Regenerate" : emptyCta}
-        </button>
+        </Button>
       </div>
       {error && (
         <p className="mb-3 rounded-[10px] border border-[var(--bad-ink)]/30 bg-[var(--bad-bg)] px-3.5 py-2.5 text-[13px] text-[var(--bad-ink)]">{error}</p>

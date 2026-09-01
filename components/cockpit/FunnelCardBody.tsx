@@ -7,6 +7,7 @@ import { windowHeadline } from "@/lib/cockpit/daily-series";
 import type { LevelFunnels, GroupFunnel } from "@/lib/cockpit/level-funnel";
 import { KPI_CATALOG } from "@/lib/app/kpi-catalog";
 import { Sparkline } from "@/components/app/analytics/sparkline";
+import { Badge } from "@/components/ui/badge";
 import { rupees, rupeesPrecise } from "@/lib/format";
 
 // The funnel card with an Ad / Ad set / Campaign selector, each read the way a top-1% buyer reads it, with its
@@ -180,7 +181,7 @@ function EntityDrilldown({ level, groups, selected }: { level: "adset" | "campai
         <select value={g.id} onChange={(e) => setEntityId(e.target.value)} className="max-w-full truncate rounded-lg border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)]">
           {groups.map((x) => (<option key={x.id} value={x.id}>{x.name} · {rupees.format(x.spendRs)}</option>))}
         </select>
-        {!g.delivering && <span className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)]" title="No spend in the recent window - paused or ended">not delivering</span>}
+        {!g.delivering && <Badge variant="muted" className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)]" title="No spend in the recent window - paused or ended">not delivering</Badge>}
       </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
         {selected.map((k) => renderCard(k, g.headline, g.series, g.native))}

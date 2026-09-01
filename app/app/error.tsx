@@ -5,6 +5,8 @@
 // on 2026-08-28). With it, the user sees a recoverable screen and can retry - the page stays up
 // for everyone even when one render throws. `reset()` re-renders the segment; a full reload is
 // offered as the harder retry.
+import { Button } from "@/components/ui/button";
+
 export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-6">
@@ -20,13 +22,15 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
           happening use Re-scan or switch account.
         </p>
         <div className="flex items-center justify-center gap-2">
-          <button
+          <Button
+            variant="default"
+            size="sm"
             type="button"
             onClick={() => reset()}
             className="rounded-full bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
           >
             Try again
-          </button>
+          </Button>
           <a
             href="/app"
             className="rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"

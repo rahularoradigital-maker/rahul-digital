@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
 /**
  * "Sign in with Google" via Supabase Auth (native Google OAuth provider).
@@ -31,7 +32,8 @@ export function GoogleButton({ label }: { label: string }) {
 
   return (
     <div>
-      <button
+      <Button
+        variant="outline"
         type="button"
         onClick={signInWithGoogle}
         disabled={pending}
@@ -44,7 +46,7 @@ export function GoogleButton({ label }: { label: string }) {
           <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58C13.47.9 11.43 0 9 0A9 9 0 0 0 .96 4.94l3.02 2.34C4.68 5.16 6.66 3.58 9 3.58z" />
         </svg>
         {pending ? "Redirecting..." : label}
-      </button>
+      </Button>
       {error && <p className="mt-2 text-sm text-[var(--bad-ink)]">{error}</p>}
     </div>
   );

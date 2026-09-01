@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Stage 1 of the competitor-intelligence pipeline: the only manual step. The user pastes
 // their own brand's Facebook Ad Library URL and one or more competitor Ad Library URLs.
@@ -168,7 +170,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
       </div>
 
       {/* Discovery search (reduces the manual step to a click) */}
-      <input
+      <Input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={market ? `e.g. ${market}, or a category like "wireless earbuds"` : 'Search a brand or category, e.g. "wireless earbuds"'}
@@ -225,7 +227,7 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
       <div className="mb-1 mt-6 text-[13px] font-medium text-[var(--ink-muted)]">Or paste Ad Library URLs directly</div>
 
       <label className="mb-1.5 mt-2 block text-[13px] font-medium">Your brand Ad Library URL</label>
-      <input
+      <Input
         value={brandUrl}
         onChange={(e) => setBrandUrl(e.target.value)}
         placeholder="https://www.facebook.com/ads/library/?view_all_page_id=..."
@@ -236,21 +238,22 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
       <div className="space-y-2">
         {competitors.map((c, i) => (
           <div key={c.id} className="flex items-center gap-2">
-            <input
+            <Input
               value={c.url}
               onChange={(e) => setCompetitor(i, e.target.value)}
               placeholder="https://www.facebook.com/ads/library/?view_all_page_id=..."
               className={inputCls}
             />
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() => removeCompetitor(i)}
               disabled={competitors.length === 1}
               aria-label="Remove competitor"
               className="shrink-0 rounded-[10px] border border-[var(--hairline)] px-3 py-2 text-sm text-[var(--ink-muted)] transition hover:text-[var(--ink)] disabled:opacity-40"
             >
               &minus;
-            </button>
+            </Button>
           </div>
         ))}
       </div>
@@ -263,21 +266,23 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
       </button>
 
       <div className="mt-5 flex items-center gap-3 border-t border-[var(--surface-alt)] pt-4">
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={save}
           className="rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-5 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
         >
           {saved ? "Saved" : "Save URLs"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="default"
           onClick={run}
           disabled={!canRun || running}
           className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
         >
           {running ? "Pulling live ads..." : "Run analysis"}
-        </button>
+        </Button>
         <span className="text-xs text-[var(--ink-muted)]">
           {running
             ? "Fetching from the Facebook Ad Library. This can take a moment."

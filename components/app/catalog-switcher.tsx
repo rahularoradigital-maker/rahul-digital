@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
+import { Button } from "@/components/ui/button";
 
 // Catalog include/exclude filter: drop dynamic-product (catalog) ads from the analyzed set so the
 // conversion/sale view reflects only non-catalog ads. Stored in the "adbrain.catalog" cookie which
@@ -60,8 +61,9 @@ export function CatalogSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <button
+      <Button
         type="button"
+        variant="outline"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="true"
         aria-expanded={open}
@@ -78,18 +80,19 @@ export function CatalogSwitcher() {
           </>
         )}
         <span className={FILTER_LABEL}>▾</span>
-      </button>
+      </Button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
           {OPTIONS.map((o) => (
-            <button
+            <Button
               key={o.key}
               type="button"
+              variant="ghost"
               onClick={() => choose(o.key)}
-              className={`w-full rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${mode === o.key ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+              className={`w-full justify-start rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${mode === o.key ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
             >
               {o.label}
-            </button>
+            </Button>
           ))}
         </div>
       ) : null}

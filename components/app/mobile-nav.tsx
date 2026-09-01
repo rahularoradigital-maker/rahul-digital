@@ -6,6 +6,7 @@ import Link from "next/link";
 import { SidebarNav } from "./sidebar-nav";
 import { signOut } from "@/app/(auth)/actions";
 import { Logo } from "@/components/site-header";
+import { Button } from "@/components/ui/button";
 
 // Mobile navigation: the desktop sidebar is hidden below md, which left phones with NO nav
 // at all. This adds a hamburger (md:hidden) that opens the same nav as a slide-in drawer,
@@ -42,8 +43,10 @@ export function MobileNav({ userEmail }: { userEmail?: string }) {
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={() => setOpen(true)}
         aria-label="Open menu"
         className="shrink-0 rounded-lg p-2.5 text-[var(--ink)] transition hover:bg-[var(--surface-alt)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] md:hidden"
@@ -51,7 +54,7 @@ export function MobileNav({ userEmail }: { userEmail?: string }) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
           <path d="M3 6h18M3 12h18M3 18h18" />
         </svg>
-      </button>
+      </Button>
 
       {open ? (
         <div className="fixed inset-0 z-50 md:hidden">
@@ -62,8 +65,10 @@ export function MobileNav({ userEmail }: { userEmail?: string }) {
                 <Logo />
                 AdScale AI
               </Link>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => setOpen(false)}
                 aria-label="Close menu"
                 className="rounded-lg p-2 text-[var(--ink-muted)] transition hover:bg-[var(--surface-alt)] hover:text-[var(--ink)]"
@@ -71,7 +76,7 @@ export function MobileNav({ userEmail }: { userEmail?: string }) {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M18 6 6 18M6 6l12 12" />
                 </svg>
-              </button>
+              </Button>
             </div>
 
             <SidebarNav />

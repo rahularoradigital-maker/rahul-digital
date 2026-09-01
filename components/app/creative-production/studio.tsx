@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ACTION_TOKENS } from "@/lib/billing/plans";
 import { FormatCoveragePanel } from "./format-coverage-panel";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Cost of one image-generation run, from the shared meter weights (single source of truth).
 const IMAGE_TOKENS = ACTION_TOKENS.image;
@@ -252,13 +254,13 @@ export function CreativeStudio() {
           <h2 className="text-[16px] font-medium">Add your store</h2>
           <p className="text-[13px] text-[var(--ink-muted)]">Just paste your store website. If it is a Shopify store, Studio pulls in every published product automatically. No login or API key needed.</p>
           <div className="flex flex-wrap gap-2">
-            <input value={formDomain} onChange={(e) => setFormDomain(e.target.value)} placeholder="your-store.com" className="min-w-[280px] flex-1 rounded-xl border border-border bg-card text-card-foreground shadow-sm px-3 py-2 text-[13px]" />
-            <button className={BTN_PRIMARY} disabled={busy === "connect" || !formDomain.trim()} onClick={connect}>{busy === "connect" ? "Fetching products…" : "Fetch products"}</button>
+            <Input value={formDomain} onChange={(e) => setFormDomain(e.target.value)} placeholder="your-store.com" className="min-w-[280px] flex-1 rounded-xl border border-border bg-card text-card-foreground shadow-sm px-3 py-2 text-[13px]" />
+            <Button variant="default" className={BTN_PRIMARY} disabled={busy === "connect" || !formDomain.trim()} onClick={connect}>{busy === "connect" ? "Fetching products…" : "Fetch products"}</Button>
           </div>
           <details className="text-[12px] text-[var(--ink-muted)]">
             <summary className="cursor-pointer select-none">Have an Admin API token? (optional — for private/full data)</summary>
             <div className="mt-2 flex flex-wrap gap-2">
-              <input value={formToken} onChange={(e) => setFormToken(e.target.value)} placeholder="shpat_… (Admin API token)" className="min-w-[280px] flex-1 rounded-xl border border-border bg-card text-card-foreground shadow-sm px-3 py-2 text-[13px]" />
+              <Input value={formToken} onChange={(e) => setFormToken(e.target.value)} placeholder="shpat_… (Admin API token)" className="min-w-[280px] flex-1 rounded-xl border border-border bg-card text-card-foreground shadow-sm px-3 py-2 text-[13px]" />
               <span className="text-[11px]">A token also pulls unpublished products, inventory and metafields. The public feed covers published products, prices and images.</span>
             </div>
           </details>
@@ -290,7 +292,7 @@ export function CreativeStudio() {
                   <span className="text-[12px] text-[var(--ink-muted)]">{selected.length}/{MAX_SELECT} selected</span>
                 </div>
                 <div className="mb-3 flex items-center gap-2">
-                  <input
+                  <Input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search products by name or type…"
@@ -327,8 +329,8 @@ export function CreativeStudio() {
                   </div>
                 )}
                 <div className="mt-4 flex items-center justify-between">
-                  <button className={BTN_GHOST} disabled={busy === "sync"} onClick={sync}>{busy === "sync" ? "Syncing…" : "Re-sync catalogue"}</button>
-                  <button className={BTN_PRIMARY} disabled={selected.length === 0 || busy?.startsWith("concepts:")} onClick={continueToConcepts}>Continue to concepts ({selected.length}) →</button>
+                  <Button variant="outline" className={BTN_GHOST} disabled={busy === "sync"} onClick={sync}>{busy === "sync" ? "Syncing…" : "Re-sync catalogue"}</Button>
+                  <Button variant="default" className={BTN_PRIMARY} disabled={selected.length === 0 || busy?.startsWith("concepts:")} onClick={continueToConcepts}>Continue to concepts ({selected.length}) →</Button>
                 </div>
               </div>
               <BrandPanel brand={brand} busy={busy === "brand"} onDerive={deriveBrand} onReset={resetBrand} onSave={saveBrandField} />
@@ -348,7 +350,7 @@ export function CreativeStudio() {
                   {(["meta", "google"] as const).map((pf) => (
                     <button key={pf} className={pf === platform ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setPlatform(pf)}>{pf === "meta" ? "Meta" : "Google"}</button>
                   ))}
-                  <button className={`${BTN_PRIMARY} py-1.5`} onClick={enterReview}>Review all →</button>
+                  <Button variant="default" className={`${BTN_PRIMARY} py-1.5`} onClick={enterReview}>Review all →</Button>
                 </div>
               </div>
 
@@ -367,13 +369,14 @@ export function CreativeStudio() {
                         <p className="text-[12px] text-[var(--ink-muted)]">{c.formatId} · {c.awarenessStage} · match score {c.score}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <button
+                        <Button
+                          variant="default"
                           className={BTN_PRIMARY}
                           disabled={busy === "gen:" + c.id || (usage != null && (!usage.imageGen || usage.remaining < IMAGE_TOKENS))}
                           onClick={() => generate(c.id)}
                         >
                           {busy === "gen:" + c.id ? "Generating…" : cAssets.length ? "Regenerate" : "Generate ads"}
-                        </button>
+                        </Button>
                         {/* Point-of-action cost preview (Phase 4): show the token cost + what's left, and route to
                             /pricing when the plan can't cover it - no silent 402 surprise. */}
                         {usage != null && !usage.imageGen ? (
@@ -406,7 +409,7 @@ export function CreativeStudio() {
           {step === "review" ? (
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
-                <button className={`${BTN_GHOST}`} onClick={() => setStep("concepts")}>← Back to concepts</button>
+                <Button variant="outline" className={`${BTN_GHOST}`} onClick={() => setStep("concepts")}>← Back to concepts</Button>
                 <span className="ml-2 text-[12px] text-[var(--ink-muted)]">Filter:</span>
                 {["all", "approved", "rejected", "draft"].map((f) => (
                   <button key={f} className={f === reviewFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setReviewFilter(f)}>{f[0].toUpperCase() + f.slice(1)}</button>
@@ -473,8 +476,8 @@ function BrandPanel({ brand, busy, onDerive, onReset, onSave }: { brand: Brand |
       <div className="flex items-center justify-between">
         <h2 className="text-[15px] font-medium">Brand DNA</h2>
         <div className="flex gap-2">
-          <button className={BTN_GHOST} disabled={busy} onClick={onReset}>Defaults</button>
-          <button className={BTN_PRIMARY} disabled={busy} onClick={onDerive}>{busy ? "…" : brand ? "Re-derive" : "Understand brand"}</button>
+          <Button variant="outline" className={BTN_GHOST} disabled={busy} onClick={onReset}>Defaults</Button>
+          <Button variant="default" className={BTN_PRIMARY} disabled={busy} onClick={onDerive}>{busy ? "…" : brand ? "Re-derive" : "Understand brand"}</Button>
         </div>
       </div>
       {!brand ? (
@@ -487,7 +490,7 @@ function BrandPanel({ brand, busy, onDerive, onReset, onSave }: { brand: Brand |
               <input type="color" value={val(brand.palette.primary) || "#3b6ef5"} onChange={(e) => onSave("primary", e.target.value)} className="h-6 w-10 rounded border border-[var(--hairline)]" />
             </label>
             <label className="flex items-center gap-2">Tone
-              <input defaultValue={val(brand.tone)} onBlur={(e) => e.target.value !== val(brand.tone) && onSave("tone", e.target.value)} className="min-w-0 flex-1 rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1" />
+              <Input defaultValue={val(brand.tone)} onBlur={(e) => e.target.value !== val(brand.tone) && onSave("tone", e.target.value)} className="min-w-0 flex-1 rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1" />
             </label>
           </div>
         </div>

@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Acct = { externalId: string; name: string; businessName?: string };
 
@@ -96,8 +98,9 @@ export function AccountSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <button
+      <Button
         type="button"
+        variant="outline"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -106,10 +109,10 @@ export function AccountSwitcher() {
         <span className={FILTER_LABEL}>Account</span>
         <span className="max-w-[150px] truncate">{activeName}</span>
         <span className={FILTER_LABEL}>▾</span>
-      </button>
+      </Button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-80 max-w-[85vw] rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
-          <input
+          <Input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -119,26 +122,28 @@ export function AccountSwitcher() {
           />
           <div className="max-h-72 overflow-y-auto">
             {filtered.map((a) => (
-              <button
+              <Button
                 key={a.externalId}
                 type="button"
+                variant="ghost"
                 onClick={() => choose(a)}
                 title={a.businessName ? `${a.name} · ${a.businessName}` : a.name}
-                className={`block w-full rounded-lg px-2.5 py-2 text-left transition hover:bg-[var(--surface-alt)] ${a.externalId === active ? "bg-[var(--surface-alt)]" : ""}`}
+                className={`block h-auto w-full rounded-lg px-2.5 py-2 text-left transition hover:bg-[var(--surface-alt)] ${a.externalId === active ? "bg-[var(--surface-alt)]" : ""}`}
               >
                 <div className={`truncate text-[13px] ${a.externalId === active ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}>{a.name}</div>
                 {a.businessName && <div className="truncate text-[11px] text-[var(--ink-muted)]">{a.businessName}</div>}
-              </button>
+              </Button>
             ))}
             {filtered.length === 0 && <div className="px-2.5 py-2 text-[13px] text-[var(--ink-muted)]">No accounts match.</div>}
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={connect}
-            className="mt-1 w-full border-t border-[var(--surface-alt)] px-2.5 py-2 text-left text-[13px] font-medium text-[var(--accent)] transition hover:bg-[var(--surface-alt)]"
+            className="mt-1 w-full justify-start rounded-none border-t border-[var(--surface-alt)] px-2.5 py-2 text-left text-[13px] font-medium text-[var(--accent)] transition hover:bg-[var(--surface-alt)]"
           >
             + Connect more accounts
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>

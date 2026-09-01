@@ -5,6 +5,8 @@
 // or by any other segment escapes it and would show the framework's raw 500. global-error.tsx is
 // the last-resort boundary that catches everything, including layout errors, and must render its
 // own <html>/<body>. This keeps the whole app recoverable for every visitor.
+import { Button } from "@/components/ui/button";
+
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <html lang="en">
@@ -15,13 +17,15 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             <p style={{ fontSize: 13, color: "#6b6b6b", margin: "0 0 20px" }}>
               The app hit an unexpected error. Your data is safe. Please try again.
             </p>
-            <button
+            <Button
+              variant="default"
+              size="sm"
               type="button"
               onClick={() => reset()}
               style={{ background: "#252525", color: "#fff", border: 0, borderRadius: 70, padding: "10px 18px", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
             >
               Try again
-            </button>
+            </Button>
             {error?.digest && <p style={{ marginTop: 16, fontFamily: "monospace", fontSize: 11, color: "#8e8e93" }}>ref: {error.digest}</p>}
           </div>
         </div>

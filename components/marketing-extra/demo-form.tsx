@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const SPEND_OPTIONS = ["< $10k", "$10k-50k", "$50k-200k", "$200k+"];
 
@@ -92,7 +95,7 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
         <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <div>
             <label className="mb-1.5 block text-[13px] font-medium">First name</label>
-            <input
+            <Input
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
@@ -102,7 +105,7 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
           </div>
           <div>
             <label className="mb-1.5 block text-[13px] font-medium">Last name</label>
-            <input
+            <Input
               required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
@@ -114,7 +117,7 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
 
         <div className="mb-3.5">
           <label className="mb-1.5 block text-[13px] font-medium">Work email</label>
-          <input
+          <Input
             required
             type="email"
             value={email}
@@ -126,7 +129,7 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
 
         <div className="mb-3.5">
           <label className="mb-1.5 block text-[13px] font-medium">Brand or agency</label>
-          <input
+          <Input
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
             placeholder="Acme Co."
@@ -157,7 +160,7 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
 
         <div className="mb-5">
           <label className="mb-1.5 block text-[13px] font-medium">What do you want to fix?</label>
-          <textarea
+          <Textarea
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -172,13 +175,13 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
           </p>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={sending}
           className="w-full cursor-pointer rounded-full bg-[var(--ink)] px-4 py-3.5 font-medium text-white transition hover:opacity-90 disabled:opacity-60"
         >
           {sending ? "Sending..." : "Request demo"}
-        </button>
+        </Button>
         <p className="mt-3 text-xs leading-relaxed text-[var(--ink-muted)]">
           By requesting a demo you agree to be contacted for marketing purposes.
         </p>

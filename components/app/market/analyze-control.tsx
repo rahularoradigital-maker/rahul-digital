@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 // Stage 7 trigger: pick how many creatives per brand to have Gemini read, then run. The API
 // caps each call so it finishes inside the serverless window and reports how many remain;
@@ -81,14 +82,15 @@ export function AnalyzeControl({ analyzedCount }: { analyzedCount: number }) {
               </button>
             ))}
           </div>
-          <button
+          <Button
             type="button"
+            variant="default"
             onClick={run}
             disabled={running}
             className="rounded-full bg-[var(--accent)] px-4 py-1.5 text-[13px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
             {running ? "Analyzing..." : remaining && remaining > 0 ? "Continue" : "Run AI analysis"}
-          </button>
+          </Button>
         </div>
       </div>
       {msg && <p className="mt-3 text-[13px] text-[var(--ink-muted)]">{msg}</p>}

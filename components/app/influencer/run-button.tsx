@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 // Triggers a real discovery run for the active account, then refreshes the page to show the stored results.
 // Honest: shows the server's error message verbatim (no key / no brand / out of credits / no results) and
@@ -34,13 +35,14 @@ export function RunButton({ label, hunting }: { label: string; hunting: string }
   const disabled = busy || pending;
   return (
     <div className="flex flex-col gap-2">
-      <button
+      <Button
+        variant="default"
         onClick={run}
         disabled={disabled}
         className="inline-flex w-fit items-center gap-2 rounded-lg bg-[var(--ink)] px-4 py-2.5 text-[13.5px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
       >
         {disabled ? hunting : label}
-      </button>
+      </Button>
       {error ? (
         <div className="rounded-lg border border-[var(--warn-ink)]/25 bg-[var(--warn-bg)] px-3 py-2 text-[12.5px] text-[var(--warn-ink)]">{error}</div>
       ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 type Verdict = "Scale" | "Test" | "Kill";
 
@@ -142,12 +143,12 @@ export function ProductDemo() {
                   {active.name} &middot; {active.role}
                 </div>
                 <div className="mb-3 text-[13px] text-[var(--ink-muted)]">{active.desc}</div>
-                <button
+                <Button
                   onClick={() => setGenerated(true)}
                   className="rounded-full bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
                 >
                   {generated ? "Plan ready" : "Build my test plan"}
-                </button>
+                </Button>
                 {generated && (
                   <div className="mt-3 flex flex-col gap-1.5">
                     {active.plan.map((p) => (

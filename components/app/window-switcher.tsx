@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
+import { Button } from "@/components/ui/button";
 
 // Date-window selector, styled + behaving like the Meta Ads Manager date picker: a preset list on the left,
 // a two-month calendar range on the right, a selected-range header, and an Update button that commits.
@@ -82,9 +83,11 @@ function MonthGrid({ month, today, start, end, onPick, onHover }: { month: Date;
           const inRange = start && end && d.getTime() > start.getTime() && d.getTime() < end.getTime();
           const edge = isStart || isEnd;
           return (
-            <button
+            <Button
               key={i}
               type="button"
+              variant="ghost"
+              size="icon"
               disabled={future}
               onMouseEnter={() => onHover(d)}
               onClick={() => onPick(d)}
@@ -96,7 +99,7 @@ function MonthGrid({ month, today, start, end, onPick, onHover }: { month: Date;
               ].join(" ")}
             >
               {d.getDate()}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -210,7 +213,7 @@ export function WindowSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <button type="button" onClick={() => (open ? setOpen(false) : openPicker())} aria-haspopup="dialog" aria-expanded={open} className={FILTER_TRIGGER}>
+      <Button type="button" variant="outline" onClick={() => (open ? setOpen(false) : openPicker())} aria-haspopup="dialog" aria-expanded={open} className={FILTER_TRIGGER}>
         {pending ? (
           <span className="flex items-center gap-1.5 text-[var(--accent)]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
@@ -222,32 +225,33 @@ export function WindowSwitcher() {
           </>
         )}
         <span className={FILTER_LABEL}>▾</span>
-      </button>
+      </Button>
 
       {open ? (
         <div role="dialog" aria-label="Select date range" className="absolute right-0 top-[calc(100%+6px)] z-30 flex max-w-[94vw] flex-col overflow-hidden rounded-xl border border-[var(--hairline)] bg-[var(--surface)] shadow-xl sm:flex-row">
           {/* presets */}
           <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-[var(--hairline)] p-2 sm:w-[150px] sm:flex-col sm:overflow-visible sm:border-b-0 sm:border-r">
             {PRESETS.map((p) => (
-              <button
+              <Button
                 key={p.key}
                 type="button"
+                variant="ghost"
                 onClick={() => pickPreset(p)}
-                className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${activePreset === p.key ? "bg-[var(--surface-alt)] font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+                className={`justify-start whitespace-nowrap rounded-lg px-3 py-1.5 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${activePreset === p.key ? "bg-[var(--surface-alt)] font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
               >
                 {p.label}
-              </button>
+              </Button>
             ))}
           </div>
 
           {/* calendar */}
           <div className="p-3">
             <div className="mb-2 flex items-center justify-between">
-              <button type="button" aria-label="Previous month" onClick={() => setViewMonth((m) => addMonths(m, -1))} className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-alt)]">‹</button>
+              <Button type="button" variant="ghost" size="icon" aria-label="Previous month" onClick={() => setViewMonth((m) => addMonths(m, -1))} className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-alt)]">‹</Button>
               <div className="text-[12px] tabular-nums text-[var(--ink-muted)]">
                 {selStart ? iso(selStart) : "Start"} <span className="mx-1">→</span> {effEnd ? iso(effEnd) : "End"}
               </div>
-              <button type="button" aria-label="Next month" onClick={() => setViewMonth((m) => addMonths(m, 1))} disabled={addMonths(viewMonth, 1).getTime() > new Date(today.getFullYear(), today.getMonth(), 1).getTime()} className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-alt)] disabled:opacity-30">›</button>
+              <Button type="button" variant="ghost" size="icon" aria-label="Next month" onClick={() => setViewMonth((m) => addMonths(m, 1))} disabled={addMonths(viewMonth, 1).getTime() > new Date(today.getFullYear(), today.getMonth(), 1).getTime()} className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--ink-muted)] hover:bg-[var(--surface-alt)] disabled:opacity-30">›</Button>
             </div>
             <div className="flex gap-4" onMouseLeave={() => setHover(null)}>
               <MonthGrid month={viewMonth} today={today} start={selStart} end={effEnd} onPick={pickDay} onHover={setHover} />
@@ -256,8 +260,8 @@ export function WindowSwitcher() {
               </div>
             </div>
             <div className="mt-3 flex items-center justify-end gap-2 border-t border-[var(--hairline)] pt-3">
-              <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-1.5 text-[13px] text-[var(--ink-muted)] hover:bg-[var(--surface-alt)]">Cancel</button>
-              <button type="button" onClick={update} disabled={!selStart || !selEnd} className="rounded-lg bg-[var(--accent)] px-4 py-1.5 text-[13px] font-medium text-white transition disabled:opacity-40">Update</button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)} className="rounded-lg px-3 py-1.5 text-[13px] text-[var(--ink-muted)] hover:bg-[var(--surface-alt)]">Cancel</Button>
+              <Button type="button" variant="default" size="sm" onClick={update} disabled={!selStart || !selEnd} className="rounded-lg bg-[var(--accent)] px-4 py-1.5 text-[13px] font-medium text-white transition disabled:opacity-40">Update</Button>
             </div>
           </div>
         </div>

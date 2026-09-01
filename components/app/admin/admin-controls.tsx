@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type KeyStatus = { name: string; label: string; source: "db" | "env" | "none"; last4: string | null; updatedAt: string | null };
 
@@ -29,7 +31,7 @@ function KeyRow({ k, onChanged }: { k: KeyStatus; onChanged: () => void }) {
         <div className="text-[13px] font-medium text-[var(--ink)]">{k.label}</div>
         <div className="text-[12px] text-[var(--ink-muted)]">{status}</div>
       </div>
-      <input
+      <Input
         type="password"
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -37,8 +39,8 @@ function KeyRow({ k, onChanged }: { k: KeyStatus; onChanged: () => void }) {
         autoComplete="off"
         className="min-w-[200px] flex-1 rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]"
       />
-      <button type="button" disabled={busy || !value.trim()} onClick={() => save()} className="rounded-full bg-[var(--ink)] px-3.5 py-2 text-[12px] font-medium text-white disabled:opacity-50">Save</button>
-      {k.source === "db" && <button type="button" disabled={busy} onClick={() => save("delete")} className="rounded-full border border-[var(--hairline)] px-3 py-2 text-[12px] text-[var(--ink-muted)] disabled:opacity-50">Remove</button>}
+      <Button type="button" variant="default" size="sm" disabled={busy || !value.trim()} onClick={() => save()} className="rounded-full bg-[var(--ink)] px-3.5 py-2 text-[12px] font-medium text-white disabled:opacity-50">Save</Button>
+      {k.source === "db" && <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => save("delete")} className="rounded-full border border-[var(--hairline)] px-3 py-2 text-[12px] text-[var(--ink-muted)] disabled:opacity-50">Remove</Button>}
       {msg && <span className="text-[12px] text-[var(--ink-muted)]">{msg}</span>}
     </div>
   );
@@ -77,8 +79,8 @@ export function AdminControls({ keys }: { keys: KeyStatus[] }) {
         <h2 className="text-[15px] font-semibold text-[var(--ink)]">Invite a user</h2>
         <p className="mt-1 text-[13px] text-[var(--ink-muted)]">Enter an email and we send them an invite to join. (Delivery uses your configured email provider.)</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" className="min-w-[220px] flex-1 rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]" />
-          <button type="button" disabled={inviting || !email.trim()} onClick={invite} className="rounded-full bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white disabled:opacity-50">{inviting ? "Sending..." : "Send invite"}</button>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.com" className="min-w-[220px] flex-1 rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]" />
+          <Button type="button" variant="default" size="sm" disabled={inviting || !email.trim()} onClick={invite} className="rounded-full bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white disabled:opacity-50">{inviting ? "Sending..." : "Send invite"}</Button>
           {inviteMsg && <span className="text-[12px] text-[var(--ink-muted)]">{inviteMsg}</span>}
         </div>
       </section>

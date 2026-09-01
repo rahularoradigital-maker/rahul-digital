@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 
 // Reviewable brand profile: auto-derived from the account's real ad data, shown here so the user
 // can correct it before it drives competitor discovery. "Learn" derives (draft); the fields are
@@ -78,14 +81,15 @@ export function BrandProfilePanel({ initial }: { initial: EditableProfile | null
           it is used.
         </p>
         {error && <p className="mt-3 text-[13px] text-[var(--bad-ink)]">{error}</p>}
-        <button
+        <Button
           type="button"
+          variant="default"
           onClick={derive}
           disabled={busy === "derive"}
           className="mt-4 rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
         >
           {busy === "derive" ? "Learning from your ads..." : "Learn this brand"}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -95,9 +99,9 @@ export function BrandProfilePanel({ initial }: { initial: EditableProfile | null
       <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-[22px] font-normal tracking-tight">Brand understanding</h2>
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${p.status === "confirmed" ? "bg-[var(--good-bg)] text-[var(--good-ink)]" : "bg-[var(--warn-bg)] text-[var(--warn-ink)]"}`}>
+          <Badge variant={p.status === "confirmed" ? "success" : "warning"} className="px-2.5 py-1 text-[11px] font-semibold">
             {p.status === "confirmed" ? "Confirmed" : "Draft - review below"}
-          </span>
+          </Badge>
         </div>
         <p className="mb-5 text-sm text-[var(--ink-muted)]">
           Auto-derived from your live ads{p.currency ? ` (${p.currency})` : ""}. Correct anything, then Confirm - the confirmed
@@ -111,26 +115,26 @@ export function BrandProfilePanel({ initial }: { initial: EditableProfile | null
         )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Category"><input className={input} value={p.category ?? ""} onChange={(e) => set("category", e.target.value)} /></Field>
-          <Field label="Target market"><input className={input} value={p.targetMarket ?? ""} onChange={(e) => set("targetMarket", e.target.value)} /></Field>
-          <Field label="Price positioning"><input className={input} value={p.pricePositioning ?? ""} onChange={(e) => set("pricePositioning", e.target.value)} placeholder="value / mass premium / premium / luxury" /></Field>
-          <Field label="Brand voice"><input className={input} value={p.brandVoice ?? ""} onChange={(e) => set("brandVoice", e.target.value)} /></Field>
-          <Field label="Website"><input className={input} value={p.website ?? ""} onChange={(e) => set("website", e.target.value)} placeholder="brand.com" /></Field>
-          <Field label="Sub-categories (comma-separated)"><input className={input} value={p.subcategories.join(", ")} onChange={(e) => setList("subcategories", e.target.value)} /></Field>
+          <Field label="Category"><Input className={input} value={p.category ?? ""} onChange={(e) => set("category", e.target.value)} /></Field>
+          <Field label="Target market"><Input className={input} value={p.targetMarket ?? ""} onChange={(e) => set("targetMarket", e.target.value)} /></Field>
+          <Field label="Price positioning"><Input className={input} value={p.pricePositioning ?? ""} onChange={(e) => set("pricePositioning", e.target.value)} placeholder="value / mass premium / premium / luxury" /></Field>
+          <Field label="Brand voice"><Input className={input} value={p.brandVoice ?? ""} onChange={(e) => set("brandVoice", e.target.value)} /></Field>
+          <Field label="Website"><Input className={input} value={p.website ?? ""} onChange={(e) => set("website", e.target.value)} placeholder="brand.com" /></Field>
+          <Field label="Sub-categories (comma-separated)"><Input className={input} value={p.subcategories.join(", ")} onChange={(e) => setList("subcategories", e.target.value)} /></Field>
           <div className="sm:col-span-2">
-            <Field label="Key products (comma-separated)"><input className={input} value={p.keyProducts.join(", ")} onChange={(e) => setList("keyProducts", e.target.value)} /></Field>
+            <Field label="Key products (comma-separated)"><Input className={input} value={p.keyProducts.join(", ")} onChange={(e) => setList("keyProducts", e.target.value)} /></Field>
           </div>
         </div>
 
         {error && <p className="mt-3 text-[13px] text-[var(--bad-ink)]">{error}</p>}
 
         <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-[var(--surface-alt)] pt-4">
-          <button type="button" onClick={confirm} disabled={busy !== null} className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60">
+          <Button type="button" variant="default" onClick={confirm} disabled={busy !== null} className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60">
             {busy === "confirm" ? "Saving..." : "Confirm profile"}
-          </button>
-          <button type="button" onClick={derive} disabled={busy !== null} className="rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-5 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)] disabled:opacity-60">
+          </Button>
+          <Button type="button" variant="outline" onClick={derive} disabled={busy !== null} className="rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-5 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)] disabled:opacity-60">
             {busy === "derive" ? "Re-learning..." : "Re-learn from ads"}
-          </button>
+          </Button>
           {saved && p.status === "confirmed" && <span className="text-[13px] font-semibold text-[var(--good-ink)]">Confirmed - ready to drive competitor discovery</span>}
         </div>
       </div>

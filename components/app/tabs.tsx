@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 // Route-based tab bar for consolidated pages. Sets ?tab= (drops it for the first tab so
 // the default URL stays clean) and keeps other query params (days). The page reads the
@@ -24,18 +25,19 @@ export function Tabs({ tabs }: { tabs: { key: string; label: string }[] }) {
       {tabs.map((t) => {
         const on = active === t.key;
         return (
-          <button
+          <Button
             key={t.key}
             type="button"
+            variant="ghost"
             onClick={() => go(t.key)}
             className={
               on
-                ? "-mb-px border-b-2 border-[var(--ink)] px-3.5 py-2.5 text-sm font-semibold text-[var(--ink)]"
-                : "-mb-px border-b-2 border-transparent px-3.5 py-2.5 text-sm font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+                ? "-mb-px rounded-none border-b-2 border-[var(--ink)] px-3.5 py-2.5 text-sm font-semibold text-[var(--ink)]"
+                : "-mb-px rounded-none border-b-2 border-transparent px-3.5 py-2.5 text-sm font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
             }
           >
             {t.label}
-          </button>
+          </Button>
         );
       })}
     </div>

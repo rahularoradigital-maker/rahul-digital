@@ -11,6 +11,7 @@ import { ObjectiveSwitcher } from "@/components/app/objective-switcher";
 import { CatalogSwitcher } from "@/components/app/catalog-switcher";
 import { NotificationBell } from "@/components/app/notification-bell";
 import { FILTER_TRIGGER, FILTER_LABEL } from "@/components/app/control-styles";
+import { Button } from "@/components/ui/button";
 import { rescanCockpit } from "@/app/app/actions";
 
 // The working topbar. Every control does its job:
@@ -94,17 +95,18 @@ export function Topbar() {
               <div className="absolute right-0 top-[calc(100%+6px)] z-20 w-96 rounded-lg border border-[var(--hairline)] bg-[var(--surface)] p-2 text-left shadow-lg">
                 <div className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Try asking</div>
                 {ASK_SUGGESTIONS.map((s) => (
-                  <button
+                  <Button
                     key={s}
                     type="button"
+                    variant="ghost"
                     onMouseDown={(e) => {
                       e.preventDefault(); // fire before the input's onBlur hides this panel
                       runAsk(s);
                     }}
-                    className="block w-full rounded-md px-2 py-2 text-left text-[13px] text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
+                    className="block h-auto w-full rounded-md px-2 py-2 text-left text-[13px] text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
                   >
                     {s}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -117,8 +119,9 @@ export function Topbar() {
 
           <NotificationBell />
 
-          <button
+          <Button
             type="button"
+            variant="default"
             onClick={() =>
               startTransition(async () => {
                 await rescanCockpit();
@@ -129,7 +132,7 @@ export function Topbar() {
             className="rounded-full bg-[var(--ink)] px-4 py-2 text-[13px] font-medium text-white transition hover:opacity-90 disabled:opacity-60"
           >
             {pending ? "Scanning..." : "Re-scan"}
-          </button>
+          </Button>
         </div>
       </div>
 

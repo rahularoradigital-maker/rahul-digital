@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 // Pill email-capture used in the hero and the final CTA. On submit it carries the
 // email into signup so nothing is lost. Kept as one shared client component so the
@@ -29,12 +30,12 @@ export function EmailCapture() {
         aria-label="Work email"
         className="min-w-0 flex-1 bg-transparent px-4 py-2.5 text-[15px] text-[var(--ink)] outline-none placeholder:text-[var(--ink-muted)]"
       />
-      <button
+      <Button
         type="submit"
         className="inline-flex shrink-0 items-center rounded-full bg-[var(--ink)] px-5 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90"
       >
         Book a demo
-      </button>
+      </Button>
     </form>
   );
 }

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // The setup-gate objective filter (rulebook 5A): multi-select the campaign objectives
 // to scope the whole dashboard to. Stored in the "adbrain.objectives" cookie which
@@ -71,8 +73,9 @@ export function ObjectiveSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <button
+      <Button
         type="button"
+        variant="outline"
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="true"
         aria-expanded={open}
@@ -89,10 +92,10 @@ export function ObjectiveSwitcher() {
           </>
         )}
         <span className={FILTER_LABEL}>▾</span>
-      </button>
+      </Button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-56 rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
-          <input
+          <Input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -110,13 +113,14 @@ export function ObjectiveSwitcher() {
             </label>
           ))}
           {sel.size > 0 ? (
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => apply(new Set())}
-              className="mt-1 w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--ink-muted)] transition hover:bg-[var(--surface-alt)] hover:text-[var(--ink)]"
+              className="mt-1 w-full justify-start rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--ink-muted)] transition hover:bg-[var(--surface-alt)] hover:text-[var(--ink)]"
             >
               Clear (show all)
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : null}

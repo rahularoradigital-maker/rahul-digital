@@ -13,6 +13,8 @@ const badgeVariants = cva(
         success: "border-transparent bg-[var(--good-bg)] text-[var(--good-ink)]",
         warning: "border-transparent bg-[var(--warn-bg)] text-[var(--warn-ink)]",
         muted: "border-transparent bg-secondary text-muted-foreground",
+        accent: "border-transparent bg-[var(--accent-soft)] text-[var(--accent)]",
+        destructive: "border-transparent bg-[var(--bad-bg)] text-[var(--bad-ink)]",
       },
     },
     defaultVariants: { variant: "default" },

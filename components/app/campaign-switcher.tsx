@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Camp = { id: string; name: string; objective?: string };
 
@@ -104,8 +106,9 @@ export function CampaignSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <button
+      <Button
         type="button"
+        variant="outline"
         onClick={() => {
           if (!open) setObjSel(readObjectives()); // sync the list to the current objective before showing it
           setOpen((o) => !o);
@@ -117,10 +120,10 @@ export function CampaignSwitcher() {
         <span className={FILTER_LABEL}>Campaign</span>
         <span className="max-w-[150px] truncate">{label}</span>
         <span className={FILTER_LABEL}>▾</span>
-      </button>
+      </Button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-80 max-w-[85vw] rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
-          <input
+          <Input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -129,13 +132,14 @@ export function CampaignSwitcher() {
             className="mb-1.5 w-full rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]"
           />
           <div className="max-h-72 overflow-y-auto">
-            <button
+            <Button
               type="button"
+              variant="ghost"
               onClick={() => apply(new Set())}
-              className={`w-full truncate rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${sel.size === 0 ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+              className={`w-full justify-start truncate rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${sel.size === 0 ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
             >
               All campaigns
-            </button>
+            </Button>
             {filtered.map((c) => (
               <label
                 key={c.id}
@@ -148,13 +152,14 @@ export function CampaignSwitcher() {
             ))}
             {filtered.length === 0 && <div className="px-2.5 py-2 text-[13px] text-[var(--ink-muted)]">No campaigns match.</div>}
             {sel.size > 0 && (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => apply(new Set())}
-                className="mt-1 w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--ink-muted)] transition hover:bg-[var(--surface-alt)] hover:text-[var(--ink)]"
+                className="mt-1 w-full justify-start rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--ink-muted)] transition hover:bg-[var(--surface-alt)] hover:text-[var(--ink)]"
               >
                 Clear (show all)
-              </button>
+              </Button>
             )}
           </div>
         </div>

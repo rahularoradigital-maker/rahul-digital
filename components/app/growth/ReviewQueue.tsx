@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 // Scout's approval queue. Each drafted reply: read it, then EITHER "Copy reply & open thread" (copies the
 // draft to your clipboard and opens the conversation so you paste + post yourself - Scout never posts), or
@@ -40,7 +42,7 @@ export function ReviewQueue({ initial }: { initial: DraftRow[] }) {
         <li key={r.id} className="rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] p-4">
           <div className="flex items-start justify-between gap-2">
             <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium text-[var(--accent)] hover:underline">{r.title ?? r.url}</a>
-            <span className="shrink-0 rounded-full bg-[var(--good-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--good-ink)]">{r.decision} · {r.score}/100</span>
+            <Badge variant="success" className="shrink-0 rounded-full bg-[var(--good-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--good-ink)]">{r.decision} · {r.score}/100</Badge>
           </div>
           <div className="mt-1 text-[12px] text-[var(--ink-muted)]">{r.community} · {r.may_mention ? "product mention allowed" : "be useful only, no mention"}</div>
           {r.draft ? (
@@ -52,8 +54,8 @@ export function ReviewQueue({ initial }: { initial: DraftRow[] }) {
             <div className="mt-2 text-[12px] italic text-[var(--ink-muted)]">No draft (Scout skipped - be useful in your own words, or dismiss).</div>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" disabled={busy === r.id} onClick={() => copyAndOpen(r)} className="rounded-lg bg-[var(--ink)] px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-50">Copy reply &amp; open thread</button>
-            <button type="button" disabled={busy === r.id} onClick={() => act(r.id, "dismissed")} className="rounded-lg border border-[var(--hairline)] px-3 py-1.5 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink)] disabled:opacity-50">Dismiss</button>
+            <Button type="button" variant="default" size="sm" disabled={busy === r.id} onClick={() => copyAndOpen(r)} className="rounded-lg bg-[var(--ink)] px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-50">Copy reply &amp; open thread</Button>
+            <Button type="button" variant="ghost" size="sm" disabled={busy === r.id} onClick={() => act(r.id, "dismissed")} className="rounded-lg border border-[var(--hairline)] px-3 py-1.5 text-[12px] text-[var(--ink-muted)] hover:text-[var(--ink)] disabled:opacity-50">Dismiss</Button>
           </div>
         </li>
       ))}

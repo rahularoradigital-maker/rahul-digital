@@ -13,6 +13,7 @@ const buttonVariants = cva(
         outline: "border border-input bg-card hover:bg-secondary",
         ghost: "hover:bg-secondary",
         destructive: "bg-destructive text-destructive-foreground hover:opacity-90",
+        link: "text-accent underline-offset-4 hover:underline",
       },
       size: { default: "h-9 px-4 py-2", sm: "h-8 rounded-md px-3 text-xs", lg: "h-10 rounded-md px-6", icon: "h-9 w-9" },
     },

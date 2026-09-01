@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 // Positioning intelligence UI: OUR ICP + content pillars vs THEIR ICP + content pillars, all from real
 // data (our live ads + brand profile + website; competitors' real Ad Library copy once tracked). The
@@ -71,14 +72,15 @@ export function PositioningSection() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button
+        <Button
           type="button"
+          variant="default"
           onClick={generate}
           disabled={loading}
           className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50"
         >
           {loading ? "Reading your ads and market..." : content ? "Regenerate" : "Generate positioning"}
-        </button>
+        </Button>
         {content && <span className="text-[13px] text-[var(--ink-muted)]">From your real ads and profile · grounded, not invented</span>}
       </div>
 

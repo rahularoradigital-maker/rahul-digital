@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Brand = { id: string; name: string; orgName: string; active: boolean; accountCount: number };
 
@@ -95,14 +97,14 @@ export function BrandSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open} className={FILTER_TRIGGER}>
+      <Button type="button" variant="outline" onClick={() => setOpen((o) => !o)} aria-haspopup="listbox" aria-expanded={open} className={FILTER_TRIGGER}>
         <span className={FILTER_LABEL}>Brand</span>
         <span className="max-w-[150px] truncate">{activeName}</span>
         <span className={FILTER_LABEL}>▾</span>
-      </button>
+      </Button>
       {open ? (
         <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-80 max-w-[85vw] rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
-          <input
+          <Input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -112,26 +114,28 @@ export function BrandSwitcher() {
           />
           <div className="max-h-72 overflow-y-auto">
             {filtered.map((b) => (
-              <button
+              <Button
                 key={b.id}
                 type="button"
+                variant="ghost"
                 onClick={() => choose(b)}
                 title={`${b.name} · ${b.orgName}`}
-                className={`block w-full rounded-lg px-2.5 py-2 text-left transition hover:bg-[var(--surface-alt)] ${b.active ? "bg-[var(--surface-alt)]" : ""}`}
+                className={`block h-auto w-full rounded-lg px-2.5 py-2 text-left transition hover:bg-[var(--surface-alt)] ${b.active ? "bg-[var(--surface-alt)]" : ""}`}
               >
                 <div className={`truncate text-[13px] ${b.active ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}>{b.name}</div>
                 {multiOrg && <div className="truncate text-[11px] text-[var(--ink-muted)]">{b.orgName}</div>}
-              </button>
+              </Button>
             ))}
             {filtered.length === 0 && <div className="px-2.5 py-2 text-[13px] text-[var(--ink-muted)]">No brands match.</div>}
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={connect}
-            className="mt-1 w-full border-t border-[var(--surface-alt)] px-2.5 py-2 text-left text-[13px] font-medium text-[var(--accent)] transition hover:bg-[var(--surface-alt)]"
+            className="mt-1 w-full justify-start rounded-none border-t border-[var(--surface-alt)] px-2.5 py-2 text-left text-[13px] font-medium text-[var(--accent)] transition hover:bg-[var(--surface-alt)]"
           >
             + Connect account
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>

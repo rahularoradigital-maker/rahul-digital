@@ -5,6 +5,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { GoogleButton } from "@/components/google-button";
 import { Logo } from "@/components/site-header";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = {
   mode: "login" | "signup";
@@ -112,17 +114,17 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
             <>
               <div>
                 <label htmlFor="full_name" className="text-sm text-[var(--ink-muted)]">Full name</label>
-                <input id="full_name" name="full_name" type="text" required autoComplete="name" className={inputCls} />
+                <Input id="full_name" name="full_name" type="text" required autoComplete="name" className={inputCls} />
               </div>
               <div>
                 <label htmlFor="website" className="text-sm text-[var(--ink-muted)]">Website</label>
-                <input id="website" name="website" type="url" required placeholder="https://yourbrand.com" autoComplete="url" className={inputCls} />
+                <Input id="website" name="website" type="url" required placeholder="https://yourbrand.com" autoComplete="url" className={inputCls} />
               </div>
             </>
           )}
           <div>
             <label htmlFor="email" className="text-sm text-[var(--ink-muted)]">{mode === "signup" ? "Work email" : "Email"}</label>
-            <input id="email" name="email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+            <Input id="email" name="email" type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <div>
             <div className="flex items-baseline justify-between">
@@ -131,19 +133,19 @@ export function AuthForm({ mode, title, cta, altText, altHref, altLabel }: Props
                 <Link href="/forgot-password" className="text-xs text-[var(--accent)] hover:underline">Forgot password?</Link>
               )}
             </div>
-            <input id="password" name="password" type="password" required minLength={6} autoComplete={mode === "signup" ? "new-password" : "current-password"} className={inputCls} />
+            <Input id="password" name="password" type="password" required minLength={6} autoComplete={mode === "signup" ? "new-password" : "current-password"} className={inputCls} />
           </div>
 
           {error && <p className="text-sm text-[var(--bad-ink)]">{error}</p>}
           {message && <p className="text-sm text-[var(--accent)]">{message}</p>}
 
-          <button
+          <Button
             type="submit"
             disabled={pending}
             className="w-full rounded-full bg-[var(--ink)] px-4 py-2.5 font-medium text-white transition hover:opacity-90 disabled:opacity-60"
           >
             {pending ? "Please wait..." : cta}
-          </button>
+          </Button>
         </form>
 
         <p className="mt-6 text-sm text-[var(--ink-muted)]">
