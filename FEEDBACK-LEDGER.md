@@ -215,6 +215,14 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
     the false "implausibly high / likely inflated" read on genuinely viral creators (e.g. 17.6% ER at 2.5x
     reach). Null/<=1x reach keeps the base 15% ceiling, so all prior behavior is unchanged. Locked with new
     assertions (incl. the exact case). Deployed commit 1651a69.
+  - **Risk-engine consistency close-out (2026-09-01).** Extended the same reach-scaling to the third and last
+    place engagement plausibility is judged: the risk/safety engine (`lib/influencer/scoring/risk.ts`), which
+    still used a flat 20% anomaly line. All three scorers now share one `plausibleErCeil` helper (given an
+    optional base), so a viral creator is never flagged risky for a high follower-ER its reach explains.
+    Null/<=1x reach keeps the 20% line (no regression). Locked: 25% ER is risky at 1x reach, fine at 3x. Build
+    + tsc + influencer checks green (commit 2bf76db). Influencer Hunt is now core-complete; remaining items
+    (scale-to-thousands background worker, Phase 3 topic/language, real audience demographics) are deferred/
+    blocked, not gaps.
 
 ---
 
