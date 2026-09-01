@@ -4,6 +4,8 @@
 // carries a real confidence bar and the engine's Scale / Iterate / Kill verdict chip,
 // matching the design's ranked test-plan list. No fabricated ordering or metrics.
 import type { CockpitAction, CockpitAd } from "@/lib/cockpit/analyze";
+import { fatigueToContract } from "@/lib/intelligence/from-fatigue";
+import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 import type { AdJudgment } from "@/lib/judgment/agent";
 import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
@@ -110,6 +112,8 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
                 {ad?.judgment && <TripleLabel j={ad.judgment} />}
                 {/* Line 3: WHY - context for the verdict, always shown in light text so nothing is asserted without a reason */}
                 {reason && <div className="mt-1.5 text-[13px] leading-snug text-[var(--ink-muted)]">&#8627; {reason}</div>}
+                {/* Line 4: the full §110 reasoning behind this action (DATA->...->LEARNING), computed from the ad - no new query. */}
+                {ad && (() => { const c = fatigueToContract(ad); return c ? <ReasoningTrace contract={c} /> : null; })()}
               </div>
             </div>
           );
