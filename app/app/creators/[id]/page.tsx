@@ -13,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { tierOf } from "@/lib/influencer/tiers";
 import { guessGender, extractRegion } from "@/lib/influencer/derive";
+import { authenticityScore } from "@/lib/influencer/scoring/authenticity";
+import { engagementBenchmark } from "@/lib/influencer/scoring/benchmark";
 import type { Confidence } from "@/lib/influencer/types";
 
 export const maxDuration = 60;
@@ -50,6 +52,8 @@ export default async function CreatorProfilePage({ params }: { params: Promise<{
   const g = guessGender(c.name.value).gender;
   const region = extractRegion(c.bio.value);
   const reels = c.reels && c.reels.confidence !== "none" ? c.reels : null;
+  const auth = authenticityScore(c);
+  const bench = engagementBenchmark(c.followers.value, c.engagementRate.value);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -98,13 +102,16 @@ export default async function CreatorProfilePage({ params }: { params: Promise<{
             <Stat label="Posts" value={fmt(c.postsCount.value)} />
             <Stat label="Region (creator)" value={region ?? "unknown"} />
             <Stat label="Gender (guess)" value={g ? (g === "f" ? "female" : "male") : "unknown"} />
+            <Stat label="Authenticity" value={auth.confidence !== "none" ? String(Math.round(auth.score)) : "unknown"} />
+            <Stat label="ER vs size" value={bench ? (bench.verdict === "above" ? "above typical" : bench.verdict === "below" ? "below typical" : "typical") : "n/a"} />
           </div>
           <p className="mt-3 text-[12px] text-muted-foreground">Region is the creator&apos;s own stated location (from their bio), not their audience. Gender is inferred from the name (low confidence). Audience demographics are not available from public data.</p>
         </TabsContent>
 
-        <TabsContent value="scores">
+        <TabsContent value="scores" className="space-y-4">
           <Card>
             <CardContent className="space-y-3 p-5">
+              <div className="text-[13px] font-medium">Brand-fit quality · {Math.round(q.score)}</div>
               {q.components.map((comp) => (
                 <div key={comp.key}>
                   <div className="flex items-center gap-3">
@@ -118,6 +125,30 @@ export default async function CreatorProfilePage({ params }: { params: Promise<{
               ))}
               <Separator />
               <p className="text-[12px] text-muted-foreground">{q.formula}</p>
+            </CardContent>
+          </Card>
+
+          {/* Phase 2: brand-independent authenticity proxy + engagement-vs-size benchmark. */}
+          <Card>
+            <CardContent className="space-y-3 p-5">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-medium">Authenticity (real, healthy creator?) · {auth.confidence !== "none" ? Math.round(auth.score) : "unknown"}</span>
+                <Badge variant={confBadge(auth.confidence)}>{auth.confidence} confidence</Badge>
+              </div>
+              {auth.components.map((comp) => (
+                <div key={comp.key}>
+                  <div className="flex items-center gap-3">
+                    <span className="w-28 shrink-0 text-[13px] capitalize">{comp.key.replace(/_/g, " ")}</span>
+                    <Progress value={comp.confidence === "none" ? 0 : comp.score} tone={comp.confidence === "none" ? "muted" : tone(comp.score)} />
+                    <span className="w-8 shrink-0 text-right text-[13px] font-medium tabular-nums">{comp.confidence === "none" ? "—" : Math.round(comp.score)}</span>
+                    <span className="w-12 shrink-0 text-right text-[10px] uppercase tracking-wide text-muted-foreground">×{comp.weight.toFixed(2)}</span>
+                  </div>
+                  <p className="ml-28 pl-3 text-[11px] leading-snug text-muted-foreground">{comp.reason}</p>
+                </div>
+              ))}
+              <Separator />
+              <p className="text-[12px] text-muted-foreground">{auth.reason}</p>
+              {bench ? <p className="text-[12px] text-muted-foreground">Engagement {bench.erPct.toFixed(1)}% is {bench.verdict === "above" ? "above" : bench.verdict === "below" ? "below" : "within"} the typical band for its size. {bench.note}</p> : null}
             </CardContent>
           </Card>
         </TabsContent>

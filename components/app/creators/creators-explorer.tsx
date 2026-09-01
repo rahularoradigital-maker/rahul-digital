@@ -13,6 +13,8 @@ import { Progress } from "@/components/ui/progress";
 import { CreatorAvatar } from "@/components/ui/creator-avatar";
 import { tierOf } from "@/lib/influencer/tiers";
 import { guessGender, extractRegion, inEngBand, meetsConfidence, type EngBand, type MinConfidence } from "@/lib/influencer/derive";
+import { authenticityScore } from "@/lib/influencer/scoring/authenticity";
+import { engagementBenchmark, type BenchmarkVerdict } from "@/lib/influencer/scoring/benchmark";
 import type { RankedCreator } from "@/lib/influencer/rank";
 import type { Confidence } from "@/lib/influencer/types";
 
@@ -24,6 +26,13 @@ const fmt = (n: number | null): string => {
 };
 const confBadge = (c: Confidence) => (c === "high" ? "success" : c === "medium" ? "warning" : "muted") as "success" | "warning" | "muted";
 const scoreTone = (s: number) => (s >= 70 ? "good" : s >= 45 ? "warn" : "muted") as "good" | "warn" | "muted";
+// Phase 2: brand-independent authenticity badge + engagement-vs-size benchmark chip.
+const authView = (s: number) => (s >= 75 ? { variant: "success", label: "Authentic" } : s >= 50 ? { variant: "warning", label: "Mixed signals" } : { variant: "muted", label: "Check closely" }) as { variant: "success" | "warning" | "muted"; label: string };
+const benchView: Record<BenchmarkVerdict, { cls: string; label: string }> = {
+  above: { cls: "text-[var(--good-ink)]", label: "above typical" },
+  typical: { cls: "text-muted-foreground", label: "typical for size" },
+  below: { cls: "text-[var(--warn-ink)]", label: "below typical" },
+};
 
 export function CreatorsExplorer({ creators, accountName }: { creators: RankedCreator[]; accountName: string }) {
   const [eng, setEng] = useState<EngBand>("any");
@@ -37,6 +46,8 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
   const [minViews, setMinViews] = useState<string>("");
   const [activeWithin, setActiveWithin] = useState<"any" | "30" | "90">("any");
   const [hasEmail, setHasEmail] = useState(false);
+  // Phase 2: minimum authenticity (brand-independent "real, healthy creator?" proxy) - target higher-confidence picks.
+  const [minAuth, setMinAuth] = useState<"any" | "60" | "75">("any");
 
   // Regions available in this run (creators' own stated locations, pulled from bios).
   const regions = useMemo(() => {
@@ -70,13 +81,15 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
         if (activeWithin !== "any" && c.reels?.daysSinceLastPost != null && c.reels.daysSinceLastPost > Number(activeWithin)) return false;
         // Has a public contact email.
         if (hasEmail && !c.businessEmail.value) return false;
+        // Min authenticity (only drops creators whose authenticity is KNOWN and below; unscored kept).
+        if (minAuth !== "any") { const a = authenticityScore(c); if (a.confidence !== "none" && a.score < Number(minAuth)) return false; }
         return true;
       })
       .map((r, i) => ({ ...r, rank: i + 1 }));
-  }, [creators, eng, gender, region, minConf, minFollowers, keyword, minViews, activeWithin, hasEmail]);
+  }, [creators, eng, gender, region, minConf, minFollowers, keyword, minViews, activeWithin, hasEmail, minAuth]);
 
-  const active = eng !== "any" || gender !== "any" || region !== "any" || minConf !== "any" || minFollowers !== "" || keyword !== "" || minViews !== "" || activeWithin !== "any" || hasEmail;
-  const clear = () => { setEng("any"); setGender("any"); setRegion("any"); setMinConf("any"); setMinFollowers(""); setKeyword(""); setMinViews(""); setActiveWithin("any"); setHasEmail(false); };
+  const active = eng !== "any" || gender !== "any" || region !== "any" || minConf !== "any" || minFollowers !== "" || keyword !== "" || minViews !== "" || activeWithin !== "any" || hasEmail || minAuth !== "any";
+  const clear = () => { setEng("any"); setGender("any"); setRegion("any"); setMinConf("any"); setMinFollowers(""); setKeyword(""); setMinViews(""); setActiveWithin("any"); setHasEmail(false); setMinAuth("any"); };
 
   // Run a fresh discovery with the current filters as search inputs. min-followers drives what gets found;
   // the rest are applied server-side so the stored result matches. Costs provider credits, so it is explicit.
@@ -180,6 +193,17 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
                 </SelectContent>
               </Select>
             </label>
+            <label className="space-y-1.5">
+              <span className="text-xs text-muted-foreground">Min. authenticity</span>
+              <Select value={minAuth} onValueChange={(v) => setMinAuth(v as "any" | "60" | "75")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="60">60+ (healthy)</SelectItem>
+                  <SelectItem value="75">75+ (strong)</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
             <label className="flex items-center gap-2 self-end pb-2 text-[13px]">
               <input type="checkbox" checked={hasEmail} onChange={(e) => setHasEmail(e.target.checked)} className="h-3.5 w-3.5 rounded border-input accent-[var(--ink)]" />
               Has contact email
@@ -219,6 +243,9 @@ function CreatorRow({ r }: { r: RankedCreator }) {
   const g = guessGender(c.name.value).gender;
   const region = extractRegion(c.bio.value);
   const reels = c.reels && c.reels.confidence !== "none" ? c.reels : null;
+  const auth = authenticityScore(c);
+  const av = authView(auth.score);
+  const bench = engagementBenchmark(c.followers.value, c.engagementRate.value);
 
   return (
     <Card className="transition-shadow hover:shadow-md">
@@ -236,6 +263,7 @@ function CreatorRow({ r }: { r: RankedCreator }) {
               <span className="text-[13px] text-muted-foreground">@{c.identity.handle}</span>
               {tier ? <Badge variant="muted" className="capitalize">{tier}</Badge> : null}
               <Badge variant={confBadge(q.confidence)}>{q.confidence} confidence</Badge>
+              {auth.confidence !== "none" ? <Badge variant={av.variant} title={auth.reason}>{av.label} · {Math.round(auth.score)}</Badge> : null}
             </div>
             {c.bio.value ? <p className="mt-1 line-clamp-1 text-[12px] text-muted-foreground">{c.bio.value}</p> : null}
             <p className="mt-1.5 text-[13px]"><span className="font-medium">Why:</span> {r.topReason}</p>
@@ -243,6 +271,7 @@ function CreatorRow({ r }: { r: RankedCreator }) {
             <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12px] text-muted-foreground">
               <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{fmt(c.followers.value)}</span></span>
               <span className="inline-flex items-center gap-1"><Activity className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{c.engagementRate.value != null ? (c.engagementRate.value * 100).toFixed(1) + "%" : "n/a"}</span> eng</span>
+              {bench ? <span className={`font-medium ${benchView[bench.verdict].cls}`} title={bench.note}>{benchView[bench.verdict].label}</span> : null}
               {reels?.reachRatio != null ? <span className="inline-flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5" /> <span className="font-medium text-foreground">{reels.reachRatio.toFixed(1)}x</span> reach</span> : null}
               {region ? <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {region}</span> : null}
               {g ? <span className="capitalize">{g === "f" ? "female" : "male"} <span className="opacity-60">(guess)</span></span> : null}
