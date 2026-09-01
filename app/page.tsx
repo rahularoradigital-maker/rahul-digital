@@ -20,7 +20,7 @@ export default function Home() {
     <>
       {/* Announcement bar, accent blue */}
       <div className="bg-[var(--accent)] px-5 py-2.5 text-center text-sm text-white">
-        AdBrain AI is a certified Meta Business &amp; Technology Partner{" "}
+        AdScale AI is a certified Meta Business &amp; Technology Partner{" "}
         <a href="#funding" className="font-medium underline underline-offset-2">
           Read More &rarr;
         </a>

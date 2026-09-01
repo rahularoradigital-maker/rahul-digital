@@ -1,7 +1,7 @@
 // Data Quality Engine (brief.md DATA QUALITY; metric dictionary category N).
 // N is the GATE, not a report tab: it runs before any recommendation is surfaced
 // and stamps whether the underlying rows are trustworthy. If data is thin, gappy,
-// duplicated, or shows tracking shifts, AdBrain says so instead of acting on it.
+// duplicated, or shows tracking shifts, AdScale says so instead of acting on it.
 // Pure: no I/O, no deps, no Date.now — all time math comes from the rows themselves.
 
 import type { MetricsRow } from "./ad-source.ts";

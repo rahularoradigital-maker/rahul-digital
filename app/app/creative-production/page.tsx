@@ -1,7 +1,7 @@
 import { CreativeStudio } from "@/components/app/creative-production/studio";
 
 // Creative Studio: Shopify -> product understanding -> ranked concepts -> AI static-ad generation -> QA ->
-// human review -> export. Isolated Creative Production module; nothing else in AdBrain depends on it.
+// human review -> export. Isolated Creative Production module; nothing else in AdScale depends on it.
 export const maxDuration = 300;
 
 export default function CreativeProductionPage() {

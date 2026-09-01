@@ -5,15 +5,15 @@ import { listPublishedArticles } from "@/lib/growth/articles";
 // Public blog index. Renders PUBLISHED articles only (owner-approved). SEO/AEO surface for rahul-digital.vercel.app.
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "AdBrain Blog — how to decide what to change in your ads",
+  title: "AdScale Blog — how to decide what to change in your ads",
   description: "Practical, no-hype guides on reading Meta and Google ad performance and deciding what to act on.",
   alternates: { canonical: "/blog" },
   openGraph: {
     type: "website",
-    title: "AdBrain Blog — how to decide what to change in your ads",
+    title: "AdScale Blog — how to decide what to change in your ads",
     description: "Practical, no-hype guides on reading Meta and Google ad performance and deciding what to act on.",
     url: "/blog",
-    siteName: "AdBrain AI",
+    siteName: "AdScale AI",
   },
 };
 
@@ -21,7 +21,7 @@ export default async function BlogIndex() {
   const articles = await listPublishedArticles();
   return (
     <main className="mx-auto max-w-2xl px-5 py-12">
-      <h1 className="text-[28px] font-normal tracking-tight">AdBrain Blog</h1>
+      <h1 className="text-[28px] font-normal tracking-tight">AdScale Blog</h1>
       <p className="mt-2 text-[15px] text-[var(--ink-muted)]">Practical guides on deciding what to change in your Meta and Google ads — with a reason for every call.</p>
       {articles.length === 0 ? (
         <p className="mt-10 text-[14px] text-[var(--ink-muted)]">No posts yet. Check back soon.</p>

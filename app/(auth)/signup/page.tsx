@@ -4,7 +4,7 @@ export default function SignupPage() {
   return (
     <AuthForm
       mode="signup"
-      title="Create your AdBrain account"
+      title="Create your AdScale account"
       cta="Sign up"
       altText="Already have an account?"
       altHref="/login"

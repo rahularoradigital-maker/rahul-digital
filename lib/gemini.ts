@@ -125,7 +125,7 @@ export async function callGemini(
 
 /**
  * Text-only variant of callGemini: a plain prompt in, a plain string out (no JSON schema). Used by
- * Ask AdBrain to answer a question in prose. Same 429/503 retry. Returns null on any failure so the
+ * Ask AdScale to answer a question in prose. Same 429/503 retry. Returns null on any failure so the
  * caller degrades gracefully; throws only when the key is missing (a real config error).
  */
 export async function callGeminiText(prompt: string): Promise<string | null> {

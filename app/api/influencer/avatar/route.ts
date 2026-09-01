@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   if (target.protocol !== "https:" || !ALLOWED_HOST.test(target.hostname)) return new NextResponse(null, { status: 400 });
 
   try {
-    const res = await fetch(target, { headers: { "User-Agent": "Mozilla/5.0 (compatible; AdBrain/1.0)" }, signal: AbortSignal.timeout(8000) });
+    const res = await fetch(target, { headers: { "User-Agent": "Mozilla/5.0 (compatible; AdScale/1.0)" }, signal: AbortSignal.timeout(8000) });
     const ct = res.headers.get("content-type") ?? "";
     if (!res.ok || !ct.startsWith("image/")) return new NextResponse(null, { status: 404 });
     const buf = await res.arrayBuffer();

@@ -4,7 +4,7 @@ export default function LoginPage() {
   return (
     <AuthForm
       mode="login"
-      title="Log in to AdBrain"
+      title="Log in to AdScale"
       cta="Log in"
       altText="New here?"
       altHref="/signup"

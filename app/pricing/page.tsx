@@ -5,16 +5,16 @@ import { PricingTiers } from "@/components/marketing/pricing-tiers";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
 
 export const metadata = {
-  title: "Pricing — AdBrain",
+  title: "Pricing — AdScale",
   description:
-    "Simple token-based pricing. Start free with 50 tokens (50 ad-account analyses a month), then scale up. Every plan gives a reason for every call, and AdBrain never spends on your account.",
+    "Simple token-based pricing. Start free with 50 tokens (50 ad-account analyses a month), then scale up. Every plan gives a reason for every call, and AdScale never spends on your account.",
   alternates: { canonical: "/pricing" },
   openGraph: {
     type: "website",
-    title: "AdBrain pricing — start free, scale with your ad spend",
+    title: "AdScale pricing — start free, scale with your ad spend",
     description: "Free plan with 50 tokens a month, then Starter, Growth, and Scale. Tokens map to real ad-account analyses.",
     url: `${SITE_URL}/pricing`,
-    siteName: "AdBrain AI",
+    siteName: "AdScale AI",
   },
 };
 
@@ -40,8 +40,8 @@ const FAQS: { q: string; a: string }[] = [
     a: "Yes. Free gives you 50 tokens a month - 50 analyses on your own ad account - with no card required. It is enough to see genuine recommendations on your data. Creative image generation is not included on Free.",
   },
   {
-    q: "Will AdBrain change my ads automatically?",
-    a: "No. On every plan AdBrain only reads your accounts and recommends what to do; you decide and act. It never edits, pauses, or spends on your account by itself.",
+    q: "Will AdScale change my ads automatically?",
+    a: "No. On every plan AdScale only reads your accounts and recommends what to do; you decide and act. It never edits, pauses, or spends on your account by itself.",
   },
   {
     q: "Does it work for agencies with several accounts?",

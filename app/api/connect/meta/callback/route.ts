@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
   // CSRF: the `state` Meta echoes back must match the httpOnly cookie set in /authorize.
   // A missing or mismatched state means this callback was not initiated by this browser -
-  // reject it so an attacker cannot link their Meta account to the victim's AdBrain account.
+  // reject it so an attacker cannot link their Meta account to the victim's AdScale account.
   const stateParam = params.get("state");
   const stateCookie = request.cookies.get("meta_oauth_state")?.value;
   if (!stateParam || !stateCookie || stateParam !== stateCookie) {

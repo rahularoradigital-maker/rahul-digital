@@ -50,7 +50,7 @@ export function ResetPasswordForm() {
       <div className="rounded-[22px] border border-[var(--hairline)] bg-[var(--surface)] p-8 shadow-[0_30px_70px_-50px_rgba(37,37,37,0.4)]">
         <Link href="/" className="mb-8 flex items-center gap-2 font-medium">
           <Logo />
-          AdBrain AI
+          AdScale AI
         </Link>
         <h1 className="text-3xl font-normal tracking-tight text-[var(--ink)]">Set a new password</h1>
 

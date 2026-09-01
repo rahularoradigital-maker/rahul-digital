@@ -27,7 +27,7 @@ const GOAL_STAGE: Record<string, FunnelStage> = {
   COMPLETE_REGISTRATION: "BOF", LEAD_GENERATION: "BOF", QUALITY_LEAD: "BOF", SUBSCRIBE: "BOF", APP_INSTALLS: "BOF",
 };
 
-// Campaign objective (AdBrain's internal union) -> stage. traffic + engagement are "arguable" (a traffic
+// Campaign objective (AdScale's internal union) -> stage. traffic + engagement are "arguable" (a traffic
 // campaign is legitimately run as either top or middle of funnel), so they carry lower confidence + review.
 function stageFromObjective(objective: Objective): { stage: FunnelStage; arguable: boolean } {
   switch (objective) {

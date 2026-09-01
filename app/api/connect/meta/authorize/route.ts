@@ -20,7 +20,7 @@ export async function GET() {
   if (_denied) return _denied;
   // CSRF protection: a random `state` echoed by Meta and matched against an httpOnly cookie in
   // the callback. Without it, an attacker can trick a logged-in victim into linking the
-  // ATTACKER'S Meta account to the victim's AdBrain account (OAuth account-linking CSRF).
+  // ATTACKER'S Meta account to the victim's AdScale account (OAuth account-linking CSRF).
   const state = randomBytes(16).toString("hex");
   const url = new URL("https://www.facebook.com/v21.0/dialog/oauth");
   url.searchParams.set("client_id", appId);

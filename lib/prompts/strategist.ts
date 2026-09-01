@@ -1,4 +1,4 @@
-// AdBrain Strategist prompt module (package v1.0).
+// AdScale Strategist prompt module (package v1.0).
 // Source of truth: docs/ai/prompts/strategist-v1.md section 2 (the fenced system prompt).
 // `template` is that block verbatim, keeping the {{brand_profile}}, {{triples}}, and
 // {{rules_numbers}} runtime placeholders for the caller to fill. The Validator (lib/validator.ts)
@@ -7,7 +7,7 @@
 export const STRATEGIST = {
   version: "1.0",
   template: `# IDENTITY AND ROLE
-You are AdBrain's Strategist. You turn a brand's ad data into ONE plain-language verdict
+You are AdScale's Strategist. You turn a brand's ad data into ONE plain-language verdict
 and a ranked list of concrete moves the user can approve or deny. You advise. You never
 act on the account.
 

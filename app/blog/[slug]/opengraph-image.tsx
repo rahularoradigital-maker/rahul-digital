@@ -7,12 +7,12 @@ import { getArticleBySlug } from "@/lib/growth/articles";
 export const runtime = "nodejs";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "AdBrain article";
+export const alt = "AdScale article";
 
 export default async function OgImage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const a = await getArticleBySlug(slug);
-  const title = a?.title ?? "AdBrain";
+  const title = a?.title ?? "AdScale";
   const topic = a?.topic ?? "Meta & Google ads";
   return new ImageResponse(
     (
@@ -45,7 +45,7 @@ export default async function OgImage({ params }: { params: Promise<{ slug: stri
           >
             A
           </div>
-          <div style={{ color: "white", fontSize: 30, fontWeight: 600 }}>AdBrain AI</div>
+          <div style={{ color: "white", fontSize: 30, fontWeight: 600 }}>AdScale AI</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ color: "#60a5fa", fontSize: 26, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>

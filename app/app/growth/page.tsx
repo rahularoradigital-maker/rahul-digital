@@ -116,7 +116,7 @@ export default async function GrowthPage() {
                     </div>
                     <div className="mt-1 text-[12px] text-[var(--ink-muted)]">{o.conversation.community} · {o.conversation.url}</div>
                     {o.why?.[0] && <div className="mt-1 text-[12px] text-[var(--ink-muted)]">{o.why[0]}</div>}
-                    <div className="mt-1 text-[12px] text-[var(--ink-muted)]">{o.promote?.mayMention ? "AdBrain mention permitted (be useful first)" : "No product mention here — be useful only."}</div>
+                    <div className="mt-1 text-[12px] text-[var(--ink-muted)]">{o.promote?.mayMention ? "AdScale mention permitted (be useful first)" : "No product mention here — be useful only."}</div>
                     {o.draft && (
                       <div className="mt-2 rounded-[8px] border border-[var(--hairline)] bg-[var(--bg)] p-3">
                         <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Scout&apos;s draft reply — review + post yourself</div>

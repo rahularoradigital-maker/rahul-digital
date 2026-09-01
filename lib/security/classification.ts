@@ -20,7 +20,7 @@ const POLICY: Record<DataClass, ClassPolicy> = {
   HIGHLY_SENSITIVE: { encryptAtRest: true, loggable: false, access: "service_role", retentionDays: null },
 };
 
-// Real AdBrain tables -> tier. Anything not listed defaults to CONFIDENTIAL (fail safe: unknown = protected).
+// Real AdScale tables -> tier. Anything not listed defaults to CONFIDENTIAL (fail safe: unknown = protected).
 const TABLE_CLASS: Record<string, DataClass> = {
   // credentials + payment-adjacent -> highest tier, app-level encrypted, never logged, service-role only
   oauth_tokens: "HIGHLY_SENSITIVE",

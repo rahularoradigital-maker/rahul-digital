@@ -176,7 +176,7 @@ export function PricingTiers() {
       <p className="mt-8 text-center text-[12px] text-[var(--ink-muted)]">
         One token is one AI action - an analysis, explanation, or chat answer. Creative image generation uses about 20
         tokens. Rupee prices are an approximate conversion of the US dollar price. Every plan gives a reason for
-        each recommendation, and AdBrain never edits or spends on your account.
+        each recommendation, and AdScale never edits or spends on your account.
       </p>
     </div>
   );

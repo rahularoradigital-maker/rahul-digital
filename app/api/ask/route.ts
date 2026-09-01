@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
+import { spendTokens } from "@/lib/billing/meter";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -14,7 +15,7 @@ import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 // call and hit rate limits / quota. Mirrors the competitors DAILY_CREATIVE_CAP pattern.
 const ASK_DAILY_CAP = 50;
 
-// "Ask AdBrain": answer a question grounded ONLY in the user's REAL cockpit data. The model is
+// "Ask AdScale": answer a question grounded ONLY in the user's REAL cockpit data. The model is
 // handed a compact snapshot of the connected account and told to never invent a number - so an
 // answer either cites the real data or says it does not have it. Uses Gemini (the same free-tier
 // provider already wired for creative analysis), so Ask costs nothing to run. Auth-gated;
@@ -87,12 +88,24 @@ export async function POST(request: NextRequest) {
   };
 
   const system =
-    `You are AdBrain's analyst. Answer the user's question using ONLY the DATA JSON below - the user's REAL connected Meta ad account for the ${windowLabel} (the window they are currently viewing). Rules:` +
+    `You are AdScale's analyst. Answer the user's question using ONLY the DATA JSON below - the user's REAL connected Meta ad account for the ${windowLabel} (the window they are currently viewing). Rules:` +
     " never invent a number or a fact that is not in the DATA; if the DATA does not contain the answer, say so plainly and name what to connect or check; every number you state must appear in the DATA. Be short and direct, plain Indian English, rupees for money, no hype words, no em dashes.";
 
   // Usage was already recorded atomically by reserve_ask_quota above. Just age out this user's rows
   // older than the rolling window so ask_log stays bounded (~cap rows/user). Best-effort.
   await admin.from("ask_log").delete().eq("user_id", user.id).lt("created_at", since).then(undefined, (e) => console.error("[ask] ask_log aging failed (recoverable)", e));
+
+  // Spend one product token for this answer (only now that we have a real, connected account to answer from,
+  // so a no-account no-op never burns a token). Over cap -> a friendly answer, not an error (this route's UI
+  // shows `answer`). The daily-cap reservation above is a separate, free-provider backstop.
+  const spend = await spendTokens(user.id, "chat");
+  if (!spend.ok) {
+    return NextResponse.json({
+      answer: `You have used all ${spend.allowance} of this month's tokens. Upgrade your plan for more, or wait for your monthly reset.`,
+      code: spend.reason,
+      usage: { used: spend.used, allowance: spend.allowance },
+    });
+  }
 
   try {
     // Fold rules + data + question into one grounded prompt, with the user's question and the account data

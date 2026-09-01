@@ -12,7 +12,7 @@ const STEPS = [
   {
     num: "02",
     title: "Decide",
-    body: "AdBrain AI weighs everything and returns clear decisions, what to test, scale and stop, ranked by confidence.",
+    body: "AdScale AI weighs everything and returns clear decisions, what to test, scale and stop, ranked by confidence.",
     bullets: ["Ranked test plan", "Kill / scale calls", "Confidence scoring"],
   },
   {
@@ -47,7 +47,7 @@ export function Method() {
             The AI platform for your creative decisions
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-base text-[var(--ink-muted)]">
-            The AdBrain AI Method, developed with and run by leading growth teams globally.
+            The AdScale AI Method, developed with and run by leading growth teams globally.
           </p>
         </div>
 

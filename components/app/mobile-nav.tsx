@@ -60,7 +60,7 @@ export function MobileNav({ userEmail }: { userEmail?: string }) {
             <div className="flex items-center justify-between">
               <Link href="/app" className="flex items-center gap-2.5 px-2 py-1.5 text-[17px] font-semibold">
                 <Logo />
-                AdBrain AI
+                AdScale AI
               </Link>
               <button
                 type="button"

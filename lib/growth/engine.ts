@@ -28,9 +28,9 @@ export type Conversation = {
 // --- OPPORTUNITY SCORE weights (section 7). Documented + must sum to 1 across the positive factors; risk is a
 // separate 0..1 penalty applied multiplicatively. Tunable here, versioned, NEVER arbitrary at a call site. ---
 export const OPP_WEIGHTS = {
-  relevance: 0.18, // topical match to what AdBrain solves
+  relevance: 0.18, // topical match to what AdScale solves
   intent: 0.18, // problem-aware / researching a solution (not idle chatter)
-  solutionFit: 0.15, // how squarely AdBrain can genuinely help this specific problem
+  solutionFit: 0.15, // how squarely AdScale can genuinely help this specific problem
   commercialIntent: 0.12, // signs of budget / buying stage
   audienceFit: 0.1, // matches an ICP
   problemSeverity: 0.09, // acute pain (wasted spend, "tanked") > mild curiosity
@@ -84,11 +84,11 @@ export function opportunityScore(f: OppFactors): number {
   return c01((positive / WEIGHT_SUM) * (1 - 0.6 * c01(f.risk))); // risk can cut up to 60% - documented ceiling
 }
 
-// --- PROMOTION GATE (section 11). Mention AdBrain ONLY if every gate passes. ---
+// --- PROMOTION GATE (section 11). Mention AdScale ONLY if every gate passes. ---
 export type PromotionVerdict = { mayMention: boolean; reasons: string[] };
 export function promotionGate(f: OppFactors, communityAllowsPromo: boolean): PromotionVerdict {
   const checks: [boolean, string][] = [
-    [f.solutionFit >= 0.6, "AdBrain genuinely fits the problem"],
+    [f.solutionFit >= 0.6, "AdScale genuinely fits the problem"],
     [communityAllowsPromo, "the community permits a product mention"],
     [f.intent >= 0.5, "the person is actually researching a solution"],
     [f.commercialIntent >= 0.3, "there is a legitimate commercial reason"],
@@ -114,7 +114,7 @@ export function assess(conv: Conversation, f: OppFactors, communityAllowsPromo: 
   const decision = decide(score, f, promote);
   const why = [
     `score ${(score * 100).toFixed(0)}/100 (relevance ${f.relevance.toFixed(2)}, intent ${f.intent.toFixed(2)}, fit ${f.solutionFit.toFixed(2)}, risk ${f.risk.toFixed(2)})`,
-    promote.mayMention ? "AdBrain mention permitted (be useful first)" : `no AdBrain mention: ${promote.reasons[0]}`,
+    promote.mayMention ? "AdScale mention permitted (be useful first)" : `no AdScale mention: ${promote.reasons[0]}`,
     `action: ${decision}`,
   ];
   return { conversation: conv, factors: f, score, promote, decision, why };

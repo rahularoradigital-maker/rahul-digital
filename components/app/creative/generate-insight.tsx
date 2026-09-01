@@ -45,7 +45,7 @@ export function GenerateInsight({ type, initial, emptyCta }: { type: "brand" | "
       {content ? (
         <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-[var(--ink)]">{content}</div>
       ) : !error ? (
-        <p className="text-[13px] text-[var(--ink-muted)]">Click the button - AdBrain reads your live ads and their performance and writes this from your real ad names. Nothing is invented.</p>
+        <p className="text-[13px] text-[var(--ink-muted)]">Click the button - AdScale reads your live ads and their performance and writes this from your real ad names. Nothing is invented.</p>
       ) : null}
     </div>
   );

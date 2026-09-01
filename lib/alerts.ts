@@ -11,7 +11,7 @@ export type AlertSeverity = "info" | "warning" | "critical";
 export async function sendAlert(input: { title: string; detail?: string; severity?: AlertSeverity; context?: Record<string, unknown> }): Promise<void> {
   const { title, detail, severity = "warning", context } = input;
   const icon = severity === "critical" ? "🔴" : severity === "warning" ? "🟠" : "🔵";
-  const text = `${icon} AdBrain ${severity.toUpperCase()}: ${title}${detail ? `\n${detail}` : ""}${context ? `\n${JSON.stringify(context)}` : ""}`;
+  const text = `${icon} AdScale ${severity.toUpperCase()}: ${title}${detail ? `\n${detail}` : ""}${context ? `\n${JSON.stringify(context)}` : ""}`;
   const url = process.env.ALERT_WEBHOOK_URL;
   if (!url) {
     console.warn(`[alert] ${severity}: ${title}${detail ? " - " + detail : ""}`);

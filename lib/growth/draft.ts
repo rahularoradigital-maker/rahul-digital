@@ -18,7 +18,7 @@ export async function writeDraft(o: Opportunity): Promise<string | null> {
     `(3-5 sentences), genuinely useful and specific to what they asked. Human, plain, no hype, no emojis, no ` +
     `"check out". ` +
     (mayMention
-      ? `You MAY briefly mention AdBrain (${BRAND.url}) ONLY if it truly helps, and you MUST disclose ("full disclosure, I work on AdBrain"). Be useful first. `
+      ? `You MAY briefly mention AdScale (${BRAND.url}) ONLY if it truly helps, and you MUST disclose ("full disclosure, I work on AdScale"). Be useful first. `
       : `Do NOT mention any product or link - just be helpful. `) +
     `If you have nothing genuinely useful to add, reply with exactly: SKIP`;
   const draft = await runTaskText("analyze-text", compose(system, [{ label: "conversation", content: `${o.conversation.title ?? ""}\n\n${o.conversation.content}` }]));
@@ -27,7 +27,7 @@ export async function writeDraft(o: Opportunity): Promise<string | null> {
   if (t === "SKIP" || t.length < 20) return null;
   // Quality gate: never queue a draft with a CRITICAL flaw (unsupported claim, undisclosed/disallowed mention).
   if (!checkContent(t, { mayMention }).pass) return null;
-  // Attribution: tag any AdBrain link in the reply so a click from this thread is traceable to its source.
+  // Attribution: tag any AdScale link in the reply so a click from this thread is traceable to its source.
   return tagAdBrainLinks(t, { source: o.conversation.platform, content: o.conversation.conversationId });
 }
 

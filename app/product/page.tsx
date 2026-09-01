@@ -7,17 +7,17 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.verc
 // Page-specific metadata: /product previously inherited only the site-wide title, so it had no unique title,
 // description, or canonical - a real on-page SEO gap on a key page.
 export const metadata = {
-  title: "The AdBrain AI Platform — Meta & Google ad decisions",
+  title: "The AdScale AI Platform — Meta & Google ad decisions",
   description:
-    "AdBrain connects to your Meta and Google ad accounts and hands your team a ranked, reasoned decision on what to scale, refresh, or kill - with the why behind every call.",
+    "AdScale connects to your Meta and Google ad accounts and hands your team a ranked, reasoned decision on what to scale, refresh, or kill - with the why behind every call.",
   alternates: { canonical: "/product" },
   openGraph: {
     type: "website",
-    title: "The AdBrain AI Platform — Meta & Google ad decisions",
+    title: "The AdScale AI Platform — Meta & Google ad decisions",
     description:
-      "AdBrain reads your ad accounts and tells you what to scale, refresh, or kill, with a reason for every call.",
+      "AdScale reads your ad accounts and tells you what to scale, refresh, or kill, with a reason for every call.",
     url: `${SITE_URL}/product`,
-    siteName: "AdBrain AI",
+    siteName: "AdScale AI",
   },
 };
 
@@ -85,7 +85,7 @@ const MODULES: {
   {
     step: "02 . DECIDE",
     h: "Turn signals into a ranked plan",
-    d: "AdBrain AI weighs everything and returns clear verdicts, what to test, scale, iterate and kill, ranked by confidence.",
+    d: "AdScale AI weighs everything and returns clear verdicts, what to test, scale, iterate and kill, ranked by confidence.",
     points: [
       "Ranked weekly test plan",
       "Kill, iterate and scale verdicts",
@@ -143,13 +143,13 @@ export default function ProductPage() {
         <section className="mx-auto max-w-4xl px-6 pt-20 pb-12 text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-1.5 text-sm text-[var(--ink-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-            The AdBrain AI platform
+            The AdScale AI platform
           </span>
           <h1 className="mx-auto mt-6 max-w-3xl text-5xl leading-[1.05] tracking-tight sm:text-6xl">
             Four agents. One weekly decision loop.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-lg text-[var(--ink-muted)]">
-            AdBrain AI connects to your Meta account, scans the market, and hands your team a ranked
+            AdScale AI connects to your Meta account, scans the market, and hands your team a ranked
             test plan, with the reasoning behind every call.
           </p>
           <div className="mt-9">
@@ -198,7 +198,7 @@ export default function ProductPage() {
                           <span className="h-2 w-2 rounded-full bg-white/25" />
                           <span className="h-2 w-2 rounded-full bg-white/25" />
                           <span className="h-2 w-2 rounded-full bg-white/25" />
-                          <span className="ml-2 text-xs text-white/60">AdBrain AI . {m.mock}</span>
+                          <span className="ml-2 text-xs text-white/60">AdScale AI . {m.mock}</span>
                         </div>
                         <div className="px-5 py-2">
                           {m.rows.map((r) => (

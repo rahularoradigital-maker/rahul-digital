@@ -1,4 +1,4 @@
-// Attribution foundation (spec section 22). Every link back to AdBrain that Scout puts in a reply or an
+// Attribution foundation (spec section 22). Every link back to AdScale that Scout puts in a reply or an
 // article is UTM-tagged, so when someone clicks -> lands -> signs up, the source (platform / community / topic)
 // is traceable. Pure - unit-testable (scripts/check-attribution-utm.ts). The signup-capture half (reading
 // utm_* on landing and tying it to the signup event) is wired separately in the app's auth flow.
@@ -7,7 +7,7 @@ import { BRAND } from "./knowledge.ts";
 
 const SITE = BRAND.url.replace(/\/$/, ""); // https://adscaledigital.co
 
-// Build a UTM-tagged AdBrain URL. source = the platform/community; content = the topic or conversation id.
+// Build a UTM-tagged AdScale URL. source = the platform/community; content = the topic or conversation id.
 export function utmLink(path: string, opts: { source: string; content?: string; campaign?: string; medium?: string }): string {
   const p = path.startsWith("/") ? path : `/${path}`;
   const u = new URL(SITE + p);

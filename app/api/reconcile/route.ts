@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { loadReconcile } from "@/lib/reconcile/store";
 
 // Reconcile-with-Meta: spend / revenue / ROAS / ad-count for the active account under each scope (whole,
-// exclude-catalog, active, with-purchases, active+purchases), so AdBrain's whole-account number and a
+// exclude-catalog, active, with-purchases, active+purchases), so AdScale's whole-account number and a
 // filtered Meta view can be lined up. Read-only.
 export const maxDuration = 60;
 

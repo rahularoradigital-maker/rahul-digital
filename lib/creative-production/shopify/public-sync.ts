@@ -14,7 +14,7 @@ const PAGE_SIZE = 250; // Shopify public feed max per page
 const MAX_PAGES = 40; // up to 10k products; runaway guard
 const UPSERT_BATCH = 250;
 // A real browser UA + Accept: some storefronts vary behaviour by client; keep it a plain public GET.
-const HEADERS = { "User-Agent": "Mozilla/5.0 (AdBrain product sync)", Accept: "application/json" };
+const HEADERS = { "User-Agent": "Mozilla/5.0 (AdScale product sync)", Accept: "application/json" };
 
 export type PublicFetchResult = { ok: boolean; isShopify: boolean; origin: string; products: NormalizedProduct[]; currency: string | null; error?: string };
 

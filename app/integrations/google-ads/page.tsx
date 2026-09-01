@@ -4,26 +4,26 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
-const TITLE = "Google Ads integration for AdBrain";
+const TITLE = "Google Ads integration for AdScale";
 const DESCRIPTION =
-  "AdBrain reads Google Ads the way a media buyer thinks: budget-capped vs rank-capped, Quality Score drag, and value-bidding readiness, per campaign type. Read-only, and rolling out now.";
+  "AdScale reads Google Ads the way a media buyer thinks: budget-capped vs rank-capped, Quality Score drag, and value-bidding readiness, per campaign type. Read-only, and rolling out now.";
 
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "/integrations/google-ads" },
-  openGraph: { type: "website", title: TITLE, description: DESCRIPTION, url: `${SITE_URL}/integrations/google-ads`, siteName: "AdBrain AI" },
+  openGraph: { type: "website", title: TITLE, description: DESCRIPTION, url: `${SITE_URL}/integrations/google-ads`, siteName: "AdScale AI" },
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
 };
 
-// The Google-native decisioning AdBrain already computes (lib/google/**). Honest: framed as rolling out,
+// The Google-native decisioning AdScale already computes (lib/google/**). Honest: framed as rolling out,
 // because the read-only Google Ads API connection is being enabled. No invented metrics or results.
 const DECISIONS: { h: string; d: string }[] = [
   { h: "Budget-capped or rank-capped, answered", d: "Impression share split into lost-to-budget vs lost-to-rank, so you raise budget on a winner or fix Ad Rank, never the wrong lever." },
   { h: "Quality Score, where it costs you", d: "Low Quality Score on real spend is flagged with the weakest component to fix, ranked by the money a fix would save." },
-  { h: "Ready for value bidding", d: "When a campaign has enough conversions and distinct values, AdBrain flags that it is ready to move to Target ROAS, not before." },
+  { h: "Ready for value bidding", d: "When a campaign has enough conversions and distinct values, AdScale flags that it is ready to move to Target ROAS, not before." },
   { h: "The metric that matters, per type", d: "Search leads on cost per conversion and impression share, Shopping and PMax on ROAS, Video on view rate. The right north-star for each campaign type." },
-  { h: "Learning-phase safe", d: "AdBrain will not tell you to change a bid or budget while Smart Bidding is still learning, because that change would reset it and cost you." },
+  { h: "Learning-phase safe", d: "AdScale will not tell you to change a bid or budget while Smart Bidding is still learning, because that change would reset it and cost you." },
   { h: "One brain across Meta and Google", d: "The same money-at-stake ranking and reason-for-every-call rigor, now reading Google's own levers instead of forcing a Meta-shaped view onto it." },
 ];
 
@@ -48,7 +48,7 @@ export default function GoogleAdsIntegrationPage() {
             Google Ads, read the way a buyer thinks.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-[var(--ink-muted)]">
-            Not a Meta view forced onto Google. AdBrain reads the Google levers, budget vs rank, Quality Score, value bidding, and tells you what to change, with a reason.
+            Not a Meta view forced onto Google. AdScale reads the Google levers, budget vs rank, Quality Score, value bidding, and tells you what to change, with a reason.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link href="/book-demo" className="inline-block rounded-full bg-[var(--ink)] px-7 py-3 font-medium text-white transition hover:opacity-90">
@@ -65,7 +65,7 @@ export default function GoogleAdsIntegrationPage() {
           <h2 className="text-[22px] font-normal tracking-tight">What connects</h2>
           <div className="mt-6 divide-y divide-[var(--hairline)] border-t border-[var(--hairline)]">
             {[
-              { k: "Your Google Ads account, read-only", v: "Connect through Google's own login and grant read access. AdBrain reads performance, it never spends or changes anything." },
+              { k: "Your Google Ads account, read-only", v: "Connect through Google's own login and grant read access. AdScale reads performance, it never spends or changes anything." },
               { k: "Every campaign type", v: "Search, Performance Max, Shopping, Demand Gen and Video, each judged on the metric that actually matters for it." },
               { k: "The auction signals Meta does not have", v: "Impression share, lost impression share, and Quality Score, the levers that decide whether Google shows your ad at all." },
             ].map((r) => (
@@ -77,10 +77,10 @@ export default function GoogleAdsIntegrationPage() {
           </div>
         </section>
 
-        {/* What AdBrain decides */}
+        {/* What AdScale decides */}
         <section className="border-y border-[var(--hairline)] bg-[var(--surface)]">
           <div className="mx-auto max-w-5xl px-6 py-16">
-            <h2 className="max-w-2xl text-[22px] font-normal tracking-tight">What AdBrain decides from it</h2>
+            <h2 className="max-w-2xl text-[22px] font-normal tracking-tight">What AdScale decides from it</h2>
             <p className="mt-2 max-w-2xl text-[15px] text-[var(--ink-muted)]">
               Deterministic routing, grounded in how the Google algorithm actually behaves. Nothing is applied automatically.
             </p>
@@ -116,10 +116,10 @@ export default function GoogleAdsIntegrationPage() {
             <h2 className="text-[22px] font-normal tracking-tight">Read-only, and safe by design</h2>
             <div className="mt-6 grid gap-6 sm:grid-cols-2">
               {[
-                { k: "Read access only", v: "AdBrain requests read scope for campaigns and metrics. It cannot spend, pause, or change your account." },
+                { k: "Read access only", v: "AdScale requests read scope for campaigns and metrics. It cannot spend, pause, or change your account." },
                 { k: "Tokens encrypted", v: "Your access token is encrypted at rest and never returned to the browser." },
                 { k: "Drafts, never auto-changes", v: "Every recommendation is a draft you action yourself in Google Ads." },
-                { k: "Disconnect anytime", v: "Revoke access from AdBrain or from Google, and the stored token is dropped." },
+                { k: "Disconnect anytime", v: "Revoke access from AdScale or from Google, and the stored token is dropped." },
               ].map((r) => (
                 <div key={r.k}>
                   <div className="text-[15px] font-medium text-[var(--ink)]">{r.k}</div>

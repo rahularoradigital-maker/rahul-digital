@@ -6,7 +6,7 @@
 export type NotifSeverity = "success" | "info" | "warning" | "error";
 export type Humanized = { title: string; detail: string; action?: string; severity: NotifSeverity };
 
-// Match against the real failure signals AdBrain produces (Meta Graph, ScrapeCreators, Gemini, sync state).
+// Match against the real failure signals AdScale produces (Meta Graph, ScrapeCreators, Gemini, sync state).
 // Order matters: most specific first.
 export function humanizeError(raw: string | null | undefined, source?: string): Humanized {
   const m = (raw ?? "").toLowerCase();
@@ -16,7 +16,7 @@ export function humanizeError(raw: string | null | undefined, source?: string): 
   if (/\b402\b/.test(m) || m.includes("payment required") || m.includes("out of credit")) {
     return {
       title: "Competitor data source is out of credits",
-      detail: "The service AdBrain uses to pull competitor ads has run out of credits, so competitor intelligence can't refresh right now.",
+      detail: "The service AdScale uses to pull competitor ads has run out of credits, so competitor intelligence can't refresh right now.",
       action: "Top up the ScrapeCreators plan (or connect Meta Ad Library) to resume.",
       severity: "error",
     };
@@ -43,7 +43,7 @@ export function humanizeError(raw: string | null | undefined, source?: string): 
   if (m.includes("oauthexception") || (m.includes("token") && (m.includes("expired") || m.includes("invalid") || m.includes("revoked"))) || m.includes("reconnect")) {
     return {
       title: "Your Meta connection needs re-authorizing",
-      detail: "AdBrain can't reach your Meta ad account - the connection has expired or was revoked.",
+      detail: "AdScale can't reach your Meta ad account - the connection has expired or was revoked.",
       action: "Reconnect Meta from Settings to restore live data.",
       severity: "error",
     };

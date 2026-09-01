@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // Liveness + data-health probe for uptime monitors and ops. Returns AGGREGATE counts only - never any
 // tenant's rows, ids, or errors - so it is safe to expose without auth. It answers the two questions that
-// matter for "is AdBrain actually working right now": is background sync healthy, and is automation armed.
+// matter for "is AdScale actually working right now": is background sync healthy, and is automation armed.
 
 export const dynamic = "force-dynamic";
 

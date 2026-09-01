@@ -1,6 +1,6 @@
 // Concept ranking engine (Phase 5) — PURE, no I/O. This module does NOT compute the six strategy
 // signals; it only COMBINES them into one deterministic rank. The signals themselves are sourced
-// upstream from AdBrain's existing intelligence:
+// upstream from AdScale's existing intelligence:
 //   - productOpportunity   — Product DNA / offer eligibility read (lib/creative-production/shopify + Product DNA).
 //   - creativeWhiteSpace   — diversity/white-space gap analysis (lib/creative/diversity.ts).
 //   - audienceNeed         — persona/awareness demand from the strategy read.

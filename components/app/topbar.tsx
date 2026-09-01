@@ -64,7 +64,7 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Ask AdBrain: answers grounded in your real cockpit data (Gemini, no fabrication). */}
+          {/* Ask AdScale: answers grounded in your real cockpit data (Gemini, no fabrication). */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -79,8 +79,8 @@ export function Topbar() {
             <input
               name="q"
               value={ask}
-              placeholder="Ask AdBrain"
-              aria-label="Ask AdBrain"
+              placeholder="Ask AdScale"
+              aria-label="Ask AdScale"
               onFocus={() => setFocused(true)}
               onBlur={() => setTimeout(() => setFocused(false), 150)}
               onChange={(e) => {

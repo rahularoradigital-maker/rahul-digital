@@ -10,9 +10,9 @@ const inter = Inter({
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
-const TITLE = "AdBrain AI — Creative Decision Intelligence";
+const TITLE = "AdScale AI — Creative Decision Intelligence";
 const DESCRIPTION =
-  "Know what to test next, before you spend on it. AdBrain reads your Meta and Google ads and tells you what to scale, refresh, or kill, and why.";
+  "Know what to test next, before you spend on it. AdScale reads your Meta and Google ads and tells you what to scale, refresh, or kill, and why.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -20,21 +20,24 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   alternates: { canonical: "/" },
   icons: { icon: "/icon.svg" },
-  openGraph: { title: TITLE, description: DESCRIPTION, url: SITE_URL, siteName: "AdBrain AI", type: "website" },
+  openGraph: { title: TITLE, description: DESCRIPTION, url: SITE_URL, siteName: "AdScale AI", type: "website" },
   twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
-  robots: { index: true, follow: true },
+  // Per Google's AI-optimization guide: to appear in AI Overviews / AI Mode a page must be indexable AND
+  // eligible for a full snippet + large image preview. These directives grant that (no special AI markup or
+  // llms.txt is used or needed - the guide says the SEO fundamentals ARE the AI optimization).
+  robots: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large", "max-video-preview": -1 },
 };
 
 // Site-wide entity signals (spec section 26/27): one consistent brand identity for search + answer engines.
 // Honest only - no reviews, ratings, prices, or awards we cannot substantiate. SoftwareApplication describes
-// what AdBrain actually is; Organization + WebSite establish the entity. Content is a static developer-authored
+// what AdScale actually is; Organization + WebSite establish the entity. Content is a static developer-authored
 // constant (no user input), rendered as script text children - safe for application/ld+json.
 // Stable @id anchors so nodes across pages resolve to ONE entity: /product enriches the same
 // SoftwareApplication (#software) instead of declaring a duplicate, and everything can reference #organization.
 const JSON_LD = JSON.stringify([
-  { "@context": "https://schema.org", "@type": "Organization", "@id": `${SITE_URL}#organization`, name: "AdBrain AI", url: SITE_URL, logo: `${SITE_URL}/icon.svg`, description: DESCRIPTION },
-  { "@context": "https://schema.org", "@type": "WebSite", "@id": `${SITE_URL}#website`, name: "AdBrain AI", url: SITE_URL, publisher: { "@id": `${SITE_URL}#organization` } },
-  { "@context": "https://schema.org", "@type": "SoftwareApplication", "@id": `${SITE_URL}#software`, name: "AdBrain AI", applicationCategory: "BusinessApplication", operatingSystem: "Web", url: SITE_URL, description: DESCRIPTION, publisher: { "@id": `${SITE_URL}#organization` } },
+  { "@context": "https://schema.org", "@type": "Organization", "@id": `${SITE_URL}#organization`, name: "AdScale AI", url: SITE_URL, logo: `${SITE_URL}/icon.svg`, description: DESCRIPTION },
+  { "@context": "https://schema.org", "@type": "WebSite", "@id": `${SITE_URL}#website`, name: "AdScale AI", url: SITE_URL, publisher: { "@id": `${SITE_URL}#organization` } },
+  { "@context": "https://schema.org", "@type": "SoftwareApplication", "@id": `${SITE_URL}#software`, name: "AdScale AI", applicationCategory: "BusinessApplication", operatingSystem: "Web", url: SITE_URL, description: DESCRIPTION, publisher: { "@id": `${SITE_URL}#organization` } },
 ]);
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

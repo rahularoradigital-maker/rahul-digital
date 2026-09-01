@@ -6,7 +6,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2 text-[22px] font-medium tracking-tight">
           <Logo />
-          AdBrain AI
+          AdScale AI
         </Link>
         <nav className="hidden items-center gap-8 text-[15px] text-[var(--ink-muted)] md:flex">
           <a href="#use-cases" className="hover:text-[var(--ink)]">Use Cases</a>

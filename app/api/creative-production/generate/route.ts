@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
+import { spendTokens } from "@/lib/billing/meter";
 import { createClient } from "@/lib/supabase/server";
 import { setAiUser } from "@/lib/ai/context";
 import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
@@ -34,6 +35,17 @@ export async function POST(req: Request) {
   const product = await ensureProductDNA(user.id, conn.shopDomain, productId, null);
   if (!product) return NextResponse.json({ error: "Product not found." }, { status: 404 });
   const brand = await loadEffectiveBrandDNA(user.id, conn.shopDomain);
+
+  // Image generation is the cost driver (Phase 0): 20 tokens, and BLOCKED on Free (fails closed) - this is the
+  // rule that keeps a free user's cost near zero. Charge before the expensive provider call.
+  const spend = await spendTokens(user.id, "image");
+  if (!spend.ok) {
+    const msg =
+      spend.reason === "image_not_in_plan"
+        ? "Creative image generation is not included on the Free plan. Upgrade to a paid plan to generate ads."
+        : `You have used all ${spend.allowance} of this month's tokens. Upgrade your plan for more, or wait for your monthly reset.`;
+    return NextResponse.json({ error: msg, code: spend.reason, usage: { used: spend.used, allowance: spend.allowance } }, { status: 402 });
+  }
 
   const formats = platform === "google" ? GOOGLE_DEFAULT_SET : META_DEFAULT_SET;
   const records = await generateAssetsForConcept(user.id, product, brand, concept, formats);

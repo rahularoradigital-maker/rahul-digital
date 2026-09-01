@@ -1,4 +1,4 @@
-// Ad-level funnel ratio engine for AdBrain.
+// Ad-level funnel ratio engine for AdScale.
 // A top-1% D2C media buyer does not read raw spend/clicks: they read the ratios
 // between funnel stages (thumb-stop, hold, LP view, ATC, checkout, purchase) to
 // see exactly which stage is leaking. This computes those ratios from day-wise

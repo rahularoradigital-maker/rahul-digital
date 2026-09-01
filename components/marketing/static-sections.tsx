@@ -11,7 +11,7 @@ export function TrustBand() {
           Trusted by hundreds of leading D2C brands and agencies, from scrappy to scaled.
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-base text-[var(--ink-muted)]">
-          See how these teams use AdBrain AI to decide their creative every week.
+          See how these teams use AdScale AI to decide their creative every week.
         </p>
         <div className="mt-10 grid grid-cols-2 items-center gap-8 sm:grid-cols-3 lg:grid-cols-6">
           {LOGOS.map((l) => (
@@ -32,7 +32,7 @@ export function FundingCard() {
         <div className="flex flex-wrap items-center justify-between gap-5 rounded-[var(--radius-card)] bg-[var(--ink)] p-10 text-white">
           <div>
             <h3 className="max-w-2xl text-[26px] leading-[1.15]">
-              AdBrain AI is building the creative intelligence layer for growth teams
+              AdScale AI is building the creative intelligence layer for growth teams
             </h3>
             <p className="mt-3 text-base text-white/70">
               Backed by top D2C operators and Meta partners, new and existing.
@@ -117,7 +117,7 @@ export function Security() {
 const QUOTES = [
   {
     quote:
-      "AdBrain AI tells us which ad to make before we spend a rupee. It replaced three spreadsheets and a weekly guessing meeting.",
+      "AdScale AI tells us which ad to make before we spend a rupee. It replaced three spreadsheets and a weekly guessing meeting.",
     name: "Ananya R.",
     role: "Growth Lead at Pilgrim",
   },
@@ -151,7 +151,7 @@ export function Testimonials() {
           </span>
           <h2 className="text-[40px] leading-[1.08]">Loved by leading teams</h2>
           <p className="mx-auto mt-3 max-w-xl text-base text-[var(--ink-muted)]">
-            See how industry leaders use AdBrain AI to simplify their creative decisions.
+            See how industry leaders use AdScale AI to simplify their creative decisions.
           </p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2">
@@ -182,10 +182,10 @@ export function CaseStudy() {
           <div className="text-[72px] leading-none text-[var(--accent)]">+38%</div>
           <div>
             <h3 className="text-[26px] leading-[1.15]">
-              How The Pant Project lifted ROAS 38% on scaled creatives with AdBrain AI
+              How The Pant Project lifted ROAS 38% on scaled creatives with AdScale AI
             </h3>
             <p className="mt-4 text-lg italic leading-relaxed text-[var(--ink-muted)]">
-              &ldquo;AdBrain AI ranks our whole test plan by confidence, we just ship the top three. Our
+              &ldquo;AdScale AI ranks our whole test plan by confidence, we just ship the top three. Our
               team stays focused on what really matters.&rdquo;
             </p>
             <p className="mt-3 text-sm text-[var(--ink-muted)]">
@@ -210,7 +210,7 @@ export function FinalCta() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="rounded-[var(--radius-card)] bg-[var(--ink)] p-14 text-center text-white">
           <h2 className="mx-auto max-w-xl text-[40px] leading-[1.08] text-white">
-            Get started with AdBrain AI today
+            Get started with AdScale AI today
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-[17px] text-white/70">
             Get a personalized demo and see your first weekly test plan, built from your own account.

@@ -17,7 +17,7 @@ const COLS: { title: string; links: { label: string; href: string }[] }[] = [
     { label: "Creative strategy", href: "/blog" }, { label: "Book a demo", href: "/book-demo" },
   ] },
   { title: "Company", links: [
-    { label: "Contact us", href: "mailto:hello@adbrain.ai" }, { label: "Book a demo", href: "/book-demo" },
+    { label: "Contact us", href: "mailto:hello@adscaledigital.co" }, { label: "Book a demo", href: "/book-demo" },
     { label: "Privacy", href: "/privacy" }, { label: "Terms", href: "/terms" },
   ] },
 ];
@@ -30,7 +30,7 @@ export function SiteFooter() {
           <div>
             <div className="flex items-center gap-2 text-[22px] font-medium">
               <Logo />
-              AdBrain AI
+              AdScale AI
             </div>
             <p className="mt-4 text-sm text-[var(--ink-muted)]">Bengaluru | San Francisco</p>
           </div>
@@ -52,7 +52,7 @@ export function SiteFooter() {
           ))}
         </div>
         <div className="mt-12 flex flex-col gap-3 border-t border-[var(--hairline)] pt-6 text-[13px] text-[var(--ink-muted)] sm:flex-row sm:items-center sm:justify-between">
-          <span>&copy; 2026 adbrain.ai, All rights reserved</span>
+          <span>&copy; 2026 adscaledigital.co, All rights reserved</span>
           <nav className="flex flex-wrap gap-4">
             <Link href="/privacy" className="hover:text-[var(--accent)]">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-[var(--accent)]">Terms</Link>

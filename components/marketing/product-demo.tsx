@@ -69,7 +69,7 @@ const ANALYTICS = [
 const INTEGRATIONS = ["Meta Ads", "TikTok", "Shopify", "GA4", "Klaviyo", "Slack"];
 
 const API_SNIPPET = `curl -X POST \\
-  https://api.adbrain.ai/v1/plan \\
+  https://api.adscaledigital.co/v1/plan \\
   -H 'Authorization: <api-key>' \\
   -d '{
     "account_id": "act_9f3c...",

@@ -20,7 +20,7 @@ export function ReconcileView({ report, accountName, since, until }: { report: R
       <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
         <div className="text-[12px] uppercase tracking-wide text-[var(--ink-muted)]">{accountName} · {since} to {until}</div>
         <p className="mt-1 text-[15px] text-[var(--ink)]">
-          AdBrain reports the <span className="font-semibold">whole account</span>. A filtered Meta view (active delivery + results) usually
+          AdScale reports the <span className="font-semibold">whole account</span>. A filtered Meta view (active delivery + results) usually
           hides <span className="font-semibold">{money(spendHidden)}</span> of spend, which is why its ROAS reads higher. Same data, different scope.
         </p>
       </div>
@@ -54,7 +54,7 @@ export function ReconcileView({ report, accountName, since, until }: { report: R
       </div>
 
       <p className="text-[12px] text-[var(--ink-muted)]">
-        AdBrain now pulls conversions using <span className="text-[var(--ink)]">your account&apos;s own attribution setting</span> (the same one Ads
+        AdScale now pulls conversions using <span className="text-[var(--ink)]">your account&apos;s own attribution setting</span> (the same one Ads
         Manager shows), so revenue and ROAS line up once the date range and filters match. Any remaining gap is scope: whole account vs a
         filtered Meta view (rows above).
       </p>

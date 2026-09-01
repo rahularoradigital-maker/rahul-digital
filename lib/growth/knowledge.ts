@@ -1,13 +1,13 @@
-// Growth-agent knowledge base (spec sections 1, 2, 3, 33, 34). The single source of truth for WHO AdBrain is,
+// Growth-agent knowledge base (spec sections 1, 2, 3, 33, 34). The single source of truth for WHO AdScale is,
 // WHO it serves, WHAT signals to look for, and WHAT the agent must never do. Versioned - never overwrite,
 // bump VERSION on a real change. NOTHING here invents a product capability: every brand fact below is a real,
-// shipped part of AdBrain (adscaledigital.co). If a capability is not real, it does not go here.
+// shipped part of AdScale (adscaledigital.co). If a capability is not real, it does not go here.
 
 export const KNOWLEDGE_VERSION = "1.0.0";
 
 // --- BRAND KNOWLEDGE (section 1) - honest capabilities only ---
 export const BRAND = {
-  name: "AdBrain",
+  name: "AdScale",
   url: "https://adscaledigital.co",
   oneLiner: "Creative decision intelligence for Meta + Google ads - it reads your day-wise account data and tells you what to act on today, with a reason for every verdict, and never auto-changes your account.",
   does: [
@@ -53,9 +53,9 @@ export const SAFETY_DONOTDO = [
   "Do not invent testimonials, customers, or fake conversations.",
   "Do not impersonate a customer, a competitor, or misrepresent affiliation.",
   "Do not mass-post identical content or spam links.",
-  "Do not promote where the community forbids it - be useful without forcing AdBrain in.",
+  "Do not promote where the community forbids it - be useful without forcing AdScale in.",
   "Do not manipulate votes, evade moderation, or bypass platform rules / rate limits.",
-  "Always disclose affiliation when mentioning AdBrain.",
+  "Always disclose affiliation when mentioning AdScale.",
 ] as const;
 
 // Seed communities to LISTEN to (read-only discovery). Not for joining-to-promote.

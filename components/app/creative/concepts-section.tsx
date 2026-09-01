@@ -14,7 +14,7 @@ const SOURCE_STYLE: Record<SourceTag, { label: string; cls: string }> = {
 
 const SOURCE_MEANING: { tag: SourceTag; meaning: string }[] = [
   { tag: "OURS", meaning: "Our own day-wise performance, what already wins for this account" },
-  { tag: "AI", meaning: "The AdBrain category model's fit score" },
+  { tag: "AI", meaning: "The AdScale category model's fit score" },
   { tag: "COMP", meaning: "Whitespace found in a competitor's Ad Library decode" },
   { tag: "WORLD", meaning: "The category benchmark, a world norm" },
 ];
@@ -34,7 +34,7 @@ export function ConceptsSection({ initialContent }: { initialContent: string | n
         <div className="text-[13px] text-[var(--ink-muted)]">Concept-recipe framework</div>
         <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">Every concept is a recipe, not an idea.</h1>
         <p className="mt-2 max-w-2xl text-sm text-[var(--ink-muted)]">
-          AdBrain never hands a creative team a vague brief. A test concept is a recipe built from five named parts,
+          AdScale never hands a creative team a vague brief. A test concept is a recipe built from five named parts,
           and every part is chosen the same way: weigh what already works for us, the AI model&apos;s fit, the gap a
           competitor leaves open, and the category norm, then take the best score.
         </p>
@@ -48,7 +48,7 @@ export function ConceptsSection({ initialContent }: { initialContent: string | n
 
 each pick = argmax over candidates of:
     0.40 x OURS   (our own performance)
-  + 0.25 x AI     (AdBrain category model)
+  + 0.25 x AI     (AdScale category model)
   + 0.20 x COMP   (competitor gap from the Ad Library decode)
   + 0.15 x WORLD  (category benchmark)`}
         </pre>

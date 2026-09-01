@@ -11,7 +11,7 @@ export function Hero() {
           <span className="text-[var(--ink-muted)]">made by AI.</span>
         </h1>
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--ink-muted)]">
-          AdBrain reads your real Meta ads and tells you what to scale, refresh, or kill, and why.
+          AdScale reads your real Meta ads and tells you what to scale, refresh, or kill, and why.
           Decide what to test and stop at scale, without the guesswork.
         </p>
         <div className="mt-8">

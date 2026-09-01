@@ -5,7 +5,7 @@ import { priceFor, estimateCost } from "./pricing.ts";
 import type { ImageProvider, GenerationBrief, GenerationResult, ProviderCapabilities, CostEstimate } from "@/lib/creative-production/types";
 
 // Google Gemini image provider (Creative Production, Phase 6). Implements the ImageProvider interface over
-// the classic generateContent endpoint (matches AdBrain's no-SDK, fetch-in-header convention). Model is
+// the classic generateContent endpoint (matches AdScale's no-SDK, fetch-in-header convention). Model is
 // ENV-DRIVEN so it swaps without a code change; product fidelity via reference images (inlineData). The AI
 // renders the VISUAL only - the deterministic composition layer draws precise text (Google's own docs warn
 // the model misspells), so the prompt explicitly forbids text. Key is server-side only (x-goog-api-key).

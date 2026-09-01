@@ -84,7 +84,7 @@ export type CreativeConcept = {
   score: number; // ranking score (deterministic, from the strategy engine)
 };
 
-// Signals the strategy engine multiplies (each 0..1). Sourced from AdBrain's existing intelligence.
+// Signals the strategy engine multiplies (each 0..1). Sourced from AdScale's existing intelligence.
 export type StrategySignals = {
   productOpportunity: number;
   creativeWhiteSpace: number;

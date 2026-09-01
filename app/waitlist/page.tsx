@@ -7,8 +7,8 @@ import { getAccessState } from "@/lib/app/access";
 import { signOut } from "@/app/(auth)/actions";
 
 export const metadata: Metadata = {
-  title: "You're on the list — AdBrain",
-  description: "AdBrain is currently in private access. Your account is ready; product access is enabled by approval.",
+  title: "You're on the list — AdScale",
+  description: "AdScale is currently in private access. Your account is ready; product access is enabled by approval.",
   robots: { index: false, follow: false }, // a signed-in gate screen; not for search
 };
 
@@ -23,7 +23,7 @@ export default async function WaitlistPage() {
   const heading = blocked ? "Access is currently paused" : "You're on the list";
   const line = blocked
     ? "Your account access is on hold. If you think this is a mistake, contact us and we'll take a look."
-    : "AdBrain is in private access right now. Your account is ready, but product access hasn't been enabled yet.";
+    : "AdScale is in private access right now. Your account is ready, but product access hasn't been enabled yet.";
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -46,7 +46,7 @@ export default async function WaitlistPage() {
           )}
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            <a href="mailto:rahul.arora@ekaleido.co?subject=AdBrain%20access%20request" className="rounded-[10px] bg-[var(--ink)] px-4 py-2.5 text-[14px] font-medium text-[var(--surface)] hover:opacity-90">
+            <a href="mailto:rahul.arora@ekaleido.co?subject=AdScale%20access%20request" className="rounded-[10px] bg-[var(--ink)] px-4 py-2.5 text-[14px] font-medium text-[var(--surface)] hover:opacity-90">
               Request access
             </a>
             <Link href="/blog" className="text-[14px] font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]">Read the blog →</Link>

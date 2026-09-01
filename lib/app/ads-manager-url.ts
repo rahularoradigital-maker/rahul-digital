@@ -1,7 +1,7 @@
 // Deep link into the account's Meta Ads Manager, opened at ONE specific ad with its full
 // hierarchy selected - campaign -> ad set -> ad - so any AI suggestion can be traced to
 // exactly which campaign we tested and which ad set the fatigue is coming from, over the
-// same date window the user is looking at in AdBrain.
+// same date window the user is looking at in AdScale.
 //
 // Ids are bare numbers (external_id has no "act_" prefix; ad/adset/campaign ids are the Meta
 // ids). We select all three levels so Ads Manager opens with the ad highlighted AND its ad

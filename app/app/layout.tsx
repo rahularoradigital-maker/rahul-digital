@@ -8,7 +8,7 @@ import { SidebarNav } from "@/components/app/sidebar-nav";
 import { MobileNav } from "@/components/app/mobile-nav";
 import { Topbar } from "@/components/app/topbar";
 
-// AdBrain app shell: fixed 256px sidebar (grouped nav + user footer) + working
+// AdScale app shell: fixed 256px sidebar (grouped nav + user footer) + working
 // sticky topbar. Nav lives in lib/app/nav.ts; the sidebar highlights the active
 // route and the topbar derives its title from it.
 
@@ -46,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-[var(--hairline)] bg-[var(--surface)] px-3.5 py-4 md:flex">
         <Link href="/app" className="flex items-center gap-2.5 px-2 py-1.5 text-[17px] font-semibold">
           <Logo />
-          AdBrain AI
+          AdScale AI
         </Link>
 
         <SidebarNav />

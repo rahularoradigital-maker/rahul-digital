@@ -1,4 +1,4 @@
-// Lightweight load-test harness for AdBrain. No dependencies (native fetch). Hits a list of PUBLIC GET
+// Lightweight load-test harness for AdScale. No dependencies (native fetch). Hits a list of PUBLIC GET
 // endpoints at a bounded concurrency and reports latency percentiles + status distribution, so you can see
 // the app's baseline and where it bends before real traffic.
 //

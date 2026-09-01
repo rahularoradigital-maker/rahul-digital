@@ -43,7 +43,7 @@ export function generateBrief(conversations: Conversation[], nowMs: number, topN
 }
 
 // Whether a community permits a product mention. Conservative default: most subs restrict promo, so DEFAULT
-// FALSE - the agent must be useful without mentioning AdBrain unless a community is explicitly marked open.
+// FALSE - the agent must be useful without mentioning AdScale unless a community is explicitly marked open.
 // (Community memory, section 24, will hold per-community rules; until then, assume no-promo = safest.)
 const PROMO_OK = new Set<string>([]); // none opted-in yet -> useful-first everywhere
 export function communityAllowsPromo(community: string): boolean {
@@ -67,7 +67,7 @@ function contentIdeaFor(topic: string): string {
 // Render the brief to markdown (for the daily file / owner review). No publishing - a report only.
 export function briefToMarkdown(b: Brief): string {
   const L: string[] = [];
-  L.push(`# AdBrain Growth Brief - ${b.generatedAt.slice(0, 10)}`);
+  L.push(`# AdScale Growth Brief - ${b.generatedAt.slice(0, 10)}`);
   L.push("");
   L.push(`Discovered **${b.discovered}** conversations. Decisions: ${b.byAction.DRAFT} draft · ${b.byAction.REQUEST_APPROVAL} needs-approval · ${b.byAction.LEARN} learn · ${b.byAction.MONITOR} monitor · ${b.byAction.IGNORE} ignore.`);
   L.push("");
@@ -84,7 +84,7 @@ export function briefToMarkdown(b: Brief): string {
     L.push(`- ${o.conversation.title ?? o.conversation.content.slice(0, 120)}`);
     L.push(`- ${o.conversation.url}`);
     L.push(`- Why: ${o.why.join(" · ")}`);
-    L.push(`- AdBrain mention: ${o.promote.mayMention ? "permitted (be useful first)" : "NO - " + o.promote.reasons[0]}`);
+    L.push(`- AdScale mention: ${o.promote.mayMention ? "permitted (be useful first)" : "NO - " + o.promote.reasons[0]}`);
   });
   L.push("");
   L.push(`_${BRAND.name} · useful before promotional · human approves every reply._`);
