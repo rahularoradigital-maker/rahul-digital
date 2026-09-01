@@ -2,7 +2,9 @@ import "server-only";
 import { createAdminClient } from "../supabase/admin.ts";
 import { runTaskJson } from "../ai/router.ts";
 import { compose } from "../ai/compose.ts";
+import { callGemini, fetchInlineImage, stringObjectSchema } from "../gemini.ts";
 import type { CreativeAsset } from "./fingerprint.ts";
+import { thumbUrlOf } from "./fingerprint.ts";
 
 // Semantic creative decode - the layer that turns each ad's copy into the dimensions the diversity engine
 // reads beyond the free `format`: funnel stage, hook, emotion, subject. FINGERPRINT-ONCE: keyed by
@@ -11,7 +13,19 @@ import type { CreativeAsset } from "./fingerprint.ts";
 // Everything degrades gracefully to nulls, in which case the diversity engine simply reads on `format` alone
 // (its prior behaviour) - so this can never break the cockpit. Untrusted ad copy is fenced (compose).
 
-export type CreativeSemantics = { funnelStage: string | null; hookType: string | null; emotion: string | null; subject: string | null };
+// Copy dimensions (funnelStage/hookType/emotion/subject) + VISUAL dimensions read from the actual creative
+// image/thumbnail (sceneType/setting/palette/visualMood/contentSubject). Both keyed by content_hash.
+export type CreativeSemantics = {
+  funnelStage: string | null;
+  hookType: string | null;
+  emotion: string | null;
+  subject: string | null;
+  sceneType: string | null; // talking-head | product-demo | lifestyle | text-card | unboxing | before-after | animation | other
+  setting: string | null; // studio | indoor | outdoor | on-white | app-screen | other
+  palette: string | null; // 1-3 word dominant-color descriptor
+  visualMood: string | null; // one word: energetic | calm | premium | playful | urgent | aspirational
+  contentSubject: string | null; // short phrase of what is literally shown
+};
 
 const SCHEMA: Record<string, unknown> = { funnelStage: "TOF | MOF | BOF", hookType: "1-3 word angle", emotion: "one word", subject: "product-led | human/UGC-led | lifestyle" };
 
@@ -28,9 +42,9 @@ export async function readSemanticsCache(userId: string, contentHashes: string[]
   if (!hashes.length) return out;
   try {
     const admin = createAdminClient();
-    const { data } = await admin.from("creative_semantics").select("content_hash,funnel_stage,hook_type,emotion,subject").eq("user_id", userId).in("content_hash", hashes);
-    for (const r of (data ?? []) as { content_hash: string; funnel_stage: string | null; hook_type: string | null; emotion: string | null; subject: string | null }[]) {
-      out.set(r.content_hash, { funnelStage: r.funnel_stage, hookType: r.hook_type, emotion: r.emotion, subject: r.subject });
+    const { data } = await admin.from("creative_semantics").select("content_hash,funnel_stage,hook_type,emotion,subject,scene_type,setting,palette,visual_mood,content_subject").eq("user_id", userId).in("content_hash", hashes);
+    for (const r of (data ?? []) as { content_hash: string; funnel_stage: string | null; hook_type: string | null; emotion: string | null; subject: string | null; scene_type: string | null; setting: string | null; palette: string | null; visual_mood: string | null; content_subject: string | null }[]) {
+      out.set(r.content_hash, { funnelStage: r.funnel_stage, hookType: r.hook_type, emotion: r.emotion, subject: r.subject, sceneType: r.scene_type, setting: r.setting, palette: r.palette, visualMood: r.visual_mood, contentSubject: r.content_subject });
     }
   } catch {
     /* cache unavailable -> empty -> diversity reads on format alone */
@@ -38,8 +52,11 @@ export async function readSemanticsCache(userId: string, contentHashes: string[]
   return out;
 }
 
+type CopySemantics = Pick<CreativeSemantics, "funnelStage" | "hookType" | "emotion" | "subject">;
+type VisualSemantics = Pick<CreativeSemantics, "sceneType" | "setting" | "palette" | "visualMood" | "contentSubject">;
+
 /** Decode ONE creative's copy into its four semantic dimensions, or null when there is nothing to read. */
-export async function decodeCreativeCopy(asset: CreativeAsset): Promise<CreativeSemantics | null> {
+export async function decodeCreativeCopy(asset: CreativeAsset): Promise<CopySemantics | null> {
   if (!asset.title && !asset.body) return null; // no copy -> no honest read
   const copy = [`Format: ${asset.isCatalog ? "catalog" : asset.isVideo ? "video" : asset.isCarousel ? "carousel" : "image"}`, `Headline: ${asset.title ?? ""}`, `Body: ${asset.body ?? ""}`, `CTA: ${asset.ctaType ?? ""}`].join("\n");
   const system =
@@ -74,6 +91,54 @@ export async function decodeMissing(userId: string, items: { contentHash: string
       done++;
     } catch {
       /* one creative's decode failing must not stop the rest */
+    }
+  }
+}
+
+const VISUAL_SCHEMA = stringObjectSchema(["sceneType", "setting", "palette", "visualMood", "contentSubject"]);
+
+// Decode ONE creative's actual IMAGE (or the video's thumbnail) into what is visible - scene type,
+// setting, palette, mood, and a plain description of what is shown. Vision, not copy. Fingerprint-once.
+// Degrades to null when there is no image or the model cannot read it, so diversity is never fabricated.
+export async function decodeCreativeVisual(asset: CreativeAsset): Promise<VisualSemantics | null> {
+  const url = thumbUrlOf(asset);
+  if (!url) return null;
+  const inline = await fetchInlineImage(url);
+  if (!inline) return null;
+  const prompt =
+    "You are a senior performance-creative strategist. Look at this ONE ad creative image and classify what is actually shown. Return JSON with exactly these keys:\n" +
+    "- sceneType: one of talking-head, product-demo, lifestyle, text-card, unboxing, before-after, animation, other.\n" +
+    "- setting: one of studio, indoor, outdoor, on-white, app-screen, other.\n" +
+    "- palette: the dominant colours in 1-3 words (e.g. warm pastels, bold red and black, muted neutrals).\n" +
+    "- visualMood: the single visual mood in one word (e.g. energetic, calm, premium, playful, urgent, aspirational).\n" +
+    "- contentSubject: a short phrase for what is literally shown (e.g. woman modelling a kurta outdoors, product flatlay on white).\n" +
+    "Judge only what is visible. Never invent detail you cannot see.";
+  const out = await callGemini(prompt, VISUAL_SCHEMA, inline);
+  if (!out) return null;
+  const sem = { sceneType: str(out.sceneType), setting: str(out.setting), palette: str(out.palette), visualMood: str(out.visualMood), contentSubject: str(out.contentSubject) };
+  return sem.sceneType || sem.setting || sem.palette || sem.visualMood || sem.contentSubject ? sem : null;
+}
+
+// Decode up to `max` creatives that lack a VISUAL read + persist them (fingerprint-once). Upserts only the
+// visual columns, so a prior copy decode on the same content_hash is preserved. Fire-and-forget; never throws.
+export async function decodeMissingVisual(userId: string, items: { contentHash: string; asset: CreativeAsset }[], haveVisual: Set<string>, max = 10): Promise<void> {
+  const admin = createAdminClient();
+  const seen = new Set<string>();
+  let done = 0;
+  for (const it of items) {
+    if (done >= max) break;
+    if (!it.contentHash || haveVisual.has(it.contentHash) || seen.has(it.contentHash)) continue;
+    seen.add(it.contentHash);
+    try {
+      const sem = await decodeCreativeVisual(it.asset);
+      if (!sem) continue;
+      await admin
+        .from("creative_semantics")
+        .upsert({ user_id: userId, content_hash: it.contentHash, scene_type: sem.sceneType, setting: sem.setting, palette: sem.palette, visual_mood: sem.visualMood, content_subject: sem.contentSubject, visual_model: "gemini", updated_at: new Date().toISOString() }, { onConflict: "user_id,content_hash" })
+        .then(undefined, () => {});
+      done++;
+    } catch {
+      /* one creative's visual decode failing must not stop the rest */
     }
   }
 }

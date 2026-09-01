@@ -22,6 +22,12 @@ export type CreativeRecord = {
   hookType: string | null;
   emotion: string | null; // primary emotion
   subject: string | null; // product-led vs human/UGC-led
+  // Visual dimensions, read from the actual creative image/thumbnail (decode.ts vision pass). Optional so
+  // existing callers/fixtures that only carry copy dimensions still type-check (absent -> read as null):
+  sceneType?: string | null; // talking-head / product-demo / lifestyle / text-card / ...
+  setting?: string | null; // studio / indoor / outdoor / on-white / ...
+  palette?: string | null; // dominant colours
+  visualMood?: string | null; // visual mood in one word
   // Liveness (for the strategy layer): a top strategist never counts dead/fatigued creatives as "working".
   delivering?: boolean; // spending recently (not paused/ended)
   fatigued?: boolean; // creative is worn out (fatigue state fatiguing/fatigued)
@@ -60,6 +66,11 @@ const DIMENSIONS: { key: keyof CreativeRecord; label: string }[] = [
   { key: "hookType", label: "hook type" },
   { key: "emotion", label: "emotion" },
   { key: "subject", label: "subject" },
+  // Visual dimensions (from the image-vision decode):
+  { key: "sceneType", label: "scene type" },
+  { key: "setting", label: "setting" },
+  { key: "palette", label: "palette" },
+  { key: "visualMood", label: "visual mood" },
 ];
 
 function bucketOf(rec: CreativeRecord, key: keyof CreativeRecord): string | null {
@@ -149,7 +160,7 @@ export function assessDiversity(records: CreativeRecord[]): DiversityRead {
     priority: i + 1,
   }));
 
-  const withSemantic = records.filter((r) => r.funnelStage || r.hookType || r.emotion || r.subject).length;
+  const withSemantic = records.filter((r) => r.funnelStage || r.hookType || r.emotion || r.subject || r.sceneType || r.setting || r.palette || r.visualMood).length;
   const coverage = records.length > 0 ? withSemantic / records.length : 0;
 
   const basis =

@@ -12,8 +12,9 @@ import { assessDataQuality } from "@/lib/scoring/data-quality";
 import { daysUntilEnd } from "@/lib/scoring/fatigue";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "@/lib/creative/diversity";
 import { buildCreativeStrategy, type CreativeStrategy } from "@/lib/creative/strategy";
-import { readSemanticsCache } from "@/lib/creative/decode";
-import type { CreativeFormat } from "@/lib/creative/fingerprint";
+import { after } from "next/server";
+import { readSemanticsCache, decodeMissingVisual } from "@/lib/creative/decode";
+import type { CreativeFormat, CreativeAsset } from "@/lib/creative/fingerprint";
 import { VERDICT_WEIGHTS, type ScoreWeights } from "@/lib/rules/verdict";
 import type { LiveCockpit, AccountMetrics, ProcessedCounts, CatalogMode } from "@/lib/meta-sync";
 
@@ -369,12 +370,30 @@ export async function buildCockpitFromStore(opts: {
         hookType: s?.hookType ?? null,
         emotion: s?.emotion ?? null,
         subject: s?.subject ?? null,
+        sceneType: s?.sceneType ?? null,
+        setting: s?.setting ?? null,
+        palette: s?.palette ?? null,
+        visualMood: s?.visualMood ?? null,
         delivering: ad.delivering,
         fatigued: ad.fatigueRead?.state === "fatiguing" || ad.fatigueRead?.state === "fatigued",
       };
     });
     ownDiversity = records.length > 0 ? assessDiversity(records) : null;
     ownStrategy = ownDiversity ? buildCreativeStrategy(records, ownDiversity) : null;
+    // Populate the VISUAL decode for every account on THIS primary path (the live path rarely runs now).
+    // Minimal asset from the stored thumbnail is all the vision pass needs; fingerprint-once + bounded to 10
+    // per run; runs after the response so it never blocks the cockpit.
+    const haveVisual = new Set([...sem.entries()].filter(([, v]) => v.sceneType).map(([h]) => h));
+    const toVisual = view.leaderboard
+      .map((ad) => {
+        const m = metaById.get(ad.id);
+        const url = m?.thumb_url ?? null;
+        if (!m?.content_hash || !url || haveVisual.has(m.content_hash)) return null;
+        const asset: CreativeAsset = { adId: ad.id, creativeId: null, imageUrl: url, videoThumbUrl: null, videoId: null, title: null, body: null, ctaType: null, isVideo: false, isCarousel: false, isCatalog: false, assetCount: 1 };
+        return { contentHash: m.content_hash, asset };
+      })
+      .filter((x): x is { contentHash: string; asset: CreativeAsset } => x !== null);
+    if (toVisual.length) after(() => decodeMissingVisual(userId, toVisual, haveVisual));
   } catch {
     ownDiversity = null;
   }

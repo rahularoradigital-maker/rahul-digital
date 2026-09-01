@@ -12,7 +12,7 @@ import { isRenderableShape } from "./cockpit/renderable.ts";
 import { todayIn, daysAgo } from "./date-window.ts";
 import { metaSource, listTopSpendingAds, fetchAdInsights, fetchScopeInsights, fetchAdMeta, fetchAdCreatives, fetchAccountTimezone, fetchAccountCurrency, fetchLevelNative, type AdMeta, mapMetaObjective, listAllCampaignObjectives, listAdSetEnds } from "./meta-source.ts";
 import { deterministicFingerprint, excludeCatalogAds, thumbUrlOf, type CreativeAsset } from "./creative/fingerprint.ts";
-import { readSemanticsCache, decodeMissing } from "./creative/decode.ts";
+import { readSemanticsCache, decodeMissing, decodeMissingVisual } from "./creative/decode.ts";
 import { assessDiversity, type CreativeRecord, type DiversityRead } from "./creative/diversity.ts";
 import { buildCreativeStrategy, type CreativeStrategy } from "./creative/strategy.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
@@ -381,6 +381,10 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
           hookType: s?.hookType ?? null,
           emotion: s?.emotion ?? null,
           subject: s?.subject ?? null,
+          sceneType: s?.sceneType ?? null,
+          setting: s?.setting ?? null,
+          palette: s?.palette ?? null,
+          visualMood: s?.visualMood ?? null,
           delivering: ad.delivering,
           fatigued: ad.fatigueRead?.state === "fatiguing" || ad.fatigueRead?.state === "fatigued",
         };
@@ -388,9 +392,13 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
       ownDiversity = records.length > 0 ? assessDiversity(records) : null;
       ownStrategy = ownDiversity ? buildCreativeStrategy(records, ownDiversity) : null;
       // Fill the decode cache for un-decoded creatives in the background (never blocks this response).
-      const have = new Set(sem.keys());
-      const toDecode = [...fpByAd.entries()].map(([adId, contentHash]) => ({ contentHash, asset: assets.get(adId)! })).filter((x) => x.asset && !have.has(x.contentHash));
+      const have = new Set(sem.keys()); // any row (copy decoded)
+      const haveVisual = new Set([...sem.entries()].filter(([, v]) => v.sceneType).map(([h]) => h)); // has a visual read
+      const allItems = [...fpByAd.entries()].map(([adId, contentHash]) => ({ contentHash, asset: assets.get(adId)! })).filter((x) => x.asset);
+      const toDecode = allItems.filter((x) => !have.has(x.contentHash));
       if (toDecode.length) after(() => decodeMissing(userId, toDecode, have));
+      const toVisual = allItems.filter((x) => !haveVisual.has(x.contentHash));
+      if (toVisual.length) after(() => decodeMissingVisual(userId, toVisual, haveVisual));
     } catch {
       ownDiversity = null;
     }

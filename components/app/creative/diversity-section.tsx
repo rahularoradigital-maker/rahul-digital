@@ -75,7 +75,7 @@ export function DiversitySection({ data, days, competitors }: { data: CockpitDat
               <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">Real assets</span>
             </div>
             <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
-              How your live creatives spread across formats, from real Meta ad assets. The semantic layer (hook / angle / persona distinctness) needs the creative decoder - coming next.
+              How your live creatives spread across formats, from real Meta ad assets. The deeper read (scene, colours, mood, hook, funnel stage) is in Creative DNA below.
             </div>
             <div className="space-y-2.5">
               {fmt.buckets.map((b) => (
@@ -102,6 +102,50 @@ export function DiversitySection({ data, days, competitors }: { data: CockpitDat
                 </div>
               </div>
             )}
+          </div>
+        );
+      })()}
+
+      {/* Creative DNA: the deep read of what is actually in each creative - scene, setting, colours, mood,
+          plus funnel stage / hook / emotion / subject. Only dimensions that have a real read are shown, and
+          coverage says how much of the account is analysed (fills in as creatives are decoded, once each). */}
+      {(() => {
+        const div = data.ownDiversity;
+        if (!div) return null;
+        const dims = div.dimensions.filter((d) => d.dimension !== "format" && d.activeBuckets > 0);
+        if (dims.length === 0) return null;
+        return (
+          <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <div className="text-base font-normal">Creative DNA</div>
+              <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">{Math.round(div.coverage * 100)}% analysed</span>
+            </div>
+            <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
+              Read from your real ad images and copy: scene, setting, colours, mood, plus funnel stage, hook, emotion and subject. Each creative is decoded once and reused, so this fills in over the next few loads.
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              {dims.map((d) => (
+                <div key={d.dimension}>
+                  <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                    <span>{d.dimension}</span>
+                    <span className="tabular-nums normal-case font-normal">{d.diversityScore}/100 spread</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {d.buckets.slice(0, 5).map((b) => (
+                      <div key={b.name}>
+                        <div className="mb-0.5 flex items-center justify-between gap-3 text-[13px]">
+                          <span className="capitalize">{b.name}</span>
+                          <span className="tabular-nums text-[var(--ink-muted)]">{Math.round(b.spendShare * 100)}% · {b.count}</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-alt)]">
+                          <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${Math.max(b.spendShare * 100, 2)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         );
       })()}
