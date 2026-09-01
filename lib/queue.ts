@@ -1,6 +1,11 @@
 // Queue seam (ADR-0004). MVP impl: a Postgres cron-drained queue (ADR-0003). Scale impl:
 // a managed queue (QStash/SQS) + worker fleet. Both satisfy this one contract, so swapping at
-// P1 is a config change, not a rewrite. Heavy pipeline work MUST route through this, never inline.
+// P1 is a config change, not a rewrite. Heavy pipeline work SHOULD route through this, never inline.
+//
+// STATUS (honest, 2026-09-01): this is an INTERFACE ONLY - there is no concrete Queue implementation and
+// nothing imports it yet. Long-running work today runs inline in route handlers with 60-300s windows (see
+// cleanup #4: move that work into a durable job on a real impl of THIS contract). It is a dormant seam, not
+// a live fake path - it serves nothing, so it cannot mislead; it just isn't load-bearing until #4 lands.
 
 export type Job = {
   id: string;

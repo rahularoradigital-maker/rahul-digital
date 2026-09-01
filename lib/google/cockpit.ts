@@ -1,5 +1,6 @@
 import "server-only";
 import { googleAdsSource, isGoogleAdsConfigured } from "@/lib/google-source";
+import { demoPathsAllowed } from "@/lib/demo-mode";
 import type { MetricsRow } from "@/lib/ad-source";
 import { toCockpitInputs, type RealAd } from "@/lib/scoring";
 import { analyzeAccount } from "@/lib/cockpit/analyze";
@@ -20,6 +21,12 @@ const DEMO_ACCOUNT = "demo";
 export async function buildGoogleCockpitData(userId: string, days: number): Promise<CockpitData> {
   void userId; // real path will resolve the user's connected Google account + token here
   const demo = !isGoogleAdsConfigured();
+  // Honest gate (cleanup #3): never serve DEMO Google numbers as if real. With no developer token, the
+  // section reads "not connected" unless demo paths are explicitly opted in (ALLOW_DEMO_PATHS) - so
+  // production never shows fabricated Google data.
+  if (demo && !demoPathsAllowed()) {
+    return { connected: false, days, reason: "not_connected", accountName: "Google Ads" };
+  }
   const until = new Date().toISOString().slice(0, 10);
   const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
   const token = { accessToken: "demo" };
