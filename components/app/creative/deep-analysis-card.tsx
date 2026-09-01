@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { summariseDeepReads, deepDiversityNudge } from "@/lib/creative/deep-analysis-pure";
+import { summariseDeepReads, deepDiversityNudge, deepReadsToText } from "@/lib/creative/deep-analysis-pure";
 
 type Read = {
   contentHash: string;
@@ -31,6 +31,17 @@ export function DeepAnalysisCard({ accountId }: { accountId: string }) {
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function copySummary(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked - no-op */
+    }
+  }
 
   useEffect(() => {
     let live = true;
@@ -111,8 +122,17 @@ export function DeepAnalysisCard({ accountId }: { accountId: string }) {
                   </>
                 );
               })()}
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
-                Creatives analysed (your top {reads.length} by spend)
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+                  Creatives analysed (your top {reads.length} by spend)
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copySummary([summariseDeepReads(reads)?.line, deepDiversityNudge(reads), "", deepReadsToText(reads)].filter((x) => x != null).join("\n"))}
+                >
+                  {copied ? "Copied" : "Copy"}
+                </Button>
               </div>
               <div className="space-y-3">
                 {reads.map((r) => (

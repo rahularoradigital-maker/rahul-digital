@@ -3,7 +3,7 @@
 // mapping is honest (analyzed only when a model actually read it).
 // Run: node --experimental-strip-types scripts/check-deep-analysis.ts
 
-import { parseDeepRead, hasUsedFreeRun, rowToManifest, summariseDeepReads, deepDiversityNudge, MAX_CREATIVES, FREE_RUNS, type DeepCreativeRow } from "../lib/creative/deep-analysis-pure.ts";
+import { parseDeepRead, hasUsedFreeRun, rowToManifest, summariseDeepReads, deepDiversityNudge, deepReadsToText, MAX_CREATIVES, FREE_RUNS, type DeepCreativeRow } from "../lib/creative/deep-analysis-pure.ts";
 
 const mk = (o: Partial<DeepCreativeRow>): DeepCreativeRow => ({ contentHash: "h", adId: null, adName: null, format: "image", spendRs: null, sceneType: null, setting: null, palette: null, visualMood: null, contentSubject: null, motionSummary: null, analyzed: true, ...o });
 
@@ -67,5 +67,10 @@ const concentrated = [mk({ sceneType: "lifestyle" }), mk({ sceneType: "lifestyle
 ok(/concentrated in one look/.test(deepDiversityNudge(concentrated) ?? ""), "3 of 4 same scene -> fragility nudge");
 const varied = [mk({ sceneType: "lifestyle" }), mk({ sceneType: "product-demo" }), mk({ sceneType: "talking-head" })];
 ok(deepDiversityNudge(varied) === null, "a varied mix -> no nudge (never nags)");
+
+// 10) plain-text export: honest per-creative lines (video motion, image, and could-not-read).
+const txt = deepReadsToText([mk({ adName: "Hero", format: "video", spendRs: 24000, sceneType: "lifestyle", motionSummary: "reveal at 3s" }), mk({ adName: "Card", format: "image", analyzed: false })]);
+ok(/1\. Hero/.test(txt) && /\[video\]/.test(txt) && /motion: reveal at 3s/.test(txt), "video export line carries motion");
+ok(/could not read/.test(txt), "unread creative is marked in the export");
 
 console.log(`check-deep-analysis: ${pass} assertions passed.`);

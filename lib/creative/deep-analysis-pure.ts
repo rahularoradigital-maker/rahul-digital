@@ -81,6 +81,20 @@ export function summariseDeepReads(reads: DeepCreativeRow[]): DeepInsight | null
   return { line, patterns };
 }
 
+// Plain-text export of the deep reads, so a buyer can copy the whole read into a brief / doc / message.
+export function deepReadsToText(reads: DeepCreativeRow[]): string {
+  return reads
+    .map((r, i) => {
+      const head = [`${i + 1}. ${r.adName ?? r.adId ?? "Creative"}`, r.format === "video" ? "[video]" : "[image]", r.spendRs !== null ? `Rs ${r.spendRs} spent` : ""].filter(Boolean).join("  ");
+      if (!r.analyzed) return `${head}\n   (could not read)`;
+      const dna = [r.sceneType, r.setting, r.palette, r.visualMood].filter(Boolean).join(" · ") || "read complete";
+      const subject = r.contentSubject ? ` · ${r.contentSubject}` : "";
+      const motion = r.format === "video" && r.motionSummary ? `\n   motion: ${r.motionSummary}` : "";
+      return `${head}\n   ${dna}${subject}${motion}`;
+    })
+    .join("\n");
+}
+
 // A grounded "test next" nudge (no AI): if the analysed top-spenders are concentrated in ONE scene type,
 // that spend is fragile (one look fatigues -> most spend exposed). Returns null when there are too few reads
 // or the mix is already varied enough - never invents a specific creative to make.
