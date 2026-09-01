@@ -13,7 +13,12 @@ import type { FatigueState, Trajectory } from "../scoring/fatigue.ts";
 const MIN_ADSET_SPEND_SHARE = 0.2;
 const MIN_DAYS = 4;
 const MIN_SETTLED_DAYS = 3;
-const FLOORS = { conversions: 50, clicks: 100, impressions_rate: 1000, impressions_awareness: 1_000_000 };
+// impressions_awareness is a SAMPLE-sufficiency gate (§92): enough impressions for an awareness ad's
+// reach/frequency/CTR signal to be stable. The old 1_000_000 was miscalibrated to the point of breaking the
+// feature - it marked essentially every real awareness ad (10k-100k impressions) "Not judgeable". 50_000 is a
+// defensible stable-signal floor. ponytail: the correct long-term fix is an ACCOUNT-RELATIVE awareness floor
+// (500-LOGIC candidate), not a universal number; this is the sane interim sample gate, calibrate-at-build.
+const FLOORS = { conversions: 50, clicks: 100, impressions_rate: 1000, impressions_awareness: 50_000 };
 
 export type EvidenceGate = { name: string; passed: boolean; detail: string };
 export type Evidence = { judgeable: boolean; gates: EvidenceGate[]; blockingReason: string | null };

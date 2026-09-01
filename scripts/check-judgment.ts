@@ -69,6 +69,14 @@ ok(acct.counts.byVerdict.SCALE === 1 && acct.counts.byVerdict.KILL === 1 && acct
 ok(acct.actionable.every((a) => a.verdict !== "INSUFFICIENT" && a.verdict !== "WATCH"), "actionable list excludes non-actions");
 ok(acct.corpusSize === CORPUS_SIZE, "account reports full corpus size");
 
+// 5b) Awareness volume gate is a SANE sample floor (50k), not the old feature-breaking 1,000,000.
+const awareOk: AdInput = { ...strong, id: "aw1", name: "Awareness broad", objective: "awareness", conversions: 0, clicks: 300, impressions: 60000 };
+const awareThin: AdInput = { ...awareOk, id: "aw2", name: "Awareness thin", impressions: 40000 };
+ok(judge(awareOk).evidence.judgeable, "awareness ad with 60k impr is judgeable (>=50k floor)");
+const jAwThin = judge(awareThin);
+ok(!jAwThin.evidence.judgeable, "awareness ad with 40k impr is NOT judgeable (<50k floor)");
+ok(jAwThin.evidence.gates.some((g) => g.name === "volume" && !g.passed), "awareness thin fails the volume gate, not a 1,000,000 wall");
+
 // 6) Integration: the cockpit pipeline attaches a Triple-Label judgment to every scored ad
 const { analyzeAccount } = await import("../lib/cockpit/analyze.ts");
 const { SAMPLE_ADS } = await import("../lib/sample/account.ts");
