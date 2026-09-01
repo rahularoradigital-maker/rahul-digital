@@ -131,6 +131,16 @@ export async function runDeepAnalysis(userId: string, accountExternalId: string)
           { onConflict: "user_id,content_hash" },
         )
         .then(undefined, () => {});
+      // Upgrade the SHARED Creative DNA cache so the normal DNA view reflects this richer (video-motion)
+      // read. The cover-frame pipeline skips any content_hash that already has a visual read, so this
+      // deep read persists and is not overwritten by a later shallow pass.
+      await admin
+        .from("creative_semantics")
+        .upsert(
+          { user_id: userId, content_hash: contentHash, scene_type: read.sceneType, setting: read.setting, palette: read.palette, visual_mood: read.visualMood, content_subject: read.contentSubject, funnel_stage: read.funnelStage, visual_model: "gemini-deep", updated_at: new Date().toISOString() },
+          { onConflict: "user_id,content_hash" },
+        )
+        .then(undefined, () => {});
     }
     reads.push(row);
   }
