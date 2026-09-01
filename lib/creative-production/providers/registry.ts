@@ -28,3 +28,16 @@ export async function getImageProvider(): Promise<ImageProvider> {
   }
   return stubImageProvider; // no key / IMAGE_PROVIDER=stub -> deterministic placeholder, keeps the pipeline alive
 }
+
+// True when a REAL image provider would run (not the 1x1 placeholder stub). The generate route uses this to
+// refuse honestly - never charge tokens for a stub placeholder - unless demo paths are explicitly opted in.
+// Mirrors the selection logic in getImageProvider() exactly.
+export function isRealImageProviderConfigured(): boolean {
+  const choice = (process.env.IMAGE_PROVIDER ?? "").toLowerCase();
+  if (choice === "stub") return false;
+  const wantsOpenai = choice === "openai" || (choice === "" && !!process.env.OPENAI_API_KEY);
+  if (wantsOpenai && process.env.OPENAI_API_KEY) return true;
+  const wantsGoogle = choice === "google" || (choice === "" && !!process.env.GEMINI_API_KEY);
+  if (wantsGoogle && process.env.GEMINI_API_KEY) return true;
+  return false;
+}

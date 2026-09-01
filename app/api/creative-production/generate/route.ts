@@ -9,6 +9,8 @@ import { loadEffectiveBrandDNA } from "@/lib/creative-production/intelligence/br
 import { loadConcepts } from "@/lib/creative-production/generation/concept-generate";
 import { generateAssetsForConcept, signedAssetUrl } from "@/lib/creative-production/pipeline";
 import { META_DEFAULT_SET, GOOGLE_DEFAULT_SET } from "@/lib/creative-production/formats/ad-formats";
+import { isRealImageProviderConfigured } from "@/lib/creative-production/providers/registry";
+import { demoPathsAllowed } from "@/lib/demo-mode";
 
 // Creative Studio - generate finished, QA'd assets for one approved concept across a platform's format set
 // (Phases 6-10 UI). Provider-independent: with no image key it composes deterministic placeholders so the
@@ -49,6 +51,15 @@ export async function POST(req: Request) {
   const product = await ensureProductDNA(user.id, conn.shopDomain, productId, null);
   if (!product) return NextResponse.json({ error: "Product not found." }, { status: 404 });
   const brand = await loadEffectiveBrandDNA(user.id, conn.shopDomain);
+
+  // Honest gate (cleanup #3): if no REAL image provider is configured, the pipeline would return a 1x1
+  // placeholder. Refuse BEFORE charging tokens - never sell a fake image - unless demo paths are opted in.
+  if (!isRealImageProviderConfigured() && !demoPathsAllowed()) {
+    return NextResponse.json(
+      { error: "Ad image generation isn't set up yet. Add an image provider key (OpenAI or Gemini) to generate real creatives - no tokens were charged.", code: "image_provider_unconfigured" },
+      { status: 503 },
+    );
+  }
 
   // Image generation is the cost driver (Phase 0): 20 tokens, and BLOCKED on Free (fails closed) - this is the
   // rule that keeps a free user's cost near zero. Charge before the expensive provider call.
