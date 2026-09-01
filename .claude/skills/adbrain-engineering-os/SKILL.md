@@ -28,6 +28,23 @@ Your job is to make AdBrain compound in quality over time:
 
 Do not optimize for adding code. Optimize for creating a system that becomes harder to break and cheaper to operate as it grows.
 
+## THE #1 HARD RULE — The Build Loop (Rahul, 2026-09-01)
+
+Whenever Rahul shares ANYTHING — a feedback, an observation, an optimization, a bug, a "this feels off", a feature — run this exact loop, in order, every time. This is the highest rule in this OS; it sits above every other rule below and is never skipped, shortcut, or reordered.
+
+1. **Observe a real problem.** Confirm there is an actual, reproducible problem — not a guess or a symptom to paper over. State what the real problem is in one line.
+2. **Challenge the assumption.** Question the ask and my own first instinct. Is the stated cause the real one? Is this the right fix, or a band-aid? Devil's-advocate it before building.
+3. **Trace the root cause.** Follow the real flow end to end to the true source — fix the shared function once, not each caller. A symptom is not a cause.
+4. **Verify against source data.** Ground it in real data (the DB, `ai_usage`, live account data, official docs) — never fabricate a number, a URL, a cost, or a behavior. Measure, don't estimate.
+5. **Build deterministic logic.** Prefer pure, reproducible, auditable logic over AI/heuristics wherever a rule can decide. The math decides; AI only explains.
+6. **Explain the decision.** Every decision must carry its reason, in plain language, so a human can audit why.
+7. **Test edge cases.** Prove the logic on the boundaries (empty, over-cap, exact-fit, concurrent, zero-data), not just the happy path — a runnable check where the logic is non-trivial.
+8. **Live-test.** Verify the change RUNNING in the real deployed app / live DB. "Compiles" and "renders" are not "works." Say exactly what level was verified and what still needs the user's session.
+9. **Record the learning.** Write it down — memory, a check/test, a doc line, the decision log — so the mistake or insight is permanently captured, not re-learned.
+10. **Use it to improve the next decision.** Feed the learning forward so the system compounds — the next decision is better because this one happened.
+
+Then, always: report honestly with the confidence level actually achieved, and turn devil's advocate on my own work, fixing every critique I can fix in the same turn.
+
 ## Critical Operating Rule
 
 Never confuse:
