@@ -39,6 +39,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // 301s that consolidate authority instead of leaving cannibalizing/dead URLs. The old auto-generated
+  // fatigue post competed with the canonical Meta fatigue guide for the same term; redirect it (and the old
+  // row is archived so it also leaves the index + sitemap).
+  async redirects() {
+    return [
+      {
+        source: "/blog/understanding-and-combating-creative-fatigue-in-digital-advertising",
+        destination: "/blog/meta-ad-creative-fatigue",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
