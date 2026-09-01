@@ -90,6 +90,7 @@ export function CreativeStudio() {
   const [activeType, setActiveType] = useState("");
   const [hasMore, setHasMore] = useState(false);
   const [moreBusy, setMoreBusy] = useState(false);
+  const [batchProgress, setBatchProgress] = useState("");
   const firstRun = useRef(true);
   const [selected, setSelected] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -233,6 +234,31 @@ export function CreativeStudio() {
     refreshUsage(); // generation spent tokens - keep the cost preview honest
   });
 
+  // Batch: generate ads for the TOP concept of every selected product in one go. Sequential (one product at
+  // a time) so cost is predictable and a mid-run token exhaustion (402) stops cleanly with what was made kept.
+  const batchGenerate = () => run("batch", async () => {
+    const ids = selected.slice();
+    if (ids.length === 0) { setErr("Select products first."); return; }
+    const cache = { ...conceptsByProduct };
+    for (let i = 0; i < ids.length; i++) {
+      const pid = ids[i];
+      setBatchProgress(`${i + 1}/${ids.length}`);
+      let cs = cache[pid];
+      if (!cs) {
+        const r = await jsonFetch<{ concepts: Concept[] }>("/api/creative-production/concepts", { method: "POST", body: JSON.stringify({ productId: pid }) });
+        cs = r.concepts; cache[pid] = cs;
+        setConceptsByProduct((p) => ({ ...p, [pid]: cs }));
+      }
+      const top = cs[0]; // highest-scored concept (list is score-desc)
+      if (!top) continue;
+      await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId: top.id, productId: pid, platform }) });
+    }
+    setBatchProgress("");
+    await refreshAssets();
+    refreshUsage();
+    setStep("review");
+  });
+
   const setApproval = (creativeId: string, approval: string) => run("appr:" + creativeId, async () => {
     await jsonFetch("/api/creative-production/assets", { method: "POST", body: JSON.stringify({ creativeId, approval }) });
     setAssets((prev) => prev.map((a) => (a.creativeId === creativeId ? { ...a, approval } : a)));
@@ -366,6 +392,19 @@ export function CreativeStudio() {
                   <Button variant="default" className={`${BTN_PRIMARY} py-1.5`} onClick={enterReview}>Review all →</Button>
                 </div>
               </div>
+
+              {/* Batch: generate the top concept for every selected product in one go, cost shown up front. */}
+              {selected.length > 1 ? (
+                <div className={`${CARD} flex flex-wrap items-center justify-between gap-2 p-3`}>
+                  <div className="text-[13px]">
+                    <span className="font-medium">Generate ads for all {selected.length} products</span>
+                    <span className="text-[12px] text-[var(--ink-muted)]"> · top concept each on {platform === "meta" ? "Meta" : "Google"} · ~{(selected.length * IMAGE_TOKENS).toLocaleString("en-US")} tokens{usage != null ? ` · ${usage.remaining.toLocaleString("en-US")} left` : ""}</span>
+                  </div>
+                  <button className={BTN_PRIMARY} disabled={busy === "batch" || (usage != null && (!usage.imageGen || usage.remaining < selected.length * IMAGE_TOKENS))} onClick={batchGenerate}>
+                    {busy === "batch" ? `Generating ${batchProgress}…` : `⚡ Generate all (${selected.length})`}
+                  </button>
+                </div>
+              ) : null}
 
               {/* Diversity: which of the 42 formats this brand has tested + what to try next. Refreshes when
                   new assets are generated (assets.length as the reload key). */}
