@@ -347,6 +347,11 @@ export async function buildCockpitFromStore(opts: {
   // available (previous behavior). Best-effort - a scope failure never breaks the page.
   const scope = opts.scopePromise ? await opts.scopePromise.catch(() => null) : null;
   const useScope = scope && catalog !== "exclude";
+  // §128/§130: when the account-level scope was EXPECTED (catalog not excluded, a scope promise was provided)
+  // but the call failed, the headline silently falls back to the store sum, which can understate the true
+  // Ads-Manager total. Flag it so the UI shows the number as degraded rather than presenting it as truth.
+  // (catalog=exclude deliberately sums the catalog-free store - honest by design, NOT degraded.)
+  const headlineIncomplete = !!opts.scopePromise && !scope && catalog !== "exclude";
   const sSpend = useScope ? scope!.spend : dayRows.reduce((a, d) => a + d.spend, 0);
   const sImpr = useScope ? scope!.impressions : dayRows.reduce((a, d) => a + d.impressions, 0);
   const sClicks = useScope ? scope!.clicks : dayRows.reduce((a, d) => a + d.clicks, 0);
@@ -439,6 +444,7 @@ export async function buildCockpitFromStore(opts: {
     ownStrategy,
     dailySeries,
     funnelLevels,
+    headlineIncomplete,
     syncedAt: opts.syncedAt,
   };
 }

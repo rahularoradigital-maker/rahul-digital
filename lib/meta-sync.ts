@@ -120,7 +120,7 @@ export type LiveCockpit =
   // from Meta; stale=true means a day-old cache is being shown while a background refresh runs. Optional
   // so the deep pull (fetchLiveCockpitUncached) and non-UI callers need not set them; fetchLiveCockpit
   // attaches them at the serving boundary where the fresh/stale/cold path is known.
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; ownStrategy?: CreativeStrategy | null; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; syncedAt?: string; stale?: boolean }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; ownStrategy?: CreativeStrategy | null; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; headlineIncomplete?: boolean; syncedAt?: string; stale?: boolean }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
@@ -508,6 +508,9 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // but-wrong. Include mode keeps the full Ads-Manager-matching scope totals.
     const scope = await scopePromise;
     const useScope = scope && catalog !== "exclude";
+    // §128/§130: scope expected (catalog not excluded) but failed -> headline is the analyzed-ads sum, which
+    // understates the true account total. Flag it so the UI never shows a silently-degraded number as truth.
+    const headlineIncomplete = !scope && catalog !== "exclude";
     const sSpend = useScope ? scope!.spend : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.spend, 0), 0);
     const sImpr = useScope ? scope!.impressions : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.impressions, 0), 0);
     const sClicks = useScope ? scope!.clicks : realAds.reduce((a, ad) => a + ad.rows.reduce((s, r) => s + r.clicks, 0), 0);
@@ -526,7 +529,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // separate from view.totals, which is the analyzed-ads subset the leaderboard breaks down.
     const scopeTotals = { spendRs: Math.round(sSpend), revenueRs: Math.round(sRev), roas: sSpend > 0 ? sRev / sSpend : null };
 
-    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality, ownDiversity, ownStrategy, dailySeries, funnelLevels };
+    return { status: "connected", accountName: acct.name ?? `act_${acct.external_id}`, accountExternalId: acct.external_id, adsAnalyzed: inputs.length, view, metrics, scopeTotals, processed, funnel, marginal, dataQuality, ownDiversity, ownStrategy, dailySeries, funnelLevels, headlineIncomplete };
   } catch (e) {
     return { status: "error", message: e instanceof Error ? e.message : "Meta sync failed" };
   }

@@ -75,7 +75,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {showMeta && metaData?.connected ? (
         <section className="space-y-3">
           {showGoogle ? <h2 className={sectionLabel}>Facebook / Instagram</h2> : null}
-          <Cockpit view={metaData.view} accountName={metaData.accountName} accountId={metaData.accountId} dateParam={metaData.dateParam} adsAnalyzed={metaData.adsAnalyzed} processed={metaData.processed} funnel={metaData.funnel} marginal={metaData.marginal} dataQuality={metaData.dataQuality} scopeTotals={metaData.scopeTotals} dailySeries={metaData.dailySeries} funnelLevels={metaData.funnelLevels} days={metaData.days} syncedAt={metaData.syncedAt} stale={metaData.stale} />
+          <Cockpit view={metaData.view} accountName={metaData.accountName} accountId={metaData.accountId} dateParam={metaData.dateParam} adsAnalyzed={metaData.adsAnalyzed} processed={metaData.processed} funnel={metaData.funnel} marginal={metaData.marginal} dataQuality={metaData.dataQuality} scopeTotals={metaData.scopeTotals} dailySeries={metaData.dailySeries} funnelLevels={metaData.funnelLevels} days={metaData.days} syncedAt={metaData.syncedAt} stale={metaData.stale} headlineIncomplete={metaData.headlineIncomplete} />
         </section>
       ) : null}
       {showGoogle && googleData?.connected ? (
@@ -216,7 +216,7 @@ function syncedLabel(iso?: string): string {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, funnelLevels, days, syncedAt, stale, demo }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; days: number; syncedAt?: string; stale?: boolean; demo?: boolean }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, funnelLevels, days, syncedAt, stale, headlineIncomplete, demo }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; days: number; syncedAt?: string; stale?: boolean; headlineIncomplete?: boolean; demo?: boolean }) {
   const health = view.accountHealth;
   // Headline KPIs use the TRUE scope totals (all campaigns/ads of the selected objective),
   // so spend / revenue / ROAS match Ads Manager - not the analyzed-ads subset in view.totals.
@@ -280,6 +280,14 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           )}
         </p>
       </div>
+
+      {/* §128/§130: the account-level totals call failed, so the headline is summed from stored ads and may
+          understate the true Ads Manager total. Never present a silently-degraded number as truth. */}
+      {headlineIncomplete ? (
+        <div className="rounded-xl border border-[var(--warn-bd,var(--hairline))] bg-[var(--warn-bg)] px-4 py-3 text-[13px] text-[var(--warn-ink)]">
+          Account totals are temporarily unavailable, so headline spend, revenue and ROAS are summed from stored ads and may be understated. Retry shortly for exact Ads Manager figures.
+        </div>
+      ) : null}
 
       {/* Data-quality de-rating: honest confidence note when the series is thin or broken */}
       <ConfidenceBanner dq={dataQuality} />
