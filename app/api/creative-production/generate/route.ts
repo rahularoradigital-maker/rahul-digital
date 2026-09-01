@@ -9,6 +9,7 @@ import { loadEffectiveBrandDNA } from "@/lib/creative-production/intelligence/br
 import { loadConcepts } from "@/lib/creative-production/generation/concept-generate";
 import { generateAssetsForConcept, signedAssetUrl } from "@/lib/creative-production/pipeline";
 import { META_DEFAULT_SET, GOOGLE_DEFAULT_SET } from "@/lib/creative-production/formats/ad-formats";
+import { pickFormats } from "@/lib/creative-production/formats/pick";
 import { isRealImageProviderConfigured } from "@/lib/creative-production/providers/registry";
 import { demoPathsAllowed } from "@/lib/demo-mode";
 
@@ -75,8 +76,7 @@ export async function POST(req: Request) {
   // Format selection: the user may pick a subset of the platform's set (fewer sizes = less work/clutter).
   // Filter the platform's default set to the requested ids; if none match, fall back to the full set.
   const base = platform === "google" ? GOOGLE_DEFAULT_SET : META_DEFAULT_SET;
-  const picked = formatIds?.length ? base.filter((f) => formatIds.includes(f.id)) : base;
-  const formats = picked.length ? picked : base;
+  const formats = pickFormats(base, formatIds);
   const records = await generateAssetsForConcept(user.id, product, brand, concept, formats);
 
   const assets = await Promise.all(

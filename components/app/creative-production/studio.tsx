@@ -558,7 +558,7 @@ export function CreativeStudio() {
                 <div className={`${CARD} flex flex-wrap items-center justify-between gap-2 p-3`}>
                   <div className="text-[13px]">
                     <span className="font-medium">Generate ads for all {selected.length} products</span>
-                    <span className="text-[12px] text-[var(--ink-muted)]"> · top concept each on {platform === "meta" ? "Meta" : "Google"} · ~{(selected.length * IMAGE_TOKENS).toLocaleString("en-US")} tokens{usage != null ? ` · ${usage.remaining.toLocaleString("en-US")} left` : ""}</span>
+                    <span className="text-[12px] text-[var(--ink-muted)]"> · top concept × {activeFormatIds().length} size{activeFormatIds().length === 1 ? "" : "s"} = {selected.length * activeFormatIds().length} ads on {platform === "meta" ? "Meta" : "Google"} · ~{(selected.length * IMAGE_TOKENS).toLocaleString("en-US")} tokens{usage != null ? ` · ${usage.remaining.toLocaleString("en-US")} left` : ""}</span>
                   </div>
                   <button className={BTN_PRIMARY} disabled={busy === "batch" || activeFormatIds().length === 0 || (usage != null && (!usage.imageGen || usage.remaining < selected.length * IMAGE_TOKENS))} onClick={batchGenerate}>
                     {busy === "batch" ? `Generating ${batchProgress}…` : `⚡ Generate all (${selected.length})`}
