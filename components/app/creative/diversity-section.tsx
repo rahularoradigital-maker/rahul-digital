@@ -11,7 +11,7 @@ import type { DiversityComparison } from "@/lib/creative/diversity-vs-competitor
 // the action each ad needs (Pause / Refresh / Hold / Continue) via CreativeDnaFilterable.
 // `competitors` is the own-vs-competitor format comparison (null when none added).
 
-export function DiversitySection({ data, days, competitors }: { data: CockpitData; days: number; competitors?: DiversityComparison | null }) {
+export function DiversitySection({ data, days, competitors, deepReadCount = 0 }: { data: CockpitData; days: number; competitors?: DiversityComparison | null; deepReadCount?: number }) {
   if (!data.connected) {
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
@@ -54,7 +54,7 @@ export function DiversitySection({ data, days, competitors }: { data: CockpitDat
       </div>
 
       {/* Creative format diversity + Creative DNA, filterable by action (Pause / Refresh / Hold / Continue). */}
-      <CreativeDnaFilterable records={data.ownDiversityRecords ?? []} actionByAd={actionByAd} fallback={data.ownDiversity} />
+      <CreativeDnaFilterable records={data.ownDiversityRecords ?? []} actionByAd={actionByAd} fallback={data.ownDiversity} deepReadCount={deepReadCount} />
 
       {/* Deep read (free one-time): real video motion on the top-10 spenders, with the exact list used. */}
       <DeepAnalysisCard accountId={data.accountId} />

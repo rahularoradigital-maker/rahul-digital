@@ -31,6 +31,17 @@ export async function getDeepAnalysisStatus(userId: string): Promise<DeepAnalysi
   return { used: runs >= FREE_RUNS, runs, freeRuns: FREE_RUNS, maxCreatives: MAX_CREATIVES, reads: (readRes.data ?? []).map(rowToManifest) };
 }
 
+// How many creatives this user has had deep-read (video motion) - so the Creative DNA can show that the
+// read is now richer for N of them. Cheap head count; 0 on any error (never blocks the page).
+export async function getDeepReadCount(userId: string): Promise<number> {
+  try {
+    const { count } = await createAdminClient().from("deep_creative_read").select("content_hash", { count: "exact", head: true }).eq("user_id", userId);
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 async function readMetaRows(admin: ReturnType<typeof createAdminClient>, userId: string, account: string, adIds: string[]): Promise<Map<string, MetaRow>> {
   const { data } = await admin.from("ad_meta").select("ad_id,content_hash,format").eq("user_id", userId).eq("account_external_id", account).in("ad_id", adIds);
   const m = new Map<string, MetaRow>();

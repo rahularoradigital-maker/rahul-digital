@@ -13,7 +13,7 @@ import { rupees } from "@/lib/format";
 // read over just the chosen action group, so you can see the DNA of only the ads you need to pause.
 // When records are absent (the rare live-pull path), we render the server's aggregated read read-only.
 
-export function CreativeDnaFilterable({ records, actionByAd, fallback }: { records: CreativeRecord[]; actionByAd: Record<string, string>; fallback: DiversityRead | null }) {
+export function CreativeDnaFilterable({ records, actionByAd, fallback, deepReadCount = 0 }: { records: CreativeRecord[]; actionByAd: Record<string, string>; fallback: DiversityRead | null; deepReadCount?: number }) {
   const [filter, setFilter] = useStickyActionFilter("diversity");
 
   const groupOf = (r: CreativeRecord) => actionGroup(actionByAd[r.adId] ?? "");
@@ -118,7 +118,12 @@ export function CreativeDnaFilterable({ records, actionByAd, fallback }: { recor
         <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
           <div className="mb-1 flex items-center justify-between gap-3">
             <div className="text-base font-normal">Creative DNA</div>
-            <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">{Math.round((div?.coverage ?? 0) * 100)}% analysed</span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {deepReadCount > 0 && (
+                <span className="rounded-full border border-transparent bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-medium text-[var(--accent)]">{deepReadCount} deep-read (video motion)</span>
+              )}
+              <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">{Math.round((div?.coverage ?? 0) * 100)}% analysed</span>
+            </div>
           </div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
             Read from your real ad images, video cover frames and copy: scene, setting, colours, mood, plus funnel stage, hook, emotion and subject{scopeNote}. For video, only the cover frame is read - the motion inside the video is not analysed yet. Each creative is decoded once and reused, so this fills in over the next few loads.
