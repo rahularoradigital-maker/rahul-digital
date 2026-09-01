@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadReconcile } from "@/lib/reconcile/store";
+import { ConnectState } from "@/components/app/connect-state";
 import { ReconcileView } from "@/components/app/reconcile/reconcile-view";
 
 // Reconcile page: lines up AdScale's whole-account numbers against the filtered scopes a Meta view uses, so
@@ -26,7 +27,7 @@ export default async function ReconcilePage() {
     return (
       <div className="space-y-6">
         {header}
-        <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-[14px] text-[var(--ink-muted)]">Connect a Meta ad account to reconcile.</div>
+        <ConnectState reason="not_connected" days={90} />
       </div>
     );
   }

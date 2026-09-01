@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 import { loadFunnelReport } from "@/lib/funnel/store";
+import { ConnectState } from "@/components/app/connect-state";
 import { FunnelReportView } from "@/components/app/funnel/funnel-report";
 
 // Funnel page: deterministic funnel-step diagnosis. Tags each ad TOF/MOF/BOF and names the single weakest
@@ -29,9 +30,7 @@ export default async function FunnelPage() {
     return (
       <div className="space-y-6">
         {header}
-        <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-[14px] text-[var(--ink-muted)]">
-          Connect a Meta ad account to diagnose your funnel.
-        </div>
+        <ConnectState reason="not_connected" days={90} />
       </div>
     );
   }

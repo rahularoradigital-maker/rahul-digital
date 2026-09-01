@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadBrandProfile } from "@/lib/brand/profile";
+import { ConnectState } from "@/components/app/connect-state";
 import { BrandProfilePanel, type EditableProfile } from "./brand-profile-panel";
 import { CompetitorDiscovery } from "./competitor-discovery";
 
@@ -13,11 +14,8 @@ export async function BrandSection() {
   const profile = user && session ? await loadBrandProfile(user.id, session.activeExternalId) : null;
 
   if (!session) {
-    return (
-      <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6 text-sm text-[var(--ink-muted)]">
-        Connect a Meta ad account first - brand understanding is derived from that account&apos;s live ads.
-      </div>
-    );
+    // Brand understanding is derived from the account's live ads, so no account = not_connected.
+    return <ConnectState reason="not_connected" days={90} />;
   }
 
   const initial: EditableProfile | null = profile

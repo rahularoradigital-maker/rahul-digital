@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { analyzeAccountChanges } from "@/lib/scoring/change-analysis";
+import { ConnectState } from "@/components/app/connect-state";
 import { ChangeImpactSection } from "@/components/app/changes/change-impact-section";
 
 // Change Impact page: measures each media-buyer change's before/after effect and ranks buyers + change-types.
@@ -16,9 +17,7 @@ export default async function ChangesPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-[26px] font-normal tracking-tight text-[var(--ink)]">Change Impact</h1>
-        <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-[14px] text-[var(--ink-muted)]">
-          Connect a Meta ad account to see which changes helped or hurt performance.
-        </div>
+        <ConnectState reason="not_connected" days={90} />
       </div>
     );
   }
