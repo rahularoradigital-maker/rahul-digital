@@ -430,6 +430,13 @@ export function CreativeStudio() {
               <div className={`${CARD} p-4`}>
                 <div className="mb-1 flex items-center gap-2">
                   <h2 className="text-[15px] font-medium">✨ Recommended to advertise</h2>
+                  <button
+                    className="ml-auto text-[12px] text-[var(--accent)] hover:underline disabled:opacity-40"
+                    disabled={recs.every((r) => selected.includes(r.productId))}
+                    onClick={() => setSelected((prev) => { const room = MAX_SELECT - prev.length; const add = recs.map((r) => r.productId).filter((id) => !prev.includes(id)).slice(0, room); if (recs.length && add.length === 0 && prev.length >= MAX_SELECT) setErr(`Selection is full (${MAX_SELECT}).`); return [...prev, ...add]; })}
+                  >
+                    Select top {Math.min(recs.length, MAX_SELECT)}
+                  </button>
                 </div>
                 {recBasis ? <p className="mb-3 text-[12px] text-[var(--ink-muted)]">{recBasis}</p> : null}
                 <div className="flex gap-3 overflow-x-auto pb-1">
@@ -660,7 +667,10 @@ export function CreativeStudio() {
                     </>
                   );
                 })()}
-                <span className="ml-auto text-[12px] text-[var(--ink-muted)]">{assets.filter((a) => a.approval === "approved").length} approved · {assets.length} total</span>
+                <span className="ml-auto text-[12px] text-[var(--ink-muted)]">
+                  {assets.filter((a) => a.approval === "approved").length} approved · {assets.filter((a) => a.approval === "rejected").length} rejected · {assets.length} total
+                  {(() => { const cost = assets.reduce((s, a) => s + (a.costUsd || 0), 0); return cost > 0 ? ` · ~$${cost.toFixed(2)} generated` : ""; })()}
+                </span>
                 <input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} placeholder="Campaign name (optional)" className="w-[180px] rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-3 py-1.5 text-[12px]" />
                 <button className={BTN_PRIMARY} disabled={busy === "zip" || assets.filter((a) => a.approval === "approved").length === 0} onClick={exportApprovedZip} title="Download every approved ad as PNGs in one ZIP, named by campaign">
                   {busy === "zip" ? `Zipping ${batchProgress}…` : "⬇ Export approved (ZIP)"}
