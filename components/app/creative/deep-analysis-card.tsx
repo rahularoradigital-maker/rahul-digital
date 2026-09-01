@@ -134,6 +134,14 @@ export function DeepAnalysisCard({ accountId }: { accountId: string }) {
                   {copied ? "Copied" : "Copy"}
                 </Button>
               </div>
+              {(() => {
+                const done = reads.filter((r) => r.analyzed).length;
+                return done < reads.length ? (
+                  <div className="mb-2 text-[12px] text-[var(--ink-muted)]">
+                    Read {done} of {reads.length}. {reads.length - done} could not be read (the source was unavailable or too large) - shown below, never guessed.
+                  </div>
+                ) : null;
+              })()}
               <div className="space-y-3">
                 {reads.map((r) => (
                   <div key={r.contentHash} className="border-t border-[var(--surface-alt)] pt-3 first:border-t-0 first:pt-0">
