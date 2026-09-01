@@ -32,6 +32,11 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
   const [minConf, setMinConf] = useState<MinConfidence>("any");
   const [minFollowers, setMinFollowers] = useState<string>("");
   const [newOnly, setNewOnly] = useState(false);
+  // Phase 1 creator-side filters (Modash-style), all from public data - instant, display-only.
+  const [keyword, setKeyword] = useState<string>("");
+  const [minViews, setMinViews] = useState<string>("");
+  const [activeWithin, setActiveWithin] = useState<"any" | "30" | "90">("any");
+  const [hasEmail, setHasEmail] = useState(false);
 
   // Regions available in this run (creators' own stated locations, pulled from bios).
   const regions = useMemo(() => {
@@ -45,6 +50,8 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
 
   const filtered = useMemo(() => {
     const minF = parseInt(minFollowers.replace(/[^\d]/g, ""), 10);
+    const minV = parseInt(minViews.replace(/[^\d]/g, ""), 10);
+    const kw = keyword.trim().toLowerCase();
     return creators
       .filter((r) => {
         const c = r.creator;
@@ -55,13 +62,21 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
         if (gender !== "any") { const g = guessGender(c.name.value).gender; if (g && g !== gender) return false; }
         if (region !== "any") { const rr = extractRegion(c.bio.value); if (rr && rr !== region) return false; }
         if (!meetsConfidence(r.scorecard.quality.confidence, minConf)) return false;
+        // Bio/name keyword search (Modash-style "exact words in bio").
+        if (kw && !`${c.name.value ?? ""} ${c.bio.value ?? ""} ${c.identity.handle}`.toLowerCase().includes(kw)) return false;
+        // Min average reel views (only excludes creators whose views are KNOWN and below; unknown kept).
+        if (Number.isFinite(minV) && c.reels?.avgViews != null && c.reels.avgViews < minV) return false;
+        // Active within N days (last reel). Unknown recency kept.
+        if (activeWithin !== "any" && c.reels?.daysSinceLastPost != null && c.reels.daysSinceLastPost > Number(activeWithin)) return false;
+        // Has a public contact email.
+        if (hasEmail && !c.businessEmail.value) return false;
         return true;
       })
       .map((r, i) => ({ ...r, rank: i + 1 }));
-  }, [creators, eng, gender, region, minConf, minFollowers]);
+  }, [creators, eng, gender, region, minConf, minFollowers, keyword, minViews, activeWithin, hasEmail]);
 
-  const active = eng !== "any" || gender !== "any" || region !== "any" || minConf !== "any" || minFollowers !== "";
-  const clear = () => { setEng("any"); setGender("any"); setRegion("any"); setMinConf("any"); setMinFollowers(""); };
+  const active = eng !== "any" || gender !== "any" || region !== "any" || minConf !== "any" || minFollowers !== "" || keyword !== "" || minViews !== "" || activeWithin !== "any" || hasEmail;
+  const clear = () => { setEng("any"); setGender("any"); setRegion("any"); setMinConf("any"); setMinFollowers(""); setKeyword(""); setMinViews(""); setActiveWithin("any"); setHasEmail(false); };
 
   // Run a fresh discovery with the current filters as search inputs. min-followers drives what gets found;
   // the rest are applied server-side so the stored result matches. Costs provider credits, so it is explicit.
@@ -144,6 +159,30 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
                   <SelectItem value="medium">Medium+</SelectItem>
                 </SelectContent>
               </Select>
+            </label>
+            {/* Phase 1: Modash-style creator filters (bio keyword, avg views, recency, contact) */}
+            <label className="space-y-1.5">
+              <span className="text-xs text-muted-foreground">Keyword <span className="opacity-60">(bio)</span></span>
+              <Input placeholder="e.g. saree, ugc" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs text-muted-foreground">Min. avg views</span>
+              <Input inputMode="numeric" placeholder="e.g. 50000" value={minViews} onChange={(e) => setMinViews(e.target.value)} />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs text-muted-foreground">Active within</span>
+              <Select value={activeWithin} onValueChange={(v) => setActiveWithin(v as "any" | "30" | "90")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any time</SelectItem>
+                  <SelectItem value="30">Last 30 days</SelectItem>
+                  <SelectItem value="90">Last 90 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="flex items-center gap-2 self-end pb-2 text-[13px]">
+              <input type="checkbox" checked={hasEmail} onChange={(e) => setHasEmail(e.target.checked)} className="h-3.5 w-3.5 rounded border-input accent-[var(--ink)]" />
+              Has contact email
             </label>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
