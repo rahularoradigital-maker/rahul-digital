@@ -12,6 +12,7 @@ import { ObjectiveCardSelect } from "./ObjectiveCardSelect";
 import { Button } from "@/components/ui/button";
 import { actionGroup, GROUP_LABEL, GROUP_ORDER, type ActionGroup } from "@/lib/creative/action-group";
 import { useStickyActionFilter } from "@/components/app/creative/use-sticky-action-filter";
+import { rupees } from "@/lib/format";
 import { useState } from "react";
 
 const STATE_STYLE: Record<FatigueState, { label: string; cls: string }> = {
@@ -39,10 +40,10 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
     c[g] = (c[g] ?? 0) + 1;
     return c;
   }, {} as Record<ActionGroup, number>);
-  const rows = objScoped
-    .filter((a) => action === "all" || actionGroup(a.action.label) === action)
-    .sort((a, b) => (b.fatigueRead?.index ?? 0) - (a.fatigueRead?.index ?? 0))
-    .slice(0, 6);
+  const actionScoped = objScoped.filter((a) => action === "all" || actionGroup(a.action.label) === action);
+  // Money at stake for the filtered set: an ad's wasted rupees if bleeding, else its own spend (real, not fabricated).
+  const stakeTotal = actionScoped.reduce((s, a) => s + (a.wastedRs > 0 ? a.wastedRs : a.spendRs), 0);
+  const rows = [...actionScoped].sort((a, b) => (b.fatigueRead?.index ?? 0) - (a.fatigueRead?.index ?? 0)).slice(0, 6);
 
   return (
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
@@ -67,6 +68,14 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
               {GROUP_LABEL[g]} <span className="ml-1 opacity-70 tabular-nums">{actionCounts[g]}</span>
             </Button>
           ))}
+        </div>
+      )}
+
+      {/* Economic weight of the active filter (only when narrowed, to keep the compact card clean). */}
+      {action !== "all" && actionScoped.length > 0 && (
+        <div className="mb-3 text-[13px] text-[var(--ink-muted)]">
+          <span className="tabular-nums">{actionScoped.length}</span> to {GROUP_LABEL[action as ActionGroup]} ·{" "}
+          <span className="font-semibold text-[var(--ink)] tabular-nums">{rupees.format(stakeTotal)}</span> at stake
         </div>
       )}
 

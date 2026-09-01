@@ -6,6 +6,7 @@ import { actionGroup, GROUP_LABEL, GROUP_ORDER, type ActionGroup } from "@/lib/c
 import { GatedSection } from "@/components/app/gated-section";
 import { Button } from "@/components/ui/button";
 import { useStickyActionFilter } from "@/components/app/creative/use-sticky-action-filter";
+import { rupees } from "@/lib/format";
 
 // Creative format diversity + Creative DNA, filterable by the action the ad needs (Pause / Refresh /
 // Hold / Continue). The per-ad decode RECORDS come from the server; here we re-aggregate the diversity
@@ -54,6 +55,14 @@ export function CreativeDnaFilterable({ records, actionByAd, fallback }: { recor
   return (
     <div className="space-y-6">
       {chips}
+
+      {records.length > 0 && (
+        <div className="text-[13px] text-[var(--ink-muted)]">
+          <span className="tabular-nums">{filtered.length}</span> ad{filtered.length === 1 ? "" : "s"}
+          {filter !== "all" ? ` to ${GROUP_LABEL[filter as ActionGroup]}` : ""} ·{" "}
+          <span className="font-semibold text-[var(--ink)] tabular-nums">{rupees.format(filtered.reduce((s, r) => s + r.spendRs, 0))}</span> of spend
+        </div>
+      )}
 
       {!hasFormat ? (
         filter !== "all" ? (

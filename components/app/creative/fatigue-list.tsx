@@ -7,6 +7,11 @@ import { AdLink } from "@/components/cockpit/AdLink";
 import { Button } from "@/components/ui/button";
 import { actionGroup, GROUP_LABEL, GROUP_ORDER, type ActionGroup } from "@/lib/creative/action-group";
 import { useStickyActionFilter } from "@/components/app/creative/use-sticky-action-filter";
+import { rupees } from "@/lib/format";
+
+// Money at stake for one ad: its wasted rupees if it is bleeding, else its own spend - the same real
+// definition the "This week's plan" queue uses (analyze.ts). Never a fabricated number.
+const stakeOf = (ad: CockpitAd) => (ad.wastedRs > 0 ? ad.wastedRs : ad.spendRs);
 
 export function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: CockpitAd[]; accountName: string; accountId?: string; dateParam?: string; days: number }) {
   const [filter, setFilter] = useStickyActionFilter("fatigue");
@@ -57,6 +62,15 @@ export function FatigueList({ ads, accountName, accountId, dateParam, days }: { 
               {GROUP_LABEL[g]} <span className="ml-1 opacity-70 tabular-nums">{counts[g]}</span>
             </Button>
           ))}
+        </div>
+      )}
+
+      {/* Economic weight of the current filter: how much money the shown decision covers. */}
+      {visible.length > 0 && (
+        <div className="text-[13px] text-[var(--ink-muted)]">
+          <span className="tabular-nums">{visible.length}</span> ad{visible.length === 1 ? "" : "s"}
+          {filter !== "all" ? ` to ${GROUP_LABEL[filter as ActionGroup]}` : ""} ·{" "}
+          <span className="font-semibold text-[var(--ink)] tabular-nums">{rupees.format(visible.reduce((s, a) => s + stakeOf(a), 0))}</span> at stake
         </div>
       )}
 
