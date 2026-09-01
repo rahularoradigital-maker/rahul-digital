@@ -30,5 +30,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-5a (intelligence) | AUTONOMOUS 10-step batch: §110 Output Contract across engines + visible. | DONE | 5 adapters (culprit/fatigue/funnel/winner/diversity) + invariants gate + doc; 3 visible surfaces (CulpritBanner, ActionList ranked plan, funnel cards). Commits 91d1ca4,a51740c,bcd4595,bb88ea3,9000f7e,c8eabee,2ec2674,829fcb3,1b01615 pushed. 87 contract assertions green; my files tsc+build clean. Stayed OFF e9/04/b6 hot files. No prod migration. NOT live-verified (needs Rahul's session). |
 
+| rahul-linkedin-2-b6 | Security gaps (Rahul's 2-picked-items #1): AI-spend default cap (`lib/ai/budget.ts` DONE 3970fa8); login/signup/logout audit logging + failed-login lockout reusing `owner_events` (`app/(auth)/actions.ts`, `lib/owner/events.ts`); upload/bucket validation routed to 04 (their `cp-assets` bucket). NEW files only where possible. | WIP | AI cap shipped. Auth logging+lockout editing now — small isolated files, no collision. |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->

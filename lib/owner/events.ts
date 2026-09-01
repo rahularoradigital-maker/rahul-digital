@@ -15,6 +15,27 @@ export function logEvent(eventType: OwnerEventType, opts: { userId?: string | nu
     .then(undefined, (e) => console.error("[owner_events] insert failed (recoverable)", e instanceof Error ? e.message : e));
 }
 
+// Security: brute-force lockout reads the SAME append-only audit log (no separate table). Counts
+// "login.failed" events recorded for this email inside the trailing window. Fail-OPEN on a DB error - a
+// hiccup must lock nobody out (availability > a marginally stronger gate); Supabase's own rate limiting is
+// the backstop underneath this. Email is matched via the jsonb `meta->>email` the login action writes.
+export async function failedLoginCount(email: string, windowMs: number): Promise<number> {
+  if (!email) return 0;
+  try {
+    const admin = createAdminClient();
+    const since = new Date(Date.now() - windowMs).toISOString();
+    const { count } = await admin
+      .from("owner_events")
+      .select("id", { count: "exact", head: true })
+      .eq("event_type", "login.failed")
+      .eq("meta->>email", email)
+      .gte("created_at", since);
+    return count ?? 0;
+  } catch {
+    return 0; // fail-open
+  }
+}
+
 export type RecentEvent = { at: string; eventType: string; userId: string | null; feature: string | null };
 
 export async function listRecentEvents(limit = 40): Promise<RecentEvent[]> {
