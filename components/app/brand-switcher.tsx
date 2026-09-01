@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,10 +15,34 @@ export function BrandSwitcher() {
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [error, setError] = useState(false); // brand list failed to load -> surface a retry, never vanish silently
   const ref = useRef<HTMLDivElement>(null);
 
+  // Fetch (or re-fetch, on retry) the brand list. On failure set `error` + `loaded` so the switcher can
+  // show a retry chip rather than disappearing (silent-failure guard, charter Phase 12).
+  const loadBrands = useCallback(() => {
+    setError(false);
+    fetch("/api/brands")
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((d: { brands?: Brand[] }) => {
+        setBrands(d.brands ?? []);
+        setLoaded(true);
+        try {
+          sessionStorage.setItem("adbrain.brands", JSON.stringify({ at: Date.now(), brands: d.brands ?? [] }));
+        } catch {
+          // ignore cache write errors
+        }
+      })
+      .catch(() => {
+        setError(true);
+        setLoaded(true);
+      });
+  }, []);
+
   useEffect(() => {
-    let alive = true;
     const CACHE_KEY = "adbrain.brands";
     try {
       const raw = sessionStorage.getItem(CACHE_KEY);
@@ -27,33 +51,14 @@ export function BrandSwitcher() {
         if (Date.now() - cached.at < 5 * 60 * 1000) {
           setBrands(cached.brands ?? []);
           setLoaded(true);
-          return () => {
-            alive = false;
-          };
+          return;
         }
       }
     } catch {
       // ignore cache read errors
     }
-    fetch("/api/brands")
-      .then((r) => r.json())
-      .then((d: { brands?: Brand[] }) => {
-        if (!alive) return;
-        setBrands(d.brands ?? []);
-        setLoaded(true);
-        try {
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), brands: d.brands ?? [] }));
-        } catch {
-          // ignore cache write errors
-        }
-      })
-      .catch(() => {
-        if (alive) setLoaded(true);
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+    loadBrands();
+  }, [loadBrands]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -76,7 +81,18 @@ export function BrandSwitcher() {
     return brands.filter((b) => b.name.toLowerCase().includes(q) || b.orgName.toLowerCase().includes(q));
   }, [brands, query]);
 
-  if (!loaded || brands.length === 0) return null;
+  if (!loaded) return null;
+  if (brands.length === 0) {
+    // Genuinely no brands visible to this user -> stay hidden. But if the list FAILED to load, surface a
+    // retry so the user is never silently stuck without their tenancy switcher.
+    if (!error) return null;
+    return (
+      <Button type="button" variant="outline" onClick={loadBrands} className={FILTER_TRIGGER} title="Could not load your brands. Click to retry.">
+        <span className={FILTER_LABEL}>Brand</span>
+        <span className="max-w-[150px] truncate text-[var(--warn-ink)]">Couldn&apos;t load · retry</span>
+      </Button>
+    );
+  }
 
   const multiOrg = new Set(brands.map((b) => b.orgName)).size > 1;
 

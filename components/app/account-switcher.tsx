@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,31 +17,19 @@ export function AccountSwitcher() {
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [error, setError] = useState(false); // accounts list failed to load -> surface a retry, never vanish silently
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let alive = true;
-    const CACHE_KEY = "adbrain.accounts";
-    try {
-      const raw = sessionStorage.getItem(CACHE_KEY);
-      if (raw) {
-        const cached = JSON.parse(raw) as { at: number; accounts: Acct[]; activeExternalId: string };
-        if (Date.now() - cached.at < 5 * 60 * 1000) {
-          setAccounts(cached.accounts ?? []);
-          setActive(cached.activeExternalId ?? "");
-          setLoaded(true);
-          return () => {
-            alive = false;
-          };
-        }
-      }
-    } catch {
-      // ignore cache read errors
-    }
+  // Fetch (or re-fetch, on retry) the account list. On failure we set `error` and still `loaded`, so the
+  // switcher can show a retry chip instead of disappearing (silent-failure guard, charter Phase 12).
+  const loadAccounts = useCallback(() => {
+    setError(false);
     fetch("/api/meta/accounts")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((d: { accounts?: Acct[]; activeExternalId?: string }) => {
-        if (!alive) return;
         setAccounts(d.accounts ?? []);
         setActive(d.activeExternalId ?? "");
         setLoaded(true);
@@ -52,12 +40,29 @@ export function AccountSwitcher() {
         }
       })
       .catch(() => {
-        if (alive) setLoaded(true);
+        setError(true);
+        setLoaded(true);
       });
-    return () => {
-      alive = false;
-    };
   }, []);
+
+  useEffect(() => {
+    const CACHE_KEY = "adbrain.accounts";
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (raw) {
+        const cached = JSON.parse(raw) as { at: number; accounts: Acct[]; activeExternalId: string };
+        if (Date.now() - cached.at < 5 * 60 * 1000) {
+          setAccounts(cached.accounts ?? []);
+          setActive(cached.activeExternalId ?? "");
+          setLoaded(true);
+          return;
+        }
+      }
+    } catch {
+      // ignore cache read errors
+    }
+    loadAccounts();
+  }, [loadAccounts]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -80,7 +85,18 @@ export function AccountSwitcher() {
     return accounts.filter((a) => a.name.toLowerCase().includes(q) || (a.businessName ?? "").toLowerCase().includes(q));
   }, [accounts, query]);
 
-  if (!loaded || accounts.length === 0) return null;
+  if (!loaded) return null;
+  if (accounts.length === 0) {
+    // Genuinely no accounts on the token -> nothing to switch (stay hidden). But if the list FAILED to
+    // load, never vanish silently: show a retry so the user knows and can recover.
+    if (!error) return null;
+    return (
+      <Button type="button" variant="outline" onClick={loadAccounts} className={FILTER_TRIGGER} title="Could not load your ad accounts. Click to retry.">
+        <span className={FILTER_LABEL}>Account</span>
+        <span className="max-w-[150px] truncate text-[var(--warn-ink)]">Couldn&apos;t load · retry</span>
+      </Button>
+    );
+  }
 
   function connect() {
     window.location.href = "/api/connect/meta/authorize";
