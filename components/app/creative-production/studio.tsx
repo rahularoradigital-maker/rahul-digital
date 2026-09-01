@@ -130,6 +130,7 @@ export function CreativeStudio() {
   const [platform, setPlatform] = useState<"meta" | "google">("meta");
   const [deselFormats, setDeselFormats] = useState<Set<string>>(new Set()); // formats the user turned OFF (empty = all on)
   const [reviewFilter, setReviewFilter] = useState<string>("all");
+  const [qaFilter, setQaFilter] = useState<string>("all");
   const [campaignName, setCampaignName] = useState("");
   const [formDomain, setFormDomain] = useState("");
   const [formToken, setFormToken] = useState("");
@@ -660,6 +661,10 @@ export function CreativeStudio() {
                 {["all", "approved", "rejected", "draft"].map((f) => (
                   <button key={f} className={f === reviewFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setReviewFilter(f)}>{f[0].toUpperCase() + f.slice(1)}</button>
                 ))}
+                <span className="ml-1 text-[12px] text-[var(--ink-muted)]">QA:</span>
+                {["all", "READY", "REVIEW", "FAILED"].map((f) => (
+                  <button key={f} className={f === qaFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setQaFilter(f)}>{f === "all" ? "All" : f[0] + f.slice(1).toLowerCase()}</button>
+                ))}
                 {(() => {
                   const readyN = assets.filter((a) => a.qa?.status === "READY" && a.approval !== "approved").length;
                   const failedN = assets.filter((a) => a.qa?.status === "FAILED" && a.approval !== "rejected").length;
@@ -683,7 +688,7 @@ export function CreativeStudio() {
                 <p className="text-[13px] text-[var(--ink-muted)]">No generated ads yet. Go to Concepts and press <span className="text-[var(--ink)]">Generate ads</span>.</p>
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
-                  {assets.filter((a) => reviewFilter === "all" || a.approval === reviewFilter).map((a) => (
+                  {assets.filter((a) => (reviewFilter === "all" || a.approval === reviewFilter) && (qaFilter === "all" || a.qa?.status === qaFilter)).map((a) => (
                     <AssetCard key={a.creativeId} asset={a} label={a.productId ? productTitle(a.productId) : undefined} busy={busy === "appr:" + a.creativeId || busy === "dl:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} onDownload={() => downloadAsset(a)} />
                   ))}
                 </div>
