@@ -3,6 +3,7 @@ import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
+import { recommendReason } from "@/lib/creative-production/recommend/reason";
 
 // Creative Studio - "which products should I advertise?" (Phase 11 UI). GROUNDED, deterministic ranking by
 // OFFER STRENGTH (absolute rupee saving) gated by AD-READINESS (has an image), computed in SQL so it is
@@ -32,12 +33,7 @@ export async function GET() {
     discountPct: Number(r.discount_pct ?? 0),
     saving: Number(r.saving ?? 0),
     advertised: Boolean(r.advertised),
-    // Plain-English, grounded reason — no invented performance claim.
-    reason: r.advertised
-      ? "Already advertised — you have ads for this"
-      : r.discount_pct > 0
-        ? `${r.discount_pct}% off, not advertised yet — a strong offer to test`
-        : "Ad-ready, not advertised yet",
+    reason: recommendReason(Boolean(r.advertised), Number(r.discount_pct ?? 0)),
   }));
 
   return NextResponse.json({
