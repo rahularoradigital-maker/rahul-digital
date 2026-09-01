@@ -88,6 +88,8 @@ export function CreativeStudio() {
   const [query, setQuery] = useState("");
   const [types, setTypes] = useState<{ type: string; n: number }[]>([]);
   const [activeType, setActiveType] = useState("");
+  const [hasMore, setHasMore] = useState(false);
+  const [moreBusy, setMoreBusy] = useState(false);
   const firstRun = useRef(true);
   const [selected, setSelected] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -125,30 +127,36 @@ export function CreativeStudio() {
 
   // term = search text; typeFilter = category chip; both filter the WHOLE catalogue server-side.
   // silent = don't flip the full-page loader (used while typing / switching category).
-  const fetchProducts = useCallback(async (term: string, typeFilter: string, silent: boolean) => {
-    if (!silent) setLoading(true);
+  const fetchProducts = useCallback(async (term: string, typeFilter: string, silent: boolean, offset = 0) => {
+    if (!silent && offset === 0) setLoading(true);
     try {
       const p = new URLSearchParams();
       if (term) p.set("q", term);
       if (typeFilter) p.set("type", typeFilter);
+      if (offset) p.set("offset", String(offset));
       const qs = p.toString();
-      const r = await jsonFetch<{ connected: boolean; shopDomain: string | null; currency: string | null; products: Product[]; total?: number; types?: { type: string; n: number }[] | null }>(
+      const r = await jsonFetch<{ connected: boolean; shopDomain: string | null; currency: string | null; products: Product[]; total?: number; hasMore?: boolean; types?: { type: string; n: number }[] | null }>(
         "/api/creative-production/products" + (qs ? `?${qs}` : ""),
       );
       setConnected(r.connected);
       setShopDomain(r.shopDomain);
       setCurrency(r.currency);
-      setProducts(r.products);
+      setProducts((prev) => (offset > 0 ? [...prev, ...r.products] : r.products)); // append on "Load more"
       setTotal(r.total ?? r.products.length);
+      setHasMore(!!r.hasMore);
       if (r.types) setTypes(r.types); // only returned on the base load; keep the last non-null list
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Failed to load products");
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent && offset === 0) setLoading(false);
     }
   }, []);
 
   const loadProducts = useCallback(() => fetchProducts("", "", false), [fetchProducts]);
+  const loadMore = useCallback(() => {
+    setMoreBusy(true);
+    void fetchProducts(query, activeType, true, products.length).finally(() => setMoreBusy(false));
+  }, [fetchProducts, query, activeType, products.length]);
 
   useEffect(() => { void loadProducts(); }, [loadProducts]);
 
@@ -328,6 +336,11 @@ export function CreativeStudio() {
                     })}
                   </div>
                 )}
+                {hasMore ? (
+                  <div className="mt-3 flex justify-center">
+                    <button className={BTN_GHOST} disabled={moreBusy} onClick={loadMore}>{moreBusy ? "Loading…" : `Load more (${products.length} of ${total})`}</button>
+                  </div>
+                ) : null}
                 <div className="mt-4 flex items-center justify-between">
                   <Button variant="outline" className={BTN_GHOST} disabled={busy === "sync"} onClick={sync}>{busy === "sync" ? "Syncing…" : "Re-sync catalogue"}</Button>
                   <Button variant="default" className={BTN_PRIMARY} disabled={selected.length === 0 || busy?.startsWith("concepts:")} onClick={continueToConcepts}>Continue to concepts ({selected.length}) →</Button>

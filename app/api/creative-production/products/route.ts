@@ -24,6 +24,8 @@ export async function GET(req: Request) {
   // Search term: strip PostgREST filter metacharacters so a query can never break the .or() grammar.
   const q = (params.get("q") ?? "").trim().replace(/[,()%*\\]/g, " ").slice(0, 80);
   const type = (params.get("type") ?? "").trim().slice(0, 120);
+  // Paging: offset into the current query, PAGE rows per page. "Load more" passes the next offset.
+  const offset = Math.max(0, Math.min(Number(params.get("offset")) || 0, 100_000));
 
   const admin = createAdminClient();
   let query = admin
@@ -33,7 +35,7 @@ export async function GET(req: Request) {
     .eq("shop_domain", conn.shopDomain);
   if (type) query = query.eq("product_type", type);
   if (q) query = query.or(`title.ilike.%${q}%,product_type.ilike.%${q}%`); // search the WHOLE catalogue, not just the first page
-  query = query.order("updated_at", { ascending: false }).limit(PAGE);
+  query = query.order("updated_at", { ascending: false }).range(offset, offset + PAGE - 1);
 
   const { data, count } = await query;
 
@@ -57,6 +59,8 @@ export async function GET(req: Request) {
   }));
 
   const connected = conn.status === "connected" || conn.status === "url_public";
-  // total = matches for the current query (whole catalogue when q set); products = the first PAGE shown.
-  return NextResponse.json({ connected, status: conn.status, shopDomain: conn.shopDomain, currency: conn.currency, products, total: count ?? products.length, shown: products.length, types });
+  const nextOffset = offset + products.length;
+  const hasMore = (count ?? 0) > nextOffset; // more rows exist for the current query
+  // total = matches for the current query (whole catalogue when q/type set); products = this page.
+  return NextResponse.json({ connected, status: conn.status, shopDomain: conn.shopDomain, currency: conn.currency, products, total: count ?? products.length, shown: products.length, offset, nextOffset, hasMore, types });
 }
