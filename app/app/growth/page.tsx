@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import { latestBrief, pendingDrafts } from "@/lib/growth/store";
@@ -54,7 +55,7 @@ export default async function GrowthPage() {
 
       <div className="rounded-[12px] border border-[var(--hairline)] bg-[var(--surface)] p-5">
         <h2 className="text-[15px] font-semibold">Article drafts{articleDrafts.length > 0 ? ` (${articleDrafts.length})` : ""}</h2>
-        <p className="mt-1 mb-3 text-[13px] text-[var(--ink-muted)]">Scout wrote these from recurring topics. Preview, then Publish to make it live at <a href="/blog" className="text-[var(--accent)] underline">/blog</a> — or Dismiss. Nothing is public until you publish.</p>
+        <p className="mt-1 mb-3 text-[13px] text-[var(--ink-muted)]">Scout wrote these from recurring topics. Preview, then Publish to make it live at <Link href="/blog" className="text-[var(--accent)] underline">/blog</Link>, or Dismiss. Nothing is public until you publish.</p>
         <ArticleDrafts initial={articleDrafts.map((a) => ({ id: a.id, slug: a.slug, title: a.title, dek: a.dek, body_md: a.body_md, topic: a.topic }))} />
       </div>
 
@@ -128,7 +129,7 @@ export default async function GrowthPage() {
             )}
           </div>
 
-          <p className="text-[12px] text-[var(--ink-muted)]">Scout drafts; you decide and post. It has no publishing path — "posted" is always 0.</p>
+          <p className="text-[12px] text-[var(--ink-muted)]">Scout drafts; you decide and post. It has no publishing path, so the posted count is always 0.</p>
         </>
       )}
     </div>

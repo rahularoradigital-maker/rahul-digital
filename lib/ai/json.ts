@@ -15,7 +15,7 @@ export function jsonPrompt(prompt: string, schema: Record<string, unknown>): str
 
 export function parseJson(s: string | null): Record<string, unknown> | null {
   if (!s) return null;
-  let t = s.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  const t = s.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
   try {
     return JSON.parse(t) as Record<string, unknown>;
   } catch {

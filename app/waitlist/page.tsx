@@ -40,8 +40,8 @@ export default async function WaitlistPage() {
           {!blocked && (
             <ul className="mt-5 space-y-2 text-[14px] text-[var(--ink)]">
               <li className="flex gap-2"><span className="text-[var(--accent)]">✓</span> Your account has been created{a.email ? ` (${a.email})` : ""}.</li>
-              <li className="flex gap-2"><span className="text-[var(--accent)]">✓</span> You're on the list to request access.</li>
-              <li className="flex gap-2"><span className="text-[var(--ink-muted)]">•</span> We'll turn on product access as we open more seats.</li>
+              <li className="flex gap-2"><span className="text-[var(--accent)]">✓</span> You are on the list to request access.</li>
+              <li className="flex gap-2"><span className="text-[var(--ink-muted)]">•</span> We will turn on product access as we open more seats.</li>
             </ul>
           )}
 

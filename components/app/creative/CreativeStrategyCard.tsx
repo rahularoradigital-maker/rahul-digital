@@ -24,7 +24,7 @@ export function CreativeStrategyCard({ s }: { s: CreativeStrategy }) {
       <div className="grid gap-5 lg:grid-cols-2">
         {/* Winning DNA */}
         <div>
-          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">What's winning (DNA)</div>
+          <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">What is winning (DNA)</div>
           {s.winningDNA.length === 0 ? (
             <div className="text-[13px] text-[var(--ink-muted)]">No single attribute clearly out-wins yet — keep testing angles.</div>
           ) : (
