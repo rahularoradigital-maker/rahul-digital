@@ -21,21 +21,16 @@ export const metadata = {
   },
 };
 
-// Enriches the SAME SoftwareApplication entity declared site-wide (shared @id -> engines merge, no duplicate)
-// with a real featureList. Honest only: no offers/price or aggregateRating, because we have no real pricing or
-// reviews to substantiate (fabricating either violates the no-fake-data rule and Google's review policy).
+// Enriches the SAME SoftwareApplication entity declared site-wide (shared @id -> engines merge, no duplicate).
+// This node ONLY ADDS featureList: name/url/description/category live on the site-wide node, so restating them
+// here (with a page-specific url) would give one @id conflicting single-value fields. Honest only: no
+// offers/price or aggregateRating - we have no real pricing or reviews to substantiate (fabricating either
+// breaks the no-fake-data rule and Google's review policy).
 const PRODUCT_JSON_LD = JSON.stringify([
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "@id": `${SITE_URL}#software`,
-    name: "AdBrain AI",
-    applicationCategory: "BusinessApplication",
-    operatingSystem: "Web",
-    url: `${SITE_URL}/product`,
-    description:
-      "AdBrain reads your Meta and Google ad accounts and tells you what to scale, refresh, or kill, with a reason for every call.",
-    publisher: { "@id": `${SITE_URL}#organization` },
     featureList: [
       "Reads Meta and Google ad accounts",
       "Recommends scale, refresh, or kill with a reason for every call",
