@@ -133,7 +133,10 @@ export function ctrToScoreShrunk(ctr: number, impressions: number, priorCtr: num
 function healthScoreOf(objective: Objective, a: Agg): number | null {
   const ctr = a.impressions > 0 ? a.clicks / a.impressions : null;
   if (objective === "conversion") {
-    if (a.roas !== null) return roasToScore(a.roas);
+    // P1-4 (promoted 2026-09-01, shadow-reviewed): score the EVIDENCE-WEIGHTED ROAS, not the raw one -
+    // empirical-Bayes shrinkage toward break-even (1x) so a 2-purchase 15x fluke can't outrank a 120-purchase
+    // 5x winner (§20). Well-evidenced ads (winners AND losers) are preserved; only unproven extremes are tamed.
+    if (a.roas !== null) return roasToScoreShrunk(a.roas, a.purchases, 1);
     return ctr === null ? null : ctrToScore(ctr);
   }
   if (objective === "awareness") {
