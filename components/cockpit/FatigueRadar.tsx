@@ -9,6 +9,9 @@ import { forecastFatigue, frameFatigue } from "@/lib/scoring/fatigue-forecast";
 import { AdLink } from "./AdLink";
 import { ObjectiveMeta } from "./ObjectiveMeta";
 import { ObjectiveCardSelect } from "./ObjectiveCardSelect";
+import { Button } from "@/components/ui/button";
+import { actionGroup, GROUP_LABEL, GROUP_ORDER, type ActionGroup } from "@/lib/creative/action-group";
+import { useStickyActionFilter } from "@/components/app/creative/use-sticky-action-filter";
 import { useState } from "react";
 
 const STATE_STYLE: Record<FatigueState, { label: string; cls: string }> = {
@@ -26,10 +29,18 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
   // narrow to the picked one so a buyer can rectify fatigue one objective at a time. The account half-life
   // headline below stays account-wide (it is a precomputed spend-weighted median), so it is labelled "Account".
   const [obj, setObj] = useState("all");
+  const [action, setAction] = useStickyActionFilter("home-fatigue");
   const candidates = ads.filter((a) => a.fatigueRead && a.active !== false);
   const objectives = [...new Set(candidates.map((a) => a.objective as string | undefined).filter((o): o is string => !!o))];
-  const rows = candidates
-    .filter((a) => obj === "all" || (a.objective as string | undefined) === obj)
+  // Candidates in the current objective scope (before the action filter), so the action chips count what is filterable.
+  const objScoped = candidates.filter((a) => obj === "all" || (a.objective as string | undefined) === obj);
+  const actionCounts = objScoped.reduce<Record<ActionGroup, number>>((c, a) => {
+    const g = actionGroup(a.action.label);
+    c[g] = (c[g] ?? 0) + 1;
+    return c;
+  }, {} as Record<ActionGroup, number>);
+  const rows = objScoped
+    .filter((a) => action === "all" || actionGroup(a.action.label) === action)
     .sort((a, b) => (b.fatigueRead?.index ?? 0) - (a.fatigueRead?.index ?? 0))
     .slice(0, 6);
 
@@ -45,6 +56,20 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
         </div>
       </div>
 
+      {/* Action filter: narrow the fatigue list to just one decision (e.g. only the ads to Pause). */}
+      {objScoped.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <Button variant={action === "all" ? "default" : "outline"} size="sm" onClick={() => setAction("all")}>
+            All <span className="ml-1 opacity-70 tabular-nums">{objScoped.length}</span>
+          </Button>
+          {GROUP_ORDER.filter((g) => actionCounts[g] > 0).map((g) => (
+            <Button key={g} variant={action === g ? "default" : "outline"} size="sm" onClick={() => setAction(g)}>
+              {GROUP_LABEL[g]} <span className="ml-1 opacity-70 tabular-nums">{actionCounts[g]}</span>
+            </Button>
+          ))}
+        </div>
+      )}
+
       {/* Account half-life headline */}
       <div className="mb-3 text-[13px] text-[var(--ink-muted)]">
         {halfLife && halfLife.medianDays !== null ? (
@@ -59,7 +84,9 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
 
       <div>
         {rows.length === 0 ? (
-          <div className="border-t border-[var(--surface-alt)] py-3 text-[13px] text-[var(--ink-muted)]">No fatiguing ads for this objective.</div>
+          <div className="border-t border-[var(--surface-alt)] py-3 text-[13px] text-[var(--ink-muted)]">
+            {action !== "all" ? `No ads to ${GROUP_LABEL[action as ActionGroup]} here.` : "No fatiguing ads for this objective."}
+          </div>
         ) : rows.map((ad) => {
           const f = ad.fatigueRead!;
           const s = STATE_STYLE[f.state];
