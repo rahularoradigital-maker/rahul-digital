@@ -1,7 +1,7 @@
 // Runnable check for lib/scoring.ts (real metrics -> brain inputs).
 // node --experimental-strip-types scripts/check-scoring.ts
 import assert from "node:assert/strict";
-import { toCockpitInputs, type RealAd } from "../lib/scoring.ts";
+import { toCockpitInputs, trendScore, type RealAd } from "../lib/scoring.ts";
 import { analyzeAccount } from "../lib/cockpit/analyze.ts";
 import type { MetricsRow } from "../lib/ad-source.ts";
 
@@ -102,5 +102,31 @@ const goodAcct = analyzeAccount(toCockpitInputs([engagementAds[0]]), "LIVE").acc
 const poorAcct = analyzeAccount(toCockpitInputs([engagementAds[1]]), "LIVE").accountHealth.score;
 assert.notEqual(goodAcct, 50, "engagement account health is no longer pinned to 50");
 assert.ok(goodAcct > poorAcct, "a better-CTR account is healthier than a worse-CTR one");
+
+// --- §145/§20 tiny/tiny trend guard: low-volume halves report flat (50), never a noise-pinned 0/100. ---
+// Extreme ROAS swing but only 100 impressions/day (each half 200 < the 500 floor) -> guard returns neutral 50.
+const tinyRows: MetricsRow[] = [
+  row("2026-08-01", 50, 5, 1, 100, 2, 1.0),
+  row("2026-08-02", 50, 5, 1, 100, 2, 1.0),
+  row("2026-08-03", 50, 5000, 30, 100, 2, 1.0),
+  row("2026-08-04", 50, 5200, 31, 100, 2, 1.0),
+];
+assert.equal(trendScore(tinyRows, "conversion"), 50, "low-volume halves -> neutral trend, not a noise-pinned swing");
+
+// Same directional swing but well-sampled (5000 impressions/day) -> the direction is read honestly.
+const wellUp: MetricsRow[] = [
+  row("2026-08-01", 1000, 1000, 5, 5000, 100, 1.0),
+  row("2026-08-02", 1000, 1100, 5, 5000, 100, 1.0),
+  row("2026-08-03", 1000, 4000, 20, 5000, 100, 1.0),
+  row("2026-08-04", 1000, 4200, 21, 5000, 100, 1.0),
+];
+assert.ok(trendScore(wellUp, "conversion") > 50, "well-sampled improving ROAS trends up");
+const wellDown: MetricsRow[] = [
+  row("2026-08-01", 1000, 4200, 21, 5000, 100, 1.0),
+  row("2026-08-02", 1000, 4000, 20, 5000, 100, 1.0),
+  row("2026-08-03", 1000, 1100, 5, 5000, 100, 1.0),
+  row("2026-08-04", 1000, 1000, 5, 5000, 100, 1.0),
+];
+assert.ok(trendScore(wellDown, "conversion") < 50, "well-sampled declining ROAS trends down");
 
 console.log("PASS: scoring (real metrics -> brain inputs) checks");

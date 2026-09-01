@@ -10,6 +10,7 @@ import type { CockpitAdInput } from "./cockpit/analyze.ts";
 import type { Objective } from "./rules/comparator.ts";
 import { readFatigue } from "./scoring/fatigue.ts";
 import { settledRows } from "./scoring/attribution.ts";
+import { TRUST_GATES } from "./rules/trust-gates.ts";
 
 export type RealAd = {
   externalId: string;
@@ -72,14 +73,22 @@ function goodnessOf(objective: Objective, a: Agg): number | null {
 // the earlier half ON THE OBJECTIVE'S OWN METRIC. 50 = flat; >50 improving; <50 declining.
 // Real day-wise comparison, not a guess. Objective-aware so an engagement ad trends on
 // its CTR, not on a ROAS it was never optimised for.
-function trendScore(rows: MetricsRow[], objective: Objective): number {
+export function trendScore(rows: MetricsRow[], objective: Objective): number {
   // Drop the still-attributing tail before reading direction (see settledRows): otherwise the late
   // half always contains under-reported recent days and every conversion ad reads as declining.
   const byDate = [...settledRows(rows)].sort((a, b) => a.date.localeCompare(b.date));
   if (byDate.length < 2) return 50;
   const mid = Math.floor(byDate.length / 2);
-  const early = goodnessOf(objective, aggregate(byDate.slice(0, mid)));
-  const late = goodnessOf(objective, aggregate(byDate.slice(mid)));
+  const earlyAgg = aggregate(byDate.slice(0, mid));
+  const lateAgg = aggregate(byDate.slice(mid));
+  // §145/§20 tiny/tiny guard: a direction read on near-zero volume is noise - a tiny early denominator turns
+  // a trivial absolute move into a full-scale swing that pins the score to 0/100. Require each half to clear a
+  // minimum impression base first; otherwise report flat (neutral 50). Well-sampled ads are unaffected.
+  // ponytail: the floor is a calibrate-at-build sample gate (TRUST_GATES.trend), not a performance benchmark.
+  const floor = TRUST_GATES.trend.minImpressionsPerHalf;
+  if (earlyAgg.impressions < floor || lateAgg.impressions < floor) return 50;
+  const early = goodnessOf(objective, earlyAgg);
+  const late = goodnessOf(objective, lateAgg);
   if (early === null || late === null || early === 0) return 50;
   const change = (late - early) / early; // -1..+inf
   return clamp(Math.round(50 + change * 100), 0, 100); // +50% -> ~100; -50% -> ~0

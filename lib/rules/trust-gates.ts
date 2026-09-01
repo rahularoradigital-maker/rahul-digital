@@ -20,6 +20,9 @@ export const TRUST_GATES = {
   accountMedian: { minAds: 30 }, // calibrate-at-build
   // A trend warning fires only after a continuous run, never on a single day.
   trendWarning: { continuousDays: 7 }, // calibrate-at-build
+  // A direction (improving/worsening) is only read when each half of the window clears a minimum
+  // impression base - below this a trivial absolute move becomes a full-scale swing on noise (tiny/tiny).
+  trend: { minImpressionsPerHalf: 500 }, // calibrate-at-build
   // Compare against own past only with enough history, else observe-mode.
   vsOwnPast: { historyDays: 90 }, // calibrate-at-build
   // An AI-decoded label below this confidence is a question for a human, not a value.
