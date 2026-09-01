@@ -6,7 +6,7 @@ import { Logo } from "@/components/site-header";
 const COLS: { title: string; links: { label: string; href: string }[] }[] = [
   { title: "Platform", links: [
     { label: "Use Cases", href: "/product" }, { label: "Features", href: "/product" },
-    { label: "Solutions", href: "/product" }, { label: "Book a demo", href: "/book-demo" },
+    { label: "Pricing", href: "/pricing" }, { label: "Book a demo", href: "/book-demo" },
   ] },
   { title: "Solutions", links: [
     { label: "Beauty & Skincare", href: "/book-demo" }, { label: "Apparel", href: "/book-demo" },
