@@ -18,6 +18,20 @@ import type { CreativeFormat, CreativeAsset } from "@/lib/creative/fingerprint";
 import { VERDICT_WEIGHTS, type ScoreWeights } from "@/lib/rules/verdict";
 import type { LiveCockpit, AccountMetrics, ProcessedCounts, CatalogMode } from "@/lib/meta-sync";
 
+// Stable per-creative identity for the semantic cache. Ingestion normally stores content_hash (derived
+// from creative facts); when it is absent - older rows synced before that logic, or any account with a
+// sync gap - fall back to the creative's CDN asset filename, the one stable part of the thumb URL (host
+// region + the ?_nc_* query token churn between fetches; the numeric filename is the asset's identity).
+// Keeps creative-diversity populating for EVERY account regardless of when its meta was last synced.
+function semanticKey(m?: { content_hash?: string | null; thumb_url?: string | null } | null): string | null {
+  if (m?.content_hash) return m.content_hash;
+  const u = m?.thumb_url;
+  if (!u) return null;
+  const path = u.split("?")[0];
+  const file = path.slice(path.lastIndexOf("/") + 1);
+  return file ? "cdn:" + file : null;
+}
+
 // STAGE 2b: build the cockpit from the ad_metrics + ad_meta STORE instead of a live Meta pull. The store
 // holds EVERY spending ad day-wise (no top-N cap), so the leaderboard, verdicts, KPIs, and funnel finally
 // reflect the whole account. Returns null when the store has no data for this account+window, so the caller
@@ -355,10 +369,10 @@ export async function buildCockpitFromStore(opts: {
   let ownDiversity: DiversityRead | null = null;
   let ownStrategy: CreativeStrategy | null = null;
   try {
-    const hashes = view.leaderboard.map((ad) => metaById.get(ad.id)?.content_hash).filter((h): h is string => Boolean(h));
+    const hashes = view.leaderboard.map((ad) => semanticKey(metaById.get(ad.id))).filter((h): h is string => Boolean(h));
     const sem = await readSemanticsCache(userId, hashes);
     const records: CreativeRecord[] = view.leaderboard.map((ad) => {
-      const h = metaById.get(ad.id)?.content_hash ?? null;
+      const h = semanticKey(metaById.get(ad.id));
       const s = h ? sem.get(h) : undefined;
       return {
         adId: ad.id,
@@ -388,9 +402,10 @@ export async function buildCockpitFromStore(opts: {
       .map((ad) => {
         const m = metaById.get(ad.id);
         const url = m?.thumb_url ?? null;
-        if (!m?.content_hash || !url || haveVisual.has(m.content_hash)) return null;
+        const key = semanticKey(m);
+        if (!key || !url || haveVisual.has(key)) return null;
         const asset: CreativeAsset = { adId: ad.id, creativeId: null, imageUrl: url, videoThumbUrl: null, videoId: null, title: null, body: null, ctaType: null, isVideo: false, isCarousel: false, isCatalog: false, assetCount: 1 };
-        return { contentHash: m.content_hash, asset };
+        return { contentHash: key, asset };
       })
       .filter((x): x is { contentHash: string; asset: CreativeAsset } => x !== null);
     if (toVisual.length) after(() => decodeMissingVisual(userId, toVisual, haveVisual));
