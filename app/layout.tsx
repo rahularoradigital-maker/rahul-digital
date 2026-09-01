@@ -29,10 +29,12 @@ export const metadata: Metadata = {
 // Honest only - no reviews, ratings, prices, or awards we cannot substantiate. SoftwareApplication describes
 // what AdBrain actually is; Organization + WebSite establish the entity. Content is a static developer-authored
 // constant (no user input), rendered as script text children - safe for application/ld+json.
+// Stable @id anchors so nodes across pages resolve to ONE entity: /product enriches the same
+// SoftwareApplication (#software) instead of declaring a duplicate, and everything can reference #organization.
 const JSON_LD = JSON.stringify([
-  { "@context": "https://schema.org", "@type": "Organization", name: "AdBrain AI", url: SITE_URL, logo: `${SITE_URL}/icon.svg`, description: DESCRIPTION },
-  { "@context": "https://schema.org", "@type": "WebSite", name: "AdBrain AI", url: SITE_URL },
-  { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "AdBrain AI", applicationCategory: "BusinessApplication", operatingSystem: "Web", url: SITE_URL, description: DESCRIPTION },
+  { "@context": "https://schema.org", "@type": "Organization", "@id": `${SITE_URL}#organization`, name: "AdBrain AI", url: SITE_URL, logo: `${SITE_URL}/icon.svg`, description: DESCRIPTION },
+  { "@context": "https://schema.org", "@type": "WebSite", "@id": `${SITE_URL}#website`, name: "AdBrain AI", url: SITE_URL, publisher: { "@id": `${SITE_URL}#organization` } },
+  { "@context": "https://schema.org", "@type": "SoftwareApplication", "@id": `${SITE_URL}#software`, name: "AdBrain AI", applicationCategory: "BusinessApplication", operatingSystem: "Web", url: SITE_URL, description: DESCRIPTION, publisher: { "@id": `${SITE_URL}#organization` } },
 ]);
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

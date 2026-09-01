@@ -5,8 +5,7 @@ import { SiteFooter } from "@/components/site-footer";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
 
 // Page-specific metadata: /product previously inherited only the site-wide title, so it had no unique title,
-// description, or canonical - a real on-page SEO gap on a key page. No SoftwareApplication node here on purpose:
-// the site-wide one in app/layout.tsx already declares the product entity; a second would duplicate it.
+// description, or canonical - a real on-page SEO gap on a key page.
 export const metadata = {
   title: "The AdBrain AI Platform — Meta & Google ad decisions",
   description:
@@ -22,14 +21,39 @@ export const metadata = {
   },
 };
 
-const PRODUCT_JSON_LD = JSON.stringify({
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-    { "@type": "ListItem", position: 2, name: "Platform", item: `${SITE_URL}/product` },
-  ],
-});
+// Enriches the SAME SoftwareApplication entity declared site-wide (shared @id -> engines merge, no duplicate)
+// with a real featureList. Honest only: no offers/price or aggregateRating, because we have no real pricing or
+// reviews to substantiate (fabricating either violates the no-fake-data rule and Google's review policy).
+const PRODUCT_JSON_LD = JSON.stringify([
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": `${SITE_URL}#software`,
+    name: "AdBrain AI",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web",
+    url: `${SITE_URL}/product`,
+    description:
+      "AdBrain reads your Meta and Google ad accounts and tells you what to scale, refresh, or kill, with a reason for every call.",
+    publisher: { "@id": `${SITE_URL}#organization` },
+    featureList: [
+      "Reads Meta and Google ad accounts",
+      "Recommends scale, refresh, or kill with a reason for every call",
+      "Checks whether a metric has enough spend to be trusted",
+      "Flags creative fatigue and delivery issues",
+      "Never edits, pauses, or spends on your account",
+      "Works across multiple ad accounts",
+    ],
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Platform", item: `${SITE_URL}/product` },
+    ],
+  },
+]);
 
 type Verdict = "scale" | "test" | "kill";
 
