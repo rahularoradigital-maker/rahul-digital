@@ -1,30 +1,18 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getUsage } from "@/lib/billing/meter";
 
-// In-app token meter (pricing Phase 2). Reads /api/usage (own-user, read-only) and shows plan + used/allowance
-// with a threshold-coloured bar: accent under 80%, amber at 80%+, red when out - with an Upgrade nudge once the
-// user is running low. Renders nothing until data loads and silently no-ops on any error, so it is safe to mount
-// on every app page.
-
-type Usage = { planLabel: string; used: number; allowance: number; remaining: number; pct: number };
-
-export function UsageMeter() {
-  const [u, setU] = useState<Usage | null>(null);
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/usage", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (alive && d && !d.error && typeof d.allowance === "number") setU(d as Usage);
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
-  if (!u) return null;
+// Server-rendered token meter (cleanup #5: less client JS). The plan + used/allowance is read ON THE SERVER
+// during the layout render - one cheap indexed read, in the same request that already resolved the user -
+// instead of a "use client" component that fetched /api/usage in a useEffect and flashed empty until it
+// loaded. Pure display now; the only interactive bit is the Upgrade Link, which works in a server component.
+// Threshold-coloured bar: accent under 80%, amber at 80%+, red when out. Never breaks the sidebar on error.
+export async function UsageMeter({ userId }: { userId: string }) {
+  let u: Awaited<ReturnType<typeof getUsage>>;
+  try {
+    u = await getUsage(userId);
+  } catch {
+    return null; // getUsage already fails soft, but never let the meter break the whole shell
+  }
 
   const level = u.pct >= 100 ? "over" : u.pct >= 80 ? "warn" : "ok";
   const barColor = level === "over" ? "var(--bad-ink)" : level === "warn" ? "var(--warn-ink)" : "var(--accent)";

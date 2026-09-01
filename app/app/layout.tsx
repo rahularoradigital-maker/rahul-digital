@@ -53,8 +53,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
         <SidebarNav />
 
-        {/* Token usage meter (pricing Phase 2) - sits above the user footer, pinned to the sidebar bottom. */}
-        <UsageMeter />
+        {/* Token usage meter (pricing Phase 2) - sits above the user footer, pinned to the sidebar bottom.
+            Server-rendered from the already-resolved user (cleanup #5: no client fetch/useEffect). */}
+        <UsageMeter userId={user.id} />
 
         {/* User footer */}
         <div className="mt-4 flex items-center gap-2.5 border-t border-[var(--hairline)] pt-3">
