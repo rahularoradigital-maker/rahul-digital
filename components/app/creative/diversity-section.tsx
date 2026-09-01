@@ -121,7 +121,7 @@ export function DiversitySection({ data, days, competitors }: { data: CockpitDat
               <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">{Math.round(div.coverage * 100)}% analysed</span>
             </div>
             <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
-              Read from your real ad images and copy: scene, setting, colours, mood, plus funnel stage, hook, emotion and subject. Each creative is decoded once and reused, so this fills in over the next few loads.
+              Read from your real ad images, video cover frames and copy: scene, setting, colours, mood, plus funnel stage, hook, emotion and subject. For video, only the cover frame is read - the motion inside the video is not analysed yet. Each creative is decoded once and reused, so this fills in over the next few loads.
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               {dims.map((d) => (
