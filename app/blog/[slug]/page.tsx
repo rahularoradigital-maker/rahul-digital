@@ -8,6 +8,10 @@ export const dynamic = "force-dynamic";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
 
+// The cluster's pillar hub. Every spoke links up to it (and it links down to every spoke) so the topic
+// cluster is a real hub-and-spoke - the strongest on-page signal for topical authority / AI-citation fan-out.
+const PILLAR_SLUG = "how-to-decide-what-to-change-in-meta-ads";
+
 // ~220 wpm reading estimate; min 1. Cheap word count, good enough for a byline.
 function readingMinutes(md: string): number {
   return Math.max(1, Math.round(md.trim().split(/\s+/).length / 220));
@@ -81,6 +85,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           {a.published_at && <span aria-hidden>·</span>}
           <span>{readingMinutes(a.body_md)} min read</span>
         </p>
+        {slug !== PILLAR_SLUG && (
+          <p className="mt-3 text-[13px]">
+            <Link href={`/blog/${PILLAR_SLUG}`} className="text-[var(--accent)] hover:underline">
+              Part of: How to decide what to change in your Meta ads →
+            </Link>
+          </p>
+        )}
         {/* Real image only: the article's own branded share card, matching og:image. No stock photography.
             next/image so the LCP hero is served right-sized + WebP; priority since it is above the fold. */}
         <Image
