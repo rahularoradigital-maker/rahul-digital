@@ -72,6 +72,7 @@ type MetaRowDb = {
   format: string | null;
   content_hash: string | null;
   adset_end_unix: number | null;
+  optimization_event: string | null;
 };
 
 const PAGE = 1000; // Supabase caps a select at 1000 rows; page through so a 40k-row account is not silently truncated.
@@ -111,7 +112,7 @@ async function readAllMetaRows(admin: ReturnType<typeof createAdminClient>, user
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await admin
       .from("ad_meta")
-      .select("ad_id,name,effective_status,campaign_id,campaign_name,adset_id,adset_name,thumb_url,is_catalog,format,content_hash,adset_end_unix")
+      .select("ad_id,name,effective_status,campaign_id,campaign_name,adset_id,adset_name,thumb_url,is_catalog,format,content_hash,adset_end_unix,optimization_event")
       .eq("user_id", userId)
       .eq("account_external_id", accountExternalId)
       .order("ad_id", { ascending: true })
@@ -133,6 +134,7 @@ export async function buildCockpitFromStore(opts: {
   catalog: CatalogMode;
   weights?: ScoreWeights;
   objectives?: string[];
+  events?: string[]; // optimization-event filter (ad set's custom_event_type/optimization_goal)
   campaignIds?: string[];
   syncedAt?: string;
   // Meta's ACCOUNT-LEVEL scope total (from the caller), used for the headline so spend/revenue match Ads
@@ -231,6 +233,16 @@ export async function buildCockpitFromStore(opts: {
   if (opts.objectives && opts.objectives.length > 0) {
     const set = new Set(opts.objectives);
     realAds = realAds.filter((a) => a.objective !== undefined && set.has(a.objective));
+  }
+  // Optimization-EVENT filter (topbar): keep only ads whose ad set optimizes for a selected event
+  // (custom_event_type/optimization_goal). Ads with no stored event are dropped when a filter is active,
+  // so "conversion + add_to_cart" shows exactly those and removes the rest, aggregates included.
+  if (opts.events && opts.events.length > 0) {
+    const set = new Set(opts.events);
+    realAds = realAds.filter((a) => {
+      const ev = metaById.get(a.externalId)?.optimization_event;
+      return ev != null && set.has(ev);
+    });
   }
   if (opts.campaignIds && opts.campaignIds.length > 0) {
     const set = new Set(opts.campaignIds);

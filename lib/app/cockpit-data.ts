@@ -55,7 +55,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
   const userEmail = user.email ?? undefined;
   const tAuth = performance.now();
 
-  const { lookbackDays, campaignId, objectives, explicitWindow, weights, catalog } = resolveCockpitScope(cookieStore, days);
+  const { lookbackDays, campaignId, objectives, events, explicitWindow, weights, catalog } = resolveCockpitScope(cookieStore, days);
   const effectiveDays = lookbackDays;
 
   // The exact date window the user is viewing, formatted for the Ads Manager `date` param
@@ -66,7 +66,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     : `${new Date(Date.now() - effectiveDays * 86_400_000).toISOString().slice(0, 10)}_${new Date().toISOString().slice(0, 10)}`;
 
   const tScope = performance.now();
-  const live = await fetchLiveCockpit(user.id, lookbackDays, campaignId, objectives, explicitWindow, weights, catalog);
+  const live = await fetchLiveCockpit(user.id, lookbackDays, campaignId, objectives, explicitWindow, weights, catalog, events);
   const tCockpit = performance.now();
   const perf = {
     authMs: Math.round(tAuth - tStart),
@@ -123,6 +123,9 @@ export function resolveCockpitScope(cookieStore: CookieReader, _defaultDays: num
   const campaignId = cookieStore.get("adbrain.campaign")?.value || undefined;
   const objectivesRaw = cookieStore.get("adbrain.objectives")?.value || "";
   const objectives = objectivesRaw ? objectivesRaw.split(",").filter(Boolean) : [];
+  // Optimization-EVENT filter (topbar, global): the ad set's custom_event_type/optimization_goal to scope to.
+  const eventsRaw = cookieStore.get("adbrain.events")?.value || "";
+  const events = eventsRaw ? eventsRaw.split(",").filter(Boolean) : [];
   const weights = parseWeights(cookieStore.get("adbrain.weights")?.value) ?? undefined;
   // Catalog include/exclude (topbar objective filter). Only the explicit "exclude" opts out;
   // anything else (unset, or a stale value) stays the default "include" = current behavior.
@@ -141,5 +144,5 @@ export function resolveCockpitScope(cookieStore: CookieReader, _defaultDays: num
     const n = Number(windowRaw);
     if ((WINDOWS as readonly number[]).includes(n)) lookbackDays = n;
   }
-  return { lookbackDays, campaignId, objectives, explicitWindow, weights, catalog, platform };
+  return { lookbackDays, campaignId, objectives, events, explicitWindow, weights, catalog, platform };
 }

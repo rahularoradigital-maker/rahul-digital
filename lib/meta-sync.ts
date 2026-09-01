@@ -162,7 +162,7 @@ function perfMark(label: string, sinceMs: number): number {
   return performance.now();
 }
 
-async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = [], window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, catalog: CatalogMode = "include"): Promise<LiveCockpit> {
+async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = LOOKBACK_DAYS, campaignId?: string, objectives: string[] = [], window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, catalog: CatalogMode = "include", events: string[] = []): Promise<LiveCockpit> {
   // createAdminClient throws if SUPABASE_SERVICE_ROLE_KEY is missing; a DB hiccup can
   // also throw. Either way the dashboard must render the Connect screen, never 500.
   let acct: { id: string; external_id: string; name: string | null; timezone: string | null } | null = null;
@@ -247,6 +247,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
         catalog,
         weights,
         objectives,
+        events,
         campaignIds: campaignId ? campaignId.split(",").filter(Boolean) : undefined,
         scopePromise: storeScopePromise,
         nativePromise,
@@ -613,8 +614,8 @@ async function writeCockpitL2(userId: string, cacheKey: string, value: LiveCockp
 // deferWrite=true (the cold, user-facing path): return the value immediately and persist to L2 in
 // the background via after(), so the user does not wait on two extra DB round-trips AFTER the ~9s
 // pull already completed. The background-refresh caller leaves it false (nothing is awaiting it).
-async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, catalog: CatalogMode = "include", deferWrite = false): Promise<LiveCockpit> {
-  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives, window, weights, catalog);
+async function pullAndStore(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, catalog: CatalogMode = "include", deferWrite = false, events: string[] = []): Promise<LiveCockpit> {
+  const value = await fetchLiveCockpitUncached(userId, lookbackDays, campaignId, objectives, window, weights, catalog, events);
   if (value.status !== "error") {
     cockpitCache.set(memKey, { at: Date.now(), value });
     if (deferWrite) {
@@ -634,8 +635,8 @@ async function pullAndStore(userId: string, lookbackDays: number, campaignId: st
 // Single-flight the pull per cache key (ISSUE 07): concurrent cold misses and repeated stale-refresh
 // triggers for the same key collapse into ONE Meta pull instead of a thundering herd.
 const cockpitInflight = createSingleFlight<LiveCockpit>();
-function pullAndStoreSingleFlight(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, catalog: CatalogMode = "include", deferWrite = false): Promise<LiveCockpit> {
-  return cockpitInflight(memKey, () => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog, deferWrite));
+function pullAndStoreSingleFlight(userId: string, lookbackDays: number, campaignId: string | undefined, objectives: string[], cacheKey: string, memKey: string, window?: ExplicitWindow, weights: ScoreWeights = VERDICT_WEIGHTS, catalog: CatalogMode = "include", deferWrite = false, events: string[] = []): Promise<LiveCockpit> {
+  return cockpitInflight(memKey, () => pullAndStore(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog, deferWrite, events));
 }
 
 // Attach freshness metadata (ISSUE 10) at the serving boundary: syncedAt = when these numbers were
@@ -653,6 +654,7 @@ export async function fetchLiveCockpit(
   window?: ExplicitWindow,
   weights: ScoreWeights = VERDICT_WEIGHTS,
   catalog: CatalogMode = "include",
+  events: string[] = [],
 ): Promise<LiveCockpit> {
   const w0 = performance.now();
   // Key the cache by the ACTIVE account too: without this, every account shares one
@@ -667,7 +669,8 @@ export async function fetchLiveCockpit(
   const weightKey = weights === VERDICT_WEIGHTS ? "" : `${weights.performance}-${weights.trend}-${weights.fatigue}-${weights.funnel}`;
   // catalog is part of the key: excluding catalog analyzes a different ad set, so include/exclude
   // must cache separately (default "include" keeps the exact key shape users already have).
-  const cacheKey = `${CACHE_SCHEMA}:${activeId}:${lookbackDays}:${windowKey}:${campaignId ?? ""}:${[...objectives].sort().join(",")}:${weightKey}:${catalog}`;
+  // events appended ONLY when a filter is active, so users with no event filter keep the exact same key (no mass cache invalidation).
+  const cacheKey = `${CACHE_SCHEMA}:${activeId}:${lookbackDays}:${windowKey}:${campaignId ?? ""}:${[...objectives].sort().join(",")}${events.length ? `:ev:${[...events].sort().join(",")}` : ""}:${weightKey}:${catalog}`;
   const memKey = `${userId}:${cacheKey}`;
   const now = Date.now();
 
@@ -708,7 +711,7 @@ export async function fetchLiveCockpit(
     if (cached.age < STALE_MS) {
       // Serve stale immediately, refresh in the background so the next load is fresh.
       try {
-        after(() => pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog));
+        after(() => pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog, false, events));
       } catch {
         // after() unavailable outside a request scope; the stale value is still fine.
       }
@@ -725,7 +728,7 @@ export async function fetchLiveCockpit(
   // app's honest "still syncing" state. after(pull) keeps the serverless container alive until the
   // pull actually finishes even after we respond, so it still warms L1 + L2 - without it the floating
   // pull is frozen on response flush and every retry is another cold timeout (an endless spinner).
-  const pull = pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog, true);
+  const pull = pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog, true, events);
   try {
     after(pull); // survive past the response; no-op-safe if the pull rejects (Next logs it)
   } catch {
