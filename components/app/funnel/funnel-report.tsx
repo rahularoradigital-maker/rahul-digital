@@ -1,4 +1,6 @@
 import type { AdDiagnosis, FunnelReport, StepRead } from "@/lib/funnel/diagnosis";
+import { funnelToContract } from "@/lib/intelligence/from-funnel";
+import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 import { adsManagerUrl } from "@/lib/app/ads-manager-url";
 
 // Presentational (server component) for the funnel diagnosis. Renders the account verdict, each ad's stage +
@@ -90,6 +92,11 @@ function AdCard({ ad, accountId, dateParam }: { ad: AdDiagnosis; accountId: stri
       </div>
       {ad.stage.reviewRequired ? <p className="mt-2 text-[11px] text-[var(--ink-muted)]">{ad.stage.note}</p> : null}
       <Chain steps={ad.steps} />
+      {/* The full §110 reasoning behind this ad's leak/hold - computed from the same diagnosis, no new query. */}
+      {(() => {
+        const contract = funnelToContract(ad);
+        return contract ? <ReasoningTrace contract={contract} /> : null;
+      })()}
     </div>
   );
 }
