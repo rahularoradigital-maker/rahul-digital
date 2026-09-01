@@ -27,6 +27,8 @@ type QA = { status: "READY" | "REVIEW" | "FAILED"; checks: { name: string; pass:
 type Asset = { creativeId: string; conceptId?: string; productId?: string; formatId: string; provider: string; model?: string; generationState?: string; qa: QA; approval: string; costUsd: number; url: string | null };
 type Brand = { palette: { primary: string; secondary: string; background: string; text: string }; fonts: { heading: string; body: string }; imageStyle: string; designStyle: string; ctaStyle: string; tone: string; density: string; source: string; version: number };
 type Step = "products" | "concepts" | "review";
+// A partial brand override the Brand Control Panel sends; effective DNA = merge(derived, override) server-side.
+type BrandOverride = { palette?: Partial<Brand["palette"]>; fonts?: Partial<Brand["fonts"]>; imageStyle?: string; designStyle?: string; ctaStyle?: string; tone?: string; density?: string };
 
 const CARD = "rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)]";
 const BTN = "rounded-[var(--radius-pill)] px-3.5 py-2 text-[13px] font-medium transition disabled:opacity-40 disabled:cursor-not-allowed";
@@ -270,8 +272,7 @@ export function CreativeStudio() {
     const r = await jsonFetch<{ brand: Brand }>("/api/creative-production/brand", { method: "POST", body: JSON.stringify({ action: "reset" }) });
     setBrand(r.brand);
   });
-  const saveBrandField = (field: "primary" | keyof Brand, value: string) => run("brand", async () => {
-    const override = field === "primary" ? { palette: { primary: value } } : { [field]: value };
+  const saveBrand = (override: BrandOverride) => run("brand", async () => {
     const r = await jsonFetch<{ brand: Brand }>("/api/creative-production/brand", { method: "POST", body: JSON.stringify({ action: "override", override }) });
     setBrand(r.brand);
   });
@@ -480,7 +481,7 @@ export function CreativeStudio() {
                   <Button variant="default" className={BTN_PRIMARY} disabled={selected.length === 0 || busy?.startsWith("concepts:")} onClick={continueToConcepts}>Continue to concepts ({selected.length}) →</Button>
                 </div>
               </div>
-              <BrandPanel brand={brand} busy={busy === "brand"} onDerive={deriveBrand} onReset={resetBrand} onSave={saveBrandField} />
+              <BrandPanel brand={brand} busy={busy === "brand"} onDerive={deriveBrand} onReset={resetBrand} onSave={saveBrand} />
             </div>
             </div>
           ) : null}
@@ -698,30 +699,69 @@ function ProductDNAPanel({ dna }: { dna: ProductDNA }) {
   );
 }
 
-function BrandPanel({ brand, busy, onDerive, onReset, onSave }: { brand: Brand | null; busy: boolean; onDerive: () => void; onReset: () => void; onSave: (field: "primary" | keyof Brand, value: string) => void }) {
+const BRAND_IMAGE_STYLES = ["photography", "lifestyle", "illustration", "flat", "minimal", "bold"];
+const BRAND_DESIGN_STYLES = ["minimal", "bold", "editorial", "playful", "premium"];
+const BRAND_CTA_STYLES = ["pill", "rounded", "square", "underline"];
+const BRAND_DENSITIES = ["low", "medium", "high"];
+
+function BrandPanel({ brand, busy, onDerive, onReset, onSave }: { brand: Brand | null; busy: boolean; onDerive: () => void; onReset: () => void; onSave: (override: BrandOverride) => void }) {
   const val = (v: string) => (v && v !== "UNKNOWN" ? v : "");
+  const color = (v: string, fallback: string) => (v && v !== "UNKNOWN" ? v : fallback);
+  const ctl = "min-w-0 flex-1 rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1 text-[12px] text-[var(--ink)]";
+
+  // Backend REPLACES the whole override object, so every save must carry the full current look (a one-field
+  // save would wipe the others). Snapshot the effective values, apply the patch, send the lot.
+  const save = (patch: BrandOverride) => {
+    if (!brand) return;
+    const snap: BrandOverride = {
+      palette: { ...brand.palette },
+      imageStyle: brand.imageStyle, designStyle: brand.designStyle, ctaStyle: brand.ctaStyle, tone: brand.tone, density: brand.density,
+    };
+    onSave({ ...snap, ...patch, palette: { ...snap.palette, ...(patch.palette ?? {}) } });
+  };
+
+  const colorRow = (label: string, k: keyof Brand["palette"], fallback: string) => (
+    <label key={label} className="flex items-center justify-between gap-2">{label}
+      <input type="color" defaultValue={color(brand!.palette[k], fallback)} onBlur={(e) => save({ palette: { [k]: e.target.value } })} className="h-6 w-10 rounded border border-[var(--hairline)]" />
+    </label>
+  );
+  const selectRow = (label: string, current: string, options: string[], onPick: (v: string) => void) => (
+    <label key={label} className="flex items-center justify-between gap-2">{label}
+      <select value={val(current)} onChange={(e) => onPick(e.target.value || "UNKNOWN")} className={ctl}>
+        <option value="">auto</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </label>
+  );
+
   return (
     <div className={`${CARD} p-4 space-y-3`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-medium">Brand DNA</h2>
+        <h2 className="text-[15px] font-medium">Brand look</h2>
         <div className="flex gap-2">
           <Button variant="outline" className={BTN_GHOST} disabled={busy} onClick={onReset}>Defaults</Button>
           <Button variant="default" className={BTN_PRIMARY} disabled={busy} onClick={onDerive}>{busy ? "…" : brand ? "Re-derive" : "Understand brand"}</Button>
         </div>
       </div>
       {!brand ? (
-        <p className="text-[13px] text-[var(--ink-muted)]">Derive your brand identity from your store, then fine-tune it. It becomes the default look for every ad.</p>
+        <p className="text-[13px] text-[var(--ink-muted)]">Derive your brand identity from your store, then fine-tune it here. It becomes the default look for every ad.</p>
       ) : (
         <div className="space-y-2 text-[12px]">
-          <p className="text-[var(--ink-muted)]">Source: {brand.source} · v{brand.version} · tone {val(brand.tone) || "—"}</p>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex items-center gap-2">Primary
-              <input type="color" value={val(brand.palette.primary) || "#3b6ef5"} onChange={(e) => onSave("primary", e.target.value)} className="h-6 w-10 rounded border border-[var(--hairline)]" />
-            </label>
-            <label className="flex items-center gap-2">Tone
-              <Input defaultValue={val(brand.tone)} onBlur={(e) => e.target.value !== val(brand.tone) && onSave("tone", e.target.value)} className="min-w-0 flex-1 rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1" />
+          <p className="text-[var(--ink-muted)]">Source: {brand.source} · v{brand.version}</p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+            {colorRow("Primary", "primary", "#3b6ef5")}
+            {colorRow("Secondary", "secondary", "#111111")}
+            {colorRow("Background", "background", "#0e0e10")}
+            {colorRow("Text", "text", "#ffffff")}
+            {selectRow("Image", brand.imageStyle, BRAND_IMAGE_STYLES, (v) => save({ imageStyle: v }))}
+            {selectRow("Design", brand.designStyle, BRAND_DESIGN_STYLES, (v) => save({ designStyle: v }))}
+            {selectRow("CTA", brand.ctaStyle, BRAND_CTA_STYLES, (v) => save({ ctaStyle: v }))}
+            {selectRow("Density", brand.density, BRAND_DENSITIES, (v) => save({ density: v }))}
+            <label className="col-span-2 flex items-center gap-2">Tone
+              <input defaultValue={val(brand.tone)} onBlur={(e) => e.target.value !== val(brand.tone) && save({ tone: e.target.value || "UNKNOWN" })} className={ctl} />
             </label>
           </div>
+          <p className="text-[11px] text-[var(--ink-muted)]">These become the default look for every ad. &quot;Defaults&quot; restores what we read from your store.</p>
         </div>
       )}
     </div>
