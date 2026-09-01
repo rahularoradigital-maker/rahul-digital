@@ -19,6 +19,7 @@ const IMAGE_TOKENS = ACTION_TOKENS.image;
 // pipeline composes deterministic placeholders so the flow is fully testable end-to-end.
 
 type Product = { productId: string; title: string; description: string; price: number | null; compareAtPrice: number | null; image: string | null; status: string | null; productType: string | null };
+type Rec = { productId: string; title: string; price: number | null; compareAtPrice: number | null; image: string | null; productType: string | null; discountPct: number; saving: number; reason: string };
 type Concept = { id: string; formatId: string; headline: string; supportingCopy: string; cta: string; offer: string | null; angle: string; whyThisConcept: string; whyNow: string; score: number; awarenessStage: string; visualDirection: string };
 type QA = { status: "READY" | "REVIEW" | "FAILED"; checks: { name: string; pass: boolean; severity: string; detail: string }[] };
 type Asset = { creativeId: string; conceptId?: string; productId?: string; formatId: string; provider: string; model?: string; generationState?: string; qa: QA; approval: string; costUsd: number; url: string | null };
@@ -105,6 +106,8 @@ export function CreativeStudio() {
   const [hasMore, setHasMore] = useState(false);
   const [moreBusy, setMoreBusy] = useState(false);
   const [batchProgress, setBatchProgress] = useState("");
+  const [recs, setRecs] = useState<Rec[]>([]);
+  const [recBasis, setRecBasis] = useState<string | null>(null);
   const firstRun = useRef(true);
   const [selected, setSelected] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -182,6 +185,14 @@ export function CreativeStudio() {
     const t = setTimeout(() => { void fetchProducts(query, activeType, true); }, 300);
     return () => clearTimeout(t);
   }, [query, activeType, connected, fetchProducts]);
+
+  // Recommended products to advertise (grounded offer-strength ranking). Best-effort; never blocks the picker.
+  useEffect(() => {
+    if (!connected) return;
+    jsonFetch<{ recommendations: Rec[]; basis: string | null }>("/api/creative-production/recommendations")
+      .then((r) => { setRecs(r.recommendations); setRecBasis(r.basis); })
+      .catch(() => {});
+  }, [connected]);
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setErr(null);
@@ -355,6 +366,29 @@ export function CreativeStudio() {
           </div>
 
           {step === "products" ? (
+            <div className="space-y-6">
+            {recs.length > 0 ? (
+              <div className={`${CARD} p-4`}>
+                <div className="mb-1 flex items-center gap-2">
+                  <h2 className="text-[15px] font-medium">✨ Recommended to advertise</h2>
+                </div>
+                {recBasis ? <p className="mb-3 text-[12px] text-[var(--ink-muted)]">{recBasis}</p> : null}
+                <div className="flex gap-3 overflow-x-auto pb-1">
+                  {recs.map((r) => {
+                    const isSel = selected.includes(r.productId);
+                    return (
+                      <div key={r.productId} className={`flex w-[150px] shrink-0 flex-col rounded-[12px] border p-2.5 ${isSel ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-[var(--hairline)]"}`}>
+                        {r.image ? <img src={r.image} alt="" className="mb-2 h-20 w-full rounded-[8px] object-cover" /> : <div className="mb-2 h-20 w-full rounded-[8px] bg-[var(--hairline)]" />}
+                        <p className="line-clamp-2 min-h-[32px] text-[12px] font-medium">{r.title}</p>
+                        <p className="text-[12px] text-[var(--ink-muted)]">{money(r.price)}{r.discountPct > 0 ? <span className="ml-1 rounded-[4px] bg-[var(--accent)]/10 px-1 text-[11px] font-medium text-[var(--accent)]">{r.discountPct}% off</span> : null}</p>
+                        {r.saving > 0 ? <p className="text-[11px] text-[var(--ink-muted)]">Save {money(r.saving)}</p> : null}
+                        <button className={`${isSel ? BTN_PRIMARY : BTN_GHOST} mt-2 py-1.5`} onClick={() => toggleSelect(r.productId)}>{isSel ? "Selected" : "Select"}</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
               <div className={`${CARD} p-4`}>
                 <div className="mb-3 flex items-center justify-between">
@@ -409,6 +443,7 @@ export function CreativeStudio() {
                 </div>
               </div>
               <BrandPanel brand={brand} busy={busy === "brand"} onDerive={deriveBrand} onReset={resetBrand} onSave={saveBrandField} />
+            </div>
             </div>
           ) : null}
 
