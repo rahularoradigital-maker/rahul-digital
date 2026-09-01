@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { mapMetaObjective, listAdSetOptimizationGoals } from "@/lib/meta-source";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { diagnoseFunnel, type FunnelAd, type FunnelReport } from "@/lib/funnel/diagnosis";
+import { passesEventFilter } from "@/lib/scope/event-filter";
 import type { ExtendedMetricsRow } from "@/lib/metrics/funnel-metrics";
 
 // Funnel diagnosis - READ PATH. Reads the STORE (ad_metrics) only. The store is filled in the background by
@@ -90,7 +91,7 @@ async function readStore(userId: string, accountExternalId: string, since: strin
   const ads: FunnelAd[] = [];
   for (const [adId, rs] of byAd) {
     if (excludeCatalog && catalogById.get(adId)) continue; // "Catalog: Excluded" hides dynamic catalog ads
-    if (evSet) { const ev = eventById.get(adId); if (ev == null || !evSet.has(ev)) continue; } // optimization-event scope
+    if (!passesEventFilter(eventById.get(adId), evSet)) continue; // optimization-event scope (shared predicate)
     const objective = mapMetaObjective(rs.find((r) => r.objective)?.objective ?? "");
     if (objSet && !objSet.has(objective)) continue;
     const campaignId = rs.find((r) => r.campaign_id)?.campaign_id ?? null;

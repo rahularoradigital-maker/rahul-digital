@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { mapMetaObjective, fetchAdStatuses, type ScopeInsights } from "@/lib/meta-source";
 import type { MetricsRow, TokenSet } from "@/lib/ad-source";
 import { toCockpitInputs, type RealAd } from "@/lib/scoring";
+import { passesEventFilter } from "@/lib/scope/event-filter";
 import { analyzeAccount } from "@/lib/cockpit/analyze";
 import { windowFunnel, type ExtendedMetricsRow } from "@/lib/metrics/funnel-metrics";
 import { buildDailySeries, type DailyInputRow } from "@/lib/cockpit/daily-series";
@@ -239,10 +240,7 @@ export async function buildCockpitFromStore(opts: {
   // so "conversion + add_to_cart" shows exactly those and removes the rest, aggregates included.
   if (opts.events && opts.events.length > 0) {
     const set = new Set(opts.events);
-    realAds = realAds.filter((a) => {
-      const ev = metaById.get(a.externalId)?.optimization_event;
-      return ev != null && set.has(ev);
-    });
+    realAds = realAds.filter((a) => passesEventFilter(metaById.get(a.externalId)?.optimization_event, set));
   }
   if (opts.campaignIds && opts.campaignIds.length > 0) {
     const set = new Set(opts.campaignIds);
