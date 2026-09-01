@@ -27,6 +27,8 @@ export const EXPLICIT_DELETE_BY_USER = [
   "influencer_search", "influencer_search_result", "influencer_shortlist", "influencer_sync_state",
   "shopify_connections", "shopify_products", "shopify_sync_state",
   "cockpit_cache",
+  "jobs", // durable job queue (0027): delete the user's queued work on deletion. user_id is nullable -
+          // deleting by user_id removes their jobs and leaves system jobs (null user_id) untouched.
 ] as const;
 // Notes on tables handled by CASCADE (not user_id-scoped, so not listed above), transitively removed with
 // their parent when the auth user is deleted:
