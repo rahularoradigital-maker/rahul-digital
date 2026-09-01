@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { PricingTiers } from "@/components/marketing/pricing-tiers";
+import { PricingEstimator } from "@/components/marketing/pricing-estimator";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
 
@@ -87,6 +88,10 @@ export default function PricingPage() {
 
         <section className="mx-auto max-w-6xl px-6 pb-16">
           <PricingTiers />
+        </section>
+
+        <section className="mx-auto max-w-6xl px-6 pb-16">
+          <PricingEstimator />
         </section>
 
         <section className="border-t border-[var(--hairline)] py-20">

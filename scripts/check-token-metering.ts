@@ -1,7 +1,7 @@
 // One runnable check for the token-metering config (pure). The atomic cap itself is verified in the DB
 // (spend_tokens function, migration 0024). Run: node --experimental-strip-types scripts/check-token-metering.ts
 import assert from "node:assert/strict";
-import { PLANS, ACTION_TOKENS, IMAGE_ACTIONS, planFor, tokensFor, isImageAllowed, periodOf } from "../lib/billing/plans.ts";
+import { PLANS, ACTION_TOKENS, IMAGE_ACTIONS, planFor, tokensFor, isImageAllowed, periodOf, estimateTokens, recommendPlanId } from "../lib/billing/plans.ts";
 
 // Free must NEVER allow image generation (the one rule that keeps free <= Rs100).
 assert.equal(PLANS.free.imageGen, false, "free plan must block image gen");
@@ -33,5 +33,19 @@ assert.equal(planFor("scale"), "scale");
 assert.equal(periodOf(new Date("2026-09-01T00:00:00Z")), "2026-09");
 assert.equal(periodOf(new Date("2026-12-31T23:59:59Z")), "2026-12");
 assert.equal(periodOf(new Date("2027-01-01T00:00:00Z")), "2027-01");
+
+// Pricing-page estimator (must match the meter's weights exactly).
+assert.equal(estimateTokens(0, 0, 0), 0);
+assert.equal(estimateTokens(1, 0, 0), ACTION_TOKENS.image, "1 image = image weight");
+assert.equal(estimateTokens(0, 50, 0), 50, "50 chats = 50 tokens");
+assert.equal(estimateTokens(0, 0, 25), 25 * ACTION_TOKENS.concept, "25 copies");
+assert.equal(estimateTokens(-3, 2.9, 0), 2, "negatives floored, fractions truncated");
+// recommend: Free only with no images and within the free allowance; images force a paid plan.
+assert.equal(recommendPlanId(0, 0), "free");
+assert.equal(recommendPlanId(PLANS.free.tokens, 0), "free", "exact free allowance still free");
+assert.equal(recommendPlanId(20, 1), "starter", "any image forces a paid plan even under 50 tokens");
+assert.equal(recommendPlanId(PLANS.starter.tokens, 0), "starter", "exact starter allowance");
+assert.equal(recommendPlanId(PLANS.starter.tokens + 1, 0), "growth", "one over starter -> growth");
+assert.equal(recommendPlanId(PLANS.scale.tokens + 1_000_000, 0), "scale", "above the largest plan -> scale");
 
 console.log("check-token-metering: OK");

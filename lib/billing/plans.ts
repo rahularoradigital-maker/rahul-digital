@@ -37,3 +37,18 @@ export function isImageAllowed(plan: PlanId): boolean {
 export function periodOf(d: Date): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
+
+// Pricing-page estimator (pure): monthly tokens from expected AI-extra usage, using the SAME weights the meter
+// enforces, so the estimate can never disagree with billing. Decisions are unlimited, so they are not counted.
+export function estimateTokens(images: number, chats: number, copies: number): number {
+  const n = (x: number) => Math.max(0, Math.floor(x || 0));
+  return n(images) * ACTION_TOKENS.image + n(chats) * ACTION_TOKENS.chat + n(copies) * ACTION_TOKENS.concept;
+}
+
+// Smallest plan whose allowance covers the estimate. Free only when no image generation is needed (Free is
+// image-blocked). Above the largest plan, returns the largest ("scale") — the UI adds a "talk to us" note.
+export function recommendPlanId(tokens: number, images: number): PlanId {
+  if (images <= 0 && tokens <= PLANS.free.tokens) return "free";
+  const paid: PlanId[] = ["starter", "growth", "scale"];
+  return paid.find((id) => tokens <= PLANS[id].tokens) ?? "scale";
+}
