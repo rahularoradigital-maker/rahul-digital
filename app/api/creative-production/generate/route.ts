@@ -27,8 +27,8 @@ export async function POST(req: Request) {
   const conn = await getShopifyConnectionStatus(user.id);
   if (!conn) return NextResponse.json({ error: "No connected store." }, { status: 400 });
 
-  const body = (await req.json().catch(() => ({}))) as { conceptId?: string; productId?: string; platform?: string; overrides?: { headline?: string; supportingCopy?: string; cta?: string; offer?: string | null } };
-  const { conceptId, productId, platform, overrides } = body;
+  const body = (await req.json().catch(() => ({}))) as { conceptId?: string; productId?: string; platform?: string; formatIds?: string[]; overrides?: { headline?: string; supportingCopy?: string; cta?: string; offer?: string | null } };
+  const { conceptId, productId, platform, formatIds, overrides } = body;
   if (!conceptId || !productId) return NextResponse.json({ error: "conceptId and productId required" }, { status: 400 });
 
   const concepts = await loadConcepts(user.id, productId);
@@ -72,7 +72,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: msg, code: spend.reason, usage: { used: spend.used, allowance: spend.allowance } }, { status: 402 });
   }
 
-  const formats = platform === "google" ? GOOGLE_DEFAULT_SET : META_DEFAULT_SET;
+  // Format selection: the user may pick a subset of the platform's set (fewer sizes = less work/clutter).
+  // Filter the platform's default set to the requested ids; if none match, fall back to the full set.
+  const base = platform === "google" ? GOOGLE_DEFAULT_SET : META_DEFAULT_SET;
+  const picked = formatIds?.length ? base.filter((f) => formatIds.includes(f.id)) : base;
+  const formats = picked.length ? picked : base;
   const records = await generateAssetsForConcept(user.id, product, brand, concept, formats);
 
   const assets = await Promise.all(

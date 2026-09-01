@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ACTION_TOKENS } from "@/lib/billing/plans";
 import { FormatCoveragePanel } from "./format-coverage-panel";
 import { makeZip, type ZipEntry } from "@/lib/creative-production/media/zip";
+import { META_DEFAULT_SET, GOOGLE_DEFAULT_SET } from "@/lib/creative-production/formats/ad-formats";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -127,6 +128,7 @@ export function CreativeStudio() {
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [platform, setPlatform] = useState<"meta" | "google">("meta");
+  const [deselFormats, setDeselFormats] = useState<Set<string>>(new Set()); // formats the user turned OFF (empty = all on)
   const [reviewFilter, setReviewFilter] = useState<string>("all");
   const [formDomain, setFormDomain] = useState("");
   const [formToken, setFormToken] = useState("");
@@ -277,10 +279,13 @@ export function CreativeStudio() {
     setBrand(r.brand);
   });
 
+  // The ad sizes to generate = the current platform's set minus any the user turned off.
+  const activeFormatIds = () => (platform === "google" ? GOOGLE_DEFAULT_SET : META_DEFAULT_SET).map((f) => f.id).filter((id) => !deselFormats.has(id));
+
   const generate = (conceptId: string) => run("gen:" + conceptId, async () => {
     if (!active) return;
     const overrides = copyEdits[conceptId];
-    await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId, productId: active, platform, overrides }) });
+    await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId, productId: active, platform, formatIds: activeFormatIds(), overrides }) });
     await refreshAssets();
     refreshUsage(); // generation spent tokens - keep the cost preview honest
   });
@@ -305,7 +310,7 @@ export function CreativeStudio() {
       }
       const top = cs[0]; // highest-scored concept (list is score-desc)
       if (!top) continue;
-      await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId: top.id, productId: pid, platform }) });
+      await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId: top.id, productId: pid, platform, formatIds: activeFormatIds() }) });
     }
     setBatchProgress("");
     await refreshAssets();
@@ -516,6 +521,25 @@ export function CreativeStudio() {
                 </div>
               </div>
 
+              {/* Format picker: choose which ad sizes to generate for the current platform (all on by default). */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[12px] text-[var(--ink-muted)]">Sizes:</span>
+                {(platform === "google" ? GOOGLE_DEFAULT_SET : META_DEFAULT_SET).map((f) => {
+                  const on = !deselFormats.has(f.id);
+                  return (
+                    <button
+                      key={f.id}
+                      title={f.name}
+                      className={`rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-medium transition ${on ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--accent)]"}`}
+                      onClick={() => setDeselFormats((prev) => { const n = new Set(prev); if (n.has(f.id)) n.delete(f.id); else n.add(f.id); return n; })}
+                    >
+                      {f.aspectRatio}
+                    </button>
+                  );
+                })}
+                <span className="text-[11px] text-[var(--ink-muted)]">{activeFormatIds().length} of {(platform === "google" ? GOOGLE_DEFAULT_SET : META_DEFAULT_SET).length} selected</span>
+              </div>
+
               {/* Batch: generate the top concept for every selected product in one go, cost shown up front. */}
               {selected.length > 1 ? (
                 <div className={`${CARD} flex flex-wrap items-center justify-between gap-2 p-3`}>
@@ -523,7 +547,7 @@ export function CreativeStudio() {
                     <span className="font-medium">Generate ads for all {selected.length} products</span>
                     <span className="text-[12px] text-[var(--ink-muted)]"> · top concept each on {platform === "meta" ? "Meta" : "Google"} · ~{(selected.length * IMAGE_TOKENS).toLocaleString("en-US")} tokens{usage != null ? ` · ${usage.remaining.toLocaleString("en-US")} left` : ""}</span>
                   </div>
-                  <button className={BTN_PRIMARY} disabled={busy === "batch" || (usage != null && (!usage.imageGen || usage.remaining < selected.length * IMAGE_TOKENS))} onClick={batchGenerate}>
+                  <button className={BTN_PRIMARY} disabled={busy === "batch" || activeFormatIds().length === 0 || (usage != null && (!usage.imageGen || usage.remaining < selected.length * IMAGE_TOKENS))} onClick={batchGenerate}>
                     {busy === "batch" ? `Generating ${batchProgress}…` : `⚡ Generate all (${selected.length})`}
                   </button>
                 </div>
@@ -557,7 +581,7 @@ export function CreativeStudio() {
                         <Button
                           variant="default"
                           className={BTN_PRIMARY}
-                          disabled={busy === "gen:" + c.id || (usage != null && (!usage.imageGen || usage.remaining < IMAGE_TOKENS))}
+                          disabled={busy === "gen:" + c.id || activeFormatIds().length === 0 || (usage != null && (!usage.imageGen || usage.remaining < IMAGE_TOKENS))}
                           onClick={() => generate(c.id)}
                         >
                           {busy === "gen:" + c.id ? "Generating…" : cAssets.length ? "Regenerate" : "Generate ads"}
