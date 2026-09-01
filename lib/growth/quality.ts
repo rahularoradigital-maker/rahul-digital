@@ -14,7 +14,9 @@ const UNSUPPORTED = /\b(guarantee(d|s)?|#\s?1\b|the best\b|always works|never fa
 const HARD_STAT = /\b\d{1,3}(\.\d+)?\s?%|\b\d+(\.\d+)?x\b|[₹$]\s?\d{3,}/;
 // Disclosure phrases that must accompany an AdScale mention.
 const DISCLOSURE = /(i work on|i(?:'m| am) (?:on|with|from)|full disclosure|disclosure:|team behind|i help build)/i;
-const MENTIONS_ADBRAIN = /\badbrain\b|adscaledigital\.co/i;
+// Matches the product's current name (AdScale) and former name (AdBrain) + its domain, so the disclosure/
+// permission guards fire on a mention of EITHER. (The rebrand missed "adscale" here, letting mentions slip.)
+const MENTIONS_BRAND = /\badbrain\b|\badscale\b|adscaledigital\.co/i;
 // Salesy signals - WARN (community replies must be useful-first).
 const SALESY = /\b(check (?:it|us|this) out|sign up (?:now|today)|click (?:here|the link)|dm me|link in bio)\b/i;
 
@@ -24,7 +26,7 @@ export function checkContent(text: string, opts: { mayMention: boolean } = { may
 
   if (UNSUPPORTED.test(t)) flags.push({ code: "unsupported_claim", severity: "critical", detail: "contains an absolute/guarantee claim we cannot defend" });
 
-  const mentions = MENTIONS_ADBRAIN.test(t);
+  const mentions = MENTIONS_BRAND.test(t);
   if (mentions && !DISCLOSURE.test(t)) flags.push({ code: "undisclosed_mention", severity: "critical", detail: "mentions AdScale without disclosing affiliation" });
   if (mentions && !opts.mayMention) flags.push({ code: "mention_not_allowed", severity: "critical", detail: "mentions AdScale where the community/context does not permit it" });
 
