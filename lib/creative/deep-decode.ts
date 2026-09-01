@@ -1,4 +1,6 @@
 import { callGemini, fetchInlineImage, stringObjectSchema, type InlineImage } from "../gemini.ts";
+import { parseDeepRead, type DeepRead } from "./deep-analysis-pure.ts";
+export type { DeepRead };
 
 // Deep creative read: for a VIDEO this reads the real motion (not just the cover frame) by inlining the
 // video to Gemini; for an IMAGE it reads the real asset. Strictly bounded by the caller (top-10, one-time).
@@ -9,18 +11,7 @@ const GRAPH = "https://graph.facebook.com/v21.0";
 const MAX_VIDEO_BYTES = 18 * 1024 * 1024; // Gemini inline_data request limit is ~20MB; stay safely under.
 const VIDEO_TIMEOUT_MS = 30_000;
 
-export type DeepRead = {
-  sceneType: string | null;
-  setting: string | null;
-  palette: string | null;
-  visualMood: string | null;
-  contentSubject: string | null;
-  funnelStage: string | null;
-  motionSummary: string | null; // video only: what CHANGES across the video; null/"" for a still image
-};
-
 const DEEP_SCHEMA = stringObjectSchema(["sceneType", "setting", "palette", "visualMood", "contentSubject", "funnelStage", "motionSummary"]);
-const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 const PROMPT =
   "You are a senior performance-creative strategist. Study this ONE ad creative (a video or an image) and classify what is actually shown. Return JSON with exactly these keys:\n" +
@@ -66,32 +57,18 @@ async function fetchInlineVideo(url: string): Promise<InlineImage | null> {
   }
 }
 
-function toRead(out: Record<string, unknown> | null, allowMotion: boolean): DeepRead | null {
-  if (!out) return null;
-  const r: DeepRead = {
-    sceneType: str(out.sceneType),
-    setting: str(out.setting),
-    palette: str(out.palette),
-    visualMood: str(out.visualMood),
-    contentSubject: str(out.contentSubject),
-    funnelStage: str(out.funnelStage),
-    motionSummary: allowMotion ? str(out.motionSummary) : null,
-  };
-  return r.sceneType || r.setting || r.palette || r.visualMood || r.contentSubject || r.funnelStage ? r : null;
-}
-
 // Deep read of ONE video: fetch its source, inline it, read motion + visuals. null on any failure.
 export async function deepReadVideo(videoId: string, token: string): Promise<DeepRead | null> {
   const src = await videoSourceUrl(videoId, token);
   if (!src) return null;
   const inline = await fetchInlineVideo(src);
   if (!inline) return null;
-  return toRead(await callGemini(PROMPT, DEEP_SCHEMA, inline), true);
+  return parseDeepRead(await callGemini(PROMPT, DEEP_SCHEMA, inline), true);
 }
 
 // Deep read of ONE image (the real asset). null on any failure.
 export async function deepReadImage(imageUrl: string): Promise<DeepRead | null> {
   const inline = await fetchInlineImage(imageUrl);
   if (!inline) return null;
-  return toRead(await callGemini(PROMPT, DEEP_SCHEMA, inline), false);
+  return parseDeepRead(await callGemini(PROMPT, DEEP_SCHEMA, inline), false);
 }

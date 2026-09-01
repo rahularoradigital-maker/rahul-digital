@@ -2,52 +2,23 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readToken } from "@/lib/oauth-store";
 import { listTopSpendingAds, fetchAdCreatives } from "@/lib/meta-source";
-import { deepReadVideo, deepReadImage, type DeepRead } from "@/lib/creative/deep-decode";
+import { deepReadVideo, deepReadImage } from "@/lib/creative/deep-decode";
+import { MAX_CREATIVES, FREE_RUNS, rowToManifest, type DeepCreativeRow, type DeepRead } from "@/lib/creative/deep-analysis-pure";
 
 // Deep creative analysis (free-plan trial): read the TOP-SPENDING creatives in depth - real video motion
 // for videos, full image read for images. Strictly bounded: FREE_RUNS run(s), MAX_CREATIVES creatives, top
 // spenders only. The entitlement is server-authoritative (a DB row per run), so it cannot be looped from the
 // client. Every read degrades to null on failure and is recorded honestly (model=null = "could not read").
+// Pure helpers/types live in ./deep-analysis-pure (so a node check can exercise them without this module's I/O).
 
-export const MAX_CREATIVES = 10;
-export const FREE_RUNS = 1;
+export { MAX_CREATIVES, FREE_RUNS } from "@/lib/creative/deep-analysis-pure";
+export type { DeepCreativeRow } from "@/lib/creative/deep-analysis-pure";
+
 const WINDOW_DAYS = 90;
-
-export type DeepCreativeRow = {
-  contentHash: string;
-  adId: string | null;
-  adName: string | null;
-  format: string | null; // 'video' | 'image'
-  spendRs: number | null;
-  sceneType: string | null;
-  setting: string | null;
-  palette: string | null;
-  visualMood: string | null;
-  contentSubject: string | null;
-  motionSummary: string | null;
-  analyzed: boolean; // false = we selected it but could not read it (never fabricated)
-};
 
 export type DeepAnalysisStatus = { used: boolean; runs: number; freeRuns: number; maxCreatives: number; reads: DeepCreativeRow[] };
 
 type MetaRow = { ad_id: string; content_hash: string | null; format: string | null };
-
-function rowToManifest(r: Record<string, unknown>): DeepCreativeRow {
-  return {
-    contentHash: String(r.content_hash ?? ""),
-    adId: (r.ad_id as string) ?? null,
-    adName: (r.ad_name as string) ?? null,
-    format: (r.format as string) ?? null,
-    spendRs: r.spend_rs === null || r.spend_rs === undefined ? null : Number(r.spend_rs),
-    sceneType: (r.scene_type as string) ?? null,
-    setting: (r.setting as string) ?? null,
-    palette: (r.palette as string) ?? null,
-    visualMood: (r.visual_mood as string) ?? null,
-    contentSubject: (r.content_subject as string) ?? null,
-    motionSummary: (r.motion_summary as string) ?? null,
-    analyzed: Boolean(r.model),
-  };
-}
 
 // Has the free user used their run? + the manifest of exactly what was analysed (transparency).
 export async function getDeepAnalysisStatus(userId: string): Promise<DeepAnalysisStatus> {
