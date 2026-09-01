@@ -56,6 +56,14 @@ smartest-looking one). It is audit-first and plan-first: no feature coding until
 deliverables in `docs/intelligence/PHASE-0-AUDIT-PLAN.md` are produced. Rules #1 and #2 above are how
 that charter is executed day to day.
 
+The Product Completion Loop (Rahul, 2026-09-01) governs the 20 SaaS systems (onboarding, auth, email
+verify, password reset, account deletion, permissions, empty/loading/error/network states, persistence,
+payment, notifications, analytics, crash reporting, privacy, a11y, responsiveness, e2e, beta): classify
+before coding, keep green systems, fix the highest-value gap, attack it, live-verify, regress, re-audit,
+repeat. Living state: `docs/intelligence/PRODUCT-COMPLETION-MATRIX.md`. Continue autonomously on the
+obvious safe next gap; ASK only for gated items (payment model, destructive data ops like account
+deletion, legal/privacy, major architecture, or a new external service needing keys).
+
 - Design spec: `docs/superpowers/specs/2026-08-25-adbrain-mvp-design.md`
 - Phase 0 plan: `docs/superpowers/plans/2026-08-25-phase-0-foundation.md`
 - Setup steps for the owner: `SETUP.md`
