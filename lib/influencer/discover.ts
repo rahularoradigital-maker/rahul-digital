@@ -78,7 +78,7 @@ export async function discoverAndRank(
   // floor, not a brand/shop, and not a dead/bought page. Unknowns are kept (never guessed as a fail).
   const keep = (c: NormalizedCreator) =>
     (c.followers.value == null || c.followers.value >= floor) &&
-    !looksLikeBrand(c.name.value, c.bio.value) &&
+    !looksLikeBrand(c.name.value, c.bio.value, c.identity.handle) &&
     (c.engagementRate.value == null || (c.engagementRate.value >= minEng && c.engagementRate.value <= maxEng));
 
   let failed = 0;
