@@ -2,10 +2,12 @@
 // a managed queue (QStash/SQS) + worker fleet. Both satisfy this one contract, so swapping at
 // P1 is a config change, not a rewrite. Heavy pipeline work SHOULD route through this, never inline.
 //
-// STATUS (honest, 2026-09-01): this is an INTERFACE ONLY - there is no concrete Queue implementation and
-// nothing imports it yet. Long-running work today runs inline in route handlers with 60-300s windows (see
-// cleanup #4: move that work into a durable job on a real impl of THIS contract). It is a dormant seam, not
-// a live fake path - it serves nothing, so it cannot mislead; it just isn't load-bearing until #4 lands.
+// STATUS (honest, 2026-09-01): the CONTRACT now has two impls - PostgresQueue (lib/queue-postgres.ts, the
+// durable production runner over the `jobs` table, migration 0027) and InMemoryQueue (lib/queue-memory.ts,
+// tests/dev). The contract semantics are asserted by scripts/check-queue.ts. NOT YET load-bearing: no route
+// enqueues onto it yet - long-running work still runs inline in 60-300s handlers. The next #4 increment moves
+// the first heavy route (e.g. competitors/run or the sync) onto enqueue + a cron drain, once migration 0027
+// is applied. Until a route uses it, this is wired but idle - honest, not fake.
 
 export type Job = {
   id: string;
