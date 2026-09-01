@@ -1,6 +1,7 @@
 import { ConnectState } from "@/components/app/connect-state";
 import { CreativeStrategyCard } from "@/components/app/creative/CreativeStrategyCard";
 import { CreativeDnaFilterable } from "@/components/app/creative/creative-dna-filterable";
+import { DeepAnalysisCard } from "@/components/app/creative/deep-analysis-card";
 import type { CockpitData } from "@/lib/app/cockpit-data";
 import type { DiversityComparison } from "@/lib/creative/diversity-vs-competitors";
 
@@ -54,6 +55,9 @@ export function DiversitySection({ data, days, competitors }: { data: CockpitDat
 
       {/* Creative format diversity + Creative DNA, filterable by action (Pause / Refresh / Hold / Continue). */}
       <CreativeDnaFilterable records={data.ownDiversityRecords ?? []} actionByAd={actionByAd} fallback={data.ownDiversity} />
+
+      {/* Deep read (free one-time): real video motion on the top-10 spenders, with the exact list used. */}
+      <DeepAnalysisCard accountId={data.accountId} />
 
       {hasOwnFormat && <CompetitorCompare cmp={competitors ?? null} />}
     </div>
