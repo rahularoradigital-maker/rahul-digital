@@ -173,6 +173,23 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
   - Migration hygiene: renamed my `0015_ad_changes`→`0017` to clear the duplicate ordinal (a parallel
     control-plane workstream owns `0015_audit_log`/`0016_system_flags`).
 
+- **B29 — Influencer Hunt: Modash-style free filters, Phase 1 (2026-09-01).** Researched Modash + HypeAuditor
+  creator-side toolkits and shipped every filter we can power from public data, at no provider cost. Added to
+  the Influencer Hunt filter panel (`components/app/creators/creators-explorer.tsx`): **bio/name/handle keyword
+  search**, **minimum average reel views**, **active-within (last 30/90 days)** from reel recency, and **has a
+  public contact email**. They sit next to the existing engagement / min-followers / gender / region /
+  confidence / new-only controls. All are instant DISPLAY filters (they narrow the on-screen list, never
+  destroy the stored run) and keep unknowns rather than dropping creators we cannot classify (except the
+  explicit "has email" opt-in). **Live-verified on Rahul's account 2026-09-01:** keyword "zzznomatch" → 0 of 3
+  + honest empty state; "style" → 3 of 3; "style" + "has email" → 2 of 3 (multiple filters now COMBINE and
+  return results — the earlier multi-filter-returns-zero bug is gone). Build + tsc green (deployed commit
+  b8be17c).
+  - **Devil's-advocate / open gap:** pool size per run is still small (3–12 real survivors), capped by the
+    ~60s Vercel Hobby serverless limit on the discovery run, not by the filters. Getting to "thousands" needs
+    the background-worker architecture (see the 10k-scale plan), not more filters. Phase 2 (HypeAuditor-style
+    0–100 authenticity/quality proxy + engagement-vs-benchmark chip) and Phase 3 (niche/topic tags + language)
+    are next; real audience demographics stay blocked on a paid provider and are never faked.
+
 ---
 
 *This ledger is updated as new feedback comes in and re-shared as a download on request.*
