@@ -52,6 +52,35 @@ export function hasUsedFreeRun(runs: number): boolean {
   return runs >= FREE_RUNS;
 }
 
+export type DeepInsight = { line: string; patterns: { dimension: string; label: string; count: number }[] };
+
+// Deterministic synthesis of the deep reads into one honest, plain-English line (no AI): the dominant
+// scene + mood among the analysed top-spenders, and how many were read as real video motion. Returns null
+// when fewer than 2 creatives were actually read - too few to call a pattern (never overclaims).
+export function summariseDeepReads(reads: DeepCreativeRow[]): DeepInsight | null {
+  const analyzed = reads.filter((r) => r.analyzed);
+  if (analyzed.length < 2) return null;
+  const videos = analyzed.filter((r) => r.format === "video").length;
+  const top = (pick: (r: DeepCreativeRow) => string | null, dimension: string) => {
+    const counts = new Map<string, number>();
+    for (const r of analyzed) {
+      const v = pick(r);
+      if (v) counts.set(v, (counts.get(v) ?? 0) + 1);
+    }
+    const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+    return best ? { dimension, label: best[0], count: best[1] } : null;
+  };
+  const scene = top((r) => r.sceneType, "scene");
+  const mood = top((r) => r.visualMood, "mood");
+  const patterns = [scene, mood].filter((p): p is NonNullable<typeof p> => p !== null);
+  const parts: string[] = [];
+  if (scene) parts.push(`${scene.count} of your top ${analyzed.length} lean ${scene.label}`);
+  if (mood) parts.push(`the mood is mostly ${mood.label}`);
+  const videoNote = videos > 0 ? ` ${videos} read as real video motion.` : "";
+  const line = parts.length ? `${parts.join("; ")}.${videoNote}` : `Read ${analyzed.length} of your top spenders.${videoNote}`;
+  return { line, patterns };
+}
+
 // DB row (deep_creative_read) -> the manifest the UI shows. analyzed=true only when a model actually read it.
 export function rowToManifest(r: Record<string, unknown>): DeepCreativeRow {
   return {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { summariseDeepReads } from "@/lib/creative/deep-analysis-pure";
 
 type Read = {
   contentHash: string;
@@ -88,6 +89,14 @@ export function DeepAnalysisCard({ accountId }: { accountId: string }) {
 
           {reads.length > 0 && (
             <div className="mt-4">
+              {(() => {
+                const insight = summariseDeepReads(reads);
+                return insight ? (
+                  <div className="mb-3 rounded-[8px] border border-[var(--hairline)] bg-[var(--bg)] p-3 text-[13px] text-[var(--ink)]">
+                    <span className="font-medium">What your top spenders look like:</span> {insight.line}
+                  </div>
+                ) : null;
+              })()}
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                 Creatives analysed (your top {reads.length} by spend)
               </div>

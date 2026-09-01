@@ -3,7 +3,9 @@
 // mapping is honest (analyzed only when a model actually read it).
 // Run: node --experimental-strip-types scripts/check-deep-analysis.ts
 
-import { parseDeepRead, hasUsedFreeRun, rowToManifest, MAX_CREATIVES, FREE_RUNS } from "../lib/creative/deep-analysis-pure.ts";
+import { parseDeepRead, hasUsedFreeRun, rowToManifest, summariseDeepReads, MAX_CREATIVES, FREE_RUNS, type DeepCreativeRow } from "../lib/creative/deep-analysis-pure.ts";
+
+const mk = (o: Partial<DeepCreativeRow>): DeepCreativeRow => ({ contentHash: "h", adId: null, adName: null, format: "image", spendRs: null, sceneType: null, setting: null, palette: null, visualMood: null, contentSubject: null, motionSummary: null, analyzed: true, ...o });
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {
@@ -43,5 +45,20 @@ ok(readRow.motionSummary === "reveal", "motion summary carried to the manifest")
 const unreadRow = rowToManifest({ content_hash: "h2", ad_id: "a2", model: null, spend_rs: null });
 ok(unreadRow.analyzed === false, "row with no model is analyzed=false (could not read)");
 ok(unreadRow.spendRs === null, "null spend stays null (not 0)");
+
+// 7) synthesis: fewer than 2 read -> null (never overclaims a pattern from one creative).
+ok(summariseDeepReads([mk({ sceneType: "lifestyle" })]) === null, "one read -> no pattern");
+ok(summariseDeepReads([mk({ analyzed: false }), mk({ analyzed: false })]) === null, "no ACTUALLY-read creatives -> null");
+
+// 8) synthesis: dominant scene + mood + video count are reported honestly.
+const ins = summariseDeepReads([
+  mk({ format: "video", sceneType: "lifestyle", visualMood: "energetic" }),
+  mk({ format: "video", sceneType: "lifestyle", visualMood: "energetic" }),
+  mk({ format: "image", sceneType: "text-card", visualMood: "calm" }),
+]);
+ok(ins !== null && /lifestyle/.test(ins.line), "names the dominant scene (lifestyle)");
+ok(ins !== null && /energetic/.test(ins.line), "names the dominant mood (energetic)");
+ok(ins !== null && /2 read as real video motion/.test(ins.line), "reports how many were read as video motion");
+ok(ins !== null && ins.patterns.some((p) => p.dimension === "scene" && p.label === "lifestyle" && p.count === 2), "scene pattern carries its count");
 
 console.log(`check-deep-analysis: ${pass} assertions passed.`);
