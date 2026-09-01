@@ -4,16 +4,25 @@
 
 import type { NormalizedCreator, TransparentScore, ScoreComponent } from "../types.ts";
 import { compose } from "./util.ts";
+import { plausibleErCeil } from "./engagement.ts";
+
+const RISK_ANOMALY_BASE = 0.2; // risk's "clearly anomalous" line (looser than the quality ceiling)
 
 export function risk(creator: NormalizedCreator): TransparentScore {
   const components: ScoreComponent[] = [];
 
   const er = creator.engagementRate.value;
   if (er != null && creator.engagementRate.confidence !== "none") {
+    // Reach-adjust the anomaly line the same way the engagement + authenticity scorers do: content seen by
+    // R× the followers legitimately drives ~R× the follower-ER, so a viral creator's high ER is not a risk.
+    const reachRatio = creator.reels?.reachRatio ?? null;
+    const ceil = plausibleErCeil(reachRatio, RISK_ANOMALY_BASE);
+    const reachLifted = reachRatio != null && reachRatio > 1 && er > RISK_ANOMALY_BASE && er <= ceil;
     let r = 0;
-    if (er > 0.2) r = Math.min(100, Math.round((er - 0.2) / 0.3 * 100) + 40);
+    if (er > ceil) r = Math.min(100, Math.round((er - ceil) / (ceil * 1.5) * 100) + 40);
     else if (er < 0.002) r = 60;
-    components.push({ key: "engagement_anomaly", score: r, weight: 0.5, confidence: creator.engagementRate.confidence, reason: `engagement rate ${(er * 100).toFixed(1)}% ${r > 40 ? "is anomalous" : "is in a normal band"}` });
+    const why = r > 40 ? "is anomalous" : reachLifted ? `is high but expected given ${reachRatio!.toFixed(1)}x reach beyond followers` : "is in a normal band";
+    components.push({ key: "engagement_anomaly", score: r, weight: 0.5, confidence: creator.engagementRate.confidence, reason: `engagement rate ${(er * 100).toFixed(1)}% ${why}` });
   } else {
     components.push({ key: "engagement_anomaly", score: 0, weight: 0.5, confidence: "none", reason: "no engagement data to judge" });
   }

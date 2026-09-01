@@ -19,10 +19,11 @@ const MAX_REACH_MULTIPLIER = 4; // a viral spike widens the plausible band, but 
  * travels beyond its follower base. Reels seen by R× the followers legitimately drive ~R× the follower-ER (the
  * same per-viewer interaction rate over a smaller denominator), so a high follower-ER is EXPECTED, not inflated.
  * Capped at MAX_REACH_MULTIPLIER so a viral spike can't excuse an arbitrarily high rate. reachRatio null or <=1
- * (no amplification beyond followers) leaves the base ceiling untouched. */
-export function plausibleErCeil(reachRatio: number | null): number {
+ * (no amplification beyond followers) leaves the base ceiling untouched. `base` lets callers with a looser
+ * anomaly line (e.g. the risk engine's 0.2) share the same reach-scaling; defaults to the quality ceiling. */
+export function plausibleErCeil(reachRatio: number | null, base: number = BASE_PLAUSIBLE_CEIL): number {
   const mult = reachRatio != null && reachRatio > 1 ? Math.min(reachRatio, MAX_REACH_MULTIPLIER) : 1;
-  return BASE_PLAUSIBLE_CEIL * mult;
+  return base * mult;
 }
 
 function erToScore(er: number, ceil: number): number {

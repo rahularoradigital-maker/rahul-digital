@@ -63,6 +63,14 @@ assert.equal(noAud.score, 0);
 // Risk: bought-looking engagement (40%) is flagged; a healthy 3.4% is not.
 assert.ok(risk(creator({ engagementRate: evidence(0.4, "CALCULATED", "medium", NOW) })).score > 40, "40% ER reads as high risk");
 assert.ok(risk(creator()).score < 30, "3.4% ER is a normal band");
+// Risk anomaly line is reach-adjusted, consistent with the engagement + authenticity scorers: a 25% ER with
+// no reach beyond followers is anomalous, but the SAME rate with 3x reach is expected (viral), not risky.
+const reels25: ReelSignals = { avgViews: 300_000, reelEngagementRate: 0.06, reachRatio: 3, postsPerWeek: 4, daysSinceLastPost: 2, sampled: 12, source: "CALCULATED", confidence: "medium", note: "" };
+const anomEng = risk(creator({ engagementRate: evidence(0.25, "CALCULATED", "medium", NOW) })).components.find((c) => c.key === "engagement_anomaly")!;
+const viralEng = risk(creator({ engagementRate: evidence(0.25, "CALCULATED", "medium", NOW), reels: reels25 })).components.find((c) => c.key === "engagement_anomaly")!;
+assert.ok(anomEng.score > 40, "25% ER at 1x reach is flagged anomalous by risk");
+assert.equal(viralEng.score, 0, "25% ER at 3x reach is not a risk (reach explains it)");
+assert.ok(/reach beyond followers/i.test(viralEng.reason), "risk explains the reach lift transparently");
 assert.ok(risk(creator()).components.some((c) => c.key === "fake_followers" && c.confidence === "none"), "fake-follower % is UNKNOWN, never fabricated");
 
 // Quality composite: fully decomposed + confidence = weakest usable sub-score.
