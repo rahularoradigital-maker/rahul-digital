@@ -1,3 +1,4 @@
+"use client";
 // Creative half-life & fatigue radar. Everything here is the REAL day-wise fatigue read
 // (lib/scoring/fatigue): per-ad state, fatigue index, days-to-fatigue (the creative's
 // half-life), and the day-wise evidence behind it. The account half-life is the spend-
@@ -7,6 +8,8 @@ import type { FatigueState } from "@/lib/scoring/fatigue";
 import { forecastFatigue, frameFatigue } from "@/lib/scoring/fatigue-forecast";
 import { AdLink } from "./AdLink";
 import { ObjectiveMeta } from "./ObjectiveMeta";
+import { ObjectiveCardSelect } from "./ObjectiveCardSelect";
+import { useState } from "react";
 
 const STATE_STYLE: Record<FatigueState, { label: string; cls: string }> = {
   fresh: { label: "Fresh", cls: "bg-[var(--good-bg)] text-[var(--good-ink)]" },
@@ -19,8 +22,14 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
   // Worst first: highest fatigue index at the top so the ads to act on lead.
   // Only surface ACTIVE ads: a paused ad is not wasting budget, so it should not appear in the
   // fatigue action list. Unknown status (active === undefined) still shows.
-  const rows = [...ads]
-    .filter((a) => a.fatigueRead && a.active !== false)
+  // Per-card objective filter (client-side): distinct objectives among the active, fatigue-readable ads, then
+  // narrow to the picked one so a buyer can rectify fatigue one objective at a time. The account half-life
+  // headline below stays account-wide (it is a precomputed spend-weighted median), so it is labelled "Account".
+  const [obj, setObj] = useState("all");
+  const candidates = ads.filter((a) => a.fatigueRead && a.active !== false);
+  const objectives = [...new Set(candidates.map((a) => a.objective as string | undefined).filter((o): o is string => !!o))];
+  const rows = candidates
+    .filter((a) => obj === "all" || (a.objective as string | undefined) === obj)
     .sort((a, b) => (b.fatigueRead?.index ?? 0) - (a.fatigueRead?.index ?? 0))
     .slice(0, 6);
 
@@ -28,9 +37,12 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
     <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] p-6">
       <div className="mb-1 flex items-center justify-between gap-3">
         <div className="text-base font-normal">Creative half-life &amp; fatigue</div>
-        <span className="shrink-0 rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
-          Day-wise
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <ObjectiveCardSelect objectives={objectives} value={obj} onChange={setObj} />
+          <span className="rounded-full border border-[var(--hairline)] bg-[var(--bg)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)]">
+            Day-wise
+          </span>
+        </div>
       </div>
 
       {/* Account half-life headline */}
@@ -46,7 +58,9 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
       </div>
 
       <div>
-        {rows.map((ad) => {
+        {rows.length === 0 ? (
+          <div className="border-t border-[var(--surface-alt)] py-3 text-[13px] text-[var(--ink-muted)]">No fatiguing ads for this objective.</div>
+        ) : rows.map((ad) => {
           const f = ad.fatigueRead!;
           const s = STATE_STYLE[f.state];
           // Reframe each ad as named-ad + countdown + mechanism + cost impact (measurement canon), not a

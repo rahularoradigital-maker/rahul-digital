@@ -6,7 +6,7 @@ import type { CockpitAd } from "@/lib/cockpit/analyze";
 // metric (ROAS for conversion, reach/rupee for awareness, CTR otherwise) - so "results improving/worsening"
 // is honest, not a generic guess. Reused across the action queue, the fatigue card, and the action center.
 
-const OBJ_LABEL: Record<string, string> = {
+export const OBJ_LABEL: Record<string, string> = {
   conversion: "Conversions",
   traffic: "Traffic",
   engagement: "Engagement",

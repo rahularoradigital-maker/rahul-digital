@@ -1,3 +1,4 @@
+"use client";
 // "This week's plan" the ranked action queue, straight from view.doThis (already
 // sorted by priority upstream). Each row is joined to its real CockpitAd so the row
 // carries a real confidence bar and the engine's Scale / Iterate / Kill verdict chip,
@@ -8,7 +9,9 @@ import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
 import { ObjectiveMeta } from "./ObjectiveMeta";
 import { CollapsibleRows } from "./CollapsibleRows";
+import { ObjectiveCardSelect } from "./ObjectiveCardSelect";
 import { rupees } from "@/lib/format";
+import { useState } from "react";
 
 type PlanItem = CockpitAction & { adId: string; adName: string; moneyAtStakeRs: number };
 
@@ -34,6 +37,12 @@ function TripleLabel({ j }: { j: AdJudgment }) {
 
 export function ActionList({ items, ads, accountId, dateParam }: { items: PlanItem[]; ads: CockpitAd[]; accountId?: string; dateParam?: string }) {
   const byId = new Map(ads.map((a) => [a.id, a]));
+  // Per-card objective filter (client-side over the already-loaded rows): the distinct objectives present in
+  // this card, and the rows narrowed to the picked one - so a buyer can rectify one objective at a time,
+  // independent of the global topbar filter. No new query (§83).
+  const [obj, setObj] = useState("all");
+  const objectives = [...new Set(items.map((i) => byId.get(i.adId)?.objective as string | undefined).filter((o): o is string => !!o))];
+  const shown = obj === "all" ? items : items.filter((i) => (byId.get(i.adId)?.objective as string | undefined) === obj);
 
   if (items.length === 0) {
     return (
@@ -49,13 +58,16 @@ export function ActionList({ items, ads, accountId, dateParam }: { items: PlanIt
           <div className="text-base font-normal">This week&apos;s ranked plan</div>
           <div className="text-[13px] text-[var(--ink-muted)]">Ranked by money at stake · biggest first</div>
         </div>
-        <span className="shrink-0 rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
-          {items.filter((a) => a.priority === "DO_NOW").length} do-now
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <ObjectiveCardSelect objectives={objectives} value={obj} onChange={setObj} />
+          <span className="rounded-full bg-[var(--accent-soft)] px-3 py-1 text-xs font-semibold text-[var(--accent)]">
+            {shown.filter((a) => a.priority === "DO_NOW").length} do-now
+          </span>
+        </div>
       </div>
       <div>
         <CollapsibleRows initial={8} noun="ads">
-        {items.map((a, i) => {
+        {shown.map((a, i) => {
           const ad = byId.get(a.adId);
           const conf = ad ? Math.round(ad.confidence * 100) : null;
           const v = ad ? VERDICT_STYLE[ad.verdict] : VERDICT_STYLE[a.priority === "DO_NOW" ? "loser" : "do_not_kill_yet"];
