@@ -8,6 +8,8 @@ import { SidebarNav } from "@/components/app/sidebar-nav";
 import { MobileNav } from "@/components/app/mobile-nav";
 import { Topbar } from "@/components/app/topbar";
 import { UsageMeter } from "@/components/app/usage-meter";
+import { BackToTop } from "@/components/app/back-to-top";
+import { OfflineBanner } from "@/components/app/offline-banner";
 import { Button } from "@/components/ui/button";
 
 // AdScale app shell: fixed 256px sidebar (grouped nav + user footer) + working
@@ -37,6 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-full flex-1">
+      <OfflineBanner />
       {/* Skip-link: lets keyboard users jump past the sidebar nav straight to the content. */}
       <a
         href="#main-content"
@@ -85,6 +88,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </header>
         <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8 md:py-10">{children}</main>
       </div>
+      <BackToTop />
     </div>
   );
 }

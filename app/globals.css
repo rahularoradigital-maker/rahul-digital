@@ -98,3 +98,11 @@ h3 {
   font-weight: 400;
   letter-spacing: -0.02em;
 }
+
+/* a11y baseline: every keyboard-focused control shows a visible ring, even ones without their own
+   focus style. Keyboard-only (:focus-visible) so mouse clicks don't get an outline. Components with a
+   richer focus treatment still win via higher specificity. */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
