@@ -17,7 +17,7 @@ type Tier = {
   annual: Money | null; // per-month, billed annually (null for Free)
   annualBilledUsd: number | null;
   tokens: number;
-  sub: string; // plain-English value under the token count (measured: 1 token = 1 analysis; image gen ~20 tokens)
+  sub: string; // what the tokens buy (decisions are unlimited; tokens = AI chat 1 / ad copy 2 / image ~20)
   popular?: boolean;
   cta: { label: string; href: string };
   features: string[];
@@ -32,10 +32,10 @@ const TIERS: Tier[] = [
     annual: null,
     annualBilledUsd: null,
     tokens: 50,
-    sub: "≈ 50 analyses · text only",
+    sub: "for AI chat & ad copy",
     cta: { label: "Start free", href: "/signup" },
-    features: ["1 ad account", "Scale / refresh / kill decisions", "A reason for every call", "Text analyses only"],
-    footnote: "No card required. Creative image generation is not included on Free.",
+    features: ["Unlimited scale / refresh / kill decisions", "1 ad account", "A reason for every call", "No image generation"],
+    footnote: "No card required. Image generation needs a paid plan.",
   },
   {
     name: "Starter",
@@ -44,9 +44,9 @@ const TIERS: Tier[] = [
     annual: { usd: 82, inr: 6900 },
     annualBilledUsd: 990,
     tokens: 1500,
-    sub: "Analyses + creative generation",
+    sub: "for AI chat, copy & images",
     cta: { label: "Get started", href: "/book-demo" },
-    features: ["Meta + Google ad accounts", "AI decisions with reasons", "Creative & image generation", "Multiple ad accounts"],
+    features: ["Unlimited scale / refresh / kill decisions", "Meta + Google ad accounts", "AI chat, copy & image generation", "Multiple ad accounts"],
   },
   {
     name: "Growth",
@@ -55,10 +55,10 @@ const TIERS: Tier[] = [
     annual: { usd: 332, inr: 27900 },
     annualBilledUsd: 3990,
     tokens: 7500,
-    sub: "Analyses + creative generation",
+    sub: "for AI chat, copy & images",
     popular: true,
     cta: { label: "Get started", href: "/book-demo" },
-    features: ["Meta + Google ad accounts", "AI decisions with reasons", "Creative & image generation", "Multiple ad accounts"],
+    features: ["Unlimited scale / refresh / kill decisions", "Meta + Google ad accounts", "AI chat, copy & image generation", "Multiple ad accounts"],
   },
   {
     name: "Scale",
@@ -67,9 +67,9 @@ const TIERS: Tier[] = [
     annual: { usd: 832, inr: 69900 },
     annualBilledUsd: 9990,
     tokens: 25000,
-    sub: "Analyses + creative generation",
+    sub: "for AI chat, copy & images",
     cta: { label: "Talk to sales", href: "/book-demo" },
-    features: ["Meta + Google ad accounts", "AI decisions with reasons", "Creative & image generation", "Multiple ad accounts"],
+    features: ["Unlimited scale / refresh / kill decisions", "Meta + Google ad accounts", "AI chat, copy & image generation", "Multiple ad accounts"],
   },
 ];
 
@@ -174,9 +174,9 @@ export function PricingTiers() {
       </div>
 
       <p className="mt-8 text-center text-[12px] text-[var(--ink-muted)]">
-        One token is one AI action - an analysis, explanation, or chat answer. Creative image generation uses about 20
-        tokens. Rupee prices are an approximate conversion of the US dollar price. Every plan gives a reason for
-        each recommendation, and AdScale never edits or spends on your account.
+        Every plan includes unlimited scale, refresh, and kill decisions, with a reason for each. Tokens are used
+        only for the AI extras - a chat answer is 1 token, ad copy 2 tokens, an AI image about 20. Rupee prices are
+        an approximate conversion of the US dollar price, and AdScale never edits or spends on your account.
       </p>
     </div>
   );

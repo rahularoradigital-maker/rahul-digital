@@ -7,7 +7,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.verc
 export const metadata = {
   title: "Pricing — AdScale",
   description:
-    "Simple token-based pricing. Start free with 50 tokens (50 ad-account analyses a month), then scale up. Every plan gives a reason for every call, and AdScale never spends on your account.",
+    "Every plan includes unlimited ad-account decisions. Tokens power the AI extras - chat and creative generation. Start free with unlimited decisions plus 50 tokens, no card required.",
   alternates: { canonical: "/pricing" },
   openGraph: {
     type: "website",
@@ -25,11 +25,11 @@ export const metadata = {
 const FAQS: { q: string; a: string }[] = [
   {
     q: "What is a token?",
-    a: "A token is one AI action. One analysis - a scale, refresh, or kill recommendation with the reason behind it - is 1 token. Creative image generation uses more (about 20 tokens), because it costs more to produce. Every plan shows what your tokens cover, so you are never guessing.",
+    a: "Tokens power the AI extras: chat answers and creative generation. Every plan includes unlimited ad-account decisions - tokens are only spent when you ask the AI a question (1 token), generate ad copy (2 tokens), or generate an image (about 20 tokens).",
   },
   {
     q: "What happens when I run out of tokens?",
-    a: "Your analyses pause until your tokens reset at the start of the next month, and we prompt you to move to a larger plan. We do not silently charge you overage or stop your account without telling you.",
+    a: "Your unlimited decisions keep working. Only AI chat and creative generation pause until your tokens reset at the start of the next month, and we prompt you to upgrade. We never silently charge you overage.",
   },
   {
     q: "Do tokens roll over?",
@@ -37,7 +37,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Is the Free plan really free?",
-    a: "Yes. Free gives you 50 tokens a month - 50 analyses on your own ad account - with no card required. It is enough to see genuine recommendations on your data. Creative image generation is not included on Free.",
+    a: "Yes. Free includes unlimited scale, refresh, and kill decisions, plus 50 tokens a month for AI chat and ad copy, with no card required. Image generation needs a paid plan.",
   },
   {
     q: "Will AdScale change my ads automatically?",
@@ -80,8 +80,8 @@ export default function PricingPage() {
             Start free. Scale with your ad spend.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-[var(--ink-muted)]">
-            Every plan reads your Meta and Google ads and tells you what to scale, refresh, or kill, with a reason
-            for every call. Tokens map to real analyses, so you always know what you are buying.
+            Every plan includes unlimited scale, refresh, and kill decisions, with a reason for each. Tokens power
+            the AI extras - chat answers and creative generation - so you only pay for what actually costs to produce.
           </p>
         </section>
 
