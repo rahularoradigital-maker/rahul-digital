@@ -100,13 +100,30 @@ export function trendScore(rows: MetricsRow[], objective: Objective): number {
 // construction, so health could never move. calibrate-at-build benchmarks:
 //   ROAS: 1x break-even ~39, 2x ~63, 4x ~86 (100*(1-e^-0.5r))
 //   CTR:  ~1% ~49, ~2% ~74, ~4% ~93 (100*(1-e^-(ctr/0.015)))
-function roasToScore(roas: number): number {
+export function roasToScore(roas: number): number {
   if (roas <= 0) return 0;
   return clamp(Math.round(100 * (1 - Math.exp(-0.5 * roas))), 0, 100);
 }
 function ctrToScore(ctr: number): number {
   if (ctr <= 0) return 0;
   return clamp(Math.round(100 * (1 - Math.exp(-ctr / 0.015))), 0, 100);
+}
+
+// --- SHADOW (P1-4 candidate; NOT wired into healthScoreOf - pending shadow review + Rahul's promote call). ---
+// Empirical-Bayes shrinkage (§20): before scoring a raw metric on the universal curve, pull it toward a PRIOR
+// mean, weighted by the metric's OWN sample. A 1-purchase 15x ROAS shrinks hard toward the prior (its number
+// is barely evidenced); a 120-purchase 5x barely moves. This kills tiny-sample flukes WITHOUT losing
+// cross-account comparability (the score is still the absolute-curve level, just on an evidence-weighted
+// value). k = the sample at which the ad's own number is trusted ~half-and-half vs the prior (calibrate-at-build).
+export function shrinkToPrior(raw: number, sampleN: number, priorMean: number, k: number): number {
+  const n = Math.max(0, sampleN);
+  return n + k <= 0 ? priorMean : (n * raw + k * priorMean) / (n + k);
+}
+export function roasToScoreShrunk(roas: number, conversions: number, priorRoas: number, k = 20): number {
+  return roasToScore(shrinkToPrior(roas, conversions, priorRoas, k));
+}
+export function ctrToScoreShrunk(ctr: number, impressions: number, priorCtr: number, k = 5000): number {
+  return ctrToScore(shrinkToPrior(ctr, impressions, priorCtr, k));
 }
 
 // Per-ad absolute objective score used for Account Health. Conversion is scored on ROAS
