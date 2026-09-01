@@ -53,7 +53,7 @@ export async function readSemanticsCache(userId: string, contentHashes: string[]
 }
 
 type CopySemantics = Pick<CreativeSemantics, "funnelStage" | "hookType" | "emotion" | "subject">;
-type VisualSemantics = Pick<CreativeSemantics, "sceneType" | "setting" | "palette" | "visualMood" | "contentSubject">;
+type VisualSemantics = Pick<CreativeSemantics, "sceneType" | "setting" | "palette" | "visualMood" | "contentSubject" | "funnelStage">;
 
 /** Decode ONE creative's copy into its four semantic dimensions, or null when there is nothing to read. */
 export async function decodeCreativeCopy(asset: CreativeAsset): Promise<CopySemantics | null> {
@@ -95,7 +95,7 @@ export async function decodeMissing(userId: string, items: { contentHash: string
   }
 }
 
-const VISUAL_SCHEMA = stringObjectSchema(["sceneType", "setting", "palette", "visualMood", "contentSubject"]);
+const VISUAL_SCHEMA = stringObjectSchema(["sceneType", "setting", "palette", "visualMood", "contentSubject", "funnelStage"]);
 
 // Decode ONE creative's actual IMAGE (or the video's thumbnail) into what is visible - scene type,
 // setting, palette, mood, and a plain description of what is shown. Vision, not copy. Fingerprint-once.
@@ -112,11 +112,12 @@ export async function decodeCreativeVisual(asset: CreativeAsset): Promise<Visual
     "- palette: the dominant colours in 1-3 words (e.g. warm pastels, bold red and black, muted neutrals).\n" +
     "- visualMood: the single visual mood in one word (e.g. energetic, calm, premium, playful, urgent, aspirational).\n" +
     "- contentSubject: a short phrase for what is literally shown (e.g. woman modelling a kurta outdoors, product flatlay on white).\n" +
+    "- funnelStage: the buyer intent the visual signals - TOF (awareness/lifestyle/problem), MOF (consideration/benefit/demo), or BOF (offer/discount/urgency/direct product).\n" +
     "Judge only what is visible. Never invent detail you cannot see.";
   const out = await callGemini(prompt, VISUAL_SCHEMA, inline);
   if (!out) return null;
-  const sem = { sceneType: str(out.sceneType), setting: str(out.setting), palette: str(out.palette), visualMood: str(out.visualMood), contentSubject: str(out.contentSubject) };
-  return sem.sceneType || sem.setting || sem.palette || sem.visualMood || sem.contentSubject ? sem : null;
+  const sem = { sceneType: str(out.sceneType), setting: str(out.setting), palette: str(out.palette), visualMood: str(out.visualMood), contentSubject: str(out.contentSubject), funnelStage: str(out.funnelStage) };
+  return sem.sceneType || sem.setting || sem.palette || sem.visualMood || sem.contentSubject || sem.funnelStage ? sem : null;
 }
 
 // Decode up to `max` creatives that lack a VISUAL read + persist them (fingerprint-once). Upserts only the
@@ -134,7 +135,7 @@ export async function decodeMissingVisual(userId: string, items: { contentHash: 
       if (!sem) continue;
       await admin
         .from("creative_semantics")
-        .upsert({ user_id: userId, content_hash: it.contentHash, scene_type: sem.sceneType, setting: sem.setting, palette: sem.palette, visual_mood: sem.visualMood, content_subject: sem.contentSubject, visual_model: "gemini", updated_at: new Date().toISOString() }, { onConflict: "user_id,content_hash" })
+        .upsert({ user_id: userId, content_hash: it.contentHash, scene_type: sem.sceneType, setting: sem.setting, palette: sem.palette, visual_mood: sem.visualMood, content_subject: sem.contentSubject, funnel_stage: sem.funnelStage, visual_model: "gemini", updated_at: new Date().toISOString() }, { onConflict: "user_id,content_hash" })
         .then(undefined, () => {});
       done++;
     } catch {
