@@ -220,6 +220,7 @@ export function CreativeStudio() {
     if (!active) return;
     await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId, productId: active, platform }) });
     await refreshAssets();
+    refreshUsage(); // generation spent tokens - keep the cost preview honest
   });
 
   const setApproval = (creativeId: string, approval: string) => run("appr:" + creativeId, async () => {
@@ -365,7 +366,24 @@ export function CreativeStudio() {
                         <p className="text-[14px] font-medium">{c.headline || c.angle}</p>
                         <p className="text-[12px] text-[var(--ink-muted)]">{c.formatId} · {c.awarenessStage} · match score {c.score}</p>
                       </div>
-                      <button className={BTN_PRIMARY} disabled={busy === "gen:" + c.id} onClick={() => generate(c.id)}>{busy === "gen:" + c.id ? "Generating…" : cAssets.length ? "Regenerate" : "Generate ads"}</button>
+                      <div className="flex flex-col items-end gap-1">
+                        <button
+                          className={BTN_PRIMARY}
+                          disabled={busy === "gen:" + c.id || (usage != null && (!usage.imageGen || usage.remaining < IMAGE_TOKENS))}
+                          onClick={() => generate(c.id)}
+                        >
+                          {busy === "gen:" + c.id ? "Generating…" : cAssets.length ? "Regenerate" : "Generate ads"}
+                        </button>
+                        {/* Point-of-action cost preview (Phase 4): show the token cost + what's left, and route to
+                            /pricing when the plan can't cover it - no silent 402 surprise. */}
+                        {usage != null && !usage.imageGen ? (
+                          <span className="text-[11px] text-[var(--ink-muted)]">Needs a paid plan · <Link href="/pricing" className="text-[var(--accent)] hover:underline">Upgrade</Link></span>
+                        ) : usage != null && usage.remaining < IMAGE_TOKENS ? (
+                          <span className="text-[11px] text-[var(--ink-muted)]">Not enough tokens · <Link href="/pricing" className="text-[var(--accent)] hover:underline">Upgrade</Link></span>
+                        ) : (
+                          <span className="text-[11px] text-[var(--ink-muted)]">Uses {IMAGE_TOKENS} tokens{usage != null ? ` · ${usage.remaining.toLocaleString("en-US")} left` : ""}</span>
+                        )}
+                      </div>
                     </div>
                     {c.supportingCopy ? <p className="text-[13px]">{c.supportingCopy}</p> : null}
                     <p className="text-[12px] text-[var(--ink-muted)]"><span className="text-[var(--ink)]">Why this:</span> {c.whyThisConcept}</p>
