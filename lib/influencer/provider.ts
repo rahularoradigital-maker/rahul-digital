@@ -22,6 +22,11 @@ export interface CreatorDataProvider {
    * scorers can judge content/brand relevance from a creator's ACTUAL posts, not just their bio. A creator
    * found under a brand hashtag is relevant even when the bio never repeats the category words. */
   postContext?(): Map<string, string[]>;
+  /** Optional TWO-TIER enrichment: profileBasic is a cheap profile-only fetch (no reels) so a big candidate
+   * pool can be filtered (brands/floor) before spending a reels credit each; attachReels then fetches reels
+   * only for the survivors. When both are present the pipeline uses them; otherwise it falls back to profile(). */
+  profileBasic?(identity: CreatorIdentity): Promise<NormalizedCreator>;
+  attachReels?(creator: NormalizedCreator): Promise<NormalizedCreator>;
 }
 
 /** Does this provider support a capability? (Keeps routing in one place.) */

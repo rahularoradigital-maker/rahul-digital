@@ -249,9 +249,24 @@ export function scrapeCreatorsIgProvider(apiKey: string): CreatorDataProvider {
         .map((x) => x.identity);
     },
 
+    // Profile ONLY (1 call) - the cheap Tier-1 fetch so a big candidate pool can be filtered (brands/floor)
+    // before spending a reels credit on each. Reels are left null; the pipeline attaches them for survivors.
+    async profileBasic(identity: CreatorIdentity): Promise<NormalizedCreator> {
+      const body = await getJson(`${BASE}/profile?handle=${encodeURIComponent(identity.handle)}`, apiKey);
+      const creator = mapProfile(identity, body);
+      creator.reels = null;
+      return creator;
+    },
+
+    // Attach reel signals to an already-fetched creator (1 call) - Tier-2, only for survivors.
+    async attachReels(creator: NormalizedCreator): Promise<NormalizedCreator> {
+      const reelsBody = await getJson(`${BASE}/user/reels?user_id=${encodeURIComponent(creator.identity.platformUserId)}&trim=true`, apiKey).catch(() => null);
+      const items = reelsBody && Array.isArray(reelsBody.items) ? (reelsBody.items as Record<string, unknown>[]) : [];
+      return { ...creator, reels: computeReelSignals(items, creator.followers.value) };
+    },
+
     async profile(identity: CreatorIdentity): Promise<NormalizedCreator> {
-      // Fetch profile + recent reels IN PARALLEL. Reels are best-effort: a reels failure must never sink the
-      // profile (the creator is still scorable on the rest), so it degrades to null reel signals.
+      // Single-call convenience (profile + reels in parallel). Kept for callers/tests that fetch one creator.
       const [body, reelsBody] = await Promise.all([
         getJson(`${BASE}/profile?handle=${encodeURIComponent(identity.handle)}`, apiKey),
         getJson(`${BASE}/user/reels?user_id=${encodeURIComponent(identity.platformUserId)}&trim=true`, apiKey).catch(() => null),

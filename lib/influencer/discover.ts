@@ -10,8 +10,9 @@ import { rankCreators, type RankedCreator } from "./rank.ts";
 import { canonicalKey } from "./dedup.ts";
 import { looksLikeBrand } from "./derive.ts";
 
-const DEFAULT_ENRICH = 32; // profiles fetched per run (= credits); a bigger pool so real creators remain after brands are dropped
-const DEFAULT_CONCURRENCY = 8; // parallel profile fetches: keeps the whole run fast (well under the ~60s serverless cap)
+const DEFAULT_ENRICH = 60; // Tier-1 candidate pool: profile-only fetches are cheap, so we scan a big pool then filter
+const REELS_MAX = 26; // Tier-2: reels are fetched only for this many SURVIVORS (after brands/floor are dropped)
+const DEFAULT_CONCURRENCY = 12; // parallel fetches: keeps the whole run fast (well under the ~60s serverless cap)
 const DEFAULT_MIN_FOLLOWERS = 10_000; // influencer floor: drop tiny shops/resellers. Adjustable per run.
 // Plausible engagement band. Below the floor = dead/bought-follower BRAND pages (a real creator engages its
 // audience); above the ceiling = bought-engagement. Both are dropped so only real creators remain. A creator
@@ -59,37 +60,43 @@ export async function discoverAndRank(
   const queries = discoveryHashtags(target, accountName);
   const spec = { ...creatorSearchSpecFrom(target), keywords: queries, minFollowers: floor };
 
-  // Cheap, broad discovery first. Bounded to `enrich` so we never fetch a profile we won't use.
+  // Discover a big candidate pool (bounded to `enrich`).
   const discovered = await provider.discover(spec, enrich);
   // Dedupe candidates by canonical id BEFORE enriching, so a provider that returns the same creator twice
   // never costs us two profile credits for one person.
   const byKey = new Map<string, (typeof discovered)[number]>();
   for (const id of discovered) if (!byKey.has(canonicalKey(id))) byKey.set(canonicalKey(id), id);
   const identities = [...byKey.values()];
+  const concurrency = opts.concurrency ?? DEFAULT_CONCURRENCY;
 
-  // Progressive enrichment: full profile only for the candidate set. Failures isolate to that creator.
+  // The test for a REAL creator to keep (applied once we know followers/bio/engagement): above the follower
+  // floor, not a brand/shop, and not a dead/bought page. Unknowns are kept (never guessed as a fail).
+  const keep = (c: NormalizedCreator) =>
+    (c.followers.value == null || c.followers.value >= floor) &&
+    !looksLikeBrand(c.name.value, c.bio.value) &&
+    (c.engagementRate.value == null || (c.engagementRate.value >= minEng && c.engagementRate.value <= maxEng));
+
   let failed = 0;
-  const enriched = await mapPool(identities, opts.concurrency ?? DEFAULT_CONCURRENCY, async (id) => {
-    try {
-      return await provider.profile(id);
-    } catch {
-      failed++;
-      return null;
-    }
-  });
-  // Re-apply the follower floor AFTER enrichment: some hashtag records carry no follower_count, so a tiny
-  // shop can slip past the discovery-stage floor. Now that we have real follower counts, drop anyone below
-  // the floor so a 2K reseller can never rank above real creators. (Unknown followers are kept, not guessed.)
-  const creators = enriched
-    .filter((c): c is NormalizedCreator => c !== null)
-    .filter((c) => c.followers.value == null || c.followers.value >= floor)
-    // Drop BRANDS / shops / resellers (competitors) - we want influencers, not other apparel labels.
-    .filter((c) => !looksLikeBrand(c.name.value, c.bio.value))
-    // Drop dead/bought pages: known engagement outside the plausible band. Unknown engagement is kept.
-    .filter((c) => {
-      const er = c.engagementRate.value;
-      return er == null || (er >= minEng && er <= maxEng);
+  let creators: NormalizedCreator[];
+  if (typeof provider.profileBasic === "function" && typeof provider.attachReels === "function") {
+    // TWO-TIER: cheap profile-only for the whole pool, drop brands/floor/dead, THEN reels for survivors only -
+    // so a much bigger pool of real creators survives without blowing the reels-credit / time budget.
+    const basics = (
+      await mapPool(identities, concurrency, async (id) => {
+        try { return await provider.profileBasic!(id); } catch { failed++; return null; }
+      })
+    ).filter((c): c is NormalizedCreator => c !== null).filter(keep);
+    const forReels = basics.slice(0, REELS_MAX);
+    creators = await mapPool(forReels, concurrency, async (c) => {
+      try { return await provider.attachReels!(c); } catch { return c; } // keep without reels on failure
     });
+  } else {
+    // Single-tier fallback (fake providers / simple adapters): profile() fetches everything at once.
+    const enriched = await mapPool(identities, concurrency, async (id) => {
+      try { return await provider.profile(id); } catch { failed++; return null; }
+    });
+    creators = enriched.filter((c): c is NormalizedCreator => c !== null).filter(keep);
+  }
 
   // rankCreators dedupes (same platform user id) and orders purely by the quality formula. Feed the post
   // captions gathered during discovery so content/brand fit judge real posts, not just the bio.
