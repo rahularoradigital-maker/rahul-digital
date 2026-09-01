@@ -64,6 +64,26 @@ repeat. Living state: `docs/intelligence/PRODUCT-COMPLETION-MATRIX.md`. Continue
 obvious safe next gap; ASK only for gated items (payment model, destructive data ops like account
 deletion, legal/privacy, major architecture, or a new external service needing keys).
 
+## Concurrent sessions — NEVER clobber (multiple chats share this repo)
+
+Several Claude sessions work this repo and the `validation-v0-v1` branch at the same time, sharing ONE
+working tree and pushing to ONE branch. Overwriting a sibling's work is the top hazard. Rules, always:
+
+1. Stage ONLY the files you changed: `git add <path> <path>`. NEVER `git add -A`, `git add .`, or
+   `git commit -am` — a blanket add sweeps up another session's uncommitted work into your commit.
+2. Before editing a file, check `git status`. If it shows ` M` (modified, uncommitted) and you did not
+   change it, it is a sibling's live WIP — do not overwrite it; pick another file or wait. The Edit tool
+   also refuses when a file changed since you read it: re-read and merge, never force the old content back.
+3. Before every push, INTEGRATE first: `scripts/safe-push.sh` (it does `git fetch` + `git pull --rebase
+   --autostash` + push). This rebases your commits ON TOP of siblings' pushed work instead of racing.
+4. NEVER `git push --force` / `--force-with-lease` on this branch. On a rejected (non-fast-forward) push,
+   fetch + rebase + retry — never force.
+5. Before claiming done or taking something live, `git fetch` and confirm your commit is the newest on
+   origin for the files you touched (not silently superseded). If a sibling changed the same code, merge
+   your intent onto theirs; do not revert theirs.
+6. When you see a "changed on disk since you last read it" notice, that is a sibling's edit — treat it as
+   the current truth, re-read, and build on it. Do not undo it.
+
 - Design spec: `docs/superpowers/specs/2026-08-25-adbrain-mvp-design.md`
 - Phase 0 plan: `docs/superpowers/plans/2026-08-25-phase-0-foundation.md`
 - Setup steps for the owner: `SETUP.md`
