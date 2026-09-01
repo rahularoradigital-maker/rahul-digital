@@ -190,6 +190,24 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
     0–100 authenticity/quality proxy + engagement-vs-benchmark chip) and Phase 3 (niche/topic tags + language)
     are next; real audience demographics stay blocked on a paid provider and are never faked.
 
+- **B30 — Influencer Hunt: HypeAuditor-style authenticity + benchmark, Phase 2 (2026-09-01).** Two new
+  creator-quality signals, both from public data only (no provider cost), both pure functions over the creator
+  object so they work on existing saved runs with no migration and never touch the verified ranking:
+  - **Authenticity score (0–100)** (`lib/influencer/scoring/authenticity.ts`) — a brand-INDEPENDENT "is this a
+    real, healthy creator?" read (the free proxy for what HypeAuditor sells). Composed transparently from
+    engagement plausibility (bought-engagement penalty), **comment authenticity** (comment share of
+    interactions — the classic fake-likes tell), follow-ratio health (mass-following = growth hack), and reel
+    reach realness (ghost-follower check). Missing inputs drop out and are never fabricated; fake-follower %
+    stays honestly unknown (needs a paid audience provider). Shown as a badge on each card + a full breakdown
+    in the profile Score tab.
+  - **Engagement-vs-size benchmark** (`lib/influencer/scoring/benchmark.ts`) — classifies each creator's ER as
+    above / typical / below the typical public IG band FOR ITS FOLLOWER SIZE (ER declines with audience size —
+    the real published pattern). Rounded, ledger-tunable bands; returns nothing when data is unknown.
+  - **"Min. authenticity" filter** (Any / 60+ / 75+) — the "target higher-confidence creators" ask, as an
+    instant display filter. Runnable check `check:influencer-authenticity` added to the gate.
+  - Build + tsc + all influencer checks green (deployed commit 81a210f). Phase 3 (niche/topic tags + language)
+    next; real audience demographics remain blocked on a paid provider and are never faked.
+
 ---
 
 *This ledger is updated as new feedback comes in and re-shared as a download on request.*
