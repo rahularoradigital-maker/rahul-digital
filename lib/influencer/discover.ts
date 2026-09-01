@@ -10,9 +10,12 @@ import { rankCreators, type RankedCreator } from "./rank.ts";
 import { canonicalKey } from "./dedup.ts";
 import { looksLikeBrand } from "./derive.ts";
 
-const DEFAULT_ENRICH = 60; // Tier-1 candidate pool: profile-only fetches are cheap, so we scan a big pool then filter
-const REELS_MAX = 26; // Tier-2: reels are fetched only for this many SURVIVORS (after brands/floor are dropped)
-const DEFAULT_CONCURRENCY = 12; // parallel fetches: keeps the whole run fast (well under the ~60s serverless cap)
+// Sized to stay safely under the ~60s serverless cap AND under provider rate limits. The pool still beats the
+// old single-tier (~11) because the cheap Tier-1 pass drops brands/floor BEFORE any reels credit is spent, so
+// the reels budget covers real survivors instead of being wasted on brands. Total calls ~= ENRICH + REELS_MAX.
+const DEFAULT_ENRICH = 36; // Tier-1 candidate pool (profile-only, cheap)
+const REELS_MAX = 18; // Tier-2: reels fetched only for this many SURVIVORS (after brands/floor are dropped)
+const DEFAULT_CONCURRENCY = 10; // parallel fetches: fast but gentle on the provider's rate limit
 const DEFAULT_MIN_FOLLOWERS = 10_000; // influencer floor: drop tiny shops/resellers. Adjustable per run.
 // Plausible engagement band. Below the floor = dead/bought-follower BRAND pages (a real creator engages its
 // audience); above the ceiling = bought-engagement. Both are dropped so only real creators remain. A creator
