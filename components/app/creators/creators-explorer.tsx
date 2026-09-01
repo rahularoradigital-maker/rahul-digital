@@ -31,6 +31,7 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
   const [region, setRegion] = useState<string>("any");
   const [minConf, setMinConf] = useState<MinConfidence>("any");
   const [minFollowers, setMinFollowers] = useState<string>("");
+  const [newOnly, setNewOnly] = useState(false);
 
   // Regions available in this run (creators' own stated locations, pulled from bios).
   const regions = useMemo(() => {
@@ -75,7 +76,7 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
       const res = await fetch("/api/influencer/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ minFollowers: parseInt(minFollowers.replace(/[^\d]/g, ""), 10) || undefined }),
+        body: JSON.stringify({ minFollowers: parseInt(minFollowers.replace(/[^\d]/g, ""), 10) || undefined, newOnly }),
       });
       const d = (await res.json()) as { ok?: boolean; error?: string; count?: number };
       if (!d.ok) { setSearchMsg(d.error ?? "Search failed."); return; }
@@ -149,7 +150,11 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
             <span className="text-[13px] text-muted-foreground"><span className="font-medium text-foreground">{filtered.length}</span> of {creators.length} shown{eng !== "any" ? ` · ${eng.replace("+", "%+").replace("-", "–")}% eng` : ""}</span>
             <div className="flex items-center gap-2">
               {active ? <Button variant="ghost" size="sm" onClick={clear} disabled={busy}>Clear</Button> : null}
-              <Button size="sm" onClick={runSearch} disabled={busy}><Search /> {busy ? "Searching…" : "Run search with these filters"}</Button>
+              <label className="flex cursor-pointer items-center gap-1.5 text-[12.5px] text-muted-foreground" title="Exclude every creator you've already been shown in past searches">
+                <input type="checkbox" checked={newOnly} onChange={(e) => setNewOnly(e.target.checked)} className="h-3.5 w-3.5 rounded border-input accent-[var(--ink)]" />
+                New influencers only
+              </label>
+              <Button size="sm" onClick={runSearch} disabled={busy}><Search /> {busy ? "Searching…" : "Run search"}</Button>
             </div>
           </div>
           {searchMsg ? <div className="mt-2 rounded-md border border-[var(--warn-ink)]/25 bg-[var(--warn-bg)] px-3 py-2 text-[12.5px] text-[var(--warn-ink)]">{searchMsg}</div> : null}

@@ -125,4 +125,8 @@ const brandProvider: CreatorDataProvider = {
 };
 assert.equal((await discoverAndRank(brandProvider, target, "S", { enrich: 3 })).ranked.length, 0, "a brand/shop account is dropped from the creator shortlist");
 
+// --- "New influencers only": excludeIds drops already-seen creators BEFORE enrichment. ---
+const exclRes = await discoverAndRank(fake, target, "S", { enrich: 10, excludeIds: new Set(["a"]) });
+assert.ok(!exclRes.ranked.some((r) => r.creator.identity.platformUserId === "a"), "excludeIds drops an already-seen creator");
+
 console.log("PASS: influencer discovery (search->enrich->dedupe->rank, failure isolation, zero-result path)");

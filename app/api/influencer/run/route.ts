@@ -7,7 +7,7 @@ import { resolveKey } from "@/lib/keys";
 import { brandTargetFromProfile } from "@/lib/influencer/brand-target";
 import { scrapeCreatorsIgProvider } from "@/lib/influencer/providers/scrapecreators-ig";
 import { discoverAndRank } from "@/lib/influencer/discover";
-import { saveDiscovery } from "@/lib/influencer/store";
+import { saveDiscovery, loadSeenCreatorIds } from "@/lib/influencer/store";
 
 // Run one Influencer Hunt discovery for the user's ACTIVE account: derive the brand target from the account's
 // confirmed brand profile, discover + rank real creators via ScrapeCreators, and store the ranked run so the
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   // Only min-followers is a SEARCH input (it sets the discovery floor - what gets found). Every other filter
   // (engagement band, gender, region, confidence) is applied as an instant DISPLAY filter on the page, never
   // here - so a narrow filter can never overwrite/shrink the stored pool. A search always stores the FULL set.
-  const filters = (await request.json().catch(() => ({}))) as { minFollowers?: number };
+  const filters = (await request.json().catch(() => ({}))) as { minFollowers?: number; newOnly?: boolean };
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -46,10 +46,15 @@ export async function POST(request: Request) {
 
   const target = brandTargetFromProfile(profile);
   const minFollowers = Number.isFinite(Number(filters.minFollowers)) && Number(filters.minFollowers) > 0 ? Number(filters.minFollowers) : undefined;
+  // "New influencers only": exclude everyone this account has already been shown in any past run.
+  const excludeIds = filters.newOnly ? await loadSeenCreatorIds(user.id, session.activeExternalId) : undefined;
   try {
-    const { ranked, stats } = await discoverAndRank(scrapeCreatorsIgProvider(key), target, profile.accountName ?? session.activeAccountName, { minFollowers });
+    const { ranked, stats } = await discoverAndRank(scrapeCreatorsIgProvider(key), target, profile.accountName ?? session.activeAccountName, { minFollowers, excludeIds });
     if (ranked.length === 0) {
-      return NextResponse.json({ ok: false, error: "No creators found for this brand's search terms. Try refining the brand category/products in Market.", stats }, { status: 200 });
+      const why = filters.newOnly
+        ? "No NEW creators left for these search terms - you've already been shown the ones we can find. Turn off 'new only' or broaden the brand category/products in Market."
+        : "No creators found for this brand's search terms. Try refining the brand category/products in Market.";
+      return NextResponse.json({ ok: false, error: why, stats }, { status: 200 });
     }
     // Always store the FULL discovered set. Narrowing (engagement/gender/region/confidence) happens on the
     // page as instant display filters, so a search can never overwrite or shrink the pool.

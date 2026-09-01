@@ -11,6 +11,22 @@ import type { DiscoverStats } from "./discover";
 
 export type StoredRun = { ranked: RankedCreator[]; createdAt: string; stats: DiscoverStats | null; target: BrandTarget | null };
 
+/** Every creator's platform_user_id that has EVER appeared in a stored run for this account - i.e. everyone
+ * the user has already been shown. Powers "new influencers only": on a fresh search we exclude these so the
+ * user never re-sees a creator. Scoped to the account via its searches. */
+export async function loadSeenCreatorIds(userId: string, accountExternalId: string): Promise<Set<string>> {
+  const admin = createAdminClient();
+  const { data: searches } = await admin
+    .from("influencer_search")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("account_external_id", accountExternalId);
+  const searchIds = ((searches ?? []) as { id: string }[]).map((s) => s.id);
+  if (searchIds.length === 0) return new Set();
+  const { data: rows } = await admin.from("influencer_search_result").select("platform_user_id").in("search_id", searchIds);
+  return new Set(((rows ?? []) as { platform_user_id: string }[]).map((r) => r.platform_user_id));
+}
+
 /** Save one completed discovery run + its ranked results. Best-effort: a store failure must not lose the
  * results the caller already computed, so it throws and the caller decides (the run still returns to the UI). */
 export async function saveDiscovery(

@@ -51,7 +51,7 @@ export async function discoverAndRank(
   provider: CreatorDataProvider,
   target: BrandTarget,
   accountName: string | null,
-  opts: { enrich?: number; concurrency?: number; minFollowers?: number; minEngagement?: number; maxEngagement?: number } = {},
+  opts: { enrich?: number; concurrency?: number; minFollowers?: number; minEngagement?: number; maxEngagement?: number; excludeIds?: Set<string> } = {},
 ): Promise<DiscoverResult> {
   const enrich = opts.enrich ?? DEFAULT_ENRICH;
   const floor = opts.minFollowers ?? DEFAULT_MIN_FOLLOWERS;
@@ -69,7 +69,9 @@ export async function discoverAndRank(
   // never costs us two profile credits for one person.
   const byKey = new Map<string, (typeof discovered)[number]>();
   for (const id of discovered) if (!byKey.has(canonicalKey(id))) byKey.set(canonicalKey(id), id);
-  const identities = [...byKey.values()];
+  // "New influencers only": drop anyone the user has already been shown BEFORE enriching, so the whole budget
+  // goes to fresh creators (and none we've surfaced before come back).
+  const identities = [...byKey.values()].filter((id) => !opts.excludeIds?.has(id.platformUserId));
   const concurrency = opts.concurrency ?? DEFAULT_CONCURRENCY;
 
   // The test for a REAL creator to keep (applied once we know followers/bio/engagement): above the follower
