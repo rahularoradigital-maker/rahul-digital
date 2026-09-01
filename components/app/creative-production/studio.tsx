@@ -318,6 +318,19 @@ export function CreativeStudio() {
     setAssets((prev) => prev.map((a) => (a.creativeId === creativeId ? { ...a, approval } : a)));
   });
 
+  // Bulk review: apply an approval to every asset matching a predicate (e.g. approve all QA-READY). Sequential
+  // so the DB isn't hammered; shows progress; each success updates local state so the grid reflects it live.
+  const bulkSetApproval = (key: string, predicate: (a: Asset) => boolean, approval: string) => run(key, async () => {
+    const targets = assets.filter(predicate);
+    for (let i = 0; i < targets.length; i++) {
+      setBatchProgress(`${i + 1}/${targets.length}`);
+      const id = targets[i].creativeId;
+      await jsonFetch("/api/creative-production/assets", { method: "POST", body: JSON.stringify({ creativeId: id, approval }) });
+      setAssets((prev) => prev.map((a) => (a.creativeId === id ? { ...a, approval } : a)));
+    }
+    setBatchProgress("");
+  });
+
   const enterReview = () => run("review", async () => { await refreshAssets(); setStep("review"); });
 
   const downloadAsset = (asset: Asset) => run("dl:" + asset.creativeId, async () => {
@@ -610,6 +623,16 @@ export function CreativeStudio() {
                 {["all", "approved", "rejected", "draft"].map((f) => (
                   <button key={f} className={f === reviewFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setReviewFilter(f)}>{f[0].toUpperCase() + f.slice(1)}</button>
                 ))}
+                {(() => {
+                  const readyN = assets.filter((a) => a.qa?.status === "READY" && a.approval !== "approved").length;
+                  const failedN = assets.filter((a) => a.qa?.status === "FAILED" && a.approval !== "rejected").length;
+                  return (
+                    <>
+                      {readyN > 0 ? <button className={`${BTN_GHOST} py-1.5`} disabled={busy === "bulk-approve"} onClick={() => bulkSetApproval("bulk-approve", (a) => a.qa?.status === "READY" && a.approval !== "approved", "approved")}>{busy === "bulk-approve" ? `Approving ${batchProgress}…` : `✓ Approve all READY (${readyN})`}</button> : null}
+                      {failedN > 0 ? <button className={`${BTN_GHOST} py-1.5`} disabled={busy === "bulk-reject"} onClick={() => bulkSetApproval("bulk-reject", (a) => a.qa?.status === "FAILED" && a.approval !== "rejected", "rejected")}>{busy === "bulk-reject" ? `Rejecting ${batchProgress}…` : `✕ Reject all FAILED (${failedN})`}</button> : null}
+                    </>
+                  );
+                })()}
                 <span className="ml-auto text-[12px] text-[var(--ink-muted)]">{assets.filter((a) => a.approval === "approved").length} approved · {assets.length} total</span>
                 <button className={BTN_PRIMARY} disabled={busy === "zip" || assets.filter((a) => a.approval === "approved").length === 0} onClick={exportApprovedZip} title="Download every approved ad as PNGs in one ZIP">
                   {busy === "zip" ? `Zipping ${batchProgress}…` : "⬇ Export approved (ZIP)"}
