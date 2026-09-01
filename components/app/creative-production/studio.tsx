@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ACTION_TOKENS } from "@/lib/billing/plans";
 import { FormatCoveragePanel } from "./format-coverage-panel";
+import { makeZip, type ZipEntry } from "@/lib/creative-production/media/zip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -41,9 +42,11 @@ async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
 // Rasterise the stored SVG ad to a PNG in the browser (canvas) and download it — Meta/Google want PNG, not
 // SVG. No server raster dependency. Falls back to opening the SVG if the canvas is tainted by a cross-origin
 // image (rare: only when a brand logo/product image is an external URL) or toBlob is unsupported.
-async function downloadAssetPng(url: string, filename: string): Promise<"png" | "svg"> {
+// Core: fetch the stored SVG and rasterise it to a PNG Blob via canvas. Returns null if the canvas is tainted
+// by a cross-origin image (only when a brand logo/product image is an external URL) or toBlob is unsupported.
+async function svgUrlToPngBlob(url: string): Promise<Blob | null> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Could not fetch the asset.");
+  if (!res.ok) return null;
   const svgText = await res.text();
   const blobUrl = URL.createObjectURL(new Blob([svgText], { type: "image/svg+xml;charset=utf-8" }));
   try {
@@ -59,23 +62,34 @@ async function downloadAssetPng(url: string, filename: string): Promise<"png" | 
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("no 2d context");
+    if (!ctx) return null;
     ctx.drawImage(img, 0, 0, w, h);
-    const png = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png")); // throws SecurityError if tainted
-    if (!png) throw new Error("toBlob returned null");
-    const a = document.createElement("a");
-    const pngUrl = URL.createObjectURL(png);
-    a.href = pngUrl;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(pngUrl);
-    return "png";
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png")); // throws SecurityError if tainted -> caught below
   } catch {
-    window.open(url, "_blank", "noopener"); // graceful fallback: still hand over the asset
-    return "svg";
+    return null;
   } finally {
     URL.revokeObjectURL(blobUrl);
   }
+}
+
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Meta/Google want PNG, not SVG. Falls back to opening the SVG if rasterisation fails.
+async function downloadAssetPng(url: string, filename: string): Promise<"png" | "svg"> {
+  const png = await svgUrlToPngBlob(url);
+  if (!png) {
+    window.open(url, "_blank", "noopener"); // graceful fallback: still hand over the asset
+    return "svg";
+  }
+  triggerDownload(png, filename);
+  return "png";
 }
 
 export function CreativeStudio() {
@@ -270,6 +284,28 @@ export function CreativeStudio() {
     if (!asset.url) return;
     const kind = await downloadAssetPng(asset.url, `adscale-${asset.formatId}.png`);
     if (kind === "svg") setErr("Couldn't rasterise this one in the browser (it has an external image) — opened the SVG instead.");
+  });
+
+  // Export every APPROVED ad as PNGs in one ZIP, named product-format, ready to hand to a media buyer.
+  const exportApprovedZip = () => run("zip", async () => {
+    const approved = assets.filter((a) => a.approval === "approved" && a.url);
+    if (approved.length === 0) { setErr("No approved ads yet — approve some in Review first."); return; }
+    const entries: ZipEntry[] = [];
+    let failed = 0;
+    for (let i = 0; i < approved.length; i++) {
+      const a = approved[i];
+      setBatchProgress(`${i + 1}/${approved.length}`);
+      const png = await svgUrlToPngBlob(a.url!);
+      if (!png) { failed++; continue; }
+      const slug = (a.productId ? productTitle(a.productId) : "ad").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "ad";
+      entries.push({ name: `${slug}-${a.formatId}.png`, data: new Uint8Array(await png.arrayBuffer()) });
+    }
+    setBatchProgress("");
+    if (entries.length === 0) { setErr("Could not rasterise the approved ads to PNG."); return; }
+    const stamp = new Date().toISOString().slice(0, 10);
+    const zipBytes = makeZip(entries); // fresh exact-size Uint8Array, so .buffer is the whole zip
+    triggerDownload(new Blob([zipBytes.buffer as ArrayBuffer], { type: "application/zip" }), `adscale-approved-${stamp}.zip`);
+    if (failed > 0) setErr(`Exported ${entries.length} PNG${entries.length === 1 ? "" : "s"}; ${failed} couldn't be rasterised (external image) and were skipped.`);
   });
 
   const productTitle = (id: string) => products.find((p) => p.productId === id)?.title ?? id;
@@ -467,6 +503,9 @@ export function CreativeStudio() {
                   <button key={f} className={f === reviewFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setReviewFilter(f)}>{f[0].toUpperCase() + f.slice(1)}</button>
                 ))}
                 <span className="ml-auto text-[12px] text-[var(--ink-muted)]">{assets.filter((a) => a.approval === "approved").length} approved · {assets.length} total</span>
+                <button className={BTN_PRIMARY} disabled={busy === "zip" || assets.filter((a) => a.approval === "approved").length === 0} onClick={exportApprovedZip} title="Download every approved ad as PNGs in one ZIP">
+                  {busy === "zip" ? `Zipping ${batchProgress}…` : "⬇ Export approved (ZIP)"}
+                </button>
               </div>
               {assets.length === 0 ? (
                 <p className="text-[13px] text-[var(--ink-muted)]">No generated ads yet. Go to Concepts and press <span className="text-[var(--ink)]">Generate ads</span>.</p>
