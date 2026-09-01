@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { summariseDeepReads } from "@/lib/creative/deep-analysis-pure";
 
 type Read = {
@@ -73,7 +74,10 @@ export function DeepAnalysisCard({ accountId }: { accountId: string }) {
       </div>
 
       {!status ? (
-        <div className="text-[13px] text-[var(--ink-muted)]">Loading…</div>
+        <div className="space-y-2" aria-busy="true" aria-label="Loading deep-analysis status">
+          <Skeleton className="h-9 w-56" />
+          <Skeleton className="h-4 w-full max-w-md" />
+        </div>
       ) : (
         <>
           {!status.used && reads.length === 0 && (
