@@ -207,6 +207,14 @@ Status key: 🟢 applied & verified · 🟠 applied, needs your eyes / a depende
     instant display filter. Runnable check `check:influencer-authenticity` added to the gate.
   - Build + tsc + all influencer checks green (deployed commit 81a210f). Phase 3 (niche/topic tags + language)
     next; real audience demographics remain blocked on a paid provider and are never faked.
+  - **Reach-adjusted plausibility fix (devil's-advocate follow-up, same day).** The plausible follower-ER
+    ceiling now SCALES with a creator's reach beyond its follower base: a reel seen by R x the followers
+    legitimately drives ~R x the follower-engagement-rate (same per-viewer rate, smaller denominator), so a
+    high follower-ER is expected, not bought. Capped at 4x so a viral spike can't excuse any rate. Shared by
+    the quality-engagement scorer and the authenticity scorer; reasons explain the lift transparently. Fixes
+    the false "implausibly high / likely inflated" read on genuinely viral creators (e.g. 17.6% ER at 2.5x
+    reach). Null/<=1x reach keeps the base 15% ceiling, so all prior behavior is unchanged. Locked with new
+    assertions (incl. the exact case). Deployed commit 1651a69.
 
 ---
 
