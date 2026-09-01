@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { streamAccountDayWiseRows, listAllSpendingAdIds, fetchAdMeta, fetchAdCreatives, listAdSetEnds, type AdMetricRow } from "@/lib/meta-source";
+import { streamAccountDayWiseRows, listAllSpendingAdIds, fetchAdMeta, fetchAdCreatives, listAdSetEnds, listAdSetEvents, type AdMetricRow } from "@/lib/meta-source";
 import { thumbUrlOf, deterministicFingerprint } from "@/lib/creative/fingerprint";
 import { selectAdsToSync } from "@/lib/ingest/select-ads";
 import { notify, notifyFailure } from "@/lib/notifications/store";
@@ -162,7 +162,10 @@ async function syncAdMeta(
     fetchAdCreatives(accountExternalId, adIds, token).catch(() => new Map()),
   ]);
   const adsetIds = [...new Set([...idMap.values()].map((v) => v.adsetId).filter((x): x is string => Boolean(x)))];
-  const ends = await listAdSetEnds(accountExternalId, adsetIds, token).catch(() => new Map<string, number>());
+  const [ends, events] = await Promise.all([
+    listAdSetEnds(accountExternalId, adsetIds, token).catch(() => new Map<string, number>()),
+    listAdSetEvents(accountExternalId, adsetIds, token).catch(() => new Map<string, string>()),
+  ]);
 
   const rows = adIds.map((adId) => {
     const ids = idMap.get(adId);
@@ -200,6 +203,7 @@ async function syncAdMeta(
       format,
       content_hash: contentHash,
       adset_end_unix: ids?.adsetId ? (ends.get(ids.adsetId) ?? null) : null,
+      optimization_event: ids?.adsetId ? (events.get(ids.adsetId) ?? null) : null, // objective+event filter
       updated_at: new Date().toISOString(),
     };
   });

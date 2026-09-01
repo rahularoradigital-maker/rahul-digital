@@ -286,6 +286,24 @@ export async function listAdSetOptimizationGoals(accountExternalId: string, adse
   return map;
 }
 
+// Per ad set, the OPTIMIZATION EVENT for the objective+event filter: the SPECIFIC conversion event
+// (promoted_object.custom_event_type, e.g. ADD_TO_CART / PURCHASE / LEAD) when set, else the generic
+// optimization_goal (LINK_CLICKS / LANDING_PAGE_VIEWS / REACH …). One filtered adsets query, id -> event.
+export async function listAdSetEvents(accountExternalId: string, adsetIds: string[], token: TokenSet): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (adsetIds.length === 0) return map;
+  const rows = await graphGetAll<{ id: string; optimization_goal?: string; promoted_object?: { custom_event_type?: string } }>(`act_${accountExternalId}/adsets`, token.accessToken, {
+    fields: "id,optimization_goal,promoted_object{custom_event_type}",
+    filtering: JSON.stringify([{ field: "id", operator: "IN", value: adsetIds }]),
+    limit: "200",
+  });
+  for (const a of rows) {
+    const ev = a.promoted_object?.custom_event_type || a.optimization_goal;
+    if (ev) map.set(a.id, ev);
+  }
+  return map;
+}
+
 // Raw Graph creative shape (only the fields we normalize). object_story_spec / asset_feed_spec
 // are where the real copy + CTA + carousel structure live; the top-level image_url/body/title
 // are unreliable, so we read from the spec first and fall back.
