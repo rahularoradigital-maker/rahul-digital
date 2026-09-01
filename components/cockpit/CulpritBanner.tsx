@@ -3,6 +3,8 @@ import type { LevelFunnels } from "@/lib/cockpit/level-funnel";
 import { diagnoseCulprit } from "@/lib/scoring/culprit";
 import { recentStatusStops } from "@/lib/scoring/status-stops";
 import { getCurrentUser } from "@/lib/app/user";
+import { culpritToContract } from "@/lib/intelligence/from-culprit";
+import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 
 // The one place the app points at a paused/ended entity - as the CAUSE of a recent drop, not a to-do. Answers
 // the top-1% buyer's first question when the account dips: "what did I turn off?" Renders nothing unless
@@ -35,11 +37,19 @@ export async function CulpritBanner({ dailySeries, funnelLevels, accountId }: { 
   const d = atAdset?.summary ? atAdset : atCampaign;
   if (!d?.summary) return null;
 
+  // Full §110 reasoning behind the one-liner (DATA -> TRUST -> ... -> LEARNING), computed from the same
+  // diagnosis - no new query. Rendered as a collapsible trace so the buyer can inspect why we say this.
+  const label = atAdset?.summary ? ("ad set" as const) : ("campaign" as const);
+  const contract = culpritToContract(d, { entityId: accountId ?? "account", entityLabel: label });
+
   return (
     <div className="rounded-[10px] border border-[var(--warn-ink)]/25 bg-[var(--warn-bg)] p-4">
       <div className="flex items-start gap-2.5">
         <span className="mt-0.5 shrink-0 rounded-full bg-[var(--warn-ink)]/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--warn-ink)]">Why results dropped</span>
-        <p className="text-[13px] leading-snug text-[var(--ink)]">{d.summary}</p>
+        <div className="min-w-0">
+          <p className="text-[13px] leading-snug text-[var(--ink)]">{d.summary}</p>
+          {contract && <ReasoningTrace contract={contract} />}
+        </div>
       </div>
     </div>
   );
