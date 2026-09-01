@@ -7,9 +7,10 @@ brand). Non-technical owner; Claude writes and runs the code.
 
 ## Rule #1 — the Build Loop (HARD RULE, above every other rule)
 
-Whenever Rahul shares feedback, an observation, a bug, or an optimisation, run this exact
-loop in order and show the work. Never shortcut a step. This is how everything in this app
-gets built.
+This applies to the WHOLE app, always: every feature, every fix, every future build. Whenever
+Rahul shares feedback, an observation, a bug, or an optimisation, anywhere in the app, run this
+exact loop in order and show the work. Never shortcut a step. This is how everything in this app
+gets built, now and going forward.
 
 1. Observe the real problem. State the actual symptom in his words, not a proxy for it.
 2. Challenge the assumption. Ask what is being taken for granted, including the request itself.
