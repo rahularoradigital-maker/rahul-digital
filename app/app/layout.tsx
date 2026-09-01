@@ -8,6 +8,7 @@ import { SidebarNav } from "@/components/app/sidebar-nav";
 import { MobileNav } from "@/components/app/mobile-nav";
 import { Topbar } from "@/components/app/topbar";
 import { UsageMeter } from "@/components/app/usage-meter";
+import { Button } from "@/components/ui/button";
 
 // AdScale app shell: fixed 256px sidebar (grouped nav + user footer) + working
 // sticky topbar. Nav lives in lib/app/nav.ts; the sidebar highlights the active
@@ -63,7 +64,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="min-w-0 flex-1 leading-tight">
             <div className="truncate text-[13px] font-medium">{user?.email ?? "Signed in"}</div>
             <form action={signOut}>
-              <button className="text-xs text-[var(--ink-muted)] transition hover:text-[var(--ink)]">Sign out</button>
+              <Button variant="link" size="sm" className="h-auto p-0 text-xs text-[var(--ink-muted)] transition hover:text-[var(--ink)]">Sign out</Button>
             </form>
           </div>
         </div>

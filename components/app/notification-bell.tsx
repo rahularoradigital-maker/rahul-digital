@@ -98,7 +98,7 @@ export function NotificationBell() {
           <div className="flex items-center justify-between border-b border-[var(--hairline)] px-3.5 py-2.5">
             <span className="text-[13px] font-semibold text-[var(--ink)]">Notifications</span>
             {items.some((x) => !x.read_at) && (
-              <button type="button" onClick={markAllRead} className="text-[11px] text-[var(--accent)] hover:underline">Mark all read</button>
+              <Button type="button" variant="link" size="sm" onClick={markAllRead} className="h-auto p-0 text-[11px] text-[var(--accent)] hover:underline">Mark all read</Button>
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">

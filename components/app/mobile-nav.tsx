@@ -88,7 +88,7 @@ export function MobileNav({ userEmail }: { userEmail?: string }) {
               <div className="min-w-0 flex-1 leading-tight">
                 <div className="truncate text-[13px] font-medium">{userEmail ?? "Signed in"}</div>
                 <form action={signOut}>
-                  <button className="text-xs text-[var(--ink-muted)] transition hover:text-[var(--ink)]">Sign out</button>
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs text-[var(--ink-muted)] transition hover:text-[var(--ink)]">Sign out</Button>
                 </form>
               </div>
             </div>

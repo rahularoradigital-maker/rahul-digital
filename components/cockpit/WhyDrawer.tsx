@@ -5,6 +5,7 @@
 // explanation can never drift from the score. Pure presentation: hand it an Explanation.
 import { useEffect, useRef, useState } from "react";
 import { rubric, type Explanation } from "@/lib/scoring/rubrics";
+import { Button } from "@/components/ui/button";
 
 const LABEL = "text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]";
 
@@ -32,12 +33,14 @@ export function WhyDrawer({ explanation }: { explanation: Explanation }) {
 
   return (
     <span ref={rootRef} className="relative inline-block">
-      <button
+      <Button
+        variant="link"
+        size="sm"
         type="button"
         aria-label="Why this score?"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
+        className="h-auto p-0 inline-flex items-center gap-1 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-2 py-0.5 text-[11px] font-semibold text-[var(--ink-muted)] transition-colors hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
       >
         <span
           aria-hidden="true"
@@ -46,7 +49,7 @@ export function WhyDrawer({ explanation }: { explanation: Explanation }) {
           i
         </span>
         Why?
-      </button>
+      </Button>
 
       {open && (
         <div

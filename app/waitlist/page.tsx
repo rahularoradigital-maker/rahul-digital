@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { getAccessState } from "@/lib/app/access";
 import { signOut } from "@/app/(auth)/actions";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "You're on the list — AdScale",
@@ -51,7 +52,7 @@ export default async function WaitlistPage() {
             </a>
             <Link href="/blog" className="text-[14px] font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]">Read the blog →</Link>
             <form action={signOut} className="ml-auto">
-              <button type="submit" className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">Sign out</button>
+              <Button type="submit" variant="link" size="sm" className="h-auto p-0 text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">Sign out</Button>
             </form>
           </div>
         </div>

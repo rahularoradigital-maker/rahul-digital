@@ -8,6 +8,7 @@ import type { LevelFunnels, GroupFunnel } from "@/lib/cockpit/level-funnel";
 import { KPI_CATALOG } from "@/lib/app/kpi-catalog";
 import { Sparkline } from "@/components/app/analytics/sparkline";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { rupees, rupeesPrecise } from "@/lib/format";
 
 // The funnel card with an Ad / Ad set / Campaign selector, each read the way a top-1% buyer reads it, with its
@@ -143,7 +144,7 @@ function MetricPicker({ level, selected, toggle, reset }: { level: Level; select
     <div className="mb-4 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] p-3">
       <div className="mb-2 flex items-center justify-between">
         <div className="text-[12px] font-semibold text-[var(--ink)]">Metrics shown</div>
-        <button type="button" onClick={reset} className="text-[11px] text-[var(--accent)] hover:underline">Reset to default</button>
+        <Button type="button" variant="link" size="sm" onClick={reset} className="h-auto p-0 text-[11px] text-[var(--accent)] hover:underline">Reset to default</Button>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {computableFor(level).map(({ key, label }) => {
@@ -155,9 +156,9 @@ function MetricPicker({ level, selected, toggle, reset }: { level: Level; select
           );
         })}
       </div>
-      <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-2 text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">
+      <Button type="button" variant="link" size="sm" onClick={() => setShowAll((s) => !s)} className="h-auto p-0 mt-2 text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">
         {showAll ? "Hide" : "Show"} the rest of the KPI sheet ({NON_META_KPIS.length} need Shopify / finance data)
-      </button>
+      </Button>
       {showAll && (
         <div className="mt-2 max-h-[160px] overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--surface)] p-2">
           <div className="flex flex-wrap gap-1.5">

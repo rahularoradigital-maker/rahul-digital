@@ -31,7 +31,7 @@ export function ArticleDrafts({ initial }: { initial: ArticleRow[] }) {
         <li key={a.id} className="rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] p-4">
           <div className="text-[15px] font-semibold text-[var(--ink)]">{a.title}</div>
           {a.dek && <p className="mt-0.5 text-[13px] text-[var(--ink-muted)]">{a.dek}</p>}
-          <button type="button" onClick={() => setOpen(open === a.id ? null : a.id)} className="mt-2 text-[12px] text-[var(--accent)] hover:underline">{open === a.id ? "Hide preview" : "Preview"}</button>
+          <Button type="button" variant="link" size="sm" onClick={() => setOpen(open === a.id ? null : a.id)} className="h-auto p-0 mt-2 text-[12px] text-[var(--accent)] hover:underline">{open === a.id ? "Hide preview" : "Preview"}</Button>
           {open === a.id && <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] p-3 text-[12px] leading-relaxed text-[var(--ink)]">{a.body_md}</pre>}
           <div className="mt-3 flex flex-wrap gap-2">
             <Button type="button" variant="default" size="sm" disabled={busy === a.id} onClick={() => act(a.id, "published")} className="rounded-lg bg-[var(--ink)] px-3 py-1.5 text-[12px] font-medium text-white disabled:opacity-50">Publish to /blog</Button>

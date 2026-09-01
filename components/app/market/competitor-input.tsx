@@ -205,20 +205,24 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
                   {typeof s.likes === "number" && s.likes > 0 ? ` · ${likesFmt.format(s.likes)} likes` : ""}
                 </div>
               </div>
-              <button
+              <Button
+                variant="link"
+                size="sm"
                 type="button"
                 onClick={() => pickAsBrand(s)}
-                className="shrink-0 rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
+                className="h-auto p-0 shrink-0 rounded-full border border-[var(--hairline)] px-2.5 py-1 text-[11px] font-medium text-[var(--ink)] transition hover:border-[var(--accent)]"
               >
                 My brand
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="link"
+                size="sm"
                 type="button"
                 onClick={() => addAsCompetitor(s)}
-                className="shrink-0 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:opacity-90"
+                className="h-auto p-0 shrink-0 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:opacity-90"
               >
                 + Competitor
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -257,13 +261,15 @@ export function CompetitorInput({ market = "" }: { market?: string }) {
           </div>
         ))}
       </div>
-      <button
+      <Button
+        variant="link"
+        size="sm"
         type="button"
         onClick={addCompetitor}
-        className="mt-2 text-[13px] font-medium text-[var(--accent)] transition hover:underline"
+        className="h-auto p-0 mt-2 text-[13px] font-medium text-[var(--accent)] transition hover:underline"
       >
         + Add another competitor
-      </button>
+      </Button>
 
       <div className="mt-5 flex items-center gap-3 border-t border-[var(--surface-alt)] pt-4">
         <Button
