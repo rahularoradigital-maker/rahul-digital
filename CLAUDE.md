@@ -27,6 +27,35 @@ Then close the reply with the plain-English decision listicle and the honest gre
 status table. The older rules (verify to 100%, be your own devil's advocate and fix what you find,
 live-test before claiming done) are steps inside this loop, not separate options.
 
+## Rule #2 — the Decision Chain (how every AdBrain insight must reason)
+
+Rule #1 is how Claude BUILDS. Rule #2 is how the PRODUCT REASONS. Every insight, recommendation,
+or answer the app gives a user must walk this full chain, never stop at a raw number. This is the
+brain of the product (Rahul's 2nd- and 3rd-order thinking). Each stage maps to real code, not vibes.
+
+1. Data. The raw numbers from the real source (Meta store, live account, reels). Attributed, never fabricated.
+2. Trust. Decide if the data can be trusted BEFORE using it: the evidence envelope (VERIFIED / PROVIDER / CALCULATED / INFERENCE / UNKNOWN), confidence, freshness. If it can't be trusted, refuse or say unknown; never guess.
+3. Signal. Extract the real signal from the noise deterministically (what actually changed or stands out), not a coincidence.
+4. Diagnosis. Find the cause, not the symptom (funnel weakest-step `lib/funnel/diagnosis.ts`, culprit `lib/scoring/culprit.ts`). Root cause, corroborated.
+5. Economic impact. Quantify it in money / revenue, not a vanity metric. What does it cost or earn?
+6. Second-order effect. What this change causes next (the knock-on the obvious read misses).
+7. Third-order effect. What that in turn causes downstream; audit it for 5-year fitness.
+8. Decision. The call the math supports. The math decides; AI only explains it.
+9. Action. The concrete, reversible next step. Anything touching the outside world is a DRAFT, never auto-sent.
+10. Outcome. Observe what actually happened after the action, from live data.
+11. Learning. Record the outcome and feed it back so the next decision is better.
+
+Both rules end in learning that improves the next pass. When the app cannot complete the chain
+honestly (untrusted data, unknown impact), it says so and stops, rather than inventing the rest.
+
+## The Master Intelligence Charter (binding)
+
+`docs/intelligence/MASTER-CHARTER.md` is the permanent charter for how AdBrain must reason, discover
+and validate logic, and be audited before it grows (build the most TRUSTWORTHY decision system, not the
+smartest-looking one). It is audit-first and plan-first: no feature coding until the Phase 0 discovery
+deliverables in `docs/intelligence/PHASE-0-AUDIT-PLAN.md` are produced. Rules #1 and #2 above are how
+that charter is executed day to day.
+
 - Design spec: `docs/superpowers/specs/2026-08-25-adbrain-mvp-design.md`
 - Phase 0 plan: `docs/superpowers/plans/2026-08-25-phase-0-foundation.md`
 - Setup steps for the owner: `SETUP.md`

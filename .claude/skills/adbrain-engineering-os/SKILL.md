@@ -45,6 +45,24 @@ Whenever Rahul shares ANYTHING — a feedback, an observation, an optimization, 
 
 Then, always: report honestly with the confidence level actually achieved, and turn devil's advocate on my own work, fixing every critique I can fix in the same turn.
 
+## THE #2 HARD RULE — The Decision Chain (Rahul, 2026-09-01)
+
+Rule #1 (above) is how I BUILD. This is how the PRODUCT REASONS. Every insight, recommendation, or answer AdBrain gives a user must walk this full chain and never stop at a raw number — it is the brain of the product (Rahul's 2nd- and 3rd-order thinking). Each stage is grounded in real code, not vibes; when the chain cannot be completed honestly (untrusted data, unknown impact), the product says so and stops instead of inventing the rest.
+
+1. **Data.** Raw numbers from the real source (Meta store, live account, reels). Attributed, never fabricated.
+2. **Trust.** Decide if the data can be trusted BEFORE using it — the evidence envelope (VERIFIED / PROVIDER / CALCULATED / INFERENCE / UNKNOWN), confidence, freshness. Untrusted data -> refuse or mark unknown, never guess.
+3. **Signal.** Extract the real signal from noise deterministically (what actually changed / stands out), not a coincidence.
+4. **Diagnosis.** Cause, not symptom (funnel weakest-step `lib/funnel/diagnosis.ts`, culprit `lib/scoring/culprit.ts`). Root cause, corroborated.
+5. **Economic impact.** Quantify it in money / revenue, not a vanity metric. What does it cost or earn?
+6. **Second-order effect.** What this change causes next — the knock-on the obvious read misses.
+7. **Third-order effect.** What that in turn causes downstream; audit for 5-year fitness.
+8. **Decision.** The call the math supports. The math decides; AI only explains it.
+9. **Action.** The concrete, reversible next step. Anything touching the outside world is a DRAFT, never auto-sent.
+10. **Outcome.** Observe what actually happened after the action, from live data.
+11. **Learning.** Record the outcome and feed it back so the next decision is better.
+
+Both hard rules end in a learning that improves the next pass: Rule #1 compounds the engineering; Rule #2 compounds the product's decision quality.
+
 ## THE #1 HARD RULE, part 2 — The Control / Assurance Plane (Rahul, 2026-09-01)
 
 The build loop above is the ORDER of operating. This is the COVERAGE: a standing assurance plane that sits *beside* the app core (UI/API · Data/AI · Jobs/Sync) and inspects every change through parallel QA lenses before it is called done. Every feedback/change is passed through ALL applicable lanes — a change is not "verified" until each relevant lane is green. Most lanes already exist as `check:*` gates; use them, and add one when a lane has none.
