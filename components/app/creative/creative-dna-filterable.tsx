@@ -126,7 +126,7 @@ export function CreativeDnaFilterable({ records, actionByAd, fallback, deepReadC
             </div>
           </div>
           <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
-            Read from your real ad images, video cover frames and copy: scene, setting, colours, mood, plus funnel stage, hook, emotion and subject{scopeNote}. For video, only the cover frame is read - the motion inside the video is not analysed yet. Each creative is decoded once and reused, so this fills in over the next few loads.
+            Read from your real ad images, video cover frames and copy: scene, setting, colours, mood, plus funnel stage, hook, emotion and subject{scopeNote}. {deepReadCount > 0 ? `${deepReadCount} of your top spenders were read as real video motion (deep analysis) - the rest use the cover frame.` : "For video, only the cover frame is read - the motion inside the video is not analysed unless you run the deep read below."} Each creative is decoded once and reused, so this fills in over the next few loads.
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
             {dnaDims.map((d) => (
