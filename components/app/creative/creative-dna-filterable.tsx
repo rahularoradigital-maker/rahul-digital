@@ -38,12 +38,12 @@ export function CreativeDnaFilterable({ records, actionByAd, fallback }: { recor
   const dnaDims = (div?.dimensions ?? []).filter((d) => d.dimension !== "format" && d.activeBuckets > 0);
 
   const chips = records.length > 0 && (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button variant={filter === "all" ? "default" : "outline"} size="sm" onClick={() => setFilter("all")}>
+    <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter creatives by the action they need">
+      <Button variant={filter === "all" ? "default" : "outline"} size="sm" aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
         All <span className="ml-1 opacity-70 tabular-nums">{records.length}</span>
       </Button>
       {GROUP_ORDER.filter((g) => counts[g] > 0).map((g) => (
-        <Button key={g} variant={filter === g ? "default" : "outline"} size="sm" onClick={() => setFilter(g)}>
+        <Button key={g} variant={filter === g ? "default" : "outline"} size="sm" aria-pressed={filter === g} onClick={() => setFilter(g)}>
           {GROUP_LABEL[g]} <span className="ml-1 opacity-70 tabular-nums">{counts[g]}</span>
         </Button>
       ))}

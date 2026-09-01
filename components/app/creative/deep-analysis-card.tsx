@@ -92,7 +92,7 @@ export function DeepAnalysisCard({ accountId }: { accountId: string }) {
       ) : (
         <>
           {!status.used && reads.length === 0 && (
-            <Button onClick={run} disabled={running}>
+            <Button onClick={run} disabled={running} aria-busy={running}>
               {running ? `Analysing your top ${max} spenders…` : `Deep-analyse my top ${max} spenders`}
             </Button>
           )}
