@@ -26,5 +26,9 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-5a (intelligence) | NEW `components/intelligence/ReasoningTrace.tsx` + small edit to `components/cockpit/CulpritBanner.tsx` (compute contract internally, render the trace). NOT touching `app/app/page.tsx`. | DONE | commit cb85477 on origin; my files tsc-clean+build compiled. NOTE: working tree is RED on ANOTHER chat's uncommitted `lib/creative/deep-decode.ts` (TS2304, missing DeepRead/str) — not mine, excluded from my commit; flagged to Rahul. |
 
+| rahul-linkedin-2-e9 | Autonomous creative-intelligence polish (10-step run): deep-read synthesis + "test next" brief + copy/export + a11y + Skeleton + deep-read badge + docs. NEW files + my own creative components only (deep-analysis-pure, deep-analysis-card, creative-dna-filterable, fatigue-list, FatigueRadar, ui/*). NOT touching data-layer/topbar/studio. | WIP | building + pushing each step live; no new prod migration. |
+
+| rahul-linkedin-2-5a (intelligence) | AUTONOMOUS 10-step batch: extend the §110 Output Contract across engines + make it visible. NEW files `lib/intelligence/from-*.ts` + `scripts/check-*-contract.ts` + `docs/intelligence/OUTPUT-CONTRACT.md`; VISIBLE wiring ONLY into surfaces others have NOT claimed: `components/cockpit/{CulpritBanner(done),FunnelCard/FunnelCardBody,ActionList}.tsx`, funnel/health. **Staying OFF** e9's `fatigue-list`/`FatigueRadar`/`deep-*`, 04's `studio.tsx`, b6's data-layer/topbar. | WIP | pushing each step live; no new prod migration |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
