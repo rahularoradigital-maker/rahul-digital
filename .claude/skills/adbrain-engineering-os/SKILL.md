@@ -45,6 +45,23 @@ Whenever Rahul shares ANYTHING — a feedback, an observation, an optimization, 
 
 Then, always: report honestly with the confidence level actually achieved, and turn devil's advocate on my own work, fixing every critique I can fix in the same turn.
 
+## THE #1 HARD RULE, part 2 — The Control / Assurance Plane (Rahul, 2026-09-01)
+
+The build loop above is the ORDER of operating. This is the COVERAGE: a standing assurance plane that sits *beside* the app core (UI/API · Data/AI · Jobs/Sync) and inspects every change through parallel QA lenses before it is called done. Every feedback/change is passed through ALL applicable lanes — a change is not "verified" until each relevant lane is green. Most lanes already exist as `check:*` gates; use them, and add one when a lane has none.
+
+- **Data QA** — is the data real, complete, and matching source? (`check:data-quality`, `check:reconcile-scopes`, `check:attribution`, meta-data-accuracy)
+- **Logic QA** — is the deterministic logic correct on this path? (`check:scoring`, `check:decision`, `check:funnel-*`, `check:comparator`)
+- **AI QA** — is AI grounded, fenced, non-fabricating? AI never decides numbers. (`check:ask-grounding`, `check:evidence`, `check:compose`, `check:ai`)
+- **Security** — RLS, access gate, injection fence, audit, SSRF. (`check:rbac`, `check:plane`, `check:ssrf`, `check:access-gate`, `check:classification`)
+- **Performance** — latency, caching, N+1, no cold pulls on hot paths. (`check:cache`, `check:single-flight`, `check:rate-limit`)
+- **Decision QA** — is the recommendation correct, explained, and liveness-safe (never points at paused/ended as an action)? (`check:verdict`, `check:judgment`, `check:delivering`, `check:culprit`)
+- **Regression Engine** — did this break anything else? The whole `check:all` suite + the regression log; every fixed bug leaves a permanent check behind.
+- **Cost QA** — token/AI cost bounded; free ≤ ₹100/user; tier margins hold. (`check:ai-budget`, `check:ai-pricing`, `check:token-metering`)
+- **Tenancy QA** — per-user isolation; no cross-tenant leak. (`check:tenancy`)
+- **Reliability QA** — fail-open vs fail-closed is deliberate; never-throw on read paths; resumable jobs. (`check:ingest-resumable`)
+
+Flow (never skip the tail): the lanes' findings → **Engineering Memory** (record it, step 9 of the loop) → **Findings / Learnings** → **Change Recommendations** → **Human Review**. The last box is load-bearing and mirrors the product's own law: AdScale (and this OS) RECOMMENDS; Rahul decides and approves. Never auto-apply a change that a human should review; surface it as a recommendation with its reasons.
+
 ## Critical Operating Rule
 
 Never confuse:
