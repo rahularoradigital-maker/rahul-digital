@@ -25,12 +25,26 @@ export async function POST(req: Request) {
   const conn = await getShopifyConnectionStatus(user.id);
   if (!conn) return NextResponse.json({ error: "No connected store." }, { status: 400 });
 
-  const { conceptId, productId, platform } = (await req.json().catch(() => ({}))) as { conceptId?: string; productId?: string; platform?: string };
+  const body = (await req.json().catch(() => ({}))) as { conceptId?: string; productId?: string; platform?: string; overrides?: { headline?: string; supportingCopy?: string; cta?: string; offer?: string | null } };
+  const { conceptId, productId, platform, overrides } = body;
   if (!conceptId || !productId) return NextResponse.json({ error: "conceptId and productId required" }, { status: 400 });
 
   const concepts = await loadConcepts(user.id, productId);
-  const concept = concepts.find((c) => c.id === conceptId);
-  if (!concept) return NextResponse.json({ error: "Concept not found. Generate concepts first." }, { status: 404 });
+  const found = concepts.find((c) => c.id === conceptId);
+  if (!found) return NextResponse.json({ error: "Concept not found. Generate concepts first." }, { status: 404 });
+
+  // User copy edits (optional): apply to the concept BEFORE the pipeline so buildBrief + the composed text
+  // both pick them up. Length-capped; edited copy hashes differently, so it makes a NEW asset (no overwrite).
+  const cap = (s: string | undefined | null, n: number) => (typeof s === "string" ? s.trim().slice(0, n) : undefined);
+  const concept = overrides
+    ? {
+        ...found,
+        headline: cap(overrides.headline, 120) ?? found.headline,
+        supportingCopy: cap(overrides.supportingCopy, 200) ?? found.supportingCopy,
+        cta: cap(overrides.cta, 40) ?? found.cta,
+        offer: overrides.offer === null ? null : cap(overrides.offer, 60) ?? found.offer,
+      }
+    : found;
 
   const product = await ensureProductDNA(user.id, conn.shopDomain, productId, null);
   if (!product) return NextResponse.json({ error: "Product not found." }, { status: 404 });

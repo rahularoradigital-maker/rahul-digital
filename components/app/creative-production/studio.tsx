@@ -115,6 +115,10 @@ export function CreativeStudio() {
   const [active, setActive] = useState<string | null>(null);
   const [conceptsByProduct, setConceptsByProduct] = useState<Record<string, Concept[]>>({});
   const [dnaByProduct, setDnaByProduct] = useState<Record<string, ProductDNA>>({});
+  // Per-concept copy edits (headline/subhead/cta/offer). Sent as overrides at generate time; edited copy
+  // makes a distinct asset, it does not overwrite the AI original.
+  const [copyEdits, setCopyEdits] = useState<Record<string, { headline?: string; supportingCopy?: string; cta?: string; offer?: string | null }>>({});
+  const [editingCopy, setEditingCopy] = useState<string | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [brand, setBrand] = useState<Brand | null>(null);
   const [step, setStep] = useState<Step>("products");
@@ -258,10 +262,14 @@ export function CreativeStudio() {
 
   const generate = (conceptId: string) => run("gen:" + conceptId, async () => {
     if (!active) return;
-    await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId, productId: active, platform }) });
+    const overrides = copyEdits[conceptId];
+    await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId, productId: active, platform, overrides }) });
     await refreshAssets();
     refreshUsage(); // generation spent tokens - keep the cost preview honest
   });
+
+  const setCopyField = (id: string, field: "headline" | "supportingCopy" | "cta" | "offer", value: string) =>
+    setCopyEdits((p) => ({ ...p, [id]: { ...p[id], [field]: value } }));
 
   // Batch: generate ads for the TOP concept of every selected product in one go. Sequential (one product at
   // a time) so cost is predictable and a mid-run token exhaustion (402) stops cleanly with what was made kept.
@@ -500,11 +508,19 @@ export function CreativeStudio() {
               {busy === "concepts:" + active ? <p className="text-[13px] text-[var(--ink-muted)]">Reading the product and ranking creative ideas…</p> : null}
               {(conceptsByProduct[active ?? ""] ?? []).map((c) => {
                 const cAssets = assets.filter((a) => a.creativeId.includes(c.id));
+                const ed = copyEdits[c.id] ?? {};
+                const eff = {
+                  headline: ed.headline ?? c.headline,
+                  supportingCopy: ed.supportingCopy ?? c.supportingCopy,
+                  cta: ed.cta ?? c.cta,
+                  offer: ed.offer !== undefined ? ed.offer : c.offer,
+                };
+                const edited = ed.headline !== undefined || ed.supportingCopy !== undefined || ed.cta !== undefined || ed.offer !== undefined;
                 return (
                   <div key={c.id} className={`${CARD} p-4 space-y-3`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-[14px] font-medium">{c.headline || c.angle}</p>
+                        <p className="text-[14px] font-medium">{eff.headline || c.angle}{edited ? <span className="ml-2 rounded-[4px] bg-[var(--accent)]/10 px-1.5 text-[10px] font-medium text-[var(--accent)]">edited</span> : null}</p>
                         <p className="text-[12px] text-[var(--ink-muted)]">{c.formatId} · {c.awarenessStage} · match score {c.score}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
@@ -527,12 +543,36 @@ export function CreativeStudio() {
                         )}
                       </div>
                     </div>
-                    {c.supportingCopy ? <p className="text-[13px]">{c.supportingCopy}</p> : null}
+                    {editingCopy === c.id ? (
+                      <div className="grid grid-cols-1 gap-2 rounded-[10px] border border-[var(--hairline)] p-3 sm:grid-cols-2">
+                        <label className="text-[11px] text-[var(--ink-muted)]">Headline
+                          <input value={eff.headline} maxLength={120} onChange={(e) => setCopyField(c.id, "headline", e.target.value)} className="mt-1 w-full rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1.5 text-[13px] text-[var(--ink)]" />
+                        </label>
+                        <label className="text-[11px] text-[var(--ink-muted)]">CTA
+                          <input value={eff.cta} maxLength={40} onChange={(e) => setCopyField(c.id, "cta", e.target.value)} className="mt-1 w-full rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1.5 text-[13px] text-[var(--ink)]" />
+                        </label>
+                        <label className="text-[11px] text-[var(--ink-muted)] sm:col-span-2">Supporting line
+                          <input value={eff.supportingCopy} maxLength={200} onChange={(e) => setCopyField(c.id, "supportingCopy", e.target.value)} className="mt-1 w-full rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1.5 text-[13px] text-[var(--ink)]" />
+                        </label>
+                        <label className="text-[11px] text-[var(--ink-muted)]">Offer
+                          <input value={eff.offer ?? ""} maxLength={60} onChange={(e) => setCopyField(c.id, "offer", e.target.value)} className="mt-1 w-full rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] px-2 py-1.5 text-[13px] text-[var(--ink)]" />
+                        </label>
+                        <div className="flex items-end gap-2">
+                          <button className={`${BTN_GHOST} py-1.5`} onClick={() => setEditingCopy(null)}>Done</button>
+                          {edited ? <button className="text-[12px] text-[var(--ink-muted)] underline" onClick={() => { setCopyEdits((p) => { const n = { ...p }; delete n[c.id]; return n; }); }}>Reset</button> : null}
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {eff.supportingCopy ? <p className="text-[13px]">{eff.supportingCopy}</p> : null}
+                        <div className="flex flex-wrap items-center gap-2 text-[12px]">
+                          {eff.cta ? <span className="rounded-[6px] bg-[var(--hairline)] px-2 py-0.5">CTA: {eff.cta}</span> : null}
+                          {eff.offer ? <span className="rounded-[6px] bg-[var(--hairline)] px-2 py-0.5">Offer: {eff.offer}</span> : null}
+                          <button className="text-[12px] text-[var(--accent)] hover:underline" onClick={() => setEditingCopy(c.id)}>✎ Edit copy</button>
+                        </div>
+                      </>
+                    )}
                     <p className="text-[12px] text-[var(--ink-muted)]"><span className="text-[var(--ink)]">Why this:</span> {c.whyThisConcept}</p>
-                    <div className="flex flex-wrap gap-2 text-[12px]">
-                      {c.cta ? <span className="rounded-[6px] bg-[var(--hairline)] px-2 py-0.5">CTA: {c.cta}</span> : null}
-                      {c.offer ? <span className="rounded-[6px] bg-[var(--hairline)] px-2 py-0.5">Offer: {c.offer}</span> : null}
-                    </div>
                     {cAssets.length ? (
                       <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-4">
                         {cAssets.map((a) => <AssetCard key={a.creativeId} asset={a} busy={busy === "appr:" + a.creativeId || busy === "dl:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} onDownload={() => downloadAsset(a)} />)}
