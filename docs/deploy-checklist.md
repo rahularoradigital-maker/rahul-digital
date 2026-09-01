@@ -1,11 +1,14 @@
 # Deploy Checklist: AdBrain Phase 0 (marketing site + auth) → Vercel
 
+> **HISTORICAL (2026-08-25) — kept for the record.** This was the FIRST-deploy checklist when only
+> Phase 0 existed. The app is now well past it: the Phase-1 cockpit, OAuth, sync, and the full product
+> ARE built and live, CI (`ci.yml`) runs on push/PR, and there is a git remote. For current
+> architecture see [`../ARCHITECTURE.md`](../ARCHITECTURE.md) and
+> [`intelligence/SYSTEM-MAP.md`](intelligence/SYSTEM-MAP.md). Do not read the status claims below as current.
+
 **Date:** 2026-08-25 | **Deployer:** Rahul
 **Scope:** This is the FIRST deploy. Only Phase 0 exists (landing, auth, dashboard shell,
 Claude health check). The Phase 1 cockpit is NOT built and NOT covered here.
-
-> Reality notes: no CI, no staging, no monitoring, and no git remote are set up yet. No
-> source-control / CI / monitoring connectors are available, so every check below is manual.
 
 > Re-verified 2026-08-25 (after 21 commits): build still GREEN, tree clean, `.env.local`
 > ignored, still no remote. The commits since are design docs + DORMANT Phase 1 foundation

@@ -1,5 +1,10 @@
 # AdBrain Architecture
 
+> **Canonical operational map:** [`../ARCHITECTURE.md`](../ARCHITECTURE.md) (full, code-derived) and
+> [`intelligence/SYSTEM-MAP.md`](intelligence/SYSTEM-MAP.md) (evidence-cited, every claim carries a
+> `file:line`). This page is a short high-level orientation; those two are the source of truth. If they
+> disagree with this page, they win.
+
 Start here to understand the system, then follow the links. This doc is a map, not a
 copy — details live in the linked docs.
 
@@ -81,11 +86,14 @@ Core spec: [phase-1-account-cockpit-design](superpowers/specs/2026-08-25-phase-1
 [persona stress test](persona/stress-test-2026-08-25.md)
 **Ops:** [SETUP](../SETUP.md) · [deploy checklist](deploy-checklist.md)
 
-## Current status
-- **Built (Phase 0):** marketing site, auth, DB schema (`0001`), Claude health check, build green.
-- **Built (Phase 1 foundation, dormant):** `lib/crypto.ts` (+test), `ad_accounts`/`oauth_tokens`
-  (`0002`), `lib/ad-source.ts` interface.
-- **Specified, not built:** the cockpit, OAuth routes, sync, the rules engine, the AI agents/pipeline.
-- **Not started:** deployment (blocked on owner SETUP.md steps).
-- **Known drift:** docs target Gemini + warm-paper; code still Claude + indigo (Phase 1 swap).
-  See the audit.
+## Current status (corrected 2026-09-01 — the old "specified, not built" text was ~5 weeks stale)
+- **Built & live:** the Account Cockpit (health, funnel, ranked plan, fatigue, waste), Meta OAuth
+  connect routes, background day-wise sync (resumable, self-chaining cron), the deterministic rules +
+  scoring engines, the AI layer (Gemini, grounded Ask + creative decode), Actions, Creative
+  (Fatigue/Diversity), Media, Market (competitor intelligence), Funnel, Change Impact, Reconcile,
+  Influencer Hunt, Creative Studio, the Scout growth agent (draft-only), notifications, access gate.
+- **Deployed:** live on Vercel; CI (`ci.yml`) runs lint+typecheck+build+check:all on push/PR.
+- **Demo / gated (honest, not "built"):** Google Ads = demo data until the real API is wired; Creative
+  Studio image generation returns a placeholder when no image key is set; MER/nCAC store economics are
+  gated on a Shopify connection. These are hard-gated as demo, not presented as complete.
+- For the exact, evidence-cited state see the canonical maps linked at the top.
