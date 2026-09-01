@@ -17,9 +17,10 @@ STOP CONDITION for Phase 0: all 20 deliverables exist, each committed, each endi
 
 ## Batches (each is one finish-lined unit of work)
 
-### Batch A — Maps (deliverables 1, 2, 3, 4)  [ ]
+### Batch A — Maps (deliverables 1, 2, 3, 4)  [~]
 Read the whole repo (routes, lib calc engines, ingestion/sync, AI routing, migrations, checks, deploy
-config). Produce/extend: `SYSTEM-MAP.md` (source->ingestion->db->normalization->calc->decision->AI->UI
+config). Progress: [x] `SYSTEM-MAP.md` first pass (spine + structure, gaps labelled); [ ] full data-flow
+map (column-level DB ownership); [ ] `BUSINESS-LOGIC.md` (per-metric formulas). Produce/extend: `SYSTEM-MAP.md` (source->ingestion->db->normalization->calc->decision->AI->UI
 ->action->outcome + failure paths/caches/queues/cron/APIs/auth/RLS/tenancy), data-flow map,
 `BUSINESS-LOGIC.md`. Finish line: a reader can trace any user-visible number back to its source table
 and formula. Reconcile docs-vs-code as MATCH/DRIFT/UNKNOWN (§8) inline.
