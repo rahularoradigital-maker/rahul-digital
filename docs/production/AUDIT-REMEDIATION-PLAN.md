@@ -26,7 +26,7 @@
 | 4 | **Per-user quota + rate-limit on uncapped AI routes** (`creative/analyze`, `market/positioning`, `brand/discover`) | Me | A valid session can loop expensive AI calls → runaway bill. Reuse the `ask`/`competitors` cap pattern. |
 | 5 | **Add `auth.users` FKs to data tables** (`ad_metrics`, `ad_meta`, `shopify_products`, etc.) | Me | Today deleting a user orphans their data forever — breaks the data-deletion promise (GDPR). Add `on delete cascade` FKs. |
 | 6 | **Remove the `.xlsx` files from git + gitignore `*.xlsx`** | Me | Confirmed **no live secrets** (blank template), but it discloses the full env-var inventory and invites a future key-paste. |
-| 7 | **`docs/shared-research/` (2 GB) holds `Yamin-*`/`Imagive-*` decks + WhatsApp PII on disk** | You | ❌❌❌ Violates your own hard "zero sibling-product-name footprint" rule, even locally. I won't delete your files without your OK — but recommend purging from disk. |
+| 7 | **`docs/shared-research/` (2 GB) holds sibling-product decks + WhatsApp PII on disk** | You | ❌❌❌ Violates your own hard "zero sibling-product-name footprint" rule, even locally. I won't delete your files without your OK — but recommend purging from disk. |
 
 ## P1 — Hardening & the real scale levers
 

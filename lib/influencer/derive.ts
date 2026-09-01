@@ -4,7 +4,7 @@
 
 import type { Confidence } from "./types.ts";
 
-const FEMALE_NAMES = new Set(["priya","pooja","neha","anjali","anjalii","aditi","sneha","kavya","ritika","meera","sana","riya","shreya","ananya","divya","niketa","yamini","madhulika","simran","aisha","fatima","zoya","tanya","isha","nisha","payal","swati","richa","komal","preeti","deepika","kiran","sonam","nidhi","bhavna","rashmi","kritika","muskan","ishita"]);
+const FEMALE_NAMES = new Set(["priya","pooja","neha","anjali","anjalii","aditi","sneha","kavya","ritika","meera","sana","riya","shreya","ananya","divya","niketa","radha","madhulika","simran","aisha","fatima","zoya","tanya","isha","nisha","payal","swati","richa","komal","preeti","deepika","kiran","sonam","nidhi","bhavna","rashmi","kritika","muskan","ishita"]);
 const MALE_NAMES = new Set(["rahul","amit","raj","vikram","arjun","rohit","karan","aditya","ankit","nikhil","sahil","varun","manish","deepak","suresh","ramesh","vishal","gaurav","rishab","rishabh","harsh","yash","dev","kunal","abhishek","saurabh","akash","siddharth","pranav"]);
 
 /** Guess the creator's gender from their first name. Always LOW confidence at best; null when unsure. */

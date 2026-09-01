@@ -119,11 +119,17 @@ export function shrinkToPrior(raw: number, sampleN: number, priorMean: number, k
   const n = Math.max(0, sampleN);
   return n + k <= 0 ? priorMean : (n * raw + k * priorMean) / (n + k);
 }
+// ASYMMETRIC shrinkage: only pull an OPTIMISTIC (above-prior) metric toward the prior. We don't trust an
+// unproven HIGH ROAS until evidence backs it (§20), but we readily believe an evidenced LOW one - so a
+// genuine loser is NEVER rescued toward neutral and a bleeding account keeps reading low. A tiny-sample high
+// flyer still shrinks down; a well-evidenced winner barely moves.
 export function roasToScoreShrunk(roas: number, conversions: number, priorRoas: number, k = 20): number {
-  return roasToScore(shrinkToPrior(roas, conversions, priorRoas, k));
+  const eff = roas > priorRoas ? shrinkToPrior(roas, conversions, priorRoas, k) : roas;
+  return roasToScore(eff);
 }
 export function ctrToScoreShrunk(ctr: number, impressions: number, priorCtr: number, k = 5000): number {
-  return ctrToScore(shrinkToPrior(ctr, impressions, priorCtr, k));
+  const eff = ctr > priorCtr ? shrinkToPrior(ctr, impressions, priorCtr, k) : ctr;
+  return ctrToScore(eff);
 }
 
 // Per-ad absolute objective score used for Account Health. Conversion is scored on ROAS

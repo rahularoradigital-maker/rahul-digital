@@ -117,7 +117,7 @@ assert.equal(inBand(null, bandOf("50-500k")), false);
 // --- BRANDS / shops (competitors) are excluded; real creators are kept. ---
 assert.equal(looksLikeBrand("V.O.I.D", "Premium Designer Label Shipping worldwide"), true, "an apparel label is a brand");
 assert.equal(looksLikeBrand("Rank1 Clothing", "resellers welcome, budget fashion"), true, "a clothing shop is a brand");
-assert.equal(looksLikeBrand("Yamini Polnati", "fashion creator, dm for collab"), false, "a fashion creator is kept");
+assert.equal(looksLikeBrand("Radha Menon", "fashion creator, dm for collab"), false, "a fashion creator is kept");
 const brandProvider: CreatorDataProvider = {
   ...fake,
   async discover() { return [{ platform: "instagram", platformUserId: "brand", handle: "somelabel", profileUrl: "" }]; },

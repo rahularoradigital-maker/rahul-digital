@@ -36,7 +36,9 @@ assert.ok(fluke.neu < winner.neu, `NEW engine ranks the proven winner above the 
 // Shrinkage de-rates the fluke hardest and barely touches the well-evidenced winner (comparability preserved).
 assert.ok(Math.abs(fluke.delta) > Math.abs(winner.delta) * 3, "the fluke is de-rated far more than the winner");
 assert.ok(Math.abs(winner.delta) <= 8, `the well-evidenced winner is preserved (Δ=${winner.delta})`);
-// A well-evidenced loser is NOT rescued toward a passing score (shrinkage only tames low-evidence extremes).
+// ASYMMETRIC: a below-neutral loser is NOT rescued at all - its score is UNCHANGED, so a bleeding account
+// keeps reading low (this is the fix for the break-even prior nudging losers up).
+assert.equal(loser.neu, loser.old, `a below-neutral loser is not rescued - score unchanged (${loser.old} -> ${loser.neu})`);
 assert.ok(loser.neu < 40, `a 60-purchase 0.5x loser stays a clear loser (new=${loser.neu})`);
 
 console.log(`\nPASS: shadow invariants hold. Headline: old ranks the fluke (${fluke.old}) ABOVE the winner (${winner.old}); shrinkage fixes it (fluke ${fluke.neu} < winner ${winner.neu}).`);
