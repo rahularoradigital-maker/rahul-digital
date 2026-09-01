@@ -13,7 +13,7 @@ architecture, or a new external service needing Rahul's account/keys).
 
 | # | System | Status | Evidence | Gap / work | Gated? |
 |---|---|---|---|---|---|
-| 1 | Onboarding | 🟠 | `app/integrations/meta/page.tsx` (connect), brand discover/profile; no guided first-run / time-to-value flow | Add a minimal first-run: what-it-is → connect Meta → first insight. Track signup→first_value | no |
+| 1 | Onboarding | 🟠→🟡 | Added `components/app/onboarding-checklist.tsx` (2026-09-01): first-run welcome + setup checklist on the cockpit — not-connected user gets "Connect Meta" step; connected-no-brand user gets a "Confirm your brand" nudge; hides once both done (zero impact on set-up accounts). Owe: live view from a fresh account; signup→first_value analytics event | Analytics instrumentation of first_value; a11y pass | no |
 | 2 | Sign up / log in | 🟠 | `app/(auth)/{login,signup}/page.tsx`, Supabase auth | Live-test happy+fail; audit rate-limit, error copy, multi-tab, expired session, email-enumeration | no |
 | 3 | Email verification | ⬜ | No explicit verify page; Supabase project handles confirmation email | Confirm Supabase email-confirm setting + verified/pending/expired UX | no (config) |
 | 4 | Password reset | 🟠 | `components/forgot-password-form.tsx` (resetPasswordForEmail), `reset-password-form.tsx` (updateUser + recovery-session + expired-link) — REAL | Live-test the full email→reset→login loop; the old "no pw-reset" note is STALE | no |

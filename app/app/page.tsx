@@ -5,6 +5,9 @@ import { buildGoogleCockpitData } from "@/lib/google/cockpit";
 import { buildGoogleNative } from "@/lib/google/native";
 import { GoogleNativePanel } from "@/components/app/google/google-native-panel";
 import { ConnectState } from "@/components/app/connect-state";
+import { OnboardingChecklist } from "@/components/app/onboarding-checklist";
+import { getUserMetaSession } from "@/lib/meta-sync";
+import { loadBrandProfile } from "@/lib/brand/profile";
 import { type CockpitView, type Verdict, type SpendContributor } from "@/lib/cockpit/analyze";
 import { AdLink } from "@/components/cockpit/AdLink";
 import { HealthRing } from "@/components/cockpit/HealthRing";
@@ -55,10 +58,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   // Sole-selected-platform empty state -> Connect screen. When BOTH are selected, one platform being empty
   // must NOT block the other, so the connect screen only shows when the empty platform is the only one chosen.
   if (showMeta && !showGoogle && metaData && !metaData.connected) {
+    // A brand-new user (never connected) gets a proper first-run welcome + setup checklist on the cockpit,
+    // not just the bare connect card. The transient states (error / no_data / syncing) keep ConnectState.
+    if (metaData.reason === "not_connected") {
+      return <div className="space-y-6"><OnboardingChecklist metaConnected={false} brandConfirmed={false} /></div>;
+    }
     return <ConnectState reason={metaData.reason} errorNote={metaData.errorNote} accountName={metaData.accountName} days={metaData.days} />;
   }
   if (showGoogle && !showMeta && (!googleData || !googleData.connected)) {
     return <ConnectState reason={googleData?.reason ?? "not_connected"} accountName={googleData?.accountName ?? "Google Ads"} days={googleData?.days ?? lookback} />;
+  }
+
+  // Connected + Meta selected: keep the setup checklist visible only until the brand is confirmed (it
+  // returns null once done, so a fully set-up account's cockpit is unchanged). One indexed row read.
+  let brandConfirmed = false;
+  if (showMeta && metaData?.connected) {
+    const user = await getCurrentUser();
+    const session = user ? await getUserMetaSession(user.id) : null;
+    if (user && session) brandConfirmed = (await loadBrandProfile(user.id, session.activeExternalId))?.status === "confirmed";
   }
 
   // ?perf=1 surfaces the server-side warm-path breakdown so it can be read in the browser (measure
@@ -72,6 +89,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   return (
     <div className="space-y-10">
       {perfEl}
+      {showMeta && metaData?.connected ? <OnboardingChecklist metaConnected brandConfirmed={brandConfirmed} /> : null}
       {showMeta && metaData?.connected ? (
         <section className="space-y-3">
           {showGoogle ? <h2 className={sectionLabel}>Facebook / Instagram</h2> : null}
