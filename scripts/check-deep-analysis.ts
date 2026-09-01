@@ -3,7 +3,7 @@
 // mapping is honest (analyzed only when a model actually read it).
 // Run: node --experimental-strip-types scripts/check-deep-analysis.ts
 
-import { parseDeepRead, hasUsedFreeRun, rowToManifest, summariseDeepReads, MAX_CREATIVES, FREE_RUNS, type DeepCreativeRow } from "../lib/creative/deep-analysis-pure.ts";
+import { parseDeepRead, hasUsedFreeRun, rowToManifest, summariseDeepReads, deepDiversityNudge, MAX_CREATIVES, FREE_RUNS, type DeepCreativeRow } from "../lib/creative/deep-analysis-pure.ts";
 
 const mk = (o: Partial<DeepCreativeRow>): DeepCreativeRow => ({ contentHash: "h", adId: null, adName: null, format: "image", spendRs: null, sceneType: null, setting: null, palette: null, visualMood: null, contentSubject: null, motionSummary: null, analyzed: true, ...o });
 
@@ -60,5 +60,12 @@ ok(ins !== null && /lifestyle/.test(ins.line), "names the dominant scene (lifest
 ok(ins !== null && /energetic/.test(ins.line), "names the dominant mood (energetic)");
 ok(ins !== null && /2 read as real video motion/.test(ins.line), "reports how many were read as video motion");
 ok(ins !== null && ins.patterns.some((p) => p.dimension === "scene" && p.label === "lifestyle" && p.count === 2), "scene pattern carries its count");
+
+// 9) "test next" nudge: fires only when top spenders concentrate in one scene (>=70%), silent otherwise.
+ok(deepDiversityNudge([mk({ sceneType: "lifestyle" }), mk({ sceneType: "lifestyle" })]) === null, "under 3 reads -> no nudge");
+const concentrated = [mk({ sceneType: "lifestyle" }), mk({ sceneType: "lifestyle" }), mk({ sceneType: "lifestyle" }), mk({ sceneType: "product-demo" })];
+ok(/concentrated in one look/.test(deepDiversityNudge(concentrated) ?? ""), "3 of 4 same scene -> fragility nudge");
+const varied = [mk({ sceneType: "lifestyle" }), mk({ sceneType: "product-demo" }), mk({ sceneType: "talking-head" })];
+ok(deepDiversityNudge(varied) === null, "a varied mix -> no nudge (never nags)");
 
 console.log(`check-deep-analysis: ${pass} assertions passed.`);

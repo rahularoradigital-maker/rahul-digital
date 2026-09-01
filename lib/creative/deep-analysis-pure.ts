@@ -81,6 +81,19 @@ export function summariseDeepReads(reads: DeepCreativeRow[]): DeepInsight | null
   return { line, patterns };
 }
 
+// A grounded "test next" nudge (no AI): if the analysed top-spenders are concentrated in ONE scene type,
+// that spend is fragile (one look fatigues -> most spend exposed). Returns null when there are too few reads
+// or the mix is already varied enough - never invents a specific creative to make.
+export function deepDiversityNudge(reads: DeepCreativeRow[]): string | null {
+  const analyzed = reads.filter((r) => r.analyzed && r.sceneType);
+  if (analyzed.length < 3) return null;
+  const counts = new Map<string, number>();
+  for (const r of analyzed) counts.set(r.sceneType!, (counts.get(r.sceneType!) ?? 0) + 1);
+  const [topScene, topCount] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (topCount / analyzed.length < 0.7) return null; // already varied enough
+  return `Your top spenders are concentrated in one look - "${topScene}" (${topCount} of ${analyzed.length}). That is fragile: if it fatigues, most of your spend is exposed at once. Test a different scene type before it does.`;
+}
+
 // DB row (deep_creative_read) -> the manifest the UI shows. analyzed=true only when a model actually read it.
 export function rowToManifest(r: Record<string, unknown>): DeepCreativeRow {
   return {
