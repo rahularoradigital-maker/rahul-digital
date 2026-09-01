@@ -15,7 +15,7 @@ import { fetchLiveCockpit, type AccountMetrics, type ProcessedCounts, type Scope
 import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import type { MarginalRead } from "@/lib/scoring/marginal";
 import type { DataQuality } from "@/lib/scoring/data-quality";
-import type { DiversityRead } from "@/lib/creative/diversity";
+import type { DiversityRead, CreativeRecord } from "@/lib/creative/diversity";
 import type { CreativeStrategy } from "@/lib/creative/strategy";
 import type { DailyPoint } from "@/lib/cockpit/daily-series";
 import type { LevelFunnels } from "@/lib/cockpit/level-funnel";
@@ -36,7 +36,7 @@ export type PerfBreakdown = { authMs: number; scopeMs: number; cockpitMs: number
 // Discriminated on `connected`: a page either has real data to render, or it does
 // not and must render the Connect/empty state. There is deliberately no sample view.
 export type CockpitData =
-  | { connected: true; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; ownStrategy?: CreativeStrategy | null; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: ProcessedCounts; days: number; syncedAt?: string; stale?: boolean; headlineIncomplete?: boolean; perf?: PerfBreakdown; userEmail?: string }
+  | { connected: true; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; ownDiversityRecords?: CreativeRecord[]; ownStrategy?: CreativeStrategy | null; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: ProcessedCounts; days: number; syncedAt?: string; stale?: boolean; headlineIncomplete?: boolean; perf?: PerfBreakdown; userEmail?: string }
   | { connected: false; days: number; reason: ConnectReason; accountName?: string; errorNote?: string; userEmail?: string };
 
 /**
@@ -83,7 +83,7 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     } catch {
       // after() unavailable outside a request scope; skip logging rather than fail the load.
     }
-    return { connected: true, view: live.view, metrics: live.metrics, scopeTotals: live.scopeTotals, funnel: live.funnel, marginal: live.marginal, dataQuality: live.dataQuality, ownDiversity: live.ownDiversity, ownStrategy: live.ownStrategy, dailySeries: live.dailySeries, funnelLevels: live.funnelLevels, accountName: live.accountName, accountId: live.accountExternalId, dateParam, adsAnalyzed: live.adsAnalyzed, processed: live.processed, days: effectiveDays, syncedAt: live.syncedAt, stale: live.stale, headlineIncomplete: live.headlineIncomplete, perf, userEmail };
+    return { connected: true, view: live.view, metrics: live.metrics, scopeTotals: live.scopeTotals, funnel: live.funnel, marginal: live.marginal, dataQuality: live.dataQuality, ownDiversity: live.ownDiversity, ownDiversityRecords: live.ownDiversityRecords, ownStrategy: live.ownStrategy, dailySeries: live.dailySeries, funnelLevels: live.funnelLevels, accountName: live.accountName, accountId: live.accountExternalId, dateParam, adsAnalyzed: live.adsAnalyzed, processed: live.processed, days: effectiveDays, syncedAt: live.syncedAt, stale: live.stale, headlineIncomplete: live.headlineIncomplete, perf, userEmail };
   }
 
   // Connected but nothing spent in the window is a real, honest "no data yet" state,

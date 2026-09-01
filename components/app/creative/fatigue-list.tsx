@@ -5,33 +5,7 @@ import type { CockpitAd } from "@/lib/cockpit/analyze";
 import { FATIGUE_STATE, PRIORITY_STYLE } from "@/components/cockpit/styles";
 import { AdLink } from "@/components/cockpit/AdLink";
 import { Button } from "@/components/ui/button";
-
-// The action the verdict engine recommends, bucketed into the plain choices a buyer filters by:
-// Pause (kill), Refresh, Hold (gather more data), Continue (keep/scale), Fix (non-creative cause).
-// Grouped from the real action label so this never invents an action the engine did not produce.
-type ActionGroup = "pause" | "refresh" | "hold" | "continue" | "fix" | "other";
-
-function actionGroup(label: string): ActionGroup {
-  const l = label.toLowerCase();
-  if (/\bkill\b|\bpause\b/.test(l)) return "pause";
-  if (/refresh/.test(l)) return "refresh";
-  if (/\bfix\b/.test(l)) return "fix";
-  if (/hold|watch/.test(l)) return "hold";
-  if (/keep|scale|continue/.test(l)) return "continue";
-  return "other";
-}
-
-const GROUP_LABEL: Record<ActionGroup, string> = {
-  pause: "Pause",
-  refresh: "Refresh",
-  hold: "Hold",
-  continue: "Continue",
-  fix: "Fix first",
-  other: "Other",
-};
-
-// The order the chips appear in (only groups that actually have ads are shown).
-const GROUP_ORDER: ActionGroup[] = ["pause", "refresh", "hold", "continue", "fix", "other"];
+import { actionGroup, GROUP_LABEL, GROUP_ORDER, type ActionGroup } from "@/lib/creative/action-group";
 
 export function FatigueList({ ads, accountName, accountId, dateParam, days }: { ads: CockpitAd[]; accountName: string; accountId?: string; dateParam?: string; days: number }) {
   const [filter, setFilter] = useState<ActionGroup | "all">("all");

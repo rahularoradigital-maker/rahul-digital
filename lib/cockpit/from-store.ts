@@ -373,6 +373,9 @@ export async function buildCockpitFromStore(opts: {
   // runs on the live path, so the store path reads whatever has been decoded so far. Best-effort.
   let ownDiversity: DiversityRead | null = null;
   let ownStrategy: CreativeStrategy | null = null;
+  // The per-ad decode records that FEED the diversity read, exposed so the Creative tab can
+  // re-aggregate the DNA over just one action group (e.g. only the ads to Pause) client-side.
+  let ownDiversityRecords: CreativeRecord[] = [];
   try {
     const hashes = view.leaderboard.map((ad) => semanticKey(metaById.get(ad.id))).filter((h): h is string => Boolean(h));
     const sem = await readSemanticsCache(userId, hashes);
@@ -397,6 +400,7 @@ export async function buildCockpitFromStore(opts: {
         fatigued: ad.fatigueRead?.state === "fatiguing" || ad.fatigueRead?.state === "fatigued",
       };
     });
+    ownDiversityRecords = records;
     ownDiversity = records.length > 0 ? assessDiversity(records) : null;
     ownStrategy = ownDiversity ? buildCreativeStrategy(records, ownDiversity) : null;
     // Populate the VISUAL decode for every account on THIS primary path (the live path rarely runs now).
@@ -441,6 +445,7 @@ export async function buildCockpitFromStore(opts: {
     marginal,
     dataQuality,
     ownDiversity,
+    ownDiversityRecords,
     ownStrategy,
     dailySeries,
     funnelLevels,

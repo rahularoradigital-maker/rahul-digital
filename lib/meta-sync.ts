@@ -120,7 +120,7 @@ export type LiveCockpit =
   // from Meta; stale=true means a day-old cache is being shown while a background refresh runs. Optional
   // so the deep pull (fetchLiveCockpitUncached) and non-UI callers need not set them; fetchLiveCockpit
   // attaches them at the serving boundary where the fresh/stale/cold path is known.
-  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; ownStrategy?: CreativeStrategy | null; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; headlineIncomplete?: boolean; syncedAt?: string; stale?: boolean }
+  | { status: "connected"; accountName: string; accountExternalId: string; adsAnalyzed: number; view: CockpitView; metrics: AccountMetrics; scopeTotals: ScopeTotals; processed: ProcessedCounts; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; ownDiversity: DiversityRead | null; ownDiversityRecords?: CreativeRecord[]; ownStrategy?: CreativeStrategy | null; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; headlineIncomplete?: boolean; syncedAt?: string; stale?: boolean }
   | { status: "not_connected" }
   | { status: "error"; message: string };
 
