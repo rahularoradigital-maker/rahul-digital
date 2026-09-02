@@ -304,6 +304,18 @@ export function CreativeStudio() {
     refreshUsage(); // generation spent tokens - keep the cost preview honest
   });
 
+  // Regenerate ONE asset (a single size) in place - the image model is non-deterministic, so a weak result
+  // just needs another draw, not a full re-run of every size. Platform is inferred from the format id so it
+  // targets exactly that size. Uses the concept's current copy edits. Costs one image generation.
+  const regenerateAsset = (asset: Asset) => run("regen:" + asset.creativeId, async () => {
+    if (!asset.conceptId || !asset.productId) { setErr("Cannot regenerate: missing concept/product link."); return; }
+    const pf = asset.formatId.startsWith("google") ? "google" : "meta";
+    const overrides = copyEdits[asset.conceptId];
+    await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId: asset.conceptId, productId: asset.productId, platform: pf, formatIds: [asset.formatId], overrides }) });
+    await refreshAssets();
+    refreshUsage();
+  });
+
   const setCopyField = (id: string, field: "headline" | "supportingCopy" | "cta" | "offer", value: string) =>
     setCopyEdits((p) => ({ ...p, [id]: { ...p[id], [field]: value } }));
 
@@ -368,6 +380,22 @@ export function CreativeStudio() {
     setBatchProgress("");
   });
 
+  // Bulk-regenerate every weak (FAILED/REVIEW) asset that hasn't been rejected - one click to redraw the ads
+  // QA flagged, instead of hunting for each ⟳. Sequential so cost is predictable; skips assets with no
+  // concept/product link. Each is one image generation.
+  const bulkRegenerateWeak = () => run("bulk-regen", async () => {
+    const targets = assets.filter((a) => (a.qa?.status === "FAILED" || a.qa?.status === "REVIEW") && a.approval !== "rejected" && a.conceptId && a.productId);
+    for (let i = 0; i < targets.length; i++) {
+      setBatchProgress(`${i + 1}/${targets.length}`);
+      const a = targets[i];
+      const pf = a.formatId.startsWith("google") ? "google" : "meta";
+      await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId: a.conceptId, productId: a.productId, platform: pf, formatIds: [a.formatId], overrides: copyEdits[a.conceptId!] }) });
+    }
+    setBatchProgress("");
+    await refreshAssets();
+    refreshUsage();
+  });
+
   const enterReview = () => run("review", async () => { await refreshAssets(); setStep("review"); });
 
   const downloadAsset = (asset: Asset) => run("dl:" + asset.creativeId, async () => {
@@ -384,7 +412,7 @@ export function CreativeStudio() {
     const conceptById = new Map(Object.values(conceptsByProduct).flat().map((c) => [c.id, c] as const));
     const camp = campaignName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40); // optional campaign prefix
     const csv = (s: unknown) => `"${String(s ?? "").replace(/"/g, '""')}"`;
-    const manifestRows = ["file,product,format,headline,cta,offer,qa"]; // header
+    const manifestRows = ["file,product,format,angle,awareness,headline,cta,offer,qa,qa_warnings,generation"]; // header
 
     const entries: ZipEntry[] = [];
     let failed = 0;
@@ -397,7 +425,8 @@ export function CreativeStudio() {
       const file = `${camp ? camp + "-" : ""}${slug}-${a.formatId}.png`;
       entries.push({ name: file, data: new Uint8Array(await png.arrayBuffer()) });
       const c = a.conceptId ? conceptById.get(a.conceptId) : undefined;
-      manifestRows.push([file, a.productId ? productTitle(a.productId) : "", a.formatId, c?.headline ?? "", c?.cta ?? "", c?.offer ?? "", a.qa?.status ?? ""].map(csv).join(","));
+      const warnings = (a.qa?.checks ?? []).filter((ck) => !ck.pass).length; // QA notes (truncation, policy, fidelity...)
+      manifestRows.push([file, a.productId ? productTitle(a.productId) : "", a.formatId, c?.angle ?? "", c?.awarenessStage ?? "", c?.headline ?? "", c?.cta ?? "", c?.offer ?? "", a.qa?.status ?? "", warnings, genStateLabel(a.generationState, a.model)].map(csv).join(","));
     }
     setBatchProgress("");
     if (entries.length === 0) { setErr("Could not rasterise the approved ads to PNG."); return; }
@@ -731,7 +760,7 @@ export function CreativeStudio() {
                     })()}
                     {cAssets.length ? (
                       <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-4">
-                        {cAssets.map((a) => <AssetCard key={a.creativeId} asset={a} busy={busy === "appr:" + a.creativeId || busy === "dl:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} onDownload={() => downloadAsset(a)} />)}
+                        {cAssets.map((a) => <AssetCard key={a.creativeId} asset={a} busy={busy === "appr:" + a.creativeId || busy === "dl:" + a.creativeId || busy === "regen:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} onDownload={() => downloadAsset(a)} onRegenerate={() => regenerateAsset(a)} />)}
                       </div>
                     ) : null}
                   </div>
@@ -756,9 +785,11 @@ export function CreativeStudio() {
                 {(() => {
                   const readyN = assets.filter((a) => a.qa?.status === "READY" && a.approval !== "approved").length;
                   const failedN = assets.filter((a) => a.qa?.status === "FAILED" && a.approval !== "rejected").length;
+                  const weakN = assets.filter((a) => (a.qa?.status === "FAILED" || a.qa?.status === "REVIEW") && a.approval !== "rejected" && a.conceptId && a.productId).length;
                   return (
                     <>
                       {readyN > 0 ? <button className={`${BTN_GHOST} py-1.5`} disabled={busy === "bulk-approve"} onClick={() => bulkSetApproval("bulk-approve", (a) => a.qa?.status === "READY" && a.approval !== "approved", "approved")}>{busy === "bulk-approve" ? `Approving ${batchProgress}…` : `✓ Approve all READY (${readyN})`}</button> : null}
+                      {weakN > 0 ? <button className={`${BTN_GHOST} py-1.5`} disabled={busy === "bulk-regen" || (usage != null && (!usage.imageGen || usage.remaining < IMAGE_TOKENS))} onClick={bulkRegenerateWeak} title="Redraw every ad QA flagged (FAILED or REVIEW)">{busy === "bulk-regen" ? `Regenerating ${batchProgress}…` : `⟳ Regenerate weak (${weakN})`}</button> : null}
                       {failedN > 0 ? <button className={`${BTN_GHOST} py-1.5`} disabled={busy === "bulk-reject"} onClick={() => bulkSetApproval("bulk-reject", (a) => a.qa?.status === "FAILED" && a.approval !== "rejected", "rejected")}>{busy === "bulk-reject" ? `Rejecting ${batchProgress}…` : `✕ Reject all FAILED (${failedN})`}</button> : null}
                     </>
                   );
@@ -777,7 +808,7 @@ export function CreativeStudio() {
               ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
                   {assets.filter((a) => (reviewFilter === "all" || a.approval === reviewFilter) && (qaFilter === "all" || a.qa?.status === qaFilter)).map((a) => (
-                    <AssetCard key={a.creativeId} asset={a} label={a.productId ? productTitle(a.productId) : undefined} busy={busy === "appr:" + a.creativeId || busy === "dl:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} onDownload={() => downloadAsset(a)} />
+                    <AssetCard key={a.creativeId} asset={a} label={a.productId ? productTitle(a.productId) : undefined} busy={busy === "appr:" + a.creativeId || busy === "dl:" + a.creativeId || busy === "regen:" + a.creativeId} onApprove={() => setApproval(a.creativeId, "approved")} onReject={() => setApproval(a.creativeId, "rejected")} onDownload={() => downloadAsset(a)} onRegenerate={() => regenerateAsset(a)} />
                   ))}
                 </div>
               )}
@@ -806,7 +837,7 @@ function qaColor(status: string): string {
   return status === "READY" ? "text-emerald-500" : status === "REVIEW" ? "text-amber-500" : "text-red-500";
 }
 
-function AssetCard({ asset, busy, label, onApprove, onReject, onDownload }: { asset: Asset; busy: boolean; label?: string; onApprove: () => void; onReject: () => void; onDownload: () => void }) {
+function AssetCard({ asset, busy, label, onApprove, onReject, onDownload, onRegenerate }: { asset: Asset; busy: boolean; label?: string; onApprove: () => void; onReject: () => void; onDownload: () => void; onRegenerate?: () => void }) {
   return (
     <div className={`rounded-[10px] border p-2 ${asset.approval === "approved" ? "border-emerald-500/50" : asset.approval === "rejected" ? "border-red-500/40 opacity-60" : "border-[var(--hairline)]"}`}>
       <div className="aspect-square overflow-hidden rounded-[6px] bg-[var(--hairline)]">
@@ -815,12 +846,27 @@ function AssetCard({ asset, busy, label, onApprove, onReject, onDownload }: { as
       {label ? <p className="mt-1 truncate text-[11px] font-medium">{label}</p> : null}
       <p className="mt-1 truncate text-[11px] text-[var(--ink-muted)]">{asset.formatId}</p>
       <p className={`text-[11px] font-medium ${qaColor(asset.qa?.status ?? "")}`}>QA {asset.qa?.status ?? "?"}{asset.provider === "stub" ? " · placeholder" : ""}</p>
+      {/* Why this QA status: the failing checks (truncation, policy phrasing, fidelity...) so the buyer can
+          act, not just see a colour. Criticals red, warnings amber; capped so the card stays compact. */}
+      {(() => {
+        const fails = (asset.qa?.checks ?? []).filter((c) => !c.pass);
+        if (!fails.length) return null;
+        return (
+          <ul className="mt-0.5 space-y-0.5">
+            {fails.slice(0, 3).map((c, i) => (
+              <li key={i} className={`text-[10px] leading-tight ${c.severity === "critical" ? "text-red-500" : "text-amber-600"}`} title={c.detail}>{c.detail}</li>
+            ))}
+            {fails.length > 3 ? <li className="text-[10px] text-[var(--ink-muted)]">+{fails.length - 3} more</li> : null}
+          </ul>
+        );
+      })()}
       <p className={`truncate text-[10px] ${genStateColor(asset.generationState)}`} title={asset.model ?? ""}>{genStateLabel(asset.generationState, asset.model)}</p>
       <div className="mt-1.5 flex gap-1">
         <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "approved" ? "bg-emerald-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onApprove} title="Approve">✓</button>
         <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "rejected" ? "bg-red-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onReject} title="Reject">✕</button>
         {asset.url ? <button className="flex-1 rounded-[6px] border border-[var(--hairline)] py-1 text-center text-[11px] font-medium disabled:opacity-40" disabled={busy} onClick={onDownload} title="Download PNG">↧ PNG</button> : null}
       </div>
+      {onRegenerate ? <button className="mt-1 w-full rounded-[6px] border border-[var(--hairline)] py-1 text-[11px] font-medium text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40" disabled={busy} onClick={onRegenerate} title="Regenerate this size only">{busy ? "…" : "⟳ Regenerate"}</button> : null}
     </div>
   );
 }
