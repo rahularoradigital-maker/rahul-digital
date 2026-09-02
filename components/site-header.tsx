@@ -9,9 +9,11 @@ export function SiteHeader() {
           AdScale AI
         </Link>
         <nav className="hidden items-center gap-8 text-[15px] text-[var(--ink-muted)] md:flex">
-          <a href="#use-cases" className="hover:text-[var(--ink)]">Use Cases</a>
-          <a href="#method" className="hover:text-[var(--ink)]">How it works</a>
-          <a href="#features" className="hover:text-[var(--ink)]">Features</a>
+          {/* Root-relative on purpose (Phase-0 audit): these sections exist only on the homepage, so a bare
+              "#use-cases" resolved to e.g. /pricing#use-cases and silently did nothing on every other page. */}
+          <a href="/#use-cases" className="hover:text-[var(--ink)]">Use Cases</a>
+          <a href="/#method" className="hover:text-[var(--ink)]">How it works</a>
+          <a href="/#features" className="hover:text-[var(--ink)]">Features</a>
           <Link href="/pricing" className="hover:text-[var(--ink)]">Pricing</Link>
           <Link href="/blog" className="hover:text-[var(--ink)]">Blog</Link>
         </nav>

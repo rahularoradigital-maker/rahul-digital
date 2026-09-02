@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/legal-page";
 
-export const metadata = { title: "Privacy Policy | AdScale", description: "How AdScale collects, uses, and protects your data." };
+export const metadata = { title: "Privacy Policy | AdScale", description: "How AdScale collects, uses, and protects your data.", alternates: { canonical: "/privacy" } };
 
 export default function PrivacyPage() {
   return (

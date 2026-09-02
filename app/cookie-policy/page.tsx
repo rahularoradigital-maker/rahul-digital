@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/legal-page";
 
-export const metadata = { title: "Cookie Policy | AdScale", description: "How AdScale uses cookies." };
+export const metadata = { title: "Cookie Policy | AdScale", description: "How AdScale uses cookies.", alternates: { canonical: "/cookie-policy" } };
 
 export default function CookiePolicyPage() {
   return (

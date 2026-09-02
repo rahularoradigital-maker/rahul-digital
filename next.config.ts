@@ -37,7 +37,14 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      // SEO (Phase-0 audit, live-verified): the signed-in app must never be indexed. A robots.txt Disallow
+      // cannot de-index a linked URL and blocks Google from reading an in-page noindex - so the noindex is
+      // sent as a HEADER too (pairs with the metadata.robots in app/app/layout.tsx).
+      { source: "/app", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      { source: "/app/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+    ];
   },
   // 301s that consolidate authority instead of leaving cannibalizing/dead URLs. The old auto-generated
   // fatigue post competed with the canonical Meta fatigue guide for the same term; redirect it (and the old

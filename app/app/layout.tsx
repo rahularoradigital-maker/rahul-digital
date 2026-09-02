@@ -16,6 +16,12 @@ import { Button } from "@/components/ui/button";
 // sticky topbar. Nav lives in lib/app/nav.ts; the sidebar highlights the active
 // route and the topbar derives its title from it.
 
+// SEO (Phase-0 audit, live-verified): the signed-in app must never be indexed. robots.txt only DISALLOWS
+// crawling, which cannot de-index a URL discovered via a link - and worse, a disallowed page can never be
+// crawled to read a noindex. So the noindex must be on the page itself (here) AND as an X-Robots-Tag header
+// (next.config.ts) for the belt-and-braces case. Before this, /app/* emitted "index, follow".
+export const metadata = { robots: { index: false, follow: false } };
+
 function initials(email?: string): string {
   if (!email) return "AB";
   const parts = email.split(/[.@_-]/).filter(Boolean);

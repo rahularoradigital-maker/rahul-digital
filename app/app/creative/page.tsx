@@ -1,6 +1,6 @@
 import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { getCurrentUser } from "@/lib/app/user";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { loadCreativeInsights as loadInsights } from "@/lib/insights/store";
 import { Tabs } from "@/components/app/tabs";
 import { FatigueSection } from "@/components/app/creative/fatigue-section";
 import { DiversitySection } from "@/components/app/creative/diversity-section";
@@ -23,22 +23,8 @@ const TABS = [
   { key: "concepts", label: "Concepts" },
 ];
 
-// Read the cached Brand Brain / Concepts output for this account (if generated before), so a reload
-// shows the last result without re-paying. Best-effort - a miss just means the Generate button shows.
-async function loadInsights(userId: string, accountId: string): Promise<Record<string, string>> {
-  try {
-    const { data } = await createAdminClient()
-      .from("creative_insights")
-      .select("type, content")
-      .eq("user_id", userId)
-      .eq("account_external_id", accountId);
-    const out: Record<string, string> = {};
-    for (const row of (data ?? []) as { type: string; content: string }[]) out[row.type] = row.content;
-    return out;
-  } catch {
-    return {};
-  }
-}
+// The cached Brand Brain / Concepts read lives in lib/insights/store.ts (Phase-0 audit: a service-role query
+// was inlined in this page file; tenancy predicates belong in the store layer). Imported as loadInsights.
 
 export const maxDuration = 300; // heavy 90-day day-wise cold pull needs headroom to warm the cache
 

@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { DemoForm } from "@/components/marketing-extra/demo-form";
+
+// SEO (Phase-0 audit): the primary conversion page had NO metadata export, so it inherited the root's
+// title/description and a canonical of "/" - Google read it as a duplicate of the homepage.
+export const metadata: Metadata = {
+  title: "Book a demo - AdScale",
+  description: "See AdScale on your own Meta ad account: a live plan of what to scale, refresh, or pause. Founder-led, no slideware.",
+  alternates: { canonical: "/book-demo" },
+};
 
 const PERKS = [
   { h: "Built from your real data", d: "We connect your Meta account and show a live plan." },

@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/legal-page";
 
-export const metadata = { title: "Terms of Service | AdScale", description: "The terms that govern your use of AdScale." };
+export const metadata = { title: "Terms of Service | AdScale", description: "The terms that govern your use of AdScale.", alternates: { canonical: "/terms" } };
 
 export default function TermsPage() {
   return (

@@ -1,6 +1,6 @@
 import { LegalPage } from "@/components/legal-page";
 
-export const metadata = { title: "Data Deletion & Export | AdScale", description: "How to delete or export your AdScale data." };
+export const metadata = { title: "Data Deletion & Export | AdScale", description: "How to delete or export your AdScale data.", alternates: { canonical: "/data-deletion" } };
 
 export default function DataDeletionPage() {
   return (
