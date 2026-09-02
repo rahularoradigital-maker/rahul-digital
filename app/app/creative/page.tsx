@@ -9,6 +9,7 @@ import { ConceptsSection } from "@/components/app/creative/concepts-section";
 import { loadCompetitorFormatAds } from "@/lib/competitors/data";
 import { compareDiversityToCompetitors } from "@/lib/creative/diversity-vs-competitors";
 import { getDeepReadCount } from "@/lib/creative/deep-analysis";
+import { ReportSection } from "@/components/app/creative/report-section";
 
 // Creative: one consolidated page for the four creative screens (Fatigue, Diversity,
 // Brand Brain, Concepts). loadCockpit runs exactly once here; each tab section is a
@@ -17,6 +18,7 @@ import { getDeepReadCount } from "@/lib/creative/deep-analysis";
 const TABS = [
   { key: "fatigue", label: "Fatigue" },
   { key: "diversity", label: "Diversity" },
+  { key: "report", label: "Report" },
   { key: "brand", label: "Brand Brain" },
   { key: "concepts", label: "Concepts" },
 ];
@@ -53,7 +55,7 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
   const competitorAds = data.connected && user && ownFormat && ownFormat.buckets.length > 0 ? await loadCompetitorFormatAds(user.id, data.accountId) : [];
   const diversityVsCompetitors = ownFormat && ownFormat.buckets.length > 0 && competitorAds.length > 0 ? compareDiversityToCompetitors(ownFormat.buckets, competitorAds) : null;
   // How many creatives have a deep (video-motion) read, so the Diversity tab can show the DNA is richer.
-  const deepReadCount = tab === "diversity" && data.connected && user ? await getDeepReadCount(user.id) : 0;
+  const deepReadCount = (tab === "diversity" || tab === "report") && data.connected && user ? await getDeepReadCount(user.id) : 0;
 
   return (
     <div className="space-y-6">
@@ -65,6 +67,7 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
 
       {tab === "fatigue" && <FatigueSection data={data} days={data.days} />}
       {tab === "diversity" && <DiversitySection data={data} days={data.days} competitors={diversityVsCompetitors} deepReadCount={deepReadCount} />}
+      {tab === "report" && <ReportSection data={data} deepReadCount={deepReadCount} />}
       {tab === "brand" && <BrandBrainSection initialContent={insights.brand ?? null} />}
       {tab === "concepts" && <ConceptsSection initialContent={insights.concepts ?? null} />}
     </div>
