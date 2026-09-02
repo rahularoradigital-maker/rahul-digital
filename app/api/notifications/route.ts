@@ -24,6 +24,8 @@ export async function PATCH(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const denied = await guardProductApi(); // P0: entitlement gate was on GET only; this handler writes read-state
+  if (denied) return denied;
 
   let body: { id?: string } = {};
   try { body = (await request.json()) as { id?: string }; } catch { /* mark-all */ }

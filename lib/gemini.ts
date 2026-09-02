@@ -7,7 +7,20 @@
 import { fetchWithTimeout } from "./http.ts";
 import { isPublicHttpsUrl } from "./ssrf.ts";
 import { recordSpend } from "./ai/spend.ts";
+import { aiBudgetExceeded } from "./ai/budget.ts";
+import { isKilled } from "./security/flags.ts";
 import { resolveKey } from "./keys.ts";
+
+// Security/cost (P0): the global AI kill-switch and the daily cost ceiling are enforced HERE, at the one
+// primitive every Gemini call goes through - not only in the router. Before this, deep-decode and the
+// creative-production LLM paths called callGemini directly and bypassed the ceiling, so the documented
+// "hard daily cap" was not actually global. Both checks are cached (~60s) and fail-open on a DB error, so
+// they add no meaningful latency and can never take the app down. Every caller already handles null.
+async function aiGateOpen(): Promise<boolean> {
+  if (await isKilled("ai")) return false;
+  if (await aiBudgetExceeded()) return false;
+  return true;
+}
 
 const MODEL = "gemini-3.6-flash";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -81,6 +94,7 @@ export async function callGemini(
 ): Promise<Record<string, unknown> | null> {
   const key = await resolveKey("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY is not set");
+  if (!(await aiGateOpen())) return null; // kill-switch / daily cost ceiling (global, enforced at the primitive)
 
   const parts: Record<string, unknown>[] = [{ text: prompt }];
   if (inline) parts.push({ inline_data: { mime_type: inline.mimeType, data: inline.data } });
@@ -131,6 +145,7 @@ export async function callGemini(
 export async function callGeminiText(prompt: string): Promise<string | null> {
   const key = await resolveKey("GEMINI_API_KEY");
   if (!key) throw new Error("GEMINI_API_KEY is not set");
+  if (!(await aiGateOpen())) return null; // kill-switch / daily cost ceiling (global, enforced at the primitive)
 
   const bodyJson = JSON.stringify({
     contents: [{ role: "user", parts: [{ text: prompt }] }],

@@ -32,6 +32,8 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const denied = await guardProductApi(); // P0: entitlement gate was on GET only; this handler writes brand DNA + can trigger an LLM derivation
+  if (denied) return denied;
   const scopeKey = await scope(user.id);
   if (!scopeKey) return NextResponse.json({ error: "No connected store." }, { status: 400 });
 

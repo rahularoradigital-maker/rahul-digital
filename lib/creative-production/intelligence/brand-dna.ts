@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveBrandId } from "@/lib/tenancy/resolve";
 import { fetchWithTimeout } from "@/lib/http";
+import { isPublicHttpsUrl } from "@/lib/ssrf";
 import { deriveJSON } from "./llm-json.ts";
 import { mergeBrandDNA, emptyBrandDNA } from "./brand-dna-merge.ts";
 import type { BrandDNA, BrandDNAOverride } from "@/lib/creative-production/types";
@@ -17,7 +18,13 @@ const U = "UNKNOWN" as const;
 // Best-effort fetch of the brand homepage, reduced to visible-ish text for the model to read.
 async function fetchSiteText(url: string): Promise<string | null> {
   try {
-    const res = await fetchWithTimeout(url.startsWith("http") ? url : `https://${url}`, {}, 12_000);
+    // Security (P0): this was the ONE external fetch without the SSRF guard every sibling applies. The
+    // domain was validated only at connect time, so a later DNS re-point (or a stored http:// value) could
+    // aim this at an internal/metadata address and feed the response into the LLM + storage. Force https
+    // and re-check the resolved target at fetch time (isPublicHttpsUrl blocks private/loopback/metadata).
+    const target = url.startsWith("http") ? url.replace(/^http:\/\//i, "https://") : `https://${url}`;
+    if (!(await isPublicHttpsUrl(target))) return null;
+    const res = await fetchWithTimeout(target, {}, 12_000);
     if (!res.ok) return null;
     const html = await res.text();
     // Pull colours the CSS actually declares (hex) + strip tags for tone/wording.

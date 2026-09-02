@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/admin";
 
-// Liveness + data-health probe for uptime monitors and ops. Returns AGGREGATE counts only - never any
-// tenant's rows, ids, or errors - so it is safe to expose without auth. It answers the two questions that
-// matter for "is AdScale actually working right now": is background sync healthy, and is automation armed.
+// Liveness + data-health probe for uptime monitors and ops. It answers the two questions that matter for
+// "is AdScale actually working right now": is background sync healthy, and is automation armed.
+//
+// Security (P0): the UNAUTHENTICATED response is ONLY { status, time } - enough for an uptime monitor
+// (200 vs 503 is preserved). The detail (which AI vendors are configured, how many customer accounts
+// exist, when the sync last ran, whether automation is dead) is reconnaissance and is returned only to an
+// admin session. Previously all of it was public.
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +74,20 @@ export async function GET() {
     openai: Boolean(process.env.OPENAI_API_KEY),
   };
 
+  const httpStatus = healthy ? 200 : 503;
+  const time = new Date().toISOString();
+
+  // Detail only for an admin session (same gate as the admin routes). A missing/invalid session, or a
+  // Supabase hiccup while checking it, yields the minimal public shape - never the detail by accident.
+  let admin = false;
+  try {
+    const { data: { user } } = await (await createClient()).auth.getUser();
+    admin = isAdminEmail(user?.email ?? null);
+  } catch {
+    admin = false;
+  }
+  if (!admin) return NextResponse.json({ status: healthy ? "ok" : "degraded", time }, { status: httpStatus });
+
   return NextResponse.json(
     {
       status: healthy ? "ok" : "degraded",
@@ -83,8 +103,8 @@ export async function GET() {
         lastRunAgeHours,
         changeHistory: { accounts: changeAccounts, withErrors: changeErrors }, // 0 accounts => Change-Impact has no data
       },
-      time: new Date().toISOString(),
+      time,
     },
-    { status: healthy ? 200 : 503 },
+    { status: httpStatus },
   );
 }

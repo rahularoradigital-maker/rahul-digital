@@ -34,6 +34,8 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const denied = await guardProductApi(); // P0: entitlement gate was on GET only - a suspended user could bill LLM calls here
+  if (denied) return denied;
   setAiUser(user.id); // attribute AI spend to this user
   const conn = await ctx(user.id);
   if (!conn) return NextResponse.json({ error: "No connected store." }, { status: 400 });

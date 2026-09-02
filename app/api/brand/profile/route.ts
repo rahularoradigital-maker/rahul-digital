@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const denied = await guardProductApi(); // P0: entitlement gate was on GET only; this handler derives a profile via LLM + writes it
+  if (denied) return denied;
   setAiUser(user.id); // attribute AI spend to this user
 
   const session = await getUserMetaSession(user.id);

@@ -1,4 +1,5 @@
 import { callGemini, fetchInlineImage, stringObjectSchema, type InlineImage } from "../gemini.ts";
+import { isPublicHttpsUrl } from "../ssrf.ts";
 import { parseDeepRead, type DeepRead } from "./deep-analysis-pure.ts";
 export type { DeepRead };
 
@@ -39,6 +40,9 @@ async function videoSourceUrl(videoId: string, token: string): Promise<string | 
 // Download the video and base64-inline it, guarded by a hard size cap so a large file never blows the
 // request limit. Returns null if too big or unreachable (caller falls back to the cover frame).
 async function fetchInlineVideo(url: string): Promise<InlineImage | null> {
+  // Security (P0): the URL comes from Meta's Graph `source` field - external data, so it gets the same SSRF
+  // guard as every other outbound fetch (https-only, no private/loopback/metadata targets).
+  if (!(await isPublicHttpsUrl(url))) return null;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), VIDEO_TIMEOUT_MS);
   try {
