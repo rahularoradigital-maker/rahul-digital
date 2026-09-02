@@ -32,6 +32,19 @@ assert.equal(buyers[1].actorName, "Raj");
 const solo = rankBuyers([r("Solo", "budget", "improved", 10)]);
 assert.equal(solo[0].confident, false, "1 usable < MIN_SAMPLE -> not confident");
 
+// Small-sample rigor: a proven high-volume buyer (45/50 = 90%) must out-rank a lucky perfect small-sample
+// one (3/3 = 100%). Raw hit-rate would rank the 3/3 first (100 > 90); shrink-to-prior corrects it.
+const bigWinner = Array.from({ length: 50 }, (_, i) => r("Whale", "budget", i < 45 ? "improved" : "worsened", i < 45 ? 20 : -20));
+const luckyFew = [r("Lucky", "budget", "improved", 20), r("Lucky", "audience", "improved", 20), r("Lucky", "creative", "improved", 20)];
+const ranked = rankBuyers([...luckyFew, ...bigWinner]);
+assert.equal(ranked[0].actorName, "Whale", "45/50 out-ranks 3/3 after shrinkage");
+const whale = ranked.find((b) => b.actorName === "Whale")!;
+const lucky = ranked.find((b) => b.actorName === "Lucky")!;
+assert.ok((whale.hitRate ?? 0) < (lucky.hitRate ?? 0), "raw hit-rate still favors the lucky 3/3 (0.9 < 1.0)");
+assert.ok((whale.score) > (lucky.score), "but the SHRUNK ranking score favors the whale");
+assert.ok((lucky.shrunkHitRate ?? 0) < (lucky.hitRate ?? 0), "shrink pulls a 3/3 below its raw 1.0");
+assert.ok(Math.abs((lucky.shrunkHitRate ?? 0) - 0.75) < 1e-9, "3/3 shrinks to (3+1.5)/(3+3)=0.75");
+
 // Change-type rollup: budget appears across buyers; audience mixed.
 const types = rollupChangeTypes(results);
 const budget = types.find((t) => t.changeType === "budget");

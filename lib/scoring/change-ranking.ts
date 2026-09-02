@@ -22,10 +22,11 @@ export type BuyerRollup = {
   worsened: number;
   flat: number;
   insufficient: number;
-  hitRate: number | null; // improved / usable
+  hitRate: number | null; // improved / usable (RAW, for display)
+  shrunkHitRate: number | null; // hit-rate shrunk toward 0.5 by sample size (what ranking uses)
   medianDeltaPct: number | null;
   confident: boolean; // usable >= MIN_SAMPLE
-  score: number; // ranking score (hit-rate led, median-delta tiebreak)
+  score: number; // ranking score (SHRUNK hit-rate led, median-delta tiebreak)
 };
 
 export type ChangeTypeRollup = {
@@ -40,6 +41,16 @@ export type ChangeTypeRollup = {
 };
 
 const MIN_SAMPLE = 3; // fewer than this many usable verdicts = not enough to rank a buyer with confidence
+// Ranking rigor: a raw hit-rate overstates on tiny samples (3/3 = 100% is far noisier than 45/50 = 90%),
+// so a lucky small-sample buyer would out-rank a proven high-volume one. Shrink the hit-rate toward the
+// no-information prior (0.5) with a pseudo-count, empirical-Bayes style (same idea as the account-health
+// shrinkage). The DISPLAYED hitRate stays raw; only the ranking score uses the shrunk value.
+const SHRINK_PRIOR = 0.5;
+const SHRINK_PSEUDO = 3; // pseudo-observations at the prior; equal weight to MIN_SAMPLE
+function shrinkHitRate(improved: number, usable: number): number | null {
+  if (usable <= 0) return null;
+  return (improved + SHRINK_PSEUDO * SHRINK_PRIOR) / (usable + SHRINK_PSEUDO);
+}
 
 function median(xs: number[]): number | null {
   if (!xs.length) return null;
@@ -73,9 +84,11 @@ export function rankBuyers(results: ChangeResult[]): BuyerRollup[] {
   for (const rs of byActor.values()) {
     const t = tally(rs);
     const confident = t.usable >= MIN_SAMPLE;
-    // Hit-rate is the spine (0-100); median delta nudges the tiebreak. Un-judgeable buyers score 0.
-    const score = t.hitRate == null ? 0 : Math.round(t.hitRate * 100 + (t.medianDeltaPct ?? 0) * 0.1);
-    rollups.push({ actorId: rs[0].actorId, actorName: rs[0].actorName ?? "Unknown", ...t, confident, score });
+    const shrunkHitRate = shrinkHitRate(t.improved, t.usable);
+    // Shrunk hit-rate is the spine (0-100) so a proven high-volume buyer beats a lucky 3/3; median delta
+    // nudges the tiebreak. Un-judgeable buyers score 0.
+    const score = shrunkHitRate == null ? 0 : Math.round(shrunkHitRate * 100 + (t.medianDeltaPct ?? 0) * 0.1);
+    rollups.push({ actorId: rs[0].actorId, actorName: rs[0].actorName ?? "Unknown", ...t, shrunkHitRate, confident, score });
   }
   // Confident buyers first, then by score, then by sample size.
   return rollups.sort((a, b) => Number(b.confident) - Number(a.confident) || b.score - a.score || b.usable - a.usable);
