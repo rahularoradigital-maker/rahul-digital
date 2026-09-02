@@ -5,6 +5,7 @@ import { fetchLiveCockpit, getUserMetaSession } from "@/lib/meta-sync";
 import { readToken } from "@/lib/oauth-store";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
 import { syncChangeHistory } from "@/lib/ingest/change-history";
+import { refreshAccountRollup } from "@/lib/rollups/account";
 import { getAiCallsToday } from "@/lib/ai/usage";
 import { sendAlert } from "@/lib/alerts";
 
@@ -78,6 +79,9 @@ export async function GET(request: NextRequest) {
     // it doesn't tight-loop against the wall - the next daily trigger resumes it after a cooldown. A hop
     // that made progress before hitting the wall still chains, so a big sync keeps advancing between limits.
     if (!res.complete && res.processed > 0) kickChain(origin, cronSecret, uid, acctExternalId, hop + 1);
+    // 10x #5 instant-app: once an account is fully synced, refresh its rollup so dashboards read a single row
+    // instead of scanning. Off the request path (this hop already ran), best-effort. Only on the final hop.
+    if (res.complete) await refreshAccountRollup(uid, acctExternalId).catch(() => {});
     return NextResponse.json({ ok: res.ok, uid, acct: acctExternalId, hop, processed: res.processed, remaining: res.remaining, complete: res.complete, error: res.error });
   }
 

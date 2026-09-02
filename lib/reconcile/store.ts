@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { readAllPages } from "@/lib/supabase/paged";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { computeScopes, type ReconAd, type ReconReport } from "@/lib/reconcile/scopes";
+import { loadAccountRollup, saveAccountReport } from "@/lib/rollups/account";
 
 // Reconcile-with-Meta - READ PATH. Aggregates the stored ad_metrics (spend/revenue/purchases) + ad_meta
 // (status/catalog) for the active account, then computes the scope breakdown. Store-based: it needs the brand
@@ -21,6 +22,12 @@ export async function loadReconcile(userId: string, opts: { lookbackDays?: numbe
   const lookbackDays = opts.lookbackDays ?? DEFAULT_LOOKBACK_DAYS;
   const until = new Date().toISOString().slice(0, 10);
   const since = new Date(Date.now() - lookbackDays * 86_400_000).toISOString().slice(0, 10);
+
+  // 10x #5 instant-app fast-path: a fresh rollup (written by the sync, or self-healed below) means this page
+  // reads ONE row instead of scanning the whole window. Falls through to the live scan when absent/stale.
+  const rollup = await loadAccountRollup(userId, account, lookbackDays);
+  if (rollup) return { report: rollup.report, accountName, since, until, lookbackDays };
+
   const admin = createAdminClient();
 
   // Aggregate spend/revenue/purchases per ad across the window.
@@ -69,5 +76,11 @@ export async function loadReconcile(userId: string, opts: { lookbackDays?: numbe
     return { spend: m.spend, revenue: m.revenue, purchases: m.purchases, active: meta ? meta.active : null, catalog: meta?.catalog ?? false };
   });
 
-  return { report: computeScopes(ads), accountName, since, until, lookbackDays };
+  const report = computeScopes(ads);
+  // Self-heal: store what we just scanned so the next load is instant, even if no sync has run yet. Best-effort
+  // (fire-and-forget); a write failure never affects this response. purchases = the whole-account total.
+  let purchases = 0;
+  for (const a of ads) purchases += a.purchases;
+  void saveAccountReport(userId, account, lookbackDays, report, purchases);
+  return { report, accountName, since, until, lookbackDays };
 }
