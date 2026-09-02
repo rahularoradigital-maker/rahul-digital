@@ -59,5 +59,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-58 (was e9) | Event ROI on cockpit (Rahul): NEW `lib/scoring/event-roi.ts` (honest rubric) + `event-roi-store.ts` + `components/cockpit/EventRoiCard.tsx` (formula on 'i' hover) + `scripts/check-event-roi.ts` (12, in check:all) + wired into `app/app/page.tsx` (was FREE, b6 wrapped) + sample in `/preview/cockpit`. | DONE | pushed; tsc+build green (whole tree); card verified rendering on preview (Purchase ROI +337%, ATC n/a, LPV too-small). Live cockpit shows "sync to enable" until ad_meta.optimization_event populates (needs nightly sync / CRON_SECRET - Rahul). |
 
+| rahul-linkedin-2-58 | 10x #6 VIEW (Rahul's 10x program): NEW `components/app/today/today-card.tsx` (renders f3's collectDecisions feed + f3's ReasoningTrace) + wired into `app/app/page.tsx` (mine). Clean split confirmed w/ f3: they keep collectDecisions + email/digest + the moat. | DONE | pushed; tsc+build green (whole tree). |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
