@@ -68,4 +68,10 @@ const split = eventSpendSplit(computeEventRoi([{ event: "PURCHASE", spendRs: 900
 ok(split !== null && split.totalRs === 100000 && split.revenuePct === 90 && split.awarenessPct === 10, "split = 90% revenue / 10% awareness of Rs 1L");
 ok(eventSpendSplit([]) === null, "no spend -> null split (no NaN)");
 
+// thin-sample honesty: a revenue ROI on few purchases is flagged directional (charter: no ranking w/o sample).
+const thin = computeEventRoi([{ event: "LPV", spendRs: 59946, revenueRs: 6678, purchases: 3 }, { event: "PURCHASE", spendRs: 90000, revenueRs: 400000, purchases: 500 }]);
+ok(thin.find((e) => e.event === "LPV")!.thinSample === true, "3-purchase revenue event -> thinSample");
+ok(/only 3 purchases - directional/.test(thin.find((e) => e.event === "LPV")!.note), "note says directional, names the count");
+ok(thin.find((e) => e.event === "PURCHASE")!.thinSample === false, "a 500-purchase event is not thin");
+
 console.log(`check-event-roi: ${pass} assertions passed.`);

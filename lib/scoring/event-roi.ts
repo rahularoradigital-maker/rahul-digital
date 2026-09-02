@@ -16,6 +16,7 @@ export type EventRoi = {
   roas: number | null; // revenue / spend; null when no revenue
   costPerPurchaseRs: number | null; // spend / purchases; null when no purchases
   material: boolean; // enough spend to judge
+  thinSample: boolean; // has revenue but few purchases - ROI is directional only, not stable
   note: string; // plain-English honesty label
 };
 
@@ -24,6 +25,7 @@ export type EventRoi = {
 // would wrongly hide a genuinely material bleed on a small-share event (e.g. Rs 1.35L bleeding at 1.7% share).
 // Money bleeding is material because of its rupees, not its share.
 const DEFAULT_MIN_SPEND = 1000; // Rs over the window
+const MIN_PURCHASES = 25; // below this, a revenue ROI is directional only (too few conversions to be stable)
 
 // One-glance money split: total event spend and how it divides between events that produce rupee revenue
 // (direct response) and events that don't (awareness - Reach, Profile visit, engagement). Honest CFO view of
@@ -75,10 +77,13 @@ export function computeEventRoi(rows: EventRow[], opts?: { minSpendRs?: number }
         roas: hasRevenue ? Math.round((revenueRs / spendRs) * 100) / 100 : null,
         costPerPurchaseRs: r.purchases > 0 ? Math.round(spendRs / r.purchases) : null,
         material,
+        thinSample: hasRevenue && r.purchases > 0 && r.purchases < MIN_PURCHASES,
         note: !material
           ? "Too little spend to judge yet."
           : hasRevenue
-            ? "ROI from real purchase value."
+            ? r.purchases > 0 && r.purchases < MIN_PURCHASES
+              ? `ROI from real purchase value, but only ${r.purchases} purchase${r.purchases === 1 ? "" : "s"} - directional, not stable.`
+              : "ROI from real purchase value."
             : "No rupee revenue is attributed to this event - judge it on cost per result, not ROI.",
       };
     })
