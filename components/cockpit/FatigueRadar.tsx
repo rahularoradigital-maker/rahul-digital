@@ -8,6 +8,7 @@ import type { FatigueState } from "@/lib/scoring/fatigue";
 import { forecastFatigue, frameFatigue } from "@/lib/scoring/fatigue-forecast";
 import { AdLink } from "./AdLink";
 import { ObjectiveMeta } from "./ObjectiveMeta";
+import { RecentVsBaselineBadge } from "./RecentVsBaselineBadge";
 import { ObjectiveCardSelect } from "./ObjectiveCardSelect";
 import { Button } from "@/components/ui/button";
 import { actionGroup, GROUP_LABEL, GROUP_ORDER, type ActionGroup } from "@/lib/creative/action-group";
@@ -117,6 +118,12 @@ export function FatigueRadar({ ads, halfLife, accountId, dateParam }: { ads: Coc
               <div className="mt-1 text-xs text-[var(--ink)]">{frame.headline}</div>
               {/* Campaign objective + current ROAS + whether the objective's results are trending up or down */}
               <ObjectiveMeta ad={ad} className="mt-1" />
+              {/* Recent 7d vs last 30d (Ads Manager cross-check) on the ad's own metric. */}
+              {ad.recentVs30 && ad.recentVs30.direction !== "insufficient" && (
+                <div className="mt-1">
+                  <RecentVsBaselineBadge r={ad.recentVs30} />
+                </div>
+              )}
               {frame.hasSignal ? (
                 <>
                   {/* Cost impact: the real observed decline the countdown is extrapolated from. */}

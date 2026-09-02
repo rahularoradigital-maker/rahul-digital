@@ -5,6 +5,7 @@ import { winnerToContract } from "@/lib/intelligence/from-winner";
 import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
+import { RecentVsBaselineBadge } from "./RecentVsBaselineBadge";
 import { CollapsibleRows } from "./CollapsibleRows";
 import { CreativeThumb } from "./CreativeThumb";
 import { objectiveHeadline } from "@/lib/rules/objective-metrics";
@@ -44,6 +45,9 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
                   )}
                 </div>
                 {ad.why[0] && <div className="mt-1.5 truncate text-[13px] text-[var(--ink-muted)]">&#8627; {ad.why[0]}</div>}
+                {ad.recentVs30 && ad.recentVs30.direction !== "insufficient" && (
+                  <div className="mt-1"><RecentVsBaselineBadge r={ad.recentVs30} /></div>
+                )}
                 </div>
               </div>
               <div>
