@@ -7,6 +7,7 @@ import { FormatCoveragePanel } from "./format-coverage-panel";
 import { makeZip, type ZipEntry } from "@/lib/creative-production/media/zip";
 import { lintAdCopy } from "@/lib/creative-production/qa/policy-lint";
 import { checkCharLimits } from "@/lib/creative-production/qa/platform-checks";
+import { buildTestSet } from "@/lib/creative-production/strategy/test-set";
 import { META_DEFAULT_SET, GOOGLE_DEFAULT_SET } from "@/lib/creative-production/formats/ad-formats";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -331,6 +332,24 @@ export function CreativeStudio() {
     setStep("review");
   });
 
+  // A/B test set (#3): media buyers test 2-4 variants that differ on a LEVER (angle -> awareness -> format),
+  // not N of the same idea. buildTestSet picks the most diverse real concepts from the active product's
+  // already-ranked list (never fabricates copy), then generates each. Sequential so cost stays predictable.
+  const generateTestSet = () => run("testset", async () => {
+    if (!active) return;
+    const concepts = conceptsByProduct[active] ?? [];
+    const picks = buildTestSet(concepts, 3);
+    if (picks.length < 2) { setErr("Need at least 2 concepts for an A/B set."); return; }
+    for (let i = 0; i < picks.length; i++) {
+      setBatchProgress(`${i + 1}/${picks.length}`);
+      const overrides = copyEdits[picks[i].id];
+      await jsonFetch("/api/creative-production/generate", { method: "POST", body: JSON.stringify({ conceptId: picks[i].id, productId: active, platform, formatIds: activeFormatIds(), overrides }) });
+    }
+    setBatchProgress("");
+    await refreshAssets();
+    refreshUsage();
+  });
+
   const setApproval = (creativeId: string, approval: string) => run("appr:" + creativeId, async () => {
     await jsonFetch("/api/creative-production/assets", { method: "POST", body: JSON.stringify({ creativeId, approval }) });
     setAssets((prev) => prev.map((a) => (a.creativeId === creativeId ? { ...a, approval } : a)));
@@ -601,6 +620,26 @@ export function CreativeStudio() {
               <FormatCoveragePanel reloadKey={assets.length} />
 
               {active && dnaByProduct[active] ? <ProductDNAPanel dna={dnaByProduct[active]} /> : null}
+
+              {/* A/B test set (#3): generate the most DIVERSE real concepts (different angle/stage/format) in one
+                  go, so the export is a genuine test across angles - not N of the same idea. */}
+              {(() => {
+                const concepts = conceptsByProduct[active ?? ""] ?? [];
+                if (concepts.length < 2) return null;
+                const n = buildTestSet(concepts, 3).length;
+                const ads = n * activeFormatIds().length;
+                return (
+                  <div className={`${CARD} flex flex-wrap items-center justify-between gap-2 p-3`}>
+                    <div className="text-[13px]">
+                      <span className="font-medium">Generate A/B test set</span>
+                      <span className="text-[12px] text-[var(--ink-muted)]"> · {n} most-different angles × {activeFormatIds().length} size{activeFormatIds().length === 1 ? "" : "s"} = {ads} ads · ~{(n * IMAGE_TOKENS).toLocaleString("en-US")} tokens{usage != null ? ` · ${usage.remaining.toLocaleString("en-US")} left` : ""}</span>
+                    </div>
+                    <button className={BTN_PRIMARY} disabled={busy === "testset" || activeFormatIds().length === 0 || (usage != null && (!usage.imageGen || usage.remaining < n * IMAGE_TOKENS))} onClick={generateTestSet}>
+                      {busy === "testset" ? `Generating ${batchProgress}…` : `🧪 Generate A/B set (${n})`}
+                    </button>
+                  </div>
+                );
+              })()}
 
               {busy === "concepts:" + active ? <p className="text-[13px] text-[var(--ink-muted)]">Reading the product and ranking creative ideas…</p> : null}
               {(conceptsByProduct[active ?? ""] ?? []).map((c) => {
