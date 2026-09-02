@@ -247,7 +247,7 @@ All on `validation-v0-v1`, every commit gated (tsc 0, `npm run build` 0, relevan
 | P2 Perf | `2a61492` | `/app/funnel`: client render with 20-card preview (flight carries data, not 241 element trees) + data cache; one shared `accountStoreTag` in `lib/cache.ts` |
 | P2 Perf | `f5db31e` | cockpit brand lookup parallel with `loadCockpit`; 70 KB KPI catalog off the client bundle |
 | P2 Perf | `9457acf` | `lib/supabase/paged.ts` parallel-burst reader replaces 8 serial paging loops; `ad_id + date` total order on every `ad_metrics` reader (latent P0 defect in from-store / funnel / reconcile) |
-| P3 | (next commit) | 11 zero-reference files deleted incl. the publicly served `public/cockpit-v1.html` prototype; `_inbox.zip` gitignored; orphan checks `check:change-log`, `check:shadow-benchmark` wired; new `check:paged` |
+| P3 | `cf7e53b` (also carries the docs below - one combined commit) | 11 zero-reference files deleted incl. the publicly served `public/cockpit-v1.html` prototype; `_inbox.zip` gitignored; orphan checks `check:change-log`, `check:shadow-benchmark` wired; new `check:paged` |
 
 ### Measured before → after (live account, same session)
 
