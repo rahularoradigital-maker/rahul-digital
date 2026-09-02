@@ -113,7 +113,7 @@ export function CreativeStudio() {
   const [batchProgress, setBatchProgress] = useState("");
   const [recs, setRecs] = useState<Rec[]>([]);
   const [recBasis, setRecBasis] = useState<string | null>(null);
-  const [status, setStatus] = useState<{ realImages: boolean; products: number; ads: number; approved: number } | null>(null);
+  const [status, setStatus] = useState<{ realImages: boolean; imageState: "off" | "on" | "working" | "degraded"; products: number; ads: number; approved: number } | null>(null);
   const firstRun = useRef(true);
   const [selected, setSelected] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -227,7 +227,7 @@ export function CreativeStudio() {
   // Studio readiness (products synced, ads made, real-images vs placeholder). Best-effort; refreshed on assets change.
   useEffect(() => {
     if (!connected) return;
-    jsonFetch<{ realImages: boolean; products: number; ads: number; approved: number }>("/api/creative-production/status")
+    jsonFetch<{ realImages: boolean; imageState: "off" | "on" | "working" | "degraded"; products: number; ads: number; approved: number }>("/api/creative-production/status")
       .then(setStatus)
       .catch(() => {});
   }, [connected, assets.length]);
@@ -423,8 +423,14 @@ export function CreativeStudio() {
               <span className="text-[var(--ink-muted)]">Store <span className="text-emerald-500">✓</span></span>
               <span className="text-[var(--ink-muted)]">{status.products.toLocaleString("en-US")} products</span>
               <span className="text-[var(--ink-muted)]">{status.ads} ads made · {status.approved} approved</span>
-              <span className={`ml-auto rounded-[6px] px-2 py-0.5 font-medium ${status.realImages ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
-                {status.realImages ? "Real images: ON" : "Placeholder mode — add an image key for real pictures"}
+              <span className={`ml-auto rounded-[6px] px-2 py-0.5 font-medium ${status.imageState === "working" || status.imageState === "on" ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+                {status.imageState === "working"
+                  ? "Real images: working ✓"
+                  : status.imageState === "on"
+                    ? "Real images: ON (key set)"
+                    : status.imageState === "degraded"
+                      ? "⚠ Key set, but ads came out as placeholders — verify the image key/model"
+                      : "Placeholder mode — add an image key for real pictures"}
               </span>
             </div>
           ) : null}

@@ -30,18 +30,35 @@ export async function GET() {
   if (!conn) return NextResponse.json({ connected: false, realImages, products: 0, ads: 0, approved: 0 });
 
   const brandId = await getActiveBrandId(user.id);
-  const [products, ads, approved] = await Promise.all([
+
+  // Actual generation results, not just config: how many ads are real AI images vs compositor-only placeholders.
+  const genCount = async (states: string[]): Promise<number> => {
+    if (!brandId) return 0;
+    const { count } = await createAdminClient().from("cp_assets").select("*", { count: "exact", head: true }).eq("user_id", user.id).eq("brand_id", brandId).in("generation_state", states);
+    return count ?? 0;
+  };
+
+  const [products, ads, approved, realGen, placeholderGen] = await Promise.all([
     count("shopify_products", [["user_id", user.id], ["shop_domain", conn.shopDomain]]),
     brandId ? count("cp_assets", [["user_id", user.id], ["brand_id", brandId]]) : Promise.resolve(0),
     brandId ? count("cp_assets", [["user_id", user.id], ["brand_id", brandId], ["approval", "approved"]]) : Promise.resolve(0),
+    genCount(["AI_GENERATED", "AI_GENERATED_WITH_FALLBACK"]),
+    genCount(["COMPOSITOR_ONLY"]),
   ]);
+
+  // Honest image state: "on" (configured), "working" (real AI ads actually produced), or "degraded"
+  // (key set but ads came out as placeholders — e.g. gpt-image-1 needs org verification, silently falls back).
+  const imageState = !realImages ? "off" : realGen > 0 ? "working" : placeholderGen > 0 ? "degraded" : "on";
 
   return NextResponse.json({
     connected: conn.status === "connected" || conn.status === "url_public",
     shopDomain: conn.shopDomain,
-    realImages, // false = placeholder mode; add a billed image key + IMAGE_PROVIDER to turn on real pictures
+    realImages, // config: is a real image provider configured at all
+    imageState, // off | on | working | degraded (the honest, results-based signal)
     products,
     ads,
     approved,
+    realGen,
+    placeholderGen,
   });
 }
