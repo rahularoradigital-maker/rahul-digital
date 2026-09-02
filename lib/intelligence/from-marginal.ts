@@ -39,11 +39,11 @@ const DECISION: Record<Live, { call: string; why: string; action: string; second
   },
 };
 
-export function marginalToContract(read: MarginalRead, opts: { entityId: string; name?: string; spendRs: number }): OutputContract | null {
+export function marginalToContract(read: MarginalRead, opts: { entityId: string; name?: string; spendRs: number; level?: "account" | "ad" }): OutputContract | null {
   const name = opts.name ?? opts.entityId;
   const e = read.spendElasticity;
   const data = { summary: `${name}: elasticity ${e != null ? e.toFixed(2) : "?"} · ${inr(opts.spendRs)} spend`, source: "meta-store" as const };
-  const entity = { level: "ad" as const, id: opts.entityId, name };
+  const entity = { level: opts.level ?? ("ad" as const), id: opts.entityId, name };
 
   if (read.classification === "UNKNOWN") {
     return hold({

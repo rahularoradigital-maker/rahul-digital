@@ -2,6 +2,9 @@ import { ConnectState } from "@/components/app/connect-state";
 import type { CockpitData } from "@/lib/app/cockpit-data";
 import { AdLink } from "@/components/cockpit/AdLink";
 import { rupees } from "@/lib/format";
+import { marginalToContract } from "@/lib/intelligence/from-marginal";
+import { headline } from "@/lib/intelligence/output-contract";
+import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 
 // Budget & Scaling tab of the consolidated Media page. Logic reused verbatim from
 // the former app/app/budget-scaling/page.tsx: rulebook 5 (spend on the margin, not
@@ -38,6 +41,19 @@ export function BudgetSection({ data, days }: { data: CockpitData; days: number 
         </div>
         <h1 className="mt-1.5 text-[26px] font-normal tracking-tight">Protect the account, spend on the margin.</h1>
       </div>
+
+      {/* Scaling headroom: the §110 contract behind "can we scale, or are we saturated?" - decided on the
+          diminishing-returns curve (data.marginal), NOT on headline ROAS. */}
+      {(() => {
+        const c = marginalToContract(data.marginal, { entityId: accountId, name: accountName, spendRs: totalSpendRs, level: "account" });
+        return c ? (
+          <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
+            <div className="mb-1 text-base font-normal">Scaling headroom</div>
+            <div className="text-[13px] leading-snug text-[var(--ink)]">{headline(c)}</div>
+            <ReasoningTrace contract={c} />
+          </div>
+        ) : null;
+      })()}
 
       {/* Concentration + Waste */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
