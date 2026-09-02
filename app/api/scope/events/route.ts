@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Distinct optimization EVENTS the signed-in user's ads actually optimize for (ad_meta.optimization_event:
 // the ad set's promoted_object.custom_event_type, e.g. ADD_TO_CART / PURCHASE, or its optimization_goal).
@@ -18,7 +19,11 @@ export async function GET() {
   const denied = await guardProductApi();
   if (denied) return denied;
 
-  const { data } = await supabase
+  // Read ad_meta via the admin client, explicitly scoped to this authenticated user. ad_meta has RLS
+  // enabled with NO authenticated-select policy (default-deny), so the user client reads nothing - the
+  // cockpit itself reads ad_meta through the admin client for the same reason. Scoping by the session's
+  // user.id keeps it strictly this user's events.
+  const { data } = await createAdminClient()
     .from("ad_meta")
     .select("optimization_event")
     .eq("user_id", user.id)
