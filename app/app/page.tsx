@@ -11,6 +11,7 @@ import { buildGoogleNative } from "@/lib/google/native";
 import { GoogleNativePanel } from "@/components/app/google/google-native-panel";
 import { ConnectState } from "@/components/app/connect-state";
 import { OnboardingChecklist } from "@/components/app/onboarding-checklist";
+import { FirstRunProgress } from "@/components/app/first-run-progress";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadBrandProfile } from "@/lib/brand/profile";
 import { type CockpitView, type Verdict, type SpendContributor } from "@/lib/cockpit/analyze";
@@ -78,6 +79,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     // not just the bare connect card. The transient states (error / no_data / syncing) keep ConnectState.
     if (metaData.reason === "not_connected") {
       return <div className="space-y-6"><OnboardingChecklist metaConnected={false} brandConfirmed={false} /></div>;
+    }
+    // Connected, first sync in flight (no cockpit yet): guided progress that auto-advances when data lands,
+    // instead of the generic "Still syncing" card. Only "syncing" (data coming) - "no_data" (genuinely empty
+    // account) and "error" stay on ConnectState so we never spin forever on an account with no ads.
+    if (metaData.reason === "syncing") {
+      return <div className="space-y-6"><FirstRunProgress /></div>;
     }
     return <ConnectState reason={metaData.reason} errorNote={metaData.errorNote} accountName={metaData.accountName} days={metaData.days} />;
   }
