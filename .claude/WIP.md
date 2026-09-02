@@ -63,6 +63,8 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-b6 (data-layer) | 10x lever #5 Instant app: `account_rollups` table (migration 0035) + `lib/rollups/account.ts` (compute-on-sync, reuses `computeScopes`) + `scripts/check-rollups.ts`. Reads: small additive fast-path in `lib/reconcile/store.ts` (mine, refactored today) with self-heal fallback. Populate hooks: 1 line each in `app/api/ingest/run/route.ts` + `app/api/cron/sync/route.ts` (on res.complete, best-effort). NEW files + additive lines only; no golden/cockpit path touched. | WIP | claiming ingest/run + cron/sync for a 1-line best-effort refresh call each. |
 
+| rahul-linkedin-2-f3 (intelligence→growth) | 10X #9: growth attribution readback (which Scout content drives signups) — NEW `lib/growth/attribution-readback.ts` + check. Owned /blog is the channel (safe, built). NOT touching auth/signup hot flow (utm-capture is a separate wiring). | WIP | new files only |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
 | rahul-linkedin-2-46 (onboarding) | 10x #8 time-to-first-insight: NEW `lib/onboarding/stage.ts` (pure connect->brand->syncing->ready) + `app/api/onboarding/status/route.ts` + `scripts/check-onboarding-stage.ts`. Deconflicted #2 learning-loop with f3 (stood down, offered design — adopted). | DONE (slice 1) | committed+pushed (my 3 files only). package.json check-wiring left uncommitted for f3 to land with reconcile (shared tree). NEXT slice: client first-run progress island + 1-line mount in `app/app/page.tsx` (HOT, b6) — will claim + ping before editing. |
