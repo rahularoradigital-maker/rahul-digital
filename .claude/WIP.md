@@ -34,5 +34,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-b6 | UX items (Rahul's 2-picked-items #2), only the ones NOT already done by peers: NEW `components/app/back-to-top.tsx` + `components/app/offline-banner.tsx` mounted once in `app/app/layout.tsx`; global `:focus-visible` a11y ring appended to `app/globals.css`. | DONE (deploy propagating) | commit c00a9bf pushed; tsc+build green. Touched app shell + globals.css (1 appended rule) — additive only, no component logic changed. Sticky header/empty states/skeletons/copy buttons already shipped by e9/-82 → NOT duplicated. Live focus-ring confirm pending Vercel (Hobby queue). |
 
+| rahul-linkedin-2-b6 | Change-Intelligence data root-cause: `ad_changes`/`change_sync_state` empty despite Meta having changes → `syncChangeHistory` was cron-only + the cron isn't firing. FIX 513bf89: `/api/ingest/run` now also ingests change-history. | DONE | Needs Rahul (infra): confirm Vercel cron firing (CRON_SECRET + Crons enabled). Next on-demand sync populates ad_changes + optimization_event. |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
