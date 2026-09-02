@@ -19,7 +19,7 @@ const IMAGE_TOKENS = ACTION_TOKENS.image;
 // Everything is DRAFTS: nothing is auto-published to Meta. Provider-independent: with no image key the
 // pipeline composes deterministic placeholders so the flow is fully testable end-to-end.
 
-type Product = { productId: string; title: string; description: string; price: number | null; compareAtPrice: number | null; image: string | null; status: string | null; productType: string | null };
+type Product = { productId: string; title: string; description: string; price: number | null; compareAtPrice: number | null; image: string | null; status: string | null; productType: string | null; advertised?: boolean };
 type Rec = { productId: string; title: string; price: number | null; compareAtPrice: number | null; image: string | null; productType: string | null; discountPct: number; saving: number; advertised: boolean; reason: string };
 // What Studio derived about a product (a subset of Product DNA). Fields may be the literal "UNKNOWN".
 type ProductDNA = { name: string; category: string; primaryBenefit: string; problemSolved: string; targetPersona: string; usps: string[]; proof: string[]; confidence: number };
@@ -492,7 +492,7 @@ export function CreativeStudio() {
                         <button key={p.productId} onClick={() => toggleSelect(p.productId)} className={`flex gap-2.5 rounded-[12px] border p-2.5 text-left transition ${isSel ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-[var(--hairline)] hover:border-[var(--accent)]"}`}>
                           {p.image ? <img src={p.image} alt="" className="h-14 w-14 shrink-0 rounded-[8px] object-cover" /> : <div className="h-14 w-14 shrink-0 rounded-[8px] bg-[var(--hairline)]" />}
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-[13px] font-medium">{p.title}</p>
+                            <p className="truncate text-[13px] font-medium">{p.title}{p.advertised ? <span className="ml-1.5 rounded-[4px] bg-emerald-500/10 px-1 text-[10px] font-medium text-emerald-600">✓ ads</span> : null}</p>
                             <p className="text-[12px] text-[var(--ink-muted)]">{money(p.price)}{p.compareAtPrice && p.price && p.compareAtPrice > p.price ? <span className="ml-1 line-through">{money(p.compareAtPrice)}</span> : null}</p>
                           </div>
                           <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] ${isSel ? "border-[var(--accent)] bg-[var(--accent)] text-white" : "border-[var(--hairline)]"}`}>{isSel ? "✓" : ""}</span>

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
 import { sanitizeSearchTerm } from "@/lib/creative-production/shopify/search";
+import { getActiveBrandId } from "@/lib/tenancy/resolve";
 
 // Creative Studio - list the connected store's synced products for the product picker (Phase 10 UI).
 // Returns connection status + a compact product list (image, title, price, short description). Read-only.
@@ -48,6 +49,14 @@ export async function GET(req: Request) {
     types = (t ?? []).map((r: { product_type: string; n: number }) => ({ type: r.product_type as string, n: Number(r.n) }));
   }
 
+  // White-space: which of these products the user has already made ads for (own asset history, brand-scoped).
+  const advertised = new Set<string>();
+  const brandId = await getActiveBrandId(user.id);
+  if (brandId) {
+    const { data: adv } = await admin.rpc("cp_advertised_product_ids", { p_user: user.id, p_brand: brandId });
+    (adv ?? []).forEach((r: { product_id: string }) => advertised.add(r.product_id));
+  }
+
   const products = (data ?? []).map((p) => ({
     productId: p.product_id as string,
     title: (p.title as string) ?? "Untitled",
@@ -57,6 +66,7 @@ export async function GET(req: Request) {
     image: p.featured_image_url as string | null,
     status: p.status as string | null,
     productType: p.product_type as string | null,
+    advertised: advertised.has(p.product_id as string),
   }));
 
   const connected = conn.status === "connected" || conn.status === "url_public";
