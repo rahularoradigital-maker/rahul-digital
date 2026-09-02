@@ -1,6 +1,11 @@
 // Cache seam (ADR-0004). In-memory impl now; swap for Redis/edge at P1 behind this interface.
 // Caches fingerprints, prompt prefixes, and computed rule outputs so 10k users don't recompute.
 
+// Data-cache tag for everything derived from ONE account's store (ad_metrics / ad_meta / ad_changes). Pages
+// that cache a store-derived read tag it; the ingest busts it on every successful hop, so a fresh sync is
+// visible on the next request without each page inventing its own invalidation.
+export const accountStoreTag = (userId: string, accountExternalId: string) => `account-store:${userId}:${accountExternalId}`;
+
 export interface Cache {
   get<T>(key: string): Promise<T | null>;
   set<T>(key: string, value: T, ttlSeconds?: number): Promise<void>;

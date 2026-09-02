@@ -1,10 +1,20 @@
+"use client";
+
+import { useState } from "react";
 import type { AdDiagnosis, FunnelReport, StepRead } from "@/lib/funnel/diagnosis";
 import { funnelToContract } from "@/lib/intelligence/from-funnel";
 import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 import { adsManagerUrl } from "@/lib/app/ads-manager-url";
 
-// Presentational (server component) for the funnel diagnosis. Renders the account verdict, each ad's stage +
-// weakest step (or its honest Hold), the funnel chain, and the held (under-floor) ads. No interactivity yet.
+// Presentational for the funnel diagnosis. Renders the account verdict, each ad's stage + weakest step (or its
+// honest Hold), the funnel chain, and the held (under-floor) ads.
+//
+// Perf (Phase-0 audit): as a SERVER component this rendered a full card for all 241 ads, and the RSC flight
+// carried every element tree (18k className/children keys) on top of the SSR HTML - 8.5 MB per page view.
+// As a client component the flight carries the report DATA once, and only the first PREVIEW cards per section
+// are rendered until "Show all" - nothing is dropped, the rest renders on click from the same props.
+
+const PREVIEW = 20;
 
 const STEP_SHORT: Record<string, string> = {
   link_ctr: "Click-through",
@@ -101,6 +111,25 @@ function AdCard({ ad, accountId, dateParam }: { ad: AdDiagnosis; accountId: stri
   );
 }
 
+function CardList({ ads, accountId, dateParam }: { ads: AdDiagnosis[]; accountId: string; dateParam: string }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? ads : ads.slice(0, PREVIEW);
+  return (
+    <>
+      {shown.map((ad) => <AdCard key={ad.adId} ad={ad} accountId={accountId} dateParam={dateParam} />)}
+      {!all && ads.length > PREVIEW ? (
+        <button
+          type="button"
+          onClick={() => setAll(true)}
+          className="w-full rounded-[10px] border border-[var(--hairline)] bg-[var(--surface)] px-4 py-2 text-[13px] font-medium text-[var(--ink)] hover:bg-[var(--surface-alt)]"
+        >
+          Show all {ads.length} ({ads.length - PREVIEW} more)
+        </button>
+      ) : null}
+    </>
+  );
+}
+
 export function FunnelReportView({ report, accountName, accountId, since, until }: { report: FunnelReport; accountName: string; accountId: string; since: string; until: string }) {
   const { verdict } = report;
   const dateParam = `${since}_${until}`;
@@ -134,14 +163,14 @@ export function FunnelReportView({ report, accountName, accountId, since, until 
       {leaking.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-[13px] font-semibold text-[var(--ink)]">Ads with a named leak ({leaking.length})</h2>
-          {leaking.map((ad) => <AdCard key={ad.adId} ad={ad} accountId={accountId} dateParam={dateParam} />)}
+          <CardList ads={leaking} accountId={accountId} dateParam={dateParam} />
         </section>
       )}
 
       {held.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-[13px] font-semibold text-[var(--ink)]">Held (no confident leak) ({held.length})</h2>
-          {held.map((ad) => <AdCard key={ad.adId} ad={ad} accountId={accountId} dateParam={dateParam} />)}
+          <CardList ads={held} accountId={accountId} dateParam={dateParam} />
         </section>
       )}
 

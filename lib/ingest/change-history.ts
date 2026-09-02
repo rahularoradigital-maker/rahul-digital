@@ -2,7 +2,7 @@ import "server-only";
 import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchWithTimeout } from "@/lib/http";
-import { changeAnalysisTag } from "@/lib/scoring/change-analysis";
+import { accountStoreTag } from "@/lib/cache";
 import type { TokenSet } from "@/lib/ad-source";
 import { mapActivityRow, dedupeChanges, type RawActivity, type ChangeRow } from "./change-map.ts";
 
@@ -73,10 +73,11 @@ export async function syncChangeHistory(userId: string, accountExternalId: strin
   }
   for (const r of rows) if (!maxEventTime || r.event_time > maxEventTime) maxEventTime = r.event_time;
   await writeState({ last_ok: true, last_error: null, changes_seen: rows.length, last_event_time: maxEventTime });
-  // Bust the cached /app/changes analysis for this account: this runs on every ingest hop (cron + on-demand),
-  // so it also covers fresh metrics. Best-effort - only valid inside a request scope, never fatal to a sync.
+  // Bust every cached store-derived read for this account (/app/changes, /app/funnel): this runs on every
+  // ingest hop (cron + on-demand), so fresh metrics are covered too. Best-effort - only valid inside a
+  // request scope, never fatal to a sync.
   try {
-    revalidateTag(changeAnalysisTag(userId, accountExternalId), "max");
+    revalidateTag(accountStoreTag(userId, accountExternalId), "max");
   } catch {
     // outside a request scope (scripts): nothing to bust
   }

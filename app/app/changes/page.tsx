@@ -1,7 +1,8 @@
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { unstable_cache } from "next/cache";
-import { analyzeAccountChanges, changeAnalysisTag } from "@/lib/scoring/change-analysis";
+import { accountStoreTag } from "@/lib/cache";
+import { analyzeAccountChanges } from "@/lib/scoring/change-analysis";
 import { ConnectState } from "@/components/app/connect-state";
 import { ChangeImpactSection } from "@/components/app/changes/change-impact-section";
 
@@ -30,7 +31,7 @@ export default async function ChangesPage() {
   const analysis = await unstable_cache(
     () => analyzeAccountChanges(user.id, session.activeExternalId),
     ["change-analysis", user.id, session.activeExternalId],
-    { revalidate: 6 * 3600, tags: [changeAnalysisTag(user.id, session.activeExternalId)] },
+    { revalidate: 6 * 3600, tags: [accountStoreTag(user.id, session.activeExternalId)] },
   )();
 
   return (

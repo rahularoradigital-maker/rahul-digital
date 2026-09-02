@@ -1,4 +1,6 @@
 import { cookies } from "next/headers";
+import { unstable_cache } from "next/cache";
+import { accountStoreTag } from "@/lib/cache";
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { resolveCockpitScope } from "@/lib/app/cockpit-data";
@@ -38,14 +40,25 @@ export default async function FunnelPage() {
   // Honor the topbar filters (Catalog / Objective / Campaign / Window), the same ones the Cockpit applies, so
   // "Catalog: Excluded" actually hides catalog ads here and the selected date range drives the diagnosis.
   const scope = resolveCockpitScope(await cookies(), 90);
-  const bundle = await loadFunnelReport(user.id, {
+  const filters = {
     catalog: scope.catalog,
     objectives: scope.objectives,
     events: scope.events,
     campaignIds: scope.campaignId ? scope.campaignId.split(",").filter(Boolean) : undefined,
     explicitWindow: scope.explicitWindow,
     lookbackDays: scope.explicitWindow ? undefined : scope.lookbackDays,
-  });
+  };
+  // Perf (Phase-0 audit): measured 15.5s cold / 11.9s warm on the live account - a full in-window
+  // ad_metrics + ad_meta scan re-run on every visit for data that changes once a day. Cached in the platform
+  // data cache keyed by user + account + the exact topbar scope + today's date (the default window rolls
+  // daily); the ingest busts the account tag on each successful hop, 6h TTL as the backstop. The scope is
+  // resolved from cookies OUT HERE - request APIs are not allowed inside the cached function.
+  const today = new Date().toISOString().slice(0, 10);
+  const bundle = await unstable_cache(
+    () => loadFunnelReport(user.id, filters),
+    ["funnel-report", user.id, session.activeExternalId, JSON.stringify(filters), today],
+    { revalidate: 6 * 3600, tags: [accountStoreTag(user.id, session.activeExternalId)] },
+  )();
 
   return (
     <div className="space-y-6">
