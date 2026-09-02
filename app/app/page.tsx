@@ -1,6 +1,9 @@
 import { cookies } from "next/headers";
 import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { getCurrentUser } from "@/lib/app/user";
+import { getEventRoi } from "@/lib/scoring/event-roi-store";
+import { EventRoiCard } from "@/components/cockpit/EventRoiCard";
+import type { EventRoi } from "@/lib/scoring/event-roi";
 import { buildGoogleCockpitData } from "@/lib/google/cockpit";
 import { buildGoogleNative } from "@/lib/google/native";
 import { GoogleNativePanel } from "@/components/app/google/google-native-panel";
@@ -86,6 +89,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   // ?perf=1 surfaces the server-side warm-path breakdown so it can be read in the browser (measure
   // before optimizing). Rendered as machine-readable text; harmless and invisible-ish for normal use.
+  // Event-wise spend + honest ROI% for the SAME window the cockpit shows. Self-contained read; empty until
+  // the sync populates ad_meta.optimization_event (then the card fills in). getCurrentUser is React-cached.
+  let eventRoi: EventRoi[] = [];
+  if (showMeta && metaData?.connected) {
+    const user = await getCurrentUser();
+    const [since, until] = (metaData.dateParam || "").split("_");
+    if (user && since && until) eventRoi = await getEventRoi(user.id, metaData.accountId, since, until);
+  }
+
   const perfEl = perf === "1" && metaData?.connected && metaData.perf ? (
     <pre id="perf-data" data-perf={JSON.stringify(metaData.perf)} className="fixed bottom-1 right-1 z-50 rounded bg-black/80 px-2 py-1 text-[10px] text-white">{JSON.stringify(metaData.perf)}</pre>
   ) : null;
@@ -99,7 +111,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {showMeta && metaData?.connected ? (
         <section className="space-y-3">
           {showGoogle ? <h2 className={sectionLabel}>Facebook / Instagram</h2> : null}
-          <Cockpit view={metaData.view} accountName={metaData.accountName} accountId={metaData.accountId} dateParam={metaData.dateParam} adsAnalyzed={metaData.adsAnalyzed} processed={metaData.processed} funnel={metaData.funnel} marginal={metaData.marginal} dataQuality={metaData.dataQuality} scopeTotals={metaData.scopeTotals} dailySeries={metaData.dailySeries} funnelLevels={metaData.funnelLevels} days={metaData.days} syncedAt={metaData.syncedAt} stale={metaData.stale} headlineIncomplete={metaData.headlineIncomplete} />
+          <Cockpit view={metaData.view} accountName={metaData.accountName} accountId={metaData.accountId} dateParam={metaData.dateParam} adsAnalyzed={metaData.adsAnalyzed} processed={metaData.processed} funnel={metaData.funnel} marginal={metaData.marginal} dataQuality={metaData.dataQuality} scopeTotals={metaData.scopeTotals} dailySeries={metaData.dailySeries} funnelLevels={metaData.funnelLevels} days={metaData.days} syncedAt={metaData.syncedAt} stale={metaData.stale} headlineIncomplete={metaData.headlineIncomplete} eventRoi={eventRoi} />
         </section>
       ) : null}
       {showGoogle && googleData?.connected ? (
@@ -240,7 +252,7 @@ function syncedLabel(iso?: string): string {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, funnelLevels, days, syncedAt, stale, headlineIncomplete, demo }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; days: number; syncedAt?: string; stale?: boolean; headlineIncomplete?: boolean; demo?: boolean }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, funnelLevels, days, syncedAt, stale, headlineIncomplete, demo, eventRoi = [] }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; days: number; syncedAt?: string; stale?: boolean; headlineIncomplete?: boolean; demo?: boolean; eventRoi?: EventRoi[] }) {
   const health = view.accountHealth;
   // Headline KPIs use the TRUE scope totals (all campaigns/ads of the selected objective),
   // so spend / revenue / ROAS match Ads Manager - not the analyzed-ads subset in view.totals.
@@ -362,6 +374,9 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           </div>
         </div>
       </div>
+
+      {/* Spend + honest ROI% by optimisation event (the formula is on the card's "i" hover). */}
+      <EventRoiCard rows={eventRoi} />
 
       {/* Scaling headroom (marginal economics) + ad-level funnel metrics */}
       <ScalingCard marginal={marginal} />
