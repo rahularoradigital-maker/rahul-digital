@@ -75,9 +75,9 @@ each pick = argmax over candidates of:
           <table className="w-full min-w-[560px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-[var(--hairline)] text-xs uppercase tracking-wide text-[var(--ink-muted)]">
-                <th className="py-2 pr-4 font-medium">Part</th>
-                <th className="py-2 pr-4 font-medium">What it decides</th>
-                <th className="py-2 font-medium">Source tags</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Part</th>
+                <th scope="col" className="py-2 pr-4 font-medium">What it decides</th>
+                <th scope="col" className="py-2 font-medium">Source tags</th>
               </tr>
             </thead>
             <tbody>

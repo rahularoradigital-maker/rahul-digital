@@ -35,7 +35,7 @@ export async function AccessAdmin() {
     <table className="w-full text-[13px]">
       <thead>
         <tr className="border-b border-[var(--hairline)]">
-          <th className={th}>Email</th><th className={th}>State</th><th className={th}>Since</th><th className={th}>Actions</th>
+          <th scope="col" className={th}>Email</th><th scope="col" className={th}>State</th><th scope="col" className={th}>Since</th><th scope="col" className={th}>Actions</th>
         </tr>
       </thead>
       <tbody>

@@ -39,11 +39,11 @@ function Chain({ steps }: { steps: StepRead[] }) {
       <table className="w-full min-w-[520px] border-collapse text-[12px]">
         <thead>
           <tr className="text-left text-[var(--ink-muted)]">
-            <th className="py-1 pr-3 font-medium">Step</th>
-            <th className="py-1 pr-3 font-medium tabular-nums">This ad</th>
-            <th className="py-1 pr-3 font-medium tabular-nums">Own best</th>
-            <th className="py-1 pr-3 font-medium tabular-nums">Objective avg</th>
-            <th className="py-1 font-medium tabular-nums">Gap</th>
+            <th scope="col" className="py-1 pr-3 font-medium">Step</th>
+            <th scope="col" className="py-1 pr-3 font-medium tabular-nums">This ad</th>
+            <th scope="col" className="py-1 pr-3 font-medium tabular-nums">Own best</th>
+            <th scope="col" className="py-1 pr-3 font-medium tabular-nums">Objective avg</th>
+            <th scope="col" className="py-1 font-medium tabular-nums">Gap</th>
           </tr>
         </thead>
         <tbody>

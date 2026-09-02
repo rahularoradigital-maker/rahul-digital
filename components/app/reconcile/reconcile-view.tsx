@@ -29,11 +29,11 @@ export function ReconcileView({ report, accountName, since, until }: { report: R
         <table className="w-full min-w-[640px] border-collapse text-[13px]">
           <thead>
             <tr className="text-left text-[var(--ink-muted)]">
-              <th className="px-4 py-3 font-medium">Scope</th>
-              <th className="px-4 py-3 font-medium tabular-nums">Ads</th>
-              <th className="px-4 py-3 font-medium tabular-nums">Spend</th>
-              <th className="px-4 py-3 font-medium tabular-nums">Revenue</th>
-              <th className="px-4 py-3 font-medium tabular-nums">ROAS</th>
+              <th scope="col" className="px-4 py-3 font-medium">Scope</th>
+              <th scope="col" className="px-4 py-3 font-medium tabular-nums">Ads</th>
+              <th scope="col" className="px-4 py-3 font-medium tabular-nums">Spend</th>
+              <th scope="col" className="px-4 py-3 font-medium tabular-nums">Revenue</th>
+              <th scope="col" className="px-4 py-3 font-medium tabular-nums">ROAS</th>
             </tr>
           </thead>
           <tbody>

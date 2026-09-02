@@ -111,11 +111,11 @@ export function WhyDrawer({ explanation }: { explanation: Explanation }) {
                 <table className="w-full border-collapse text-[11px]">
                   <thead>
                     <tr className="text-left text-[var(--ink-muted)]">
-                      <th className="px-2 py-1 font-semibold">Ad</th>
-                      <th className="px-2 py-1 font-semibold">Tag</th>
-                      <th className="px-2 py-1 text-right font-semibold">Metric</th>
-                      <th className="px-2 py-1 text-right font-semibold">Score</th>
-                      <th className="px-2 py-1 text-right font-semibold">Spend</th>
+                      <th scope="col" className="px-2 py-1 font-semibold">Ad</th>
+                      <th scope="col" className="px-2 py-1 font-semibold">Tag</th>
+                      <th scope="col" className="px-2 py-1 text-right font-semibold">Metric</th>
+                      <th scope="col" className="px-2 py-1 text-right font-semibold">Score</th>
+                      <th scope="col" className="px-2 py-1 text-right font-semibold">Spend</th>
                     </tr>
                   </thead>
                   <tbody>

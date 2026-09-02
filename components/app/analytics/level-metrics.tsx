@@ -63,13 +63,13 @@ export function LevelMetricsSection({ rows }: { rows: LevelRow[] }) {
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-[var(--hairline)] text-left text-xs text-[var(--ink-muted)]">
-                <th className="py-2 pr-3 font-medium">{levelLabel}</th>
-                <th className="py-2 pr-3 text-right font-medium">Ads</th>
-                <th className="py-2 pr-3 text-right font-medium">Spend</th>
-                <th className="py-2 pr-3 text-right font-medium">Revenue</th>
-                <th className="py-2 pr-3 text-right font-medium">ROAS</th>
-                <th className="py-2 pr-3 text-right font-medium">Purchases</th>
-                <th className="py-2 text-right font-medium">CPA</th>
+                <th scope="col" className="py-2 pr-3 font-medium">{levelLabel}</th>
+                <th scope="col" className="py-2 pr-3 text-right font-medium">Ads</th>
+                <th scope="col" className="py-2 pr-3 text-right font-medium">Spend</th>
+                <th scope="col" className="py-2 pr-3 text-right font-medium">Revenue</th>
+                <th scope="col" className="py-2 pr-3 text-right font-medium">ROAS</th>
+                <th scope="col" className="py-2 pr-3 text-right font-medium">Purchases</th>
+                <th scope="col" className="py-2 text-right font-medium">CPA</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--hairline)]">

@@ -130,7 +130,7 @@ export default async function AdminPage() {
       <Card title="Spend by user" sub="Which user is spending how much on AI.">
         {d.users.length === 0 ? <Empty /> : (
           <table className="w-full text-[13px]">
-            <thead><tr><th className={th}>User</th><th className={th}>Cost</th><th className={th}>Calls</th><th className={th}>Prompt tok</th><th className={th}>Output tok</th></tr></thead>
+            <thead><tr><th scope="col" className={th}>User</th><th scope="col" className={th}>Cost</th><th scope="col" className={th}>Calls</th><th scope="col" className={th}>Prompt tok</th><th scope="col" className={th}>Output tok</th></tr></thead>
             <tbody>{d.users.map((u) => (
               <tr key={u.userId ?? u.email} className="border-t border-[var(--hairline)]">
                 <td className={td}>{u.email}</td><td className={td}>{usd(u.costUsd)}</td><td className={td}>{num(u.calls)}</td><td className={td}>{num(u.promptTokens)}</td><td className={td}>{num(u.completionTokens)}</td>
@@ -143,21 +143,21 @@ export default async function AdminPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card title="Spend by provider">
           {d.providers.length === 0 ? <Empty /> : (
-            <table className="w-full text-[13px]"><thead><tr><th className={th}>Provider</th><th className={th}>Cost</th><th className={th}>Calls</th></tr></thead>
+            <table className="w-full text-[13px]"><thead><tr><th scope="col" className={th}>Provider</th><th scope="col" className={th}>Cost</th><th scope="col" className={th}>Calls</th></tr></thead>
               <tbody>{d.providers.map((p) => (<tr key={p.key} className="border-t border-[var(--hairline)]"><td className={`${td} capitalize`}>{p.key}</td><td className={td}>{usd(p.costUsd)}</td><td className={td}>{num(p.calls)}</td></tr>))}</tbody>
             </table>
           )}
         </Card>
         <Card title="Spend by feature" sub="Which kind of prompt/job runs most.">
           {d.tasks.length === 0 ? <Empty /> : (
-            <table className="w-full text-[13px]"><thead><tr><th className={th}>Feature</th><th className={th}>Cost</th><th className={th}>Calls</th></tr></thead>
+            <table className="w-full text-[13px]"><thead><tr><th scope="col" className={th}>Feature</th><th scope="col" className={th}>Cost</th><th scope="col" className={th}>Calls</th></tr></thead>
               <tbody>{d.tasks.map((t) => (<tr key={t.key} className="border-t border-[var(--hairline)]"><td className={`${td} capitalize`}>{t.key}</td><td className={td}>{usd(t.costUsd)}</td><td className={td}>{num(t.calls)}</td></tr>))}</tbody>
             </table>
           )}
         </Card>
         <Card title="Spend by model (API)" sub="Which model/API costs the most.">
           {d.models.length === 0 ? <Empty /> : (
-            <table className="w-full text-[13px]"><thead><tr><th className={th}>Model</th><th className={th}>Cost</th><th className={th}>Calls</th></tr></thead>
+            <table className="w-full text-[13px]"><thead><tr><th scope="col" className={th}>Model</th><th scope="col" className={th}>Cost</th><th scope="col" className={th}>Calls</th></tr></thead>
               <tbody>{d.models.map((m) => (<tr key={m.key} className="border-t border-[var(--hairline)]"><td className={td}>{m.key}</td><td className={td}>{usd(m.costUsd)}</td><td className={td}>{num(m.calls)}</td></tr>))}</tbody>
             </table>
           )}
@@ -203,7 +203,7 @@ export default async function AdminPage() {
 
       <Card title="Audit trail" sub="Recent privileged/security events (who, what, when, result).">
         {d.audit.length === 0 ? <Empty /> : (
-          <table className="w-full text-[13px]"><thead><tr><th className={th}>When</th><th className={th}>Actor</th><th className={th}>Action</th><th className={th}>Target</th><th className={th}>Result</th></tr></thead>
+          <table className="w-full text-[13px]"><thead><tr><th scope="col" className={th}>When</th><th scope="col" className={th}>Actor</th><th scope="col" className={th}>Action</th><th scope="col" className={th}>Target</th><th scope="col" className={th}>Result</th></tr></thead>
             <tbody>{d.audit.map((a, i) => (
               <tr key={i} className="border-t border-[var(--hairline)]">
                 <td className={td}>{new Date(a.at).toISOString().slice(0, 16).replace("T", " ")}</td>
@@ -219,7 +219,7 @@ export default async function AdminPage() {
 
       <Card title="Background jobs" sub="Metrics + change sync per connected account.">
         {d.jobs.length === 0 ? <Empty /> : (
-          <table className="w-full text-[13px]"><thead><tr><th className={th}>Account</th><th className={th}>User</th><th className={th}>Job</th><th className={th}>Status</th><th className={th}>Last run</th></tr></thead>
+          <table className="w-full text-[13px]"><thead><tr><th scope="col" className={th}>Account</th><th scope="col" className={th}>User</th><th scope="col" className={th}>Job</th><th scope="col" className={th}>Status</th><th scope="col" className={th}>Last run</th></tr></thead>
             <tbody>{d.jobs.map((j, i) => (
               <tr key={i} className="border-t border-[var(--hairline)]">
                 <td className={td}>{j.account}</td><td className={td}>{j.userEmail}</td><td className={td}>{j.detail}</td>

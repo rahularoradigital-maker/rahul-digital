@@ -45,13 +45,13 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
           <table className="w-full text-[13px]" style={{ fontVariantNumeric: "tabular-nums" }}>
             <thead>
               <tr className="text-left text-[var(--ink-muted)]">
-                <th className="pb-2 pr-4 font-medium">Buyer</th>
-                <th className="pb-2 pr-4 font-medium">Hit rate</th>
-                <th className="pb-2 pr-4 font-medium">Median impact</th>
-                <th className="pb-2 pr-4 font-medium">Improved</th>
-                <th className="pb-2 pr-4 font-medium">Worsened</th>
-                <th className="pb-2 pr-4 font-medium">Flat</th>
-                <th className="pb-2 font-medium">Judged</th>
+                <th scope="col" className="pb-2 pr-4 font-medium">Buyer</th>
+                <th scope="col" className="pb-2 pr-4 font-medium">Hit rate</th>
+                <th scope="col" className="pb-2 pr-4 font-medium">Median impact</th>
+                <th scope="col" className="pb-2 pr-4 font-medium">Improved</th>
+                <th scope="col" className="pb-2 pr-4 font-medium">Worsened</th>
+                <th scope="col" className="pb-2 pr-4 font-medium">Flat</th>
+                <th scope="col" className="pb-2 font-medium">Judged</th>
               </tr>
             </thead>
             <tbody>

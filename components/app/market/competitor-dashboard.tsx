@@ -68,14 +68,14 @@ export function CompetitorDashboard({ data }: { data: Data }) {
         <table className="w-full min-w-[680px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-[var(--hairline)] text-left text-[13px] text-[var(--ink-muted)]">
-              <th className="px-6 py-3 font-medium">Brand</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">Live ads</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">Active</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">Video</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">Image</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">Carousel</th>
-              <th className="px-4 py-3 text-right font-medium tabular-nums">New 7d</th>
-              <th className="px-4 py-3 font-medium">Top CTA</th>
+              <th scope="col" className="px-6 py-3 font-medium">Brand</th>
+              <th scope="col" className="px-4 py-3 text-right font-medium tabular-nums">Live ads</th>
+              <th scope="col" className="px-4 py-3 text-right font-medium tabular-nums">Active</th>
+              <th scope="col" className="px-4 py-3 text-right font-medium tabular-nums">Video</th>
+              <th scope="col" className="px-4 py-3 text-right font-medium tabular-nums">Image</th>
+              <th scope="col" className="px-4 py-3 text-right font-medium tabular-nums">Carousel</th>
+              <th scope="col" className="px-4 py-3 text-right font-medium tabular-nums">New 7d</th>
+              <th scope="col" className="px-4 py-3 font-medium">Top CTA</th>
             </tr>
           </thead>
           <tbody>
