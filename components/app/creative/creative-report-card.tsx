@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { reportToText, type CreativeReport } from "@/lib/creative/creative-report";
+import { reportToText, reportToHtml, type CreativeReport } from "@/lib/creative/creative-report";
 
 // Renders the deterministic creative health report + lets a buyer copy or download it (plain text) to share
 // with a client / team. No data is computed here - it just presents what the section already assembled.
@@ -20,12 +20,12 @@ export function CreativeReportCard({ report }: { report: CreativeReport }) {
     }
   }
 
-  function download() {
+  function downloadBlob(content: string, mime: string, filename: string) {
     try {
-      const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+      const url = URL.createObjectURL(new Blob([content], { type: mime }));
       const a = document.createElement("a");
       a.href = url;
-      a.download = "creative-health-report.txt";
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -41,7 +41,8 @@ export function CreativeReportCard({ report }: { report: CreativeReport }) {
         <div className="text-base font-normal">Creative health report</div>
         <div className="flex shrink-0 items-center gap-1.5">
           <Button variant="outline" size="sm" onClick={copy}>{copied ? "Copied" : "Copy"}</Button>
-          <Button variant="outline" size="sm" onClick={download}>Download</Button>
+          <Button variant="outline" size="sm" onClick={() => downloadBlob(text, "text/plain", "creative-health-report.txt")}>.txt</Button>
+          <Button variant="outline" size="sm" onClick={() => downloadBlob(reportToHtml(report), "text/html", "creative-health-report.html")}>.html</Button>
         </div>
       </div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">{report.generatedFor}</div>

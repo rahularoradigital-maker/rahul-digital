@@ -2,7 +2,7 @@
 // numbers support them, never a fabricated figure.
 // Run: node --experimental-strip-types scripts/check-creative-report.ts
 
-import { buildCreativeReport, reportToText, type ReportInput } from "../lib/creative/creative-report.ts";
+import { buildCreativeReport, reportToText, reportToHtml, type ReportInput } from "../lib/creative/creative-report.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {
@@ -33,5 +33,11 @@ ok(calm.sections.some((s) => s.title === "Money at stake" && s.lines.some((l) =>
 // text render carries the headline + every section title.
 const txt = reportToText(r);
 ok(/Creative health report/.test(txt) && /What to do/.test(txt) && /Soch - last 90 days/.test(txt), "text render is complete");
+
+// html render is a complete, escaped, standalone document.
+const html = reportToHtml(buildCreativeReport({ ...base, accountName: "A & <b>Co</b>" }));
+ok(/^<!doctype html>/i.test(html) && /<\/html>$/i.test(html.trim()), "html is a complete document");
+ok(/Creative health report/.test(html) && html.includes("What to do"), "html carries the report content");
+ok(html.includes("A &amp; &lt;b&gt;Co&lt;/b&gt;") && !html.includes("<b>Co</b>"), "dynamic strings are HTML-escaped (no injection)");
 
 console.log(`check-creative-report: ${pass} assertions passed.`);
