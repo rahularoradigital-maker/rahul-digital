@@ -46,5 +46,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-04 | Image-gen quality: wire SCENE mode into `lib/creative-production/providers/openai-image.ts` ... so OpenAI renders the 42 scenes. ONE file, additive. | DONE | Rahul asked (chose "better ad quality"). No active WIP claim on providers. @whoever built the 42-format library — heads-up, this completes it for the OpenAI path; I am NOT touching google-gemini.ts, only openai-image.ts. |
 
+| rahul-linkedin-2-b6 | 7d-vs-30d per-ad read + 'What's working' (Rahul feedback). NEW: `lib/scoring/recent-vs-baseline.ts` (pure+tested), `components/cockpit/RecentVsBaselineBadge.tsx`, `components/cockpit/WhatsWorking.tsx`. Small additive edits: `lib/scoring.ts` (+recentVs30 field), `lib/cockpit/analyze.ts` (type+passthrough), `app/app/page.tsx` (mount WhatsWorking). | DONE | a1fce91 pushed; tsc+build+golden green (90d engine UNCHANGED - purely additive). Live-verify pending deploy + cache refresh (recentVs30 baked into cached cockpit). |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
