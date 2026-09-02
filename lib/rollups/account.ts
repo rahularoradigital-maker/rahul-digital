@@ -2,7 +2,8 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readAllPages } from "@/lib/supabase/paged";
 import { computeScopes, type ReconAd, type ReconReport } from "@/lib/reconcile/scopes";
-import { rollupHeadline, isRollupFresh, ROLLUP_WINDOW_DAYS } from "@/lib/rollups/pure";
+import { rollupHeadline, isRollupFresh, buildRollupRecon, ROLLUP_WINDOW_DAYS } from "@/lib/rollups/pure";
+import type { ReconSummary } from "@/lib/intelligence/reconcile";
 
 // 10x lever #5 "Instant app": the whole-account scope aggregate is expensive (scan every ad_metrics row in a
 // 90-day window + ad_meta for status) and was recomputed on every reconcile / headline read. Here it is
@@ -94,4 +95,27 @@ export async function loadAccountRollup(userId: string, account: string, windowD
   const row = data as { report: ReconReport; spend: number; revenue: number; purchases: number; ads: number; computed_at: string };
   if (!isRollupFresh(row.computed_at, Date.now(), opts.maxAgeMs ?? undefined)) return null;
   return { report: row.report, spend: row.spend, revenue: row.revenue, purchases: row.purchases, ads: row.ads, computedAt: row.computed_at };
+}
+
+export type RollupVerification = { computedAt: string; fresh: boolean; drift: ReconSummary; notes: string[] } | null;
+
+// Self-proving check (10x #5 → #1): compare the STORED rollup headline against a FRESH recompute from the
+// store right now, and return f3's reconcile verdict. `drift.trustworthy=false` means the store moved since
+// the rollup was written (stale - a refresh is due) or a compute bug. Returns null when there is no stored
+// rollup or the store is unreadable. Reads the store, so it is on-demand only (e.g. summary?verify=1), never
+// on the hot path.
+export async function verifyAccountRollup(userId: string, account: string, windowDays: number = ROLLUP_WINDOW_DAYS): Promise<RollupVerification> {
+  const { data } = await createAdminClient()
+    .from("account_rollups")
+    .select("report,computed_at")
+    .eq("user_id", userId)
+    .eq("account_external_id", account)
+    .eq("window_days", windowDays)
+    .maybeSingle();
+  if (!data) return null;
+  const stored = data as { report: ReconReport; computed_at: string };
+  const c = await computeReport(userId, account, windowDays);
+  if (!c) return null;
+  const { recs, summary } = buildRollupRecon(rollupHeadline(stored.report), rollupHeadline(c.report));
+  return { computedAt: stored.computed_at, fresh: isRollupFresh(stored.computed_at, Date.now()), drift: summary, notes: recs.map((r) => r.note) };
 }

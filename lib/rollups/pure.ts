@@ -1,6 +1,9 @@
 // Pure helpers for account rollups (no I/O, no server-only) so scripts/check-rollups.ts can import them
 // without pulling in the Supabase client. The DB read/write lives in ./account.ts.
 import type { ReconReport } from "@/lib/reconcile/scopes";
+// Relative + .ts so the check runner (node --experimental-strip-types) can resolve this VALUE import; the `@/`
+// alias only resolves under tsc/Next, and a check imports this module directly.
+import { reconcile, reconSummary, type Reconciliation, type ReconSummary } from "../intelligence/reconcile.ts";
 
 export const ROLLUP_WINDOW_DAYS = 90; // the fixed app-wide comparison window (LOOKBACK_DAYS)
 export const ROLLUP_FRESH_MS = 26 * 60 * 60 * 1000; // daily sync cadence + slack
@@ -15,4 +18,20 @@ export function rollupHeadline(report: ReconReport): { spend: number; revenue: n
 export function isRollupFresh(computedAtIso: string, nowMs: number, maxAgeMs: number = ROLLUP_FRESH_MS): boolean {
   const t = Date.parse(computedAtIso);
   return Number.isFinite(t) && nowMs - t <= maxAgeMs;
+}
+
+// Self-consistency check (10x #5, feeds #1): the STORED rollup vs a FRESH recompute of the same headline.
+// A match means the precompute still reflects the store; a conflict means the store moved on since the rollup
+// was written (it is stale - refresh it) or a compute bug. Uses f3's pure reconcile()/reconSummary() engine,
+// so the verdict + confidence penalty are the same the drift alarm uses everywhere. Not a cross-SOURCE check
+// (both come from the store) - that (store vs live Meta) is the deeper #1 slice.
+export function buildRollupRecon(
+  stored: { spend: number; revenue: number },
+  fresh: { spend: number; revenue: number },
+): { recs: Reconciliation[]; summary: ReconSummary } {
+  const recs = [
+    reconcile("spend", stored.spend, fresh.spend, "rollup", "store-now"),
+    reconcile("revenue", stored.revenue, fresh.revenue, "rollup", "store-now"),
+  ];
+  return { recs, summary: reconSummary(recs) };
 }

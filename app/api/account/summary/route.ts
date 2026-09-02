@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
-import { loadAccountRollup } from "@/lib/rollups/account";
+import { loadAccountRollup, verifyAccountRollup } from "@/lib/rollups/account";
 
 // 10x #5 instant-app: the active account's whole-account headline read from the precomputed rollup - a single
 // indexed row, no ad_metrics scan. Instant by design: if no fresh rollup exists yet (account not synced), it
@@ -10,7 +10,7 @@ import { loadAccountRollup } from "@/lib/rollups/account";
 // screen) can poll cheaply and light up the moment the first sync lands the rollup. Auth + product gated.
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
@@ -22,6 +22,12 @@ export async function GET() {
 
   const rollup = await loadAccountRollup(user.id, session.activeExternalId);
   if (!rollup) return NextResponse.json({ ready: false, connected: true });
+
+  // ?verify=1: self-prove the rollup against a fresh store recompute (drift verdict). On-demand only - it
+  // pays for a scan, so it is not part of the default instant read.
+  const drift = request.nextUrl.searchParams.get("verify") === "1"
+    ? await verifyAccountRollup(user.id, session.activeExternalId)
+    : undefined;
 
   return NextResponse.json({
     ready: true,
@@ -35,5 +41,6 @@ export async function GET() {
       ads: rollup.ads,
       roas: rollup.spend > 0 ? rollup.revenue / rollup.spend : null,
     },
+    ...(drift ? { drift } : {}),
   });
 }

@@ -3,7 +3,7 @@
 
 import { strict as assert } from "node:assert";
 import { computeScopes, type ReconAd } from "../lib/reconcile/scopes.ts";
-import { rollupHeadline, isRollupFresh } from "../lib/rollups/pure.ts";
+import { rollupHeadline, isRollupFresh, buildRollupRecon } from "../lib/rollups/pure.ts";
 
 function main() {
   // rollupHeadline extracts the whole-account scope exactly (same math the reconcile page shows).
@@ -33,7 +33,16 @@ function main() {
   assert.equal(isRollupFresh("not-a-date", now), false, "unparseable timestamp is never fresh");
   assert.equal(isRollupFresh(new Date(now).toISOString(), now, 0), true, "exactly now is fresh at maxAge 0 (<=)");
 
-  console.log("PASS: account rollups (headline = whole-account scope, empty-safe, freshness window)");
+  // buildRollupRecon: identical stored vs fresh => trustworthy match; a >5% gap => conflict (rollup stale).
+  const same = buildRollupRecon({ spend: 1000, revenue: 3000 }, { spend: 1000, revenue: 3000 });
+  assert.equal(same.summary.trustworthy, true, "identical rollup vs store is trustworthy");
+  assert.equal(same.summary.conflicts, 0);
+  assert.equal(same.recs.length, 2, "checks spend + revenue");
+  const stale = buildRollupRecon({ spend: 1000, revenue: 3000 }, { spend: 1000, revenue: 3600 }); // revenue +20%
+  assert.equal(stale.summary.trustworthy, false, "a 20% revenue gap is a conflict (rollup stale)");
+  assert.ok(stale.summary.conflicts >= 1);
+
+  console.log("PASS: account rollups (headline = whole-account scope, empty-safe, freshness window, drift verdict)");
 }
 
 main();
