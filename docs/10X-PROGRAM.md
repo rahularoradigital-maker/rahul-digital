@@ -11,9 +11,9 @@ multi-chat protocol (new files / no hot-file clobber / safe staging). Update the
 | 3 | **Contribution economics via Shopify** (§61) | integrations lane | 🔴 needs Rahul's Shopify token; new adapter |
 | 4 | **AI Critic to production** (§53) | whoever owns `feat/ai-critic` | 🔴 open — merge feat/ai-critic |
 | 5 | **Instant app** — background precompute + materialized rollups | data-layer lane | 🔴 rollup tables on sync; read from rollups |
-| 6 | **Daily decision brief** — one ranked "today: 3 things to fix" view + email | **intelligence (me)** | 🟢 aggregator done (me); VIEW owned by creative/UI lane (58) — TodayCard.tsx; email/digest = me |
+| 6 | **Daily decision brief** — one ranked "today: 3 things to fix" view + email | **intelligence (me)** | 🟢 DONE: aggregator (me) + in-app today-card LIVE (58) + digest generator (me, 6fe6b26). Only the email SEND is gated on Rahul's email provider. |
 | 7 | **Creative Studio that makes usable ads** | studio lane | 🟡 owned by studio lane (71); still needs Rahul to confirm OpenAI renders a real product |
-| 8 | **Time-to-first-insight < 2 min** — frictionless onboarding | onboarding lane | 🟡 owned by onboarding lane (46) + design audit (fb) |
+| 8 | **Time-to-first-insight < 2 min** — frictionless onboarding | onboarding lane | 🟡 46: slice 1 shipped — first-run stage machine (`lib/onboarding/stage.ts`) + `/api/onboarding/status` (names the silent post-setup "syncing" gap). Next: client progress island + 1-line mount in page.tsx (coord b6). + design audit (fb) |
 | 9 | **Scout → real distribution + attribution** | growth lane | 🟠 needs Rahul to pick a publish channel |
 | 10 | **Inspectable confidence on every number** (§122) | **intelligence (me)** | 🟡 me (logic) + fb folds 'confidence surface' into the design system |
 
