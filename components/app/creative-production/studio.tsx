@@ -113,6 +113,7 @@ export function CreativeStudio() {
   const [batchProgress, setBatchProgress] = useState("");
   const [recs, setRecs] = useState<Rec[]>([]);
   const [recBasis, setRecBasis] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ realImages: boolean; products: number; ads: number; approved: number } | null>(null);
   const firstRun = useRef(true);
   const [selected, setSelected] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
@@ -222,6 +223,14 @@ export function CreativeStudio() {
       .then((r) => { setRecs(r.recommendations); setRecBasis(r.basis); })
       .catch(() => {});
   }, [connected]);
+
+  // Studio readiness (products synced, ads made, real-images vs placeholder). Best-effort; refreshed on assets change.
+  useEffect(() => {
+    if (!connected) return;
+    jsonFetch<{ realImages: boolean; products: number; ads: number; approved: number }>("/api/creative-production/status")
+      .then(setStatus)
+      .catch(() => {});
+  }, [connected, assets.length]);
 
   const run = async (key: string, fn: () => Promise<void>) => {
     setErr(null);
@@ -408,6 +417,18 @@ export function CreativeStudio() {
         </div>
       ) : (
         <>
+          {/* STATUS STRIP — at-a-glance readiness; the real-images flag tells you if you need an image key. */}
+          {status ? (
+            <div className={`${CARD} flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 text-[12px]`}>
+              <span className="text-[var(--ink-muted)]">Store <span className="text-emerald-500">✓</span></span>
+              <span className="text-[var(--ink-muted)]">{status.products.toLocaleString("en-US")} products</span>
+              <span className="text-[var(--ink-muted)]">{status.ads} ads made · {status.approved} approved</span>
+              <span className={`ml-auto rounded-[6px] px-2 py-0.5 font-medium ${status.realImages ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+                {status.realImages ? "Real images: ON" : "Placeholder mode — add an image key for real pictures"}
+              </span>
+            </div>
+          ) : null}
+
           {/* STEPPER */}
           <div className="flex items-center gap-2 text-[13px]">
             {["1 · Products", "2 · Concepts", "3 · Review"].map((label, i) => (
