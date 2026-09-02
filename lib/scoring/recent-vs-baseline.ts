@@ -8,6 +8,8 @@
 // the monthly average. Positive deltaPct = the recent week is BETTER. Never fabricates: too little to
 // compare -> direction "insufficient", numbers null.
 
+import { metricFor, type MetricAgg } from "./objective-metric.ts";
+
 export type RvbObjective = "conversion" | "traffic" | "engagement" | "awareness" | "leads" | "app_installs";
 export type MetricDay = { date: string; spend: number; impressions: number; clicks: number; purchases: number; revenue: number };
 export type RecentVsBaseline = {
@@ -20,35 +22,19 @@ export type RecentVsBaseline = {
   baselineDays: number;
 };
 
-type Agg = { spend: number; impressions: number; clicks: number; purchases: number; revenue: number };
+// Aggregate shape + objective->metric switch are SHARED with change-impact.ts via objective-metric.ts. This
+// file used to carry a verbatim copy (Phase-0 audit) - MetricDay.purchases maps onto MetricAgg.conversions.
+type Agg = MetricAgg;
 function aggregate(rows: MetricDay[]): Agg {
-  const a: Agg = { spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0 };
+  const a: Agg = { spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0 };
   for (const r of rows) {
     a.spend += r.spend || 0;
     a.impressions += r.impressions || 0;
     a.clicks += r.clicks || 0;
-    a.purchases += r.purchases || 0;
+    a.conversions += r.purchases || 0;
     a.revenue += r.revenue || 0;
   }
   return a;
-}
-
-// The objective's headline metric + orientation + how to form it (null when the denominator is zero).
-function metricFor(objective: RvbObjective): { name: string; higherIsBetter: boolean; compute: (a: Agg) => number | null } {
-  switch (objective) {
-    case "conversion":
-      return { name: "ROAS", higherIsBetter: true, compute: (a) => (a.spend > 0 ? a.revenue / a.spend : null) };
-    case "leads":
-    case "app_installs":
-      return { name: "cost per result", higherIsBetter: false, compute: (a) => (a.purchases > 0 ? a.spend / a.purchases : null) };
-    case "awareness":
-      return { name: "CPM", higherIsBetter: false, compute: (a) => (a.impressions > 0 ? (a.spend / a.impressions) * 1000 : null) };
-    case "traffic":
-      return { name: "CPC", higherIsBetter: false, compute: (a) => (a.clicks > 0 ? a.spend / a.clicks : null) };
-    case "engagement":
-    default:
-      return { name: "CTR", higherIsBetter: true, compute: (a) => (a.impressions > 0 ? a.clicks / a.impressions : null) };
-  }
 }
 
 const round = (n: number) => Math.round(n * 100) / 100;

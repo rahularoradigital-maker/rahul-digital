@@ -81,6 +81,12 @@ export async function analyzeAccountChanges(userId: string, accountExternalId: s
       .eq("user_id", userId)
       .eq("account_external_id", accountExternalId)
       .gte("date", metricsSince)
+      // P0 correctness: OFFSET/LIMIT paging without a deterministic ORDER BY has no stability guarantee in
+      // Postgres - across a 120-day multi-page scan rows can be duplicated or dropped, silently corrupting
+      // the before/after windows the whole Change-Impact read is built on. Every other paged reader in the
+      // codebase orders first (from-store.ts, funnel/store.ts); this one did not.
+      .order("ad_id", { ascending: true })
+      .order("date", { ascending: true })
       .range(from, from + PAGE - 1);
     const rows = (data ?? []) as MetricRow[];
     for (const m of rows) {

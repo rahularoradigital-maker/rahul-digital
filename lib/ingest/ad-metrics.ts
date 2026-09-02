@@ -89,8 +89,23 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
   // 2. Pick the ads still needing work: never synced (no ad_meta row) first, then the stalest, and skip any
   //    synced within REFRESH_INTERVAL. This is what makes the sync resumable AND self-refreshing - every run
   //    advances the least-covered ads, so repeated runs converge on full coverage and then keep it fresh.
-  const { data: metaRows } = await admin.from("ad_meta").select("ad_id, updated_at").eq("user_id", userId).eq("account_external_id", accountExternalId);
-  const syncedAt = new Map<string, number>(((metaRows ?? []) as { ad_id: string; updated_at: string }[]).map((r) => [r.ad_id, Date.parse(r.updated_at)]));
+  // P0 correctness: this read was UNPAGED, and Supabase caps a select at 1,000 rows. On an account with
+  // more ads than that (verified live: 1,060) the overflow ads never got a syncedAt entry, were treated as
+  // never-synced, and were re-pulled from Meta on EVERY run, forever. Page it like readAllMetaRows does.
+  const syncedAt = new Map<string, number>();
+  const META_PAGE = 1000;
+  for (let from = 0; ; from += META_PAGE) {
+    const { data: metaRows } = await admin
+      .from("ad_meta")
+      .select("ad_id, updated_at")
+      .eq("user_id", userId)
+      .eq("account_external_id", accountExternalId)
+      .order("ad_id", { ascending: true })
+      .range(from, from + META_PAGE - 1);
+    const page = (metaRows ?? []) as { ad_id: string; updated_at: string }[];
+    for (const r of page) syncedAt.set(r.ad_id, Date.parse(r.updated_at));
+    if (page.length < META_PAGE) break;
+  }
   const toProcess = selectAdsToSync(allAds, syncedAt, Date.now() - REFRESH_INTERVAL_MS);
 
   // 3. Process chunks until the deadline (or done). Each chunk syncs metrics AND metadata TOGETHER, so an ad

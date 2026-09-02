@@ -11,13 +11,12 @@
 // (lib/rules/change-log.ts) refines it upstream. Numbers are never guessed.
 
 import { settledRows } from "./attribution.ts";
+import { metricFor, type MetricAgg } from "./objective-metric.ts";
+import { VOLUME_FLOORS } from "./decision.ts";
 
-// Sufficiency thresholds mirror lib/scoring/decision.ts (volumeSufficiency is module-private there; kept in
-// sync here by value). If those change, update both.
-const MIN_CONVERSIONS = 15;
-const MIN_CLICKS = 100;
-const MIN_IMPRESSIONS_RATE = 1000;
-const MIN_IMPRESSIONS_AWARENESS = 10000;
+// Sufficiency floors come from decision.ts (VOLUME_FLOORS) - the ONE source of truth. They used to be
+// re-declared here by value (Phase-0 audit: silent-divergence bug). The objective->metric switch likewise now
+// lives in objective-metric.ts, shared with recent-vs-baseline.ts.
 const DEFAULT_MIN_DELTA_PCT = 10; // a move smaller than this (in the better direction) reads as "flat"
 
 export type Objective = "conversion" | "traffic" | "engagement" | "awareness" | "leads" | "app_installs";
@@ -31,7 +30,7 @@ export type ChangeImpact = {
   reason: string;
 };
 
-type Agg = { spend: number; impressions: number; clicks: number; conversions: number; revenue: number; days: number };
+type Agg = MetricAgg & { days: number };
 
 function aggregate(rows: ImpactRow[]): Agg {
   const a: Agg = { spend: 0, impressions: 0, clicks: 0, conversions: 0, revenue: 0, days: rows.length };
@@ -48,35 +47,18 @@ function aggregate(rows: ImpactRow[]): Agg {
 // Enough volume to trust a verdict on this objective's own metric? Mirrors decision.ts volumeSufficiency.
 function sufficient(a: Agg, objective: Objective): { ok: boolean; reason: string } {
   if (objective === "conversion" || objective === "leads" || objective === "app_installs") {
-    if (a.conversions < MIN_CONVERSIONS) return { ok: false, reason: `only ${a.conversions} result(s) (need >=${MIN_CONVERSIONS})` };
+    if (a.conversions < VOLUME_FLOORS.conversions) return { ok: false, reason: `only ${a.conversions} result(s) (need >=${VOLUME_FLOORS.conversions})` };
     return { ok: true, reason: "" };
   }
   if (objective === "awareness") {
-    if (a.impressions < MIN_IMPRESSIONS_AWARENESS) return { ok: false, reason: `only ${a.impressions} impressions (need >=${MIN_IMPRESSIONS_AWARENESS})` };
+    if (a.impressions < VOLUME_FLOORS.impressionsAwareness) return { ok: false, reason: `only ${a.impressions} impressions (need >=${VOLUME_FLOORS.impressionsAwareness})` };
     return { ok: true, reason: "" };
   }
-  if (a.clicks < MIN_CLICKS || a.impressions < MIN_IMPRESSIONS_RATE) return { ok: false, reason: `only ${a.clicks} clicks / ${a.impressions} impressions (need >=${MIN_CLICKS}/${MIN_IMPRESSIONS_RATE})` };
+  if (a.clicks < VOLUME_FLOORS.clicks || a.impressions < VOLUME_FLOORS.impressionsRate) return { ok: false, reason: `only ${a.clicks} clicks / ${a.impressions} impressions (need >=${VOLUME_FLOORS.clicks}/${VOLUME_FLOORS.impressionsRate})` };
   return { ok: true, reason: "" };
 }
 
-// The objective's headline metric + its orientation + how to compute it from an aggregate (null if the
-// denominator is zero, i.e. the metric can't be formed).
-function metricFor(objective: Objective): { name: string; higherIsBetter: boolean; compute: (a: Agg) => number | null } {
-  switch (objective) {
-    case "conversion":
-      return { name: "ROAS", higherIsBetter: true, compute: (a) => (a.spend > 0 ? a.revenue / a.spend : null) };
-    case "leads":
-    case "app_installs":
-      return { name: "cost per result", higherIsBetter: false, compute: (a) => (a.conversions > 0 ? a.spend / a.conversions : null) };
-    case "awareness":
-      return { name: "CPM", higherIsBetter: false, compute: (a) => (a.impressions > 0 ? (a.spend / a.impressions) * 1000 : null) };
-    case "traffic":
-      return { name: "CPC", higherIsBetter: false, compute: (a) => (a.clicks > 0 ? a.spend / a.clicks : null) };
-    case "engagement":
-    default:
-      return { name: "CTR", higherIsBetter: true, compute: (a) => (a.impressions > 0 ? a.clicks / a.impressions : null) };
-  }
-}
+// metricFor (objective -> ROAS/CPC/CTR/CPM + orientation) is imported from objective-metric.ts - shared.
 
 const round = (n: number) => Math.round(n * 10) / 10;
 

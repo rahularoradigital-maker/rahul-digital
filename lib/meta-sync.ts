@@ -561,7 +561,7 @@ const COLD_PULL_TIMEOUT_MS = 8_000; // cap the blocking cold pull so a slow Meta
 // permanent fix for cache/schema-mismatch crashes, not a one-off.
 // v3: added view.wasteContributors / atRiskContributors + per-ad conversions/active/names to the
 // cached shape. BUMP THIS on ANY LiveCockpit/view shape change so old-shape blobs are never read.
-const CACHE_SCHEMA = "v6"; // v6: catalog include/exclude is part of the key (exclude analyzes a different ad set). v5: added dailySeries (day-wise trend). v4: added ownDiversity
+const CACHE_SCHEMA = "v7"; // v7: added per-ad recentVs30 (7d-vs-30d read) to the cached view - shipped WITHOUT this bump, so v6 blobs served an empty "What's working" for up to 24h (Phase-0 audit P0). v6: catalog include/exclude is part of the key (exclude analyzes a different ad set). v5: added dailySeries (day-wise trend). v4: added ownDiversity
 // Bounded so a long-lived instance can't accumulate unbounded (user x account x window x filter x
 // weights) permutations (ISSUE 09). 500 hot entries is far more than one instance serves between
 // evictions; least-recently-used falls out first.

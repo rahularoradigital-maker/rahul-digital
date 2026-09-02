@@ -63,6 +63,16 @@ const MIN_CLICKS = 100;
 const MIN_IMPRESSIONS_RATE = 1000;
 const MIN_IMPRESSIONS_AWARENESS = 10000;
 
+// The ONE source of truth for volume-sufficiency floors. change-impact.ts used to re-declare these four
+// numbers "kept in sync by value" (Phase-0 audit) - a silent-divergence bug waiting to change verdicts.
+// Export them so every consumer reads the same constants.
+export const VOLUME_FLOORS = Object.freeze({
+  conversions: MIN_CONVERSIONS,
+  clicks: MIN_CLICKS,
+  impressionsRate: MIN_IMPRESSIONS_RATE,
+  impressionsAwareness: MIN_IMPRESSIONS_AWARENESS,
+});
+
 // Is there enough volume to trust a verdict on this objective's own metric? Returns the shortfall reason
 // so the "why" names exactly what is missing (e.g. "only 3 conversions, need >=15").
 function volumeSufficiency(input: DecisionInput): { ok: boolean; reason: string } {
