@@ -3,6 +3,7 @@ import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
+import { syncChangeHistory } from "@/lib/ingest/change-history";
 
 // Run the day-wise ingestion for the signed-in user's active account, on demand. Auth-gated (a user can
 // only sync their own account). Complete coverage: captures EVERY spending ad day-wise into ad_metrics,
@@ -29,5 +30,10 @@ export async function POST(request: NextRequest) {
   // re-POSTs until `complete` is true (each call advances the stalest ads); a small account finishes in one.
   const res = await syncAdMetrics(user.id, session.activeExternalId, session.token, { backfillDays });
   if (!res.ok) return NextResponse.json({ ok: false, error: res.error ?? "Sync failed." }, { status: 502 });
-  return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since, processed: res.processed, remaining: res.remaining, complete: res.complete });
+  // Change-history rides the same on-demand sync (best-effort, incremental) so the Change-Impact feature and
+  // the media-buyer ranking populate whenever an account is synced - not ONLY via the nightly cron. It writes
+  // its own change_sync_state.last_error, so a failure stays observable there even though we don't fail the
+  // metrics response over it. This is the resilient path when the cron is not the one doing the syncing.
+  const changes = await syncChangeHistory(user.id, session.activeExternalId, session.token, { backfillDays }).catch(() => null);
+  return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since, processed: res.processed, remaining: res.remaining, complete: res.complete, changesSeen: changes?.seen ?? null, changesOk: changes?.ok ?? false });
 }
