@@ -25,6 +25,17 @@ export type EventRoi = {
 // Money bleeding is material because of its rupees, not its share.
 const DEFAULT_MIN_SPEND = 1000; // Rs over the window
 
+// One-glance money split: total event spend and how it divides between events that produce rupee revenue
+// (direct response) and events that don't (awareness - Reach, Profile visit, engagement). Honest CFO view of
+// where the money actually goes. Null when there is no event spend at all.
+export function eventSpendSplit(rows: EventRoi[]): { totalRs: number; revenuePct: number; awarenessPct: number } | null {
+  const total = rows.reduce((s, e) => s + e.spendRs, 0);
+  if (total <= 0) return null;
+  const revenue = rows.filter((e) => e.hasRevenue).reduce((s, e) => s + e.spendRs, 0);
+  const revenuePct = Math.round((revenue / total) * 100);
+  return { totalRs: Math.round(total), revenuePct, awarenessPct: 100 - revenuePct };
+}
+
 // A grounded reallocation insight (no AI): identifies spend on CONVERSION-INTENT events that are returning
 // BELOW break-even (real revenue but negative ROI) against the best revenue event, and sizes the ₹ at stake.
 // It deliberately does NOT count no-revenue awareness events (Reach, Profile visit) as "bleeding" - those

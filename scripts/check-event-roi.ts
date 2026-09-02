@@ -2,7 +2,7 @@
 // null (never a fabricated ROI) for non-revenue events, materiality-gated, spend-ranked.
 // Run: node --experimental-strip-types scripts/check-event-roi.ts
 
-import { computeEventRoi, eventBleedSummary, type EventRow } from "../lib/scoring/event-roi.ts";
+import { computeEventRoi, eventBleedSummary, eventSpendSplit, type EventRow } from "../lib/scoring/event-roi.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {
@@ -62,5 +62,10 @@ const bleed = eventBleedSummary(roi);
 ok(bleed !== null && bleed.bleedRs === 134598 + 59946, "bleed = only the negative-ROI revenue events (not awareness)");
 ok(bleed !== null && /purchase returns \+444%/.test(bleed.line), "cites the best-returning event");
 ok(eventBleedSummary(computeEventRoi([{ event: "PURCHASE", spendRs: 100000, revenueRs: 400000, purchases: 500 }])) === null, "all-positive -> no reallocation nag");
+
+// money split: total + revenue-vs-awareness share of spend (null on no spend).
+const split = eventSpendSplit(computeEventRoi([{ event: "PURCHASE", spendRs: 90000, revenueRs: 400000, purchases: 500 }, { event: "REACH", spendRs: 10000, revenueRs: 0, purchases: 0 }]));
+ok(split !== null && split.totalRs === 100000 && split.revenuePct === 90 && split.awarenessPct === 10, "split = 90% revenue / 10% awareness of Rs 1L");
+ok(eventSpendSplit([]) === null, "no spend -> null split (no NaN)");
 
 console.log(`check-event-roi: ${pass} assertions passed.`);

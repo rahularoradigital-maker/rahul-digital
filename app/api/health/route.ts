@@ -28,6 +28,8 @@ export async function GET() {
   let lastRunAt: string | null = null; // newest ad_sync_state.updated_at = when ANY sync last actually ran
   let changeAccounts = 0; // rows in change_sync_state = accounts whose change-history has ever ingested
   let changeErrors = 0;
+  let rollupAccounts = 0; // rows in account_rollups (instant-app precompute)
+  let rollupFresh = 0; // ...of those, computed within AUTOMATION_STALE_HOURS
 
   try {
     const admin = createAdminClient();
@@ -47,6 +49,13 @@ export async function GET() {
     const cRows = (cData ?? []) as { last_ok: boolean | null }[];
     changeAccounts = cRows.length;
     for (const r of cRows) if (r.last_ok === false) changeErrors++;
+    // Instant-app rollup coverage: how many accounts have a precomputed rollup, and how many are fresh. A
+    // dead rollup path shows as fresh << connected here, the same way automationStale surfaces a dead cron.
+    const { data: rData } = await admin.from("account_rollups").select("computed_at").eq("window_days", 90);
+    const rRows = (rData ?? []) as { computed_at: string | null }[];
+    rollupAccounts = rRows.length;
+    const rollupCutoff = Date.now() - AUTOMATION_STALE_HOURS * 3_600_000;
+    for (const r of rRows) if (r.computed_at && Date.parse(r.computed_at) >= rollupCutoff) rollupFresh++;
   } catch {
     db = "down";
   }
@@ -102,6 +111,7 @@ export async function GET() {
         lastRunAt, // when a sync last actually ran (bumped by cron OR manual /api/ingest/run)
         lastRunAgeHours,
         changeHistory: { accounts: changeAccounts, withErrors: changeErrors }, // 0 accounts => Change-Impact has no data
+        rollups: { accounts: rollupAccounts, fresh: rollupFresh, connected: syncAccounts }, // fresh << connected => rollup path is behind
       },
       time,
     },

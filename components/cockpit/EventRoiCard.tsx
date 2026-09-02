@@ -1,5 +1,5 @@
 import type { EventRoi } from "@/lib/scoring/event-roi";
-import { eventBleedSummary } from "@/lib/scoring/event-roi";
+import { eventBleedSummary, eventSpendSplit } from "@/lib/scoring/event-roi";
 
 const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -32,6 +32,10 @@ export function EventRoiCard({ rows }: { rows: EventRoi[] }) {
       </div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
         How much you spend on each optimisation event, and the ROI where the event actually makes money.
+        {(() => {
+          const split = eventSpendSplit(rows);
+          return split ? <span className="block mt-1 text-[var(--ink)]">{inr.format(split.totalRs)} total · {split.revenuePct}% on revenue events · {split.awarenessPct}% on awareness.</span> : null;
+        })()}
       </div>
 
       {(() => {
