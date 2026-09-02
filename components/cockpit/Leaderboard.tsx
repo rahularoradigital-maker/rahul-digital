@@ -1,6 +1,8 @@
 // Creative leaderboard, styled as the telli ranked "test plan" list. Every row is a
 // real CockpitAd: verdict chip, confidence bar, spend and ROAS come from the engine.
 import type { CockpitAd } from "@/lib/cockpit/analyze";
+import { winnerToContract } from "@/lib/intelligence/from-winner";
+import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 import { VERDICT_STYLE, confColor } from "./styles";
 import { AdLink } from "./AdLink";
 import { CollapsibleRows } from "./CollapsibleRows";
@@ -22,10 +24,8 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
           const v = VERDICT_STYLE[ad.verdict];
           const conf = Math.round(ad.confidence * 100);
           return (
-            <div
-              key={ad.id}
-              className="grid min-w-[340px] grid-cols-[26px_1fr_150px_92px] items-center gap-4 border-t border-[var(--surface-alt)] py-4"
-            >
+            <div key={ad.id} className="border-t border-[var(--surface-alt)] py-4">
+            <div className="grid min-w-[340px] grid-cols-[26px_1fr_150px_92px] items-center gap-4">
               <span className="text-[13px] font-semibold text-[var(--ink-muted)] tabular-nums">
                 {String(i + 1).padStart(2, "0")}
               </span>
@@ -68,6 +68,9 @@ export function Leaderboard({ ads, rupees, accountId, dateParam }: { ads: Cockpi
                   </span>
                 )}
               </div>
+            </div>
+            {/* Full §110 reasoning behind this ad's winner classification - built from ad.winner, no new query. */}
+            {(() => { const c = winnerToContract(ad); return c ? <ReasoningTrace contract={c} /> : null; })()}
             </div>
           );
         })}
