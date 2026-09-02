@@ -92,10 +92,14 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
           aria-hidden="true"
         />
 
+        {/* A11y (Phase-0 audit): labels are now associated with their inputs via htmlFor/id (was bare
+            <label> siblings - screen readers didn't announce the field, and clicking the label didn't focus
+            it). Matches the correct pattern in auth-form.tsx. */}
         <div className="mb-3.5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-[13px] font-medium">First name</label>
+            <label htmlFor="df-first" className="mb-1.5 block text-[13px] font-medium">First name</label>
             <Input
+              id="df-first"
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
@@ -104,8 +108,9 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-[13px] font-medium">Last name</label>
+            <label htmlFor="df-last" className="mb-1.5 block text-[13px] font-medium">Last name</label>
             <Input
+              id="df-last"
               required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
@@ -116,8 +121,9 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
         </div>
 
         <div className="mb-3.5">
-          <label className="mb-1.5 block text-[13px] font-medium">Work email</label>
+          <label htmlFor="df-email" className="mb-1.5 block text-[13px] font-medium">Work email</label>
           <Input
+            id="df-email"
             required
             type="email"
             value={email}
@@ -128,8 +134,9 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
         </div>
 
         <div className="mb-3.5">
-          <label className="mb-1.5 block text-[13px] font-medium">Brand or agency</label>
+          <label htmlFor="df-brand" className="mb-1.5 block text-[13px] font-medium">Brand or agency</label>
           <Input
+            id="df-brand"
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
             placeholder="Acme Co."
@@ -138,12 +145,13 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
         </div>
 
         <div className="mb-3.5">
-          <label className="mb-1.5 block text-[13px] font-medium">Monthly Meta ad spend</label>
-          <div className="flex flex-wrap gap-2">
+          <span id="df-spend-label" className="mb-1.5 block text-[13px] font-medium">Monthly Meta ad spend</span>
+          <div className="flex flex-wrap gap-2" role="group" aria-labelledby="df-spend-label">
             {SPEND_OPTIONS.map((label, i) => (
               <button
                 key={label}
                 type="button"
+                aria-pressed={spend === i}
                 onClick={() => setSpend(i)}
                 className={
                   "cursor-pointer rounded-full border px-3.5 py-2 text-[13px] font-medium transition " +
@@ -159,8 +167,9 @@ export function DemoForm({ initialEmail = "" }: { initialEmail?: string }) {
         </div>
 
         <div className="mb-5">
-          <label className="mb-1.5 block text-[13px] font-medium">What do you want to fix?</label>
+          <label htmlFor="df-notes" className="mb-1.5 block text-[13px] font-medium">What do you want to fix?</label>
           <Textarea
+            id="df-notes"
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

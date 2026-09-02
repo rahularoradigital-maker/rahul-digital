@@ -3,7 +3,7 @@
 // blank wait into an immediate, structured skeleton, so the app always feels responsive.
 
 function Bar({ w, h = 14 }: { w: string; h?: number }) {
-  return <div className="animate-pulse rounded-md bg-[var(--surface-alt)]" style={{ width: w, height: h }} />;
+  return <div className="motion-safe:animate-pulse rounded-md bg-[var(--surface-alt)]" style={{ width: w, height: h }} />;
 }
 
 function Card({ children }: { children?: React.ReactNode }) {
@@ -20,7 +20,7 @@ export default function DashboardLoading() {
 
       <Card>
         <div className="flex items-center gap-8">
-          <div className="h-[150px] w-[150px] shrink-0 animate-pulse rounded-full border-[10px] border-[var(--surface-alt)]" />
+          <div className="h-[150px] w-[150px] shrink-0 motion-safe:animate-pulse rounded-full border-[10px] border-[var(--surface-alt)]" />
           <div className="flex-1 space-y-3">
             <Bar w="160px" />
             <Bar w="70%" h={10} />

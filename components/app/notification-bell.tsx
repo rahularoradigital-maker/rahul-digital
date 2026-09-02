@@ -58,12 +58,18 @@ export function NotificationBell() {
     return () => clearInterval(t);
   }, [open, load]);
 
-  // Close on outside click.
+  // Close on outside click OR Escape. A11y (Phase-0 audit): this was the only popover in the app with
+  // outside-click but no Escape handler - every other dropdown/dialog closes on Escape, so this matches them.
   useEffect(() => {
     if (!open) return;
     const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   async function markAllRead() {

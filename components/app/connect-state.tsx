@@ -41,7 +41,7 @@ export function ConnectState({
     <div className="grid min-h-[52vh] place-items-center">
       <div className="w-full max-w-md rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-8 text-center">
         {syncing && <AutoRefresh seconds={4} />}
-        <div className={`mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]${syncing ? " animate-pulse" : ""}`}>
+        <div className={`mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]${syncing ? " motion-safe:animate-pulse" : ""}`}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z" />
           </svg>

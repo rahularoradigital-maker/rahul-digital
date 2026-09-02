@@ -4,7 +4,7 @@
 // screen (cockpit has its own tailored skeleton).
 
 function Bar({ w, h = 14 }: { w: string; h?: number }) {
-  return <div className="animate-pulse rounded-md bg-[var(--surface-alt)]" style={{ width: w, height: h }} />;
+  return <div className="motion-safe:animate-pulse rounded-md bg-[var(--surface-alt)]" style={{ width: w, height: h }} />;
 }
 function Card({ children }: { children?: React.ReactNode }) {
   return <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">{children}</div>;
