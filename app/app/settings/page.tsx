@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
+import { getConnectionHealth } from "@/lib/connection/status";
+import { ConnectionHealthCard } from "@/components/app/connection-health";
 import { SettingsPanel } from "@/components/app/settings-panel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,8 @@ export default async function SettingsPage() {
   if (!user) redirect("/login");
   const session = await getUserMetaSession(user.id);
   const data = { connected: !!session, accountName: session?.activeAccountName };
+  // Honest connection health (freshness / last error / reconnect) - reads ad_sync_state, tenancy-scoped.
+  const health = await getConnectionHealth(user.id, !!session, session?.activeExternalId ?? null);
 
   return (
     <div className="space-y-6">
@@ -29,6 +33,7 @@ export default async function SettingsPage() {
         <CardContent className="p-6">
           <div className="mb-1 text-base font-normal">Connected account</div>
           {data.connected ? (
+            <>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
@@ -36,6 +41,8 @@ export default async function SettingsPage() {
               </div>
               <Button asChild variant="outline" className="rounded-full"><a href="/api/connect/meta/authorize">Switch account</a></Button>
             </div>
+            <ConnectionHealthCard health={health} />
+            </>
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
