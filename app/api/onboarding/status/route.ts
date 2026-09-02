@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { guardProductApi } from "@/lib/app/access";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadBrandProfile } from "@/lib/brand/profile";
 import { firstRunStage, firstRunProgress } from "@/lib/onboarding/stage";
@@ -15,6 +16,8 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const denied = await guardProductApi(); // post-approval only (onboarding lives inside /app); keeps check:access-gate green
+  if (denied) return denied;
 
   const session = await getUserMetaSession(user.id);
   const metaConnected = !!session;
@@ -29,6 +32,7 @@ export async function GET() {
     const { count } = await createAdminClient()
       .from("ad_meta")
       .select("ad_id", { count: "exact", head: true })
+      .eq("user_id", user.id) // tenancy: scope to THIS user, never count another tenant's rows for the same account id
       .eq("account_external_id", session.activeExternalId);
     hasData = (count ?? 0) > 0;
   }
