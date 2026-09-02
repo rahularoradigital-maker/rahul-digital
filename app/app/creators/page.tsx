@@ -4,6 +4,7 @@ import { loadLatestDiscovery } from "@/lib/influencer/store";
 import { CreatorsExplorer } from "@/components/app/creators/creators-explorer";
 import { RunButton } from "@/components/app/influencer/run-button";
 import { Card, CardContent } from "@/components/ui/card";
+import { relativeTime, daysSince } from "@/lib/relative-time";
 
 // Creators: the shadcn/ui build of Influencer Hunt - the same real, reel-driven shortlist with a full filter
 // panel (engagement band, min followers, region, gender, confidence). Reads the latest stored run.
@@ -14,6 +15,11 @@ export default async function CreatorsPage() {
   const user = await getCurrentUser();
   const session = user ? await getUserMetaSession(user.id) : null;
   const run = user && session ? await loadLatestDiscovery(user.id, session.activeExternalId) : null;
+  // §24 freshness: run.createdAt was loaded but never shown - a weeks-old shortlist looked current. Surface
+  // its age, and nudge a re-run once it's old enough to likely be stale.
+  const runAge = run ? relativeTime(run.createdAt) : null;
+  const runDays = daysSince(run?.createdAt);
+  const runStale = runDays != null && runDays > 14;
 
   return (
     <div className="space-y-6">
@@ -23,6 +29,11 @@ export default async function CreatorsPage() {
           <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
             Brand-matched creator shortlist, scored on a reel-driven formula. Filter by engagement, size, region, gender, and confidence.
           </p>
+          {run && run.ranked.length > 0 && runAge ? (
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              Discovered {runAge}.{runStale ? " These may be out of date - re-run for a fresh set." : ""}
+            </p>
+          ) : null}
         </div>
         {run && run.ranked.length > 0 ? <RunButton label="Re-run hunt" hunting="Hunting…" /> : null}
       </div>
