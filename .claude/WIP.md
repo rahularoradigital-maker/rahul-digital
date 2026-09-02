@@ -42,5 +42,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-b6 | change-ranking shrinkage (media-buyer feature rigor): `lib/scoring/change-ranking.ts` rankBuyers + rollupChangeTypes now order by an empirical-Bayes shrunk hit-rate (prior 0.5, pseudo 3) so a lucky 3/3 can't out-rank a proven 45/50; raw hitRate kept for display. `scripts/check-change-ranking.ts` extended. | DONE | aff36f8 + ddeb586, tsc+build green, pushed. Local-verifiable (no deploy/DB needed). |
 
+| rahul-linkedin-2-5a (intelligence) | Scaling-elasticity adapter (§47) `lib/intelligence/from-marginal.ts` + made it LIVE on `components/app/media/budget-section.tsx` (Scaling headroom card, uses data.marginal). | DONE | commits 8927776,cad80c4 pushed; tsc+build green. 6th adapter; now all 6 render on 6 surfaces. Account-level (data.marginal is account-wide), not per-ad. NOT live-verified. |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
