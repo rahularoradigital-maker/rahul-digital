@@ -4,6 +4,8 @@ import { SAMPLE_ADS } from "@/lib/sample/account";
 import { ActionList } from "@/components/cockpit/ActionList";
 import { Leaderboard } from "@/components/cockpit/Leaderboard";
 import { FunnelCard } from "@/components/cockpit/FunnelCard";
+import { EventRoiCard } from "@/components/cockpit/EventRoiCard";
+import { computeEventRoi } from "@/lib/scoring/event-roi";
 import { levelFunnels } from "@/lib/cockpit/level-funnel";
 import { buildDailySeries } from "@/lib/cockpit/daily-series";
 import { windowFunnel } from "@/lib/metrics/funnel-metrics";
@@ -69,6 +71,7 @@ export default function PreviewCockpit() {
       <ActionList items={view.doThis} ads={view.leaderboard} accountId="act_0" dateParam={date} />
       <FunnelCard funnel={PREVIEW_FUNNEL.funnel} dailySeries={PREVIEW_FUNNEL.series} funnelLevels={PREVIEW_FUNNEL.levels} />
       <Leaderboard ads={view.leaderboard} rupees={rupees} accountId="act_0" dateParam={date} />
+      <EventRoiCard rows={computeEventRoi([{ event: "Purchase", spendRs: 830062, revenueRs: 3629118, purchases: 2100 }, { event: "Add to Cart", spendRs: 120000, revenueRs: 0, purchases: 0 }, { event: "Landing Page Views", spendRs: 400, revenueRs: 0, purchases: 0 }])} />
     </div>
   );
 }
