@@ -6,6 +6,7 @@ import { ACTION_TOKENS } from "@/lib/billing/plans";
 import { FormatCoveragePanel } from "./format-coverage-panel";
 import { makeZip, type ZipEntry } from "@/lib/creative-production/media/zip";
 import { lintAdCopy } from "@/lib/creative-production/qa/policy-lint";
+import { checkCharLimits } from "@/lib/creative-production/qa/platform-checks";
 import { META_DEFAULT_SET, GOOGLE_DEFAULT_SET } from "@/lib/creative-production/formats/ad-formats";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -669,19 +670,25 @@ export function CreativeStudio() {
                       </>
                     )}
                     <p className="text-[12px] text-[var(--ink-muted)]"><span className="text-[var(--ink)]">Why this:</span> {c.whyThisConcept}</p>
-                    {/* Policy-lint (#5): warn on Meta-rejection phrasing in the effective copy BEFORE generating. */}
+                    {/* Policy-lint (#5) + platform char limits (#6): warn on Meta-rejection phrasing and
+                        copy that will truncate, BEFORE spending tokens generating. */}
                     {(() => {
                       const findings = lintAdCopy(eff);
-                      return findings.length ? (
+                      const limits = checkCharLimits({ headline: eff.headline, primary: eff.supportingCopy }, "meta_feed");
+                      if (!findings.length && !limits.length) return null;
+                      return (
                         <div className="rounded-[8px] border border-[#c0392b]/30 bg-[#c0392b]/5 px-2.5 py-2 text-[12px]">
-                          <span className="font-medium text-[#c0392b]">Policy check: {findings.length} issue{findings.length === 1 ? "" : "s"}</span>
+                          <span className="font-medium text-[#c0392b]">Pre-flight: {findings.length + limits.length} issue{findings.length + limits.length === 1 ? "" : "s"}</span>
                           <ul className="mt-1 space-y-0.5 text-[var(--ink-muted)]">
                             {findings.slice(0, 3).map((f, i) => (
-                              <li key={i}>&ldquo;{f.phrase}&rdquo; ({f.where}) — {f.fix}</li>
+                              <li key={`p${i}`}>&ldquo;{f.phrase}&rdquo; ({f.where}) — {f.fix}</li>
+                            ))}
+                            {limits.map((l, i) => (
+                              <li key={`l${i}`}>{l.detail}</li>
                             ))}
                           </ul>
                         </div>
-                      ) : null;
+                      );
                     })()}
                     {cAssets.length ? (
                       <div className="grid grid-cols-2 gap-3 pt-2 sm:grid-cols-4">
