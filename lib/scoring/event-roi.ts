@@ -25,6 +25,24 @@ export type EventRoi = {
 // Money bleeding is material because of its rupees, not its share.
 const DEFAULT_MIN_SPEND = 1000; // Rs over the window
 
+// A grounded reallocation insight (no AI): identifies spend on CONVERSION-INTENT events that are returning
+// BELOW break-even (real revenue but negative ROI) against the best revenue event, and sizes the ₹ at stake.
+// It deliberately does NOT count no-revenue awareness events (Reach, Profile visit) as "bleeding" - those
+// serve a different goal and have no ROI to judge. Returns null when nothing is clearly bleeding.
+export function eventBleedSummary(rows: EventRoi[]): { line: string; bleedRs: number } | null {
+  const revenueEvents = rows.filter((e) => e.material && e.hasRevenue && e.roiPct !== null);
+  const bleeders = revenueEvents.filter((e) => (e.roiPct as number) < 0);
+  if (bleeders.length === 0) return null;
+  const best = revenueEvents.reduce<EventRoi | null>((b, e) => (!b || (e.roiPct as number) > (b.roiPct as number) ? e : b), null);
+  const bleedRs = Math.round(bleeders.reduce((s, e) => s + e.spendRs, 0));
+  const names = bleeders
+    .slice(0, 3)
+    .map((e) => `${e.event.replace(/_/g, " ").toLowerCase()} ${e.roiPct}%`)
+    .join(", ");
+  const bestPart = best && (best.roiPct as number) > 0 ? ` while ${best.event.replace(/_/g, " ").toLowerCase()} returns +${best.roiPct}%` : "";
+  return { bleedRs, line: `Rs ${bleedRs.toLocaleString("en-IN")} is on conversion-intent events returning below break-even (${names})${bestPart}. Shifting that budget toward your best-returning event is likely higher ROI.` };
+}
+
 export function computeEventRoi(rows: EventRow[], opts?: { minSpendRs?: number }): EventRoi[] {
   const minSpend = opts?.minSpendRs ?? DEFAULT_MIN_SPEND;
   const total = rows.reduce((s, r) => s + Math.max(0, r.spendRs), 0);

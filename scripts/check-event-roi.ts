@@ -2,7 +2,7 @@
 // null (never a fabricated ROI) for non-revenue events, materiality-gated, spend-ranked.
 // Run: node --experimental-strip-types scripts/check-event-roi.ts
 
-import { computeEventRoi, type EventRow } from "../lib/scoring/event-roi.ts";
+import { computeEventRoi, eventBleedSummary, type EventRow } from "../lib/scoring/event-roi.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {
@@ -50,5 +50,17 @@ const dom = computeEventRoi([
 const cv = dom.find((e) => e.event === "CONTENT_VIEW")!;
 ok(cv.material === true, "a Rs 1.35L bleed is material even at ~1.7% share (no share gate)");
 ok(cv.roiPct !== null && cv.roiPct < 0, "the bleeding event shows a real negative ROI, not hidden as 'too small'");
+
+// reallocation insight: sizes the ₹ on conversion-intent events below break-even vs the best; null when clean.
+const roi = computeEventRoi([
+  { event: "PURCHASE", spendRs: 7568096, revenueRs: 41177351, purchases: 15309 },
+  { event: "CONTENT_VIEW", spendRs: 134598, revenueRs: 21695, purchases: 11 },
+  { event: "LANDING_PAGE_VIEWS", spendRs: 59946, revenueRs: 6678, purchases: 3 },
+  { event: "REACH", spendRs: 13199, revenueRs: 0, purchases: 0 },
+]);
+const bleed = eventBleedSummary(roi);
+ok(bleed !== null && bleed.bleedRs === 134598 + 59946, "bleed = only the negative-ROI revenue events (not awareness)");
+ok(bleed !== null && /purchase returns \+444%/.test(bleed.line), "cites the best-returning event");
+ok(eventBleedSummary(computeEventRoi([{ event: "PURCHASE", spendRs: 100000, revenueRs: 400000, purchases: 500 }])) === null, "all-positive -> no reallocation nag");
 
 console.log(`check-event-roi: ${pass} assertions passed.`);

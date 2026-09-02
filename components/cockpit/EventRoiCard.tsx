@@ -1,4 +1,5 @@
 import type { EventRoi } from "@/lib/scoring/event-roi";
+import { eventBleedSummary } from "@/lib/scoring/event-roi";
 
 const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -32,6 +33,15 @@ export function EventRoiCard({ rows }: { rows: EventRoi[] }) {
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
         How much you spend on each optimisation event, and the ROI where the event actually makes money.
       </div>
+
+      {(() => {
+        const bleed = eventBleedSummary(rows);
+        return bleed ? (
+          <div className="mb-4 rounded-[8px] border border-[var(--warn-bg)] bg-[var(--warn-bg)] p-3 text-[13px] text-[var(--warn-ink)]">
+            <span className="font-medium">Reallocate:</span> {bleed.line}
+          </div>
+        ) : null;
+      })()}
 
       {rows.length === 0 ? (
         <div className="rounded-[10px] border border-dashed border-[var(--hairline)] bg-[var(--bg)] p-4 text-[13px] text-[var(--ink-muted)]">
