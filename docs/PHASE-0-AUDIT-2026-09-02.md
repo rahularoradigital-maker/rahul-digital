@@ -263,3 +263,20 @@ All on `validation-v0-v1`, every commit gated (tsc 0, `npm run build` 0, relevan
 - Stop-condition items still with Rahul: apply migration `0032`; partial index on `owner_events`; 7 unindexed FKs; SOC 2 / testimonial / "+38%" claims; Supabase leaked-password protection; the 24 unreachable modules (default: archive, delete none).
 - P2 perf leftovers: `next/dynamic` on popover bodies; `useMemo` in `FatigueRadar`/`ActionList`; `<Suspense>` streaming on the cockpit; web-vitals RUM (needs an ingest endpoint); moving the 300 s routes onto the durable queue; paginating the funnel's remaining 1.25 MB behind "Show all".
 - P3 leftovers: switcher/`readCookie` ×7 dedupe; `node --test` replacing the 141-command `check:all` chain; docs consolidation (35 files in `docs/` + a second `ARCHITECTURE.md` at the root); a11y contrast + dropdown roles; `meta-source.ts` split; Sentry DSN via the `captureError` seam; contradictory pricing FAQs; `/about` + author `Person`.
+
+---
+
+## Follow-up 2026-09-02 (DB hardening + module reality check)
+
+### Migrations applied live (verified)
+- `0032` recorded as applied but was **ineffective** (revoked from anon/authenticated, not PUBLIC → anon still inherited EXECUTE). `0033` revokes the 3 `cp_*` RPCs from PUBLIC + re-grants service_role. **Verified: anon=false, authed=false, service=true.** The one real cross-tenant leak is closed.
+- `0034`: 7 FK covering indexes + the failed-login lockout partial index. Applied.
+- Supabase **leaked-password protection** is an Auth dashboard setting (no API/migration): Rahul must toggle it — Authentication → Providers → Email → "Prevent use of leaked passwords".
+
+### The "24 unreachable modules" is NOT a delete list
+A real import-reachability pass (roots = `app/` + `components/`) found **29** lib modules unreachable from the running app. Of these, exactly **one** is dead everywhere and was deleted: `lib/app/ads-manager-url.check.ts`. The other **28 each have a self-check test**, and fall into two groups:
+
+- **Staged foundations — KEEP (deliberate, recent work, several built today):** `creative-production/strategy/{test-set,gap-angles}.ts` + `recommend/performance-rank.ts` + `formats/concept-formats.ts` (the Studio A/B engines, being wired now), `account/deletion-manifest.ts` (account-deletion = a launch blocker), `intelligence/collect.ts` (§160 decision feed, today), `security/{rbac,classification}.ts` (control-plane foundation), `queue-memory.ts` (durable queue), `fingerprint.ts` (the fingerprint-once scale lever), `influencer/{audience-proxy,bands}.ts`, `connectors/revenue.ts`, `audit/decision-triples.ts`, `prompts/strategist.ts`.
+- **v1 "rules engine" — likely abandoned, but ENTANGLED:** `lib/rules/*` (9 files) + root `lib/{decision,validator,confidence,data-quality}.ts` — the Aug-25 "P0 intelligence layer", superseded by `lib/scoring/*`. Deleting them is a **refactor, not a no-op**: some of their checks are wired into `check:all` (e.g. `check:change-log`, `check:diversity`, `check:account`) and they cross-import, so excising them safely means removing those checks too. Recommend **archiving out of the build** (move under `archive/` outside tsconfig) rather than deleting piecemeal.
+
+Deleting the 28 would not change the running app, but it **would** throw away tested, staged work — so it is a per-module call, not a bulk delete. Point at the ones you consider truly abandoned and I remove those + their checks together, gated.

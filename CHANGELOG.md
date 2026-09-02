@@ -45,3 +45,16 @@ All notable changes to AdScale (`adbrain-mvp`). Newest first. Commit hashes are 
 - Cockpit: 7d-vs-30d per-ad read + "What's working" surface, badge on every ad. `a1fce91` `6aff3fd`
 - Studio: five pure engines (test-set, policy-lint, performance-rank, gap-angles, platform-checks) and the first two wired into Concepts. `f1860a4` `83964e3` `15b3ce0` `8a4c409`
 - `/api/scope/events` reads `ad_meta` via the admin client (RLS default-deny for the user client). `831e8cd`
+
+## 2026-09-02 (later) — DB hardening applied live + marketing honesty
+
+### Security (applied to the live database)
+- **Migration 0032 was ineffective** and **0033 fixes it.** Revoking EXECUTE from `anon`/`authenticated` left Postgres's default `PUBLIC` grant intact, so `has_function_privilege('anon', ...)` still returned true (caught by live verification). `0033` revokes the 3 `cp_*` SECURITY DEFINER RPCs from `PUBLIC` and re-grants `service_role`. Verified live: `anon=false, authed=false, service=true` — the cross-tenant read is closed. `handle_new_user` is a trigger (not `/rpc`-callable), left as-is.
+- **Migration 0034** (applied): covering indexes on the 7 unindexed foreign keys the advisor flagged (`cp_brand_dna.brand_id`, `influencer_search_result.user_id`, `notifications.brand_id`, `notifications.org_id`, `org_invites.invited_by`, `profiles.approved_by`, `provider_keys.updated_by`) + a partial index for the failed-login lockout read (`owner_events (meta->>'email', created_at) where event_type='login.failed'`).
+
+### Marketing honesty
+- Removed the **"SOC 2 Type II"** trust badge from the homepage security section — the product is not SOC 2 Type II certified. `GDPR`, `EU AI Act`, `Meta Partner` retained (compliance posture / API relationship). The `+38%` ROAS figure, "Trusted by hundreds", and named testimonials still need Rahul's substantiate-or-remove ruling.
+
+### Cleanup
+- Deleted `lib/app/ads-manager-url.check.ts` (dead everywhere — not imported by the app or any script).
+- The other 28 unreachable `lib/` modules are **NOT** deleted: each has a self-check test and several are staged foundations built in the last few days (creative A/B engines, account-deletion foundation, control-plane security, durable queue). See the audit doc's "unreachable modules" note.

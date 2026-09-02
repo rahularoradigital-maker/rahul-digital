@@ -28,3 +28,6 @@ alter function public.spend_tokens(uuid, text, integer, integer) set search_path
 -- from pg_proc p join pg_namespace n on n.oid=p.pronamespace
 -- where n.nspname='public'
 --   and p.proname in ('cp_advertised_product_ids','cp_product_opportunities','cp_product_types','handle_new_user');
+
+-- SUPERSEDED 2026-09-02: this revoke was INEFFECTIVE (PUBLIC still granted EXECUTE, so anon inherited it).
+-- See 0033_revoke_cp_rpcs_from_public.sql for the working fix. The search_path ALTERs above are still valid.

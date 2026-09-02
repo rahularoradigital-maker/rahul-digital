@@ -86,7 +86,10 @@ export function Features() {
   );
 }
 
-const BADGES = ["GDPR", "SOC 2 Type II", "EU AI Act", "Meta Partner"];
+// SOC 2 Type II removed 2026-09-02 (Rahul): the product is not SOC 2 Type II certified, so the badge was an
+// unsubstantiated claim. GDPR / EU AI Act are compliance postures (a privacy policy + data-deletion flow back
+// them); "Meta Partner" reflects building on Meta's Marketing API. Re-add SOC 2 only once a real audit report exists.
+const BADGES = ["GDPR", "EU AI Act", "Meta Partner"];
 
 export function Security() {
   return (
