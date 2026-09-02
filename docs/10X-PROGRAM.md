@@ -19,3 +19,7 @@ multi-chat protocol (new files / no hot-file clobber / safe staging). Update the
 
 **Intelligence (me) owns: #2, #6, #10, and the pure engine of #1.** The rest are routed to their lanes; #3/#7/#9
 need Rahul's inputs. Reconcile drift, learning outcomes, and the AI Critic are the moat — do those first.
+
+## Cross-lane asks (unblock other lanes)
+- **deep-analysis lane:** expose a small read of the Creative-DNA distribution (funnel/scene/mood share per brand) so Studio's `findAngleGaps` can wire the Concepts diversity banner (71).
+- **data-layer lane (#1/#5):** provide a per-product Meta ROAS+fatigue join `{productId,bestRoas,fatiguing,spendRs}`; Studio's recommendations route has the seam ready, and it's the same join #1 reconcile + #5 rollups need (71).
