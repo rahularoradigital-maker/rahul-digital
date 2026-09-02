@@ -4,6 +4,17 @@
 // check. Text accuracy is trusted because the composition draws the APPROVED strings deterministically
 // (no model re-typing), so the only "text" risk is the composer not confirming it drew them.
 import type { ComposedAsset, GenerationBrief, QACheck, QAResult } from "@/lib/creative-production/types";
+import { checkCharLimits } from "./platform-checks.ts";
+
+// Map a format to its ad placement so char limits are checked against the RIGHT surface (a story truncates
+// differently from a feed post, and Google RSA is tighter still).
+function placementFor(fmt: GenerationBrief["format"]): string {
+  if (fmt.platform === "google") return "google_rsa";
+  const id = fmt.id.toLowerCase();
+  if (id.includes("story")) return "meta_story";
+  if (id.includes("reel")) return "meta_reel";
+  return "meta_feed";
+}
 
 type ApprovedText = { headline: string; cta: string; offer: string | null };
 type QAOpts = {
@@ -121,6 +132,13 @@ export function runQA(
         ? "offer text composed"
         : "concept sets an offer but no offer text/region is present",
     });
+  }
+
+  // (warning) platform char limits (#6): flag copy that this placement will truncate with an ellipsis, so
+  // the buyer sees it in Review before uploading. Per-format placement (feed/story/reel/google), not a
+  // single generic limit. Advisory only (warning) - a long headline is not blocked, just surfaced.
+  for (const lim of checkCharLimits({ headline: approvedText.headline, primary: brief.concept.supportingCopy }, placementFor(fmt))) {
+    checks.push({ name: lim.name, pass: false, severity: "warning", detail: lim.detail });
   }
 
   const critFail = checks.some((c) => c.severity === "critical" && !c.pass);
