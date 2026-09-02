@@ -10,6 +10,7 @@ import { Topbar } from "@/components/app/topbar";
 import { UsageMeter } from "@/components/app/usage-meter";
 import { BackToTop } from "@/components/app/back-to-top";
 import { OfflineBanner } from "@/components/app/offline-banner";
+import { ConnectResultBanner } from "@/components/app/connect-result-banner";
 import { Button } from "@/components/ui/button";
 
 // AdScale app shell: fixed 256px sidebar (grouped nav + user footer) + working
@@ -92,7 +93,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
-        <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8 md:py-10">{children}</main>
+        <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 sm:py-8 md:py-10"><ConnectResultBanner />{children}</main>
       </div>
       <BackToTop />
     </div>
