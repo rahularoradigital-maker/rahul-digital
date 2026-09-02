@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/paged";
 import { mapMetaObjective, fetchAdStatuses, type ScopeInsights } from "@/lib/meta-source";
 import type { MetricsRow, TokenSet } from "@/lib/ad-source";
 import { toCockpitInputs, type RealAd } from "@/lib/scoring";
@@ -77,7 +78,6 @@ type MetaRowDb = {
   optimization_event: string | null;
 };
 
-const PAGE = 1000; // Supabase caps a select at 1000 rows; page through so a 40k-row account is not silently truncated.
 
 // Read every ad_metrics row for the account within [since, until], paging past the 1000-row cap.
 async function readAllMetricRows(
@@ -88,20 +88,26 @@ async function readAllMetricRows(
   until: string,
 ): Promise<MetricRowDb[]> {
   const out: MetricRowDb[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await admin
-      .from("ad_metrics")
-      .select("ad_id,date,campaign_id,adset_id,objective,spend,impressions,clicks,frequency,purchases,revenue,video_3s,video_thruplays,outbound_clicks,landing_page_views,add_to_carts,initiate_checkouts")
-      .eq("user_id", userId)
-      .eq("account_external_id", accountExternalId)
-      .gte("date", since)
-      .lte("date", until)
-      .order("ad_id", { ascending: true })
-      .range(from, from + PAGE - 1);
-    if (error) throw new Error(`ad_metrics read: ${error.message}`);
-    const rows = (data ?? []) as MetricRowDb[];
-    out.push(...rows);
-    if (rows.length < PAGE) break;
+  // Parallel-burst paging (Phase-0 audit: was serial, one round-trip per 1,000 rows). The secondary `date`
+  // order makes the order TOTAL - an ad has many dates, and offset paging over ad_id alone could duplicate
+  // or drop rows between pages (same P0 fix as change-analysis).
+  try {
+    out.push(
+      ...(await readAllPages<MetricRowDb>((from, to) =>
+        admin
+          .from("ad_metrics")
+          .select("ad_id,date,campaign_id,adset_id,objective,spend,impressions,clicks,frequency,purchases,revenue,video_3s,video_thruplays,outbound_clicks,landing_page_views,add_to_carts,initiate_checkouts")
+          .eq("user_id", userId)
+          .eq("account_external_id", accountExternalId)
+          .gte("date", since)
+          .lte("date", until)
+          .order("ad_id", { ascending: true })
+          .order("date", { ascending: true })
+          .range(from, to),
+      )),
+    );
+  } catch (e) {
+    throw new Error(`ad_metrics read: ${e instanceof Error ? e.message : String(e)}`);
   }
   return out;
 }
@@ -111,18 +117,20 @@ async function readAllMetricRows(
 // ads with no metadata in the map and tripped the completeness gate, so the store never activated at scale.
 async function readAllMetaRows(admin: ReturnType<typeof createAdminClient>, userId: string, accountExternalId: string): Promise<MetaRowDb[]> {
   const out: MetaRowDb[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await admin
-      .from("ad_meta")
-      .select("ad_id,name,effective_status,campaign_id,campaign_name,adset_id,adset_name,thumb_url,is_catalog,format,content_hash,adset_end_unix,optimization_event")
-      .eq("user_id", userId)
-      .eq("account_external_id", accountExternalId)
-      .order("ad_id", { ascending: true })
-      .range(from, from + PAGE - 1);
-    if (error) throw new Error(`ad_meta read: ${error.message}`);
-    const rows = (data ?? []) as MetaRowDb[];
-    out.push(...rows);
-    if (rows.length < PAGE) break;
+  try {
+    out.push(
+      ...(await readAllPages<MetaRowDb>((from, to) =>
+        admin
+          .from("ad_meta")
+          .select("ad_id,name,effective_status,campaign_id,campaign_name,adset_id,adset_name,thumb_url,is_catalog,format,content_hash,adset_end_unix,optimization_event")
+          .eq("user_id", userId)
+          .eq("account_external_id", accountExternalId)
+          .order("ad_id", { ascending: true })
+          .range(from, to),
+      )),
+    );
+  } catch (e) {
+    throw new Error(`ad_meta read: ${e instanceof Error ? e.message : String(e)}`);
   }
   return out;
 }

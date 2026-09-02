@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/paged";
 import { mapMetaObjective, listAdSetOptimizationGoals } from "@/lib/meta-source";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { diagnoseFunnel, type FunnelAd, type FunnelReport } from "@/lib/funnel/diagnosis";
@@ -13,7 +14,6 @@ import type { ExtendedMetricsRow } from "@/lib/metrics/funnel-metrics";
 // deliberate 2021-style shape: background jobs fill the store, requests read the store. The account is
 // resolved via getUserMetaSession (same resolver the cockpit uses, so Funnel always matches the topbar
 // brand). Objective -> internal union via mapMetaObjective; ad-set optimization goal fetched for staging.
-const PAGE = 1000;
 const DEFAULT_LOOKBACK_DAYS = 30;
 
 type Db = {
@@ -41,36 +41,41 @@ type FunnelFilters = { catalog?: "include" | "exclude"; objectives?: string[]; c
 // store is empty (brand not synced yet) so the caller returns null and the page shows a "syncing" state.
 async function readStore(userId: string, accountExternalId: string, since: string, until: string, filters: FunnelFilters = {}): Promise<{ ads: FunnelAd[]; adsetByAd: Map<string, string> }> {
   const admin = createAdminClient();
-  const rows: Db[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await admin
-      .from("ad_metrics")
-      .select("ad_id,date,objective,adset_id,campaign_id,spend,impressions,clicks,outbound_clicks,video_3s,video_thruplays,landing_page_views,add_to_carts,initiate_checkouts,purchases")
-      .eq("user_id", userId)
-      .eq("account_external_id", accountExternalId)
-      .gte("date", since)
-      .lte("date", until)
-      .order("ad_id", { ascending: true })
-      .range(from, from + PAGE - 1);
-    if (error) return { ads: [], adsetByAd: new Map() };
-    const page = (data ?? []) as Db[];
-    rows.push(...page);
-    if (page.length < PAGE) break;
+  let rows: Db[] = [];
+  try {
+    // Parallel-burst paging; `date` secondary order makes the order total (see lib/supabase/paged.ts).
+    rows = await readAllPages<Db>((from, to) =>
+      admin
+        .from("ad_metrics")
+        .select("ad_id,date,objective,adset_id,campaign_id,spend,impressions,clicks,outbound_clicks,video_3s,video_thruplays,landing_page_views,add_to_carts,initiate_checkouts,purchases")
+        .eq("user_id", userId)
+        .eq("account_external_id", accountExternalId)
+        .gte("date", since)
+        .lte("date", until)
+        .order("ad_id", { ascending: true })
+        .order("date", { ascending: true })
+        .range(from, to),
+    );
+  } catch {
+    return { ads: [], adsetByAd: new Map() };
   }
   if (!rows.length) return { ads: [], adsetByAd: new Map() };
 
   const names = new Map<string, string>();
   const catalogById = new Map<string, boolean>();
   const eventById = new Map<string, string | null>(); // optimization-event filter (topbar, global)
-  for (let from = 0; ; from += PAGE) {
-    const { data } = await admin.from("ad_meta").select("ad_id,name,is_catalog,optimization_event").eq("user_id", userId).eq("account_external_id", accountExternalId).order("ad_id", { ascending: true }).range(from, from + PAGE - 1);
-    const page = (data ?? []) as { ad_id: string; name: string | null; is_catalog: boolean | null; optimization_event: string | null }[];
-    for (const m of page) {
-      if (m.name) names.set(m.ad_id, m.name);
-      catalogById.set(m.ad_id, !!m.is_catalog);
-      eventById.set(m.ad_id, m.optimization_event);
-    }
-    if (page.length < PAGE) break;
+  let metaRows: { ad_id: string; name: string | null; is_catalog: boolean | null; optimization_event: string | null }[] = [];
+  try {
+    metaRows = await readAllPages((from, to) =>
+      admin.from("ad_meta").select("ad_id,name,is_catalog,optimization_event").eq("user_id", userId).eq("account_external_id", accountExternalId).order("ad_id", { ascending: true }).range(from, to),
+    );
+  } catch {
+    // names / flags are optional enrichments (was: errors ignored, page treated as empty)
+  }
+  for (const m of metaRows) {
+    if (m.name) names.set(m.ad_id, m.name);
+    catalogById.set(m.ad_id, !!m.is_catalog);
+    eventById.set(m.ad_id, m.optimization_event);
   }
 
   const byAd = new Map<string, Db[]>();

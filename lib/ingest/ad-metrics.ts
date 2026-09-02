@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/paged";
 import { streamAccountDayWiseRows, listAllSpendingAdIds, fetchAdMeta, fetchAdCreatives, listAdSetEnds, listAdSetEvents, type AdMetricRow } from "@/lib/meta-source";
 import { thumbUrlOf, deterministicFingerprint } from "@/lib/creative/fingerprint";
 import { selectAdsToSync } from "@/lib/ingest/select-ads";
@@ -94,19 +95,15 @@ export async function syncAdMetrics(userId: string, accountExternalId: string, t
   // more ads than that (verified live: 1,060) the overflow ads never got a syncedAt entry, were treated as
   // never-synced, and were re-pulled from Meta on EVERY run, forever. Page it like readAllMetaRows does.
   const syncedAt = new Map<string, number>();
-  const META_PAGE = 1000;
-  for (let from = 0; ; from += META_PAGE) {
-    const { data: metaRows } = await admin
-      .from("ad_meta")
-      .select("ad_id, updated_at")
-      .eq("user_id", userId)
-      .eq("account_external_id", accountExternalId)
-      .order("ad_id", { ascending: true })
-      .range(from, from + META_PAGE - 1);
-    const page = (metaRows ?? []) as { ad_id: string; updated_at: string }[];
-    for (const r of page) syncedAt.set(r.ad_id, Date.parse(r.updated_at));
-    if (page.length < META_PAGE) break;
+  let metaRows: { ad_id: string; updated_at: string }[] = [];
+  try {
+    metaRows = await readAllPages((from, to) =>
+      admin.from("ad_meta").select("ad_id, updated_at").eq("user_id", userId).eq("account_external_id", accountExternalId).order("ad_id", { ascending: true }).range(from, to),
+    );
+  } catch {
+    // was: errors ignored (an unreadable ad_meta just means every ad looks never-synced this run)
   }
+  for (const r of metaRows) syncedAt.set(r.ad_id, Date.parse(r.updated_at));
   const toProcess = selectAdsToSync(allAds, syncedAt, Date.now() - REFRESH_INTERVAL_MS);
 
   // 3. Process chunks until the deadline (or done). Each chunk syncs metrics AND metadata TOGETHER, so an ad

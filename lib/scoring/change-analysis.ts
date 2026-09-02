@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/paged";
 import { measureChangeImpact, isolatedWindow, type ImpactRow, type Objective } from "./change-impact.ts";
 import { rankBuyers, rollupChangeTypes, type ChangeResult } from "./change-ranking.ts";
 
@@ -12,7 +13,6 @@ const BEFORE_DAYS = 7;
 const AFTER_DAYS = 7;
 const MIN_AGE_DAYS = AFTER_DAYS; // a change needs a complete after-window before we can judge it
 const METRICS_LOOKBACK_DAYS = 120; // enough to cover before-windows of the oldest judged change
-const PAGE = 1000;
 
 type MetricRow = { ad_id: string; adset_id: string | null; campaign_id: string | null; date: string; objective: string | null; spend: number; impressions: number; clicks: number; purchases: number; revenue: number };
 type ChangeRowDB = { event_time: string; date: string; level: string; object_id: string | null; change_type: string; source: "buyer" | "algo"; actor_id: string | null; actor_name: string | null };
@@ -73,27 +73,30 @@ export async function analyzeAccountChanges(userId: string, accountExternalId: s
     if (a) a.push(row);
     else m.set(k, [row]);
   };
-  for (let from = 0; ; from += PAGE) {
-    const { data } = await admin
-      .from("ad_metrics")
-      .select("ad_id,adset_id,campaign_id,date,objective,spend,impressions,clicks,purchases,revenue")
-      .eq("user_id", userId)
-      .eq("account_external_id", accountExternalId)
-      .gte("date", metricsSince)
-      // P0 correctness: OFFSET/LIMIT paging without a deterministic ORDER BY has no stability guarantee in
-      // Postgres - across a 120-day multi-page scan rows can be duplicated or dropped, silently corrupting
-      // the before/after windows the whole Change-Impact read is built on. Every other paged reader in the
-      // codebase orders first (from-store.ts, funnel/store.ts); this one did not.
-      .order("ad_id", { ascending: true })
-      .order("date", { ascending: true })
-      .range(from, from + PAGE - 1);
-    const rows = (data ?? []) as MetricRow[];
-    for (const m of rows) {
-      push(byAd, m.ad_id, m);
-      push(byAdset, m.adset_id, m);
-      push(byCampaign, m.campaign_id, m);
-    }
-    if (rows.length < PAGE) break;
+  let metricRows: MetricRow[] = [];
+  try {
+    // Parallel-burst paging (was serial). P0 correctness: OFFSET/LIMIT paging without a TOTAL order has no
+    // stability guarantee in Postgres - across a 120-day multi-page scan rows can be duplicated or dropped,
+    // silently corrupting the before/after windows the whole Change-Impact read is built on; ad_id + date
+    // is total for ad_metrics.
+    metricRows = await readAllPages<MetricRow>((from, to) =>
+      admin
+        .from("ad_metrics")
+        .select("ad_id,adset_id,campaign_id,date,objective,spend,impressions,clicks,purchases,revenue")
+        .eq("user_id", userId)
+        .eq("account_external_id", accountExternalId)
+        .gte("date", metricsSince)
+        .order("ad_id", { ascending: true })
+        .order("date", { ascending: true })
+        .range(from, to),
+    );
+  } catch {
+    // was: errors ignored, treated as an empty page
+  }
+  for (const m of metricRows) {
+    push(byAd, m.ad_id, m);
+    push(byAdset, m.adset_id, m);
+    push(byCampaign, m.campaign_id, m);
   }
 
   // 2b. Index every change's day per object, so a change's window can be clipped at its neighbours (a later
