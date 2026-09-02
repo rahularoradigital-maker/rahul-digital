@@ -65,6 +65,17 @@ export function sourceFromActor(actorId: string | number | undefined | null): "b
   return id && id !== "0" ? "buyer" : "algo";
 }
 
+// A change fired by an AUTOMATED RULE (e.g. "Turn off if spend > 25k") or a system delivery event is NOT a
+// human buyer's decision - even though Meta stamps a non-zero actor on it (the rule owner / "Meta"). Detect it
+// from extra_data so it is credited to "algo", never to a media buyer's ranking. rule_info is present on
+// rule-triggered changes; type:"delivery_event" marks a system delivery notification (not a change at all).
+export function isAutomatedRule(extra: Record<string, unknown> | null | undefined): boolean {
+  if (!extra) return false;
+  if (extra.rule_info && typeof extra.rule_info === "object") return true;
+  if (typeof extra.type === "string" && extra.type === "delivery_event") return true;
+  return false;
+}
+
 // event_time is an ISO datetime ("2026-08-29T17:25:46+0000") or a unix-seconds string; return YYYY-MM-DD.
 function toDate(eventTime: string): string {
   if (/^\d{4}-\d{2}-\d{2}/.test(eventTime)) return eventTime.slice(0, 10);
@@ -105,7 +116,9 @@ export function mapActivityRow(raw: RawActivity): ChangeRow | null {
     ad_id: level === "ad" ? objectId : null,
     event_type: eventType,
     change_type: normalizeChangeType(eventType),
-    source: sourceFromActor(actorId),
+    // Rule-fired / system events are algo even when they carry a non-zero actor, so they never inflate a
+    // buyer's ranking; otherwise a logged actor => buyer.
+    source: isAutomatedRule(extra) ? "algo" : sourceFromActor(actorId),
     actor_id: actorId,
     actor_name: raw.actor_name ? String(raw.actor_name) : null,
     extra_data: extra,

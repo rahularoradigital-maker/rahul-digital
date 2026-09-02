@@ -1,7 +1,7 @@
 // Runnable check for the change-history mapping (lib/ingest/change-map.ts). No network, no DB.
 // node --experimental-strip-types scripts/check-change-ingest.ts
 import assert from "node:assert/strict";
-import { mapActivityRow, normalizeChangeType, levelFromActivity, sourceFromActor, dedupeChanges, type ChangeRow } from "../lib/ingest/change-map.ts";
+import { mapActivityRow, normalizeChangeType, levelFromActivity, sourceFromActor, isAutomatedRule, dedupeChanges, type ChangeRow } from "../lib/ingest/change-map.ts";
 
 // event_type -> normalized change_type
 assert.equal(normalizeChangeType("update_ad_set_budget"), "budget");
@@ -55,6 +55,31 @@ assert.equal(mapActivityRow({ event_type: "x", event_time: "" }), null);
 // Algo move (no actor) => source algo
 const algo = mapActivityRow({ event_type: "campaign_ended", event_time: "2026-08-20T00:00:00+0000", object_id: "9", object_type: "CAMPAIGN" });
 assert.equal((algo as ChangeRow).source, "algo");
+
+// Automated-rule detection: a rule-fired change carries rule_info + a NON-zero actor, but is NOT a buyer.
+assert.equal(isAutomatedRule({ rule_info: { rule_id: "1", rule_name: "Turn off if spend 25k" }, type: "run_status" }), true, "rule_info => automated");
+assert.equal(isAutomatedRule({ type: "delivery_event", new_value: "Started delivery" }), true, "delivery event => system");
+assert.equal(isAutomatedRule({ old_value: "50000", new_value: "80000" }), false, "a plain value change is not automated");
+assert.equal(isAutomatedRule(null), false);
+
+// A rule-triggered "Campaign status updated" with a human-looking actor must be classed ALGO, not buyer,
+// so it can't inflate a media buyer's ranking (this is the real Meta shape: actor_name "Meta", non-zero id).
+const ruleFired = mapActivityRow({
+  event_type: "update_campaign_run_status",
+  event_time: "2026-09-01T16:10:00+0000",
+  actor_id: "1051435468209173", actor_name: "Meta",
+  object_id: "120240418479260211", object_type: "CAMPAIGN",
+  extra_data: '{"run_status":{"old_value":1,"new_value":15},"rule_info":{"rule_id":"120240592668320211","rule_name":"007 - Turn Off if Spend 25K"},"type":"run_status"}',
+}) as ChangeRow;
+assert.equal(ruleFired.source, "algo", "rule-fired change with a non-zero actor is ALGO, not buyer");
+assert.equal(ruleFired.change_type, "status");
+
+// A system "Ad delivered" event (actor 0, delivery_event) stays algo.
+const delivered = mapActivityRow({
+  event_type: "Ad delivered", event_time: "2026-09-01T14:00:00+0000", actor_id: "0", actor_name: "Meta",
+  object_id: "120256568461630211", object_type: "AD", extra_data: '{"old_value":null,"new_value":"Started delivery","type":"delivery_event"}',
+}) as ChangeRow;
+assert.equal(delivered.source, "algo", "system delivery event is algo");
 
 // dedupe collapses identical change_id but keeps distinct ones (r vs algo have different change_ids)
 assert.equal(dedupeChanges([r, r, algo as ChangeRow]).length, 2, "dedupe by change_id keeps distinct");
