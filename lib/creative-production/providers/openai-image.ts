@@ -26,13 +26,63 @@ function sizeFor(ratio: string): "1024x1024" | "1536x1024" | "1024x1536" {
   return "1024x1024";
 }
 
-// VISUAL-only prompt (text is composed deterministically downstream, so forbid words). Mirrors the intent
-// of the Google adapter's builder; kept local so the two providers stay independent.
+// Fill a format renderRecipe's bracket tokens with the real product name; blank leftover placeholders so no
+// literal "[thing]" reaches the model. (Kept local — mirrors google-gemini's fillRecipe; the two providers
+// stay independent per the adapter convention.)
+function fillRecipe(recipe: string, productName: string): string {
+  return recipe
+    .replace(/\[product\]/gi, productName)
+    .replace(/\[(x|thing)\]/gi, "product")
+    .replace(/\[(routine|category|benefit|result)\]/gi, (_m, w: string) => w.toLowerCase())
+    .replace(/\[[^\]]*\]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+// Two modes, matching the Google adapter so BOTH providers render the 42 formats identically:
+//  - SCENE mode (brief.renderRecipe set): build the ACTUAL format scene (a Reddit post, comparison table,
+//    iMessage thread...). When the format's chrome text is part of the scene (sceneText "render") the model
+//    draws the copy verbatim; otherwise text is forbidden and the deterministic compositor adds it. This is
+//    what makes an ad LOOK like a real ad format instead of a generic editorial background.
+//  - BACKGROUND mode (no recipe): an art-directed, text-free campaign visual the compositor draws copy over.
 function buildPrompt(brief: GenerationBrief): string {
   const b = brief.brandDNA;
-  const style = [b.imageStyle, b.designStyle].filter((s) => s && s !== "UNKNOWN").join(", ");
-  const palette = [b.palette.primary, b.palette.secondary, b.palette.background].filter((c) => c && c !== "UNKNOWN").join(", ");
   const c = brief.concept;
+  const style = [b.imageStyle, b.designStyle].filter((s) => s && s !== "UNKNOWN").join(", ");
+  const palette = [b.palette.primary, b.palette.secondary, b.palette.background].filter((x) => x && x !== "UNKNOWN").join(", ");
+  const productLine =
+    brief.productMode === "composite"
+      ? "Do NOT draw, include, or imagine the product itself. Leave a clean, well-lit, uncluttered empty area in the upper-central part of the frame where the real product image will be composited afterward."
+      : brief.requiredProductFidelity
+        ? "Feature the product EXACTLY as in the reference image - same packaging, label, shape, colour and on-pack text; do not redesign or restyle it."
+        : "";
+
+  if (brief.renderRecipe) {
+    const scene = fillRecipe(brief.renderRecipe, brief.productDNA.name);
+    const renderText = brief.sceneText === "render";
+    const copy = renderText
+      ? [
+          c.headline ? `Headline / main line: "${c.headline}".` : "",
+          c.supportingCopy ? `Supporting copy: "${c.supportingCopy}".` : "",
+          c.offer ? `Offer badge text: "${c.offer}".` : "",
+          c.cta ? `Button / call-to-action text: "${c.cta}".` : "",
+        ].filter(Boolean).join(" ")
+      : "";
+    return [
+      `Create a Meta/Instagram static ad for the product "${brief.productDNA.name}" in this EXACT format:`,
+      scene,
+      style ? `Visual style: ${style}.` : "",
+      palette ? `Use the brand colours: ${palette}.` : "",
+      productLine,
+      renderText
+        ? `Render all text in the scene crisply and CORRECTLY SPELLED, high-contrast and legible on a phone. Use this copy verbatim where the layout calls for words: ${copy}`
+        : "Leave clean negative space for a headline and a call-to-action button to be added later. Render NO text, NO words, NO letters, NO watermarks - text is added separately.",
+      "Photorealistic where the format is a real-world scene; pixel-accurate UI where the format mimics an app or interface.",
+      ...brief.negativeInstructions.map((n) => `Avoid: ${n}.`),
+    ].filter(Boolean).join(" ");
+  }
+
+  // BACKGROUND mode — art-directed campaign visual (text-free; compositor draws copy over it).
   const bigIdea = [c.angle, c.hook].filter(Boolean).join(" - ") || c.coreMessage || brief.productDNA.name;
   const feel = [c.desire, c.problem ? `speaks to someone dealing with ${c.problem}` : ""].filter(Boolean).join("; ");
   return [
@@ -43,7 +93,7 @@ function buildPrompt(brief: GenerationBrief): string {
     "Composition: one clear hero focal point, rule-of-thirds, cinematic depth of field, rich lighting with real shadows, tactile texture, a considered colour story, and intentional clean negative space in the upper-central frame for a headline and CTA added later.",
     style ? `Visual style: ${style}.` : "",
     palette ? `Build the colour story around the brand colours: ${palette}.` : "",
-    brief.requiredProductFidelity ? "Keep the product exactly as in the reference - same packaging, label, shape, colour." : "",
+    productLine,
     "Photorealistic, premium, art-directed - it should stop the thumb.",
     "Render NO text, NO words, NO letters, NO logos, NO watermarks - text is added separately.",
     ...brief.negativeInstructions.map((n) => `Avoid: ${n}.`),
