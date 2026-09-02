@@ -12,8 +12,8 @@ import { drainQueue } from "./drain.ts";
 // jobId immediately, and let the client poll job status - instead of holding the HTTP request open for minutes.
 const DRAIN_BATCH = 10;
 
-export async function enqueueAndProcess(type: string, payload: Record<string, unknown> = {}): Promise<string> {
-  const jobId = await postgresQueue.enqueue({ type, payload });
+export async function enqueueAndProcess(type: string, payload: Record<string, unknown> = {}, userId?: string): Promise<string> {
+  const jobId = await postgresQueue.enqueue({ type, payload }, userId);
   after(async () => {
     try {
       await drainQueue(postgresQueue, getJobHandler, DRAIN_BATCH);

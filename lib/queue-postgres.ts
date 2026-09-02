@@ -10,10 +10,13 @@ import type { Job, Queue } from "./queue.ts";
 type JobRow = { id: string; type: string; payload: Record<string, unknown>; attempts: number };
 
 export class PostgresQueue implements Queue {
-  async enqueue(job: Pick<Job, "type" | "payload">): Promise<string> {
+  // The Queue contract's enqueue takes only {type, payload}; the concrete impl also accepts an optional
+  // userId so a job can be scoped to a user (tenancy + own-user status polling via /api/jobs/[id]). System
+  // jobs (no user) pass nothing.
+  async enqueue(job: Pick<Job, "type" | "payload">, userId?: string): Promise<string> {
     const { data, error } = await createAdminClient()
       .from("jobs")
-      .insert({ type: job.type, payload: job.payload })
+      .insert({ type: job.type, payload: job.payload, user_id: userId ?? null })
       .select("id")
       .single();
     if (error) throw new Error(`queue.enqueue: ${error.message}`);
