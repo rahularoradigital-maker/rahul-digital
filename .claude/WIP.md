@@ -36,5 +36,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-b6 | Change-Intelligence data root-cause: `ad_changes`/`change_sync_state` empty despite Meta having changes → `syncChangeHistory` was cron-only + the cron isn't firing. FIX 513bf89: `/api/ingest/run` now also ingests change-history. | DONE | Needs Rahul (infra): confirm Vercel cron firing (CRON_SECRET + Crons enabled). Next on-demand sync populates ad_changes + optimization_event. |
 
+| rahul-linkedin-2-5a (intelligence) | Made the 2 latent adapters visible: winner->`components/cockpit/Leaderboard.tsx`, diversity->`components/app/creative/diversity-section.tsx`. | DONE | commits 38cff99,bcf365c pushed; tsc+build green (tree fully green now). All 5 contract adapters render on 5 surfaces. NOT live-verified (needs Rahul's session). |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
