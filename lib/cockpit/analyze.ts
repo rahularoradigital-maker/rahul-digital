@@ -12,6 +12,7 @@ import type { DiagnoseResult } from "../causality.ts";
 import type { Objective } from "../rules/comparator.ts";
 import { objectiveFamily, objectiveReason } from "../rules/objective-metrics.ts";
 import type { FatigueRead } from "../scoring/fatigue.ts";
+import type { RecentVsBaseline } from "../scoring/recent-vs-baseline.ts";
 import { decide, type Decision } from "../scoring/decision.ts";
 import type { Explanation } from "../scoring/rubrics.ts";
 import { opportunityLoss, type OpportunityLoss } from "../scoring/opportunity.ts";
@@ -60,6 +61,7 @@ export type CockpitAdInput = VerdictInput & {
   // fixtures without daily rows still type-check.
   fatigueRead?: FatigueRead;
   halfLifeDays?: number | null;
+  recentVs30?: RecentVsBaseline; // additive 7d-vs-30d read (Ads Manager cross-check); not part of scoring
 };
 
 export type Priority = "DO_NOW" | "DO_NEXT" | "WATCH";
@@ -91,6 +93,7 @@ export type CockpitAd = {
   wastedRs: number;
   fatigueRead?: FatigueRead; // day-wise fatigue read (state, trajectory, evidence)
   halfLifeDays?: number | null; // creative half-life: days to the fatigue floor
+  recentVs30?: RecentVsBaseline; // 7d recent trend vs 30d baseline, on the ad's own metric (Ads Manager cross-check)
   winner?: WinnerScores; // multi-factor winner rank (quality x scale x stability x opportunity)
   judgment?: AdJudgment; // Triple-Label read (Evidence x Agreement x Confidence) from the parallel Judge agent
 };
@@ -306,6 +309,7 @@ export function analyzeAccount(ads: CockpitAdInput[], dataSource: "SAMPLE" | "LI
       wastedRs: input.wastedRs,
       fatigueRead: input.fatigueRead,
       halfLifeDays: input.halfLifeDays,
+      recentVs30: input.recentVs30,
     };
   });
 

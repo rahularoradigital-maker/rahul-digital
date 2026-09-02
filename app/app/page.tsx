@@ -15,6 +15,7 @@ import { HealthComposition, type CompositionRow } from "@/components/cockpit/Hea
 import { KpiCard } from "@/components/cockpit/KpiCard";
 import { ActionList } from "@/components/cockpit/ActionList";
 import { FatigueRadar } from "@/components/cockpit/FatigueRadar";
+import { WhatsWorking } from "@/components/cockpit/WhatsWorking";
 import { Leaderboard } from "@/components/cockpit/Leaderboard";
 import { FunnelCard } from "@/components/cockpit/FunnelCard";
 import { CulpritBanner } from "@/components/cockpit/CulpritBanner";
@@ -369,6 +370,9 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
         <ActionList items={view.doThis} ads={view.leaderboard} accountId={accountId} dateParam={dateParam} />
         <FatigueRadar ads={view.leaderboard} halfLife={view.creativeHalfLife} accountId={accountId} dateParam={dateParam} />
       </div>
+
+      {/* What's working: the positive counterpart - ads whose recent 7d beats their own 30d average */}
+      <WhatsWorking ads={view.leaderboard} accountId={accountId} dateParam={dateParam} />
 
       {/* Creative leaderboard */}
       <Leaderboard ads={view.leaderboard} rupees={rupees} accountId={accountId} dateParam={dateParam} />

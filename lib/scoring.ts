@@ -9,6 +9,7 @@ import type { MetricsRow } from "./ad-source.ts";
 import type { CockpitAdInput } from "./cockpit/analyze.ts";
 import type { Objective } from "./rules/comparator.ts";
 import { readFatigue } from "./scoring/fatigue.ts";
+import { recentVsBaseline } from "./scoring/recent-vs-baseline.ts";
 import { settledRows } from "./scoring/attribution.ts";
 import { TRUST_GATES } from "./rules/trust-gates.ts";
 
@@ -290,6 +291,8 @@ export function toCockpitInputs(ads: RealAd[]): CockpitAdInput[] {
       healthScore: healthScoreOf(objective, a),
       fatigueRead,
       halfLifeDays: fatigueRead.daysToFatigue,
+      // Additive 7d-vs-30d read (Ads Manager cross-check). Does NOT feed fatigue/scoring above.
+      recentVs30: recentVsBaseline(fatigueRows, objective, { recentDays: 7, baselineDays: 30 }),
       spendRs: Math.round(a.spend),
       revenueRs: Math.round(a.revenue),
       wastedRs: Math.round(wastedRs),
