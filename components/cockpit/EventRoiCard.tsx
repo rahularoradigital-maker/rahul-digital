@@ -1,5 +1,7 @@
 import type { EventRoi } from "@/lib/scoring/event-roi";
 import { eventBleedSummary, eventSpendSplit } from "@/lib/scoring/event-roi";
+import { eventBleedToContract } from "@/lib/intelligence/from-event-roi";
+import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 
 const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -40,11 +42,14 @@ export function EventRoiCard({ rows }: { rows: EventRoi[] }) {
 
       {(() => {
         const bleed = eventBleedSummary(rows);
-        return bleed ? (
+        if (!bleed) return null;
+        const contract = eventBleedToContract(rows, { entityId: "account" });
+        return (
           <div className="mb-4 rounded-[8px] border border-[var(--warn-bg)] bg-[var(--warn-bg)] p-3 text-[13px] text-[var(--warn-ink)]">
             <span className="font-medium">Reallocate:</span> {bleed.line}
+            {contract && <ReasoningTrace contract={contract} />}
           </div>
-        ) : null;
+        );
       })()}
 
       {rows.length === 0 ? (

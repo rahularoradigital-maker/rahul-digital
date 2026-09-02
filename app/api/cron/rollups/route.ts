@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cronSecretGate } from "@/lib/app/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshAccountRollup } from "@/lib/rollups/account";
+import { refreshCreativeRollup } from "@/lib/rollups/creative";
 import { captureError } from "@/lib/observability";
 
 // 10x #5 instant-app: refresh EVERY connected account's rollup from the STORE. This is deliberately separate
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
       if (!a) return;
       try {
         const ok = await refreshAccountRollup(a.user_id, a.external_id);
+        await refreshCreativeRollup(a.user_id, a.external_id).catch(() => {}); // same store read, top-creatives rollup
         if (ok) refreshed++;
         else empty++; // no store rows yet for this account (never synced) - nothing to roll up
       } catch (e) {

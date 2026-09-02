@@ -48,6 +48,7 @@ const NOT_PRODUCT_GATED = new Set([
   "app/api/cron/sync/route.ts", // CRON_SECRET bearer
   "app/api/cron/growth/route.ts", // CRON_SECRET bearer
   "app/api/cron/rollups/route.ts", // CRON_SECRET bearer (10x #5 instant-app rollup refresher)
+  // (app/api/account/creatives + summary are product-gated via guardProductApi, not exempt)
   "app/api/admin/access/route.ts", // isAdminEmail
   "app/api/admin/invite/route.ts", // isAdminEmail
   "app/api/admin/keys/route.ts", // isAdminEmail
