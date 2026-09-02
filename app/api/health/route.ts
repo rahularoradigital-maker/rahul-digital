@@ -8,6 +8,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 
 const STALE_AFTER_DAYS = 3; // matches lib/data-quality.ts
+// A daily cron should touch ad_sync_state at least once every ~26h (24h cadence + slack). If the newest
+// sync run is older than this, automation is effectively DEAD even when CRON_SECRET is set - the exact
+// blind spot that let a stopped cron report "ok" while change-history + event data silently went stale.
+const AUTOMATION_STALE_HOURS = 26;
 
 export async function GET() {
   const startedOk = true;
@@ -15,24 +19,37 @@ export async function GET() {
   let syncAccounts = 0;
   let syncErrors = 0;
   let syncStale = 0;
+  let lastRunAt: string | null = null; // newest ad_sync_state.updated_at = when ANY sync last actually ran
+  let changeAccounts = 0; // rows in change_sync_state = accounts whose change-history has ever ingested
+  let changeErrors = 0;
 
   try {
     const admin = createAdminClient();
-    const { data, error } = await admin.from("ad_sync_state").select("last_ok, last_synced_date");
+    const { data, error } = await admin.from("ad_sync_state").select("last_ok, last_synced_date, updated_at");
     if (error) db = "down";
-    const rows = (data ?? []) as { last_ok: boolean | null; last_synced_date: string | null }[];
+    const rows = (data ?? []) as { last_ok: boolean | null; last_synced_date: string | null; updated_at: string | null }[];
     syncAccounts = rows.length;
     const staleCutoff = new Date(Date.now() - STALE_AFTER_DAYS * 86_400_000).toISOString().slice(0, 10);
     for (const r of rows) {
       if (r.last_ok === false) syncErrors++;
       if (!r.last_synced_date || r.last_synced_date < staleCutoff) syncStale++;
+      if (r.updated_at && (!lastRunAt || r.updated_at > lastRunAt)) lastRunAt = r.updated_at;
     }
+    // Change-history ingestion health (separate pipeline: /activities -> ad_changes). Empty across all
+    // accounts means the media-buyer Change-Impact feature has no data to show.
+    const { data: cData } = await admin.from("change_sync_state").select("last_ok");
+    const cRows = (cData ?? []) as { last_ok: boolean | null }[];
+    changeAccounts = cRows.length;
+    for (const r of cRows) if (r.last_ok === false) changeErrors++;
   } catch {
     db = "down";
   }
 
   const cronConfigured = Boolean(process.env.CRON_SECRET); // false => nightly auto-refresh is disabled
-  const healthy = startedOk && db === "up" && syncErrors === 0 && cronConfigured;
+  // Did automation actually RUN recently? (not just: is the secret set). This is what catches a dead cron.
+  const lastRunAgeHours = lastRunAt ? Math.round((Date.now() - Date.parse(lastRunAt)) / 3_600_000) : null;
+  const automationStale = syncAccounts > 0 && (lastRunAgeHours === null || lastRunAgeHours > AUTOMATION_STALE_HOURS);
+  const healthy = startedOk && db === "up" && syncErrors === 0 && cronConfigured && !automationStale;
 
   // Config visibility (presence only, never key values). realImages mirrors registry.getImageProvider:
   // OpenAI (GPT-Image) is the default - active when explicitly chosen OR when unset with an OpenAI key;
@@ -56,8 +73,16 @@ export async function GET() {
       status: healthy ? "ok" : "degraded",
       db,
       cronConfigured,
+      automationStale, // true => no sync has run within AUTOMATION_STALE_HOURS: the cron is likely dead
       providers,
-      sync: { accounts: syncAccounts, withErrors: syncErrors, stale: syncStale },
+      sync: {
+        accounts: syncAccounts,
+        withErrors: syncErrors,
+        stale: syncStale,
+        lastRunAt, // when a sync last actually ran (bumped by cron OR manual /api/ingest/run)
+        lastRunAgeHours,
+        changeHistory: { accounts: changeAccounts, withErrors: changeErrors }, // 0 accounts => Change-Impact has no data
+      },
       time: new Date().toISOString(),
     },
     { status: healthy ? 200 : 503 },
