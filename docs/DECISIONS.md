@@ -150,3 +150,21 @@ decisions co-owned with Claude (implementer). Governing docs linked per entry.
 - **ADR-0001** (queue+ffmpeg+ElevenLabs video worker) — superseded by D7.
 - **Competitor-first Phase 1 spec** — superseded by D8.
 - **Apify data source** — superseded by D5. **Claude as primary AI** — superseded by D6.
+
+## D-audit-1 (2026-09-02) — Phase-0 audit execution: how store-derived pages are cached
+- **Decision:** pages that render a store-derived read (`/app/changes`, `/app/funnel`) cache the computed result in the platform data cache (`unstable_cache`), keyed by user + account (+ exact topbar scope + date where the window rolls daily), with a 6 h TTL backstop and ONE shared tag `accountStoreTag(user, acct)` (`lib/cache.ts`) that the change-history ingest busts on every successful hop. Request APIs (`cookies()`) are resolved outside the cached function.
+- **Rejected:** the in-process `InMemoryCache` (does not survive across serverless invocations); the `"use cache"` directive (needs a `next.config` flag = infra change, a stop condition); per-page tags (each page inventing its own invalidation).
+- **Consequence:** first view after a deploy or a sync primes (slow); every view after reads (`/app/changes` 11.1 s → 1.6 s measured). A stale read is bounded by the next ingest hop or 6 h.
+
+## D-audit-2 (2026-09-02) — Store paging is parallel, through one reader
+- **Decision:** all PostgREST 1,000-row paging goes through `readAllPages` (`lib/supabase/paged.ts`): page 1 alone, then parallel bursts of 8 until the first short page. Every `ad_metrics` reader orders by `ad_id + date` (a total order); `ad_meta` by `ad_id` (unique).
+- **Why:** 8 hand-rolled serial loops in 5 files paid one round-trip per page; three of them ordered by `ad_id` only, which has no offset-paging stability guarantee in Postgres.
+- **Ceiling (ponytail):** a burst may issue a few empty ranges past the end. Upgrade path: a count-first head query.
+
+## D-audit-3 (2026-09-02) — Heavy per-row UI renders on the client, previewed
+- **Decision:** a report that renders hundreds of per-entity cards is a client component that receives the report data and renders a bounded preview (20 per section) with "Show all"; nothing is dropped. Applied to `FunnelReportView` (8.58 MB → 1.25 MB per view).
+- **Why:** a server component's RSC flight carries every element tree on top of the SSR HTML — 35 KB per ad here.
+
+## D-audit-4 (2026-09-02) — Audit deliverables live in one document, not fifteen
+- **Decision:** the requested ARCHITECTURE / SECURITY / PERFORMANCE / SEO / A11Y / UX / OBSERVABILITY / BLOAT / DEPENDENCY audits, refactor plan, and before/after measurements are sections A–K + the execution log of `docs/PHASE-0-AUDIT-2026-09-02.md`; decisions go here; the changelog is the root `CHANGELOG.md`; the handoff is `docs/TECH-HANDOFF.md`.
+- **Why:** the audit itself found 161 docs / 13 prior audits and a duplicate `ARCHITECTURE.md`; fifteen more top-level files would add to the sprawl it was asked to reduce. Rahul can ask for the split.

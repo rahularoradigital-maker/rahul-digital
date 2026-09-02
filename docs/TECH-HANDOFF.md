@@ -4,7 +4,7 @@
 lives, what is left, and where we need your judgment. It was built almost entirely with Claude Code, so
 this doc doubles as the "what a human engineer needs to own from here" map.*
 
-Last updated: 2026-08-29 · Repo: `github.com/rahularoradigital-maker/rahul-digital` · Branch: `validation-v0-v1` (this is the live branch)
+Last updated: 2026-09-02 · Repo: `github.com/rahularoradigital-maker/rahul-digital` · Branch: `validation-v0-v1` (this is the live branch)
 
 ---
 
@@ -156,3 +156,15 @@ deliberate step in the plan, not a speed fix now. Recommendation: stay on Vercel
 **Fastest path to a real pilot (50-60 users):** buy a domain, move Vercel to Pro, put Gemini on billing with
 per-user caps, add a nightly background sync, turn on error monitoring. Everything else in §7 is the
 500-600/day hardening that follows.
+
+---
+
+## Addendum 2026-09-02 — start here if you are joining now
+
+**Read first:** `docs/PHASE-0-AUDIT-2026-09-02.md` (the full audit: system map, top-20 problems, what was fixed with measurements, what is still open and why) → `CHANGELOG.md` → `docs/DECISIONS.md` (D-audit-1…4 explain the caching, paging and rendering rules you must keep) → `.claude/MULTI-CHAT-PROTOCOL.md` + `.claude/WIP.md` (several Claude sessions work in this tree at once; claim hot files before editing).
+
+**Could a strong senior engineer join tomorrow and understand, modify and deploy this safely?** Yes for understand and modify, with two caveats for deploy:
+1. **Gates are the contract.** `npx tsc --noEmit`, `npm run build`, and the relevant `npm run check:<name>` (141 assert-scripts, chained in `check:all`) must be green before any push; there is no test runner yet (planned: `node --test`). Every commit today carries its gate results in the message.
+2. **Two things you cannot see from the code:** (a) migrations are applied by hand in the Supabase SQL editor — `supabase/migrations/0032_*.sql` is written but NOT applied (it closes the one real cross-tenant leak); (b) the nightly `/api/cron/sync` depends on `CRON_SECRET` and Vercel Crons being enabled, and `/api/health` (admin) reports `automationStale` when it is not firing. Check both before trusting any "data is fresh" assumption.
+
+**Invariants you must not break** (each has a check): RLS is default-deny and the service-role admin client does the real work with app-level `.eq("user_id")` scoping (`check:plane`, `check:scoping`); every product API method is gated (`check:access-gate`); `CACHE_SCHEMA` in `lib/meta-sync.ts` is bumped whenever the cached cockpit shape changes (`check:cache`); store readers page through `readAllPages` with a total order (`check:paged`); the scoring engine's golden invariants (`check:golden`, `check:shadow-benchmark`).
