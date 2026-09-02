@@ -1,5 +1,5 @@
 import { NextResponse, after, type NextRequest } from "next/server";
-import { timingSafeEqual } from "node:crypto";
+import { cronSecretGate } from "@/lib/app/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchLiveCockpit, getUserMetaSession } from "@/lib/meta-sync";
 import { readToken } from "@/lib/oauth-store";
@@ -39,18 +39,10 @@ function kickChain(origin: string, secret: string, uid: string, acct: string, ho
 }
 
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "CRON_SECRET is not configured." }, { status: 503 });
-  // Constant-time compare so the secret can't be recovered via response-timing.
-  const presented = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  const a = Buffer.from(presented);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const gate = cronSecretGate(request); // one shared constant-time bearer primitive (was hand-copied in 3 routes)
+  if (!gate.ok) return gate.response;
 
-  const cronSecret: string = secret; // narrowed to string above; a typed local keeps it string inside closures
+  const cronSecret: string = gate.secret; // the verified secret, re-presented by the self-chaining continue hops
   const origin = request.nextUrl.origin;
   const uid = request.nextUrl.searchParams.get("uid");
   const hop = Number(request.nextUrl.searchParams.get("hop") ?? "0");

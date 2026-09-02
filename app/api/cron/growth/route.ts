@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { timingSafeEqual } from "node:crypto";
+import { cronSecretGate } from "@/lib/app/cron-auth";
 import { discoverHN, discoverReddit, discoverStackExchange, discoverGoogleNews } from "@/lib/growth/discover";
 import { generateBrief } from "@/lib/growth/brief";
 import { draftTop } from "@/lib/growth/draft";
@@ -18,12 +18,8 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "CRON_SECRET is not configured." }, { status: 503 });
-  const presented = request.headers.get("authorization") ?? "";
-  const a = Buffer.from(presented);
-  const b = Buffer.from(`Bearer ${secret}`);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = cronSecretGate(request); // one shared constant-time bearer primitive (was hand-copied here)
+  if (!gate.ok) return gate.response;
 
   const queries = INTENT_SIGNALS.map((s) => s.phrases[0]).slice(0, 6);
   // Every free source that works from a server. HN + StackExchange + Google News are live; Reddit joins when

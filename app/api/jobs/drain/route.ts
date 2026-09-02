@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { timingSafeEqual } from "node:crypto";
+import { cronSecretGate } from "@/lib/app/cron-auth";
 import { postgresQueue } from "@/lib/queue-postgres";
 import { getJobHandler } from "@/lib/jobs/handlers";
 import { drainQueue } from "@/lib/jobs/drain";
@@ -15,16 +15,9 @@ export const maxDuration = 300;
 
 const BATCH = 10; // jobs per invocation, bounded so one run stays under the serverless cap
 
-function authorized(request: NextRequest, secret: string): boolean {
-  const got = Buffer.from(request.headers.get("authorization") ?? "");
-  const expected = Buffer.from(`Bearer ${secret}`);
-  return got.length === expected.length && timingSafeEqual(got, expected);
-}
-
 async function handle(request: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "CRON_SECRET is not configured." }, { status: 503 });
-  if (!authorized(request, secret)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const gate = cronSecretGate(request); // one shared constant-time bearer primitive (was hand-copied in 3 routes)
+  if (!gate.ok) return gate.response;
   try {
     return NextResponse.json({ ok: true, ...(await drainQueue(postgresQueue, getJobHandler, BATCH)) });
   } catch (e) {
