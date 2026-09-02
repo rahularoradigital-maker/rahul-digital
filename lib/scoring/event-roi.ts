@@ -19,14 +19,14 @@ export type EventRoi = {
   note: string; // plain-English honesty label
 };
 
-// Materiality: an event needs a real amount of spend before its ROI means anything. Default floor mirrors
-// the app's per-ad spend floor; also require a minimum share so a tiny event never dominates.
-const DEFAULT_MIN_SPEND = 500; // Rs
-const DEFAULT_MIN_SHARE = 0.02; // 2% of event spend
+// Materiality: an event needs a real ABSOLUTE amount of spend before its ROI/bleed means anything. Only an
+// absolute floor - NOT a share gate: when one event dominates spend (e.g. Purchase at 95%), a share gate
+// would wrongly hide a genuinely material bleed on a small-share event (e.g. Rs 1.35L bleeding at 1.7% share).
+// Money bleeding is material because of its rupees, not its share.
+const DEFAULT_MIN_SPEND = 1000; // Rs over the window
 
-export function computeEventRoi(rows: EventRow[], opts?: { minSpendRs?: number; minSpendShare?: number }): EventRoi[] {
+export function computeEventRoi(rows: EventRow[], opts?: { minSpendRs?: number }): EventRoi[] {
   const minSpend = opts?.minSpendRs ?? DEFAULT_MIN_SPEND;
-  const minShare = opts?.minSpendShare ?? DEFAULT_MIN_SHARE;
   const total = rows.reduce((s, r) => s + Math.max(0, r.spendRs), 0);
 
   return rows
@@ -35,7 +35,7 @@ export function computeEventRoi(rows: EventRow[], opts?: { minSpendRs?: number; 
       const revenueRs = Math.max(0, r.revenueRs);
       const share = total > 0 ? spendRs / total : 0;
       const hasRevenue = revenueRs > 0 && spendRs > 0;
-      const material = spendRs >= minSpend && share >= minShare;
+      const material = spendRs >= minSpend;
       return {
         event: r.event || "unknown",
         spendRs: Math.round(spendRs),

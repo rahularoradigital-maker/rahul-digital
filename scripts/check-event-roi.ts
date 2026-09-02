@@ -41,4 +41,14 @@ ok(out[0].event === "Purchase" && out[out.length - 1].event === "Lead", "sorted 
 const empty = computeEventRoi([{ event: "Purchase", spendRs: 0, revenueRs: 0, purchases: 0 }]);
 ok(empty[0].spendSharePct === 0 && empty[0].roiPct === null, "zero spend -> 0 share, null ROI, no NaN");
 
+// REGRESSION (live 2026-09-02, Soch Apparels): a material ABSOLUTE bleed must NOT be hidden just because a
+// dominant event (Purchase at 95% of spend) makes its SHARE small. A Rs 1.35L losing event is material.
+const dom = computeEventRoi([
+  { event: "PURCHASE", spendRs: 7568096, revenueRs: 41177351, purchases: 15309 },
+  { event: "CONTENT_VIEW", spendRs: 134598, revenueRs: 21695, purchases: 11 },
+]);
+const cv = dom.find((e) => e.event === "CONTENT_VIEW")!;
+ok(cv.material === true, "a Rs 1.35L bleed is material even at ~1.7% share (no share gate)");
+ok(cv.roiPct !== null && cv.roiPct < 0, "the bleeding event shows a real negative ROI, not hidden as 'too small'");
+
 console.log(`check-event-roi: ${pass} assertions passed.`);
