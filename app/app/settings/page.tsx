@@ -56,11 +56,14 @@ export default async function SettingsPage() {
             Only what is actually connected shows as connected. Nothing here is simulated.
           </div>
           <div className="divide-y divide-border">
-            <SourceRow label="Meta" connected={data.connected} />
-            <SourceRow label="Shopify" connected={false} />
-            <SourceRow label="GA4" connected={false} />
-            <SourceRow label="Finance sheet" connected={false} />
-            <SourceRow label="Creative decoder" connected={false} />
+            {/* Meta is the only connectable source today; the rest are honestly labelled "Coming soon"
+                (Rahul ruling 2026-09-02) rather than "Not connected", which implied a connect path that
+                does not exist yet. */}
+            <SourceRow label="Meta" status={data.connected ? "connected" : "not-connected"} />
+            <SourceRow label="Shopify" status="coming-soon" />
+            <SourceRow label="GA4" status="coming-soon" />
+            <SourceRow label="Finance sheet" status="coming-soon" />
+            <SourceRow label="Creative decoder" status="coming-soon" />
           </div>
         </CardContent>
       </Card>
@@ -71,14 +74,18 @@ export default async function SettingsPage() {
   );
 }
 
-function SourceRow({ label, connected }: { label: string; connected: boolean }) {
+function SourceRow({ label, status }: { label: string; status: "connected" | "not-connected" | "coming-soon" }) {
   return (
     <div className="flex items-center justify-between py-3 text-sm">
       <span className="text-[var(--ink)]">{label}</span>
-      {connected ? (
+      {status === "connected" ? (
         <span className="flex items-center gap-1.5 font-medium text-[var(--good-ink)]">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--good-ink)]" />
           Connected
+        </span>
+      ) : status === "coming-soon" ? (
+        <span className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[12px] font-medium text-[var(--ink-muted)]">
+          Coming soon
         </span>
       ) : (
         <span className="flex items-center gap-1.5 text-[var(--ink-muted)]">

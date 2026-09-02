@@ -379,13 +379,16 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           sub={conc.status === "ok" ? "top ad share of spend" : undefined}
           disclosure={<MetricDrawer title="Concentration" tier="A" disclosure={concDisclosure} />}
         />
-        {/* MER + nCAC need store revenue (Shopify), so they are always insufficient until a revenue
-            source connects. Collapse the two permanently-dead cards into one honest affordance
-            spanning both slots instead of two decoy tiles. Restore as real cards with plan-04. */}
+        {/* MER + nCAC need store revenue (Shopify), which isn't connectable yet. Rahul ruling (2026-09-02):
+            label it honestly as "Coming soon", not a decoy "Connect Shopify" CTA that goes nowhere. One
+            affordance spanning both slots. Restore as real cards with the Shopify integration (plan-04). */}
         <div className="col-span-2 flex flex-col justify-center rounded-xl border border-border bg-card text-card-foreground shadow-sm p-5">
-          <div className="mb-1 text-[13px] font-medium text-[var(--ink-muted)]">Store economics · MER &amp; nCAC</div>
+          <div className="mb-1 flex items-center gap-2 text-[13px] font-medium text-[var(--ink-muted)]">
+            Store economics · MER &amp; nCAC
+            <span className="rounded-full bg-[var(--surface-alt)] px-2 py-0.5 text-[11px] font-medium text-[var(--ink-muted)]">Coming soon</span>
+          </div>
           <div className="text-[13px] text-[var(--ink)]">
-            Connect Shopify to unlock marketing-efficiency ratio (revenue ÷ spend) and new-customer acquisition cost.
+            Marketing-efficiency ratio (revenue ÷ spend) and new-customer acquisition cost, once store-revenue (Shopify) is supported.
           </div>
         </div>
       </div>
