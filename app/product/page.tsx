@@ -123,7 +123,7 @@ const MODULES: {
     rows: [
       { k: "Tests remembered", v: "318", verdict: "scale" },
       { k: "Dead angles flagged", v: "22", verdict: "kill" },
-      { k: "Avg ROAS lift", v: "+38%", verdict: "scale" },
+      { k: "Winning angles remembered", v: "18", verdict: "scale" },
     ],
   },
 ];

@@ -62,7 +62,7 @@ const DOTS = [
 
 const ANALYTICS = [
   { k: "Ranked tests this week", v: "12", delta: "+3" },
-  { k: "Avg ROAS on scaled", v: "3.4x", delta: "+38%" },
+  { k: "Avg ROAS on scaled", v: "3.4x", delta: "" },
   { k: "Dead angles avoided", v: "22", delta: "" },
   { k: "Strategist hours saved", v: "6h", delta: "/wk" },
 ];

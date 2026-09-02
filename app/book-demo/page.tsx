@@ -17,8 +17,6 @@ const PERKS = [
   { h: "Founder-led", d: "You talk to the people who built the agents." },
 ];
 
-const LOGOS = ["Pilgrim", "Ghar Soaps", "Hair Originals", "NexTen"];
-
 export default async function BookDemoPage({ searchParams }: { searchParams: Promise<{ email?: string }> }) {
   const { email } = await searchParams;
   return (
@@ -59,18 +57,6 @@ export default async function BookDemoPage({ searchParams }: { searchParams: Pro
               ))}
             </div>
 
-            <div className="mt-9 border-t border-[var(--hairline)] pt-6">
-              <p className="mb-3.5 text-xs font-semibold tracking-wider text-[var(--ink-muted)] uppercase">
-                Trusted by growth teams at
-              </p>
-              <div className="flex flex-wrap gap-6">
-                {LOGOS.map((l) => (
-                  <span key={l} className="text-base font-semibold text-[var(--ink-muted)]/60">
-                    {l}
-                  </span>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Right column: form */}
