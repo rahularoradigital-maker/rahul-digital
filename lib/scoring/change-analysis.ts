@@ -47,6 +47,10 @@ function modalObjective(rows: MetricRow[]): string | null {
 
 export type ChangeAnalysis = { results: ChangeResult[]; buyers: ReturnType<typeof rankBuyers>; changeTypes: ReturnType<typeof rollupChangeTypes>; judged: number; skipped: number };
 
+// Data-cache tag for one account's analysis (the /app/changes page caches under it; the change-history
+// ingest busts it on every successful hop, so a fresh sync is visible on the next request).
+export const changeAnalysisTag = (userId: string, accountExternalId: string) => `change-analysis:${userId}:${accountExternalId}`;
+
 export async function analyzeAccountChanges(userId: string, accountExternalId: string, opts: { now?: number } = {}): Promise<ChangeAnalysis> {
   const admin = createAdminClient();
   const now = opts.now ?? Date.now();

@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
-import { analyzeAccountChanges } from "@/lib/scoring/change-analysis";
+import { unstable_cache } from "next/cache";
+import { analyzeAccountChanges, changeAnalysisTag } from "@/lib/scoring/change-analysis";
 import { ConnectState } from "@/components/app/connect-state";
 import { ChangeImpactSection } from "@/components/app/changes/change-impact-section";
 
@@ -22,7 +23,15 @@ export default async function ChangesPage() {
     );
   }
 
-  const analysis = await analyzeAccountChanges(user.id, session.activeExternalId);
+  // Perf (Phase-0 audit): measured 16.5s cold / 11.1s warm on the live account - an uncached 120-day
+  // multi-page scan re-run on EVERY visit for data that changes once a day. Cached in the platform data
+  // cache (survives across serverless invocations, unlike an in-process map) keyed by user + account; the
+  // ingest busts the tag on each successful hop, with a 6h TTL as the backstop.
+  const analysis = await unstable_cache(
+    () => analyzeAccountChanges(user.id, session.activeExternalId),
+    ["change-analysis", user.id, session.activeExternalId],
+    { revalidate: 6 * 3600, tags: [changeAnalysisTag(user.id, session.activeExternalId)] },
+  )();
 
   return (
     <div className="space-y-6">
