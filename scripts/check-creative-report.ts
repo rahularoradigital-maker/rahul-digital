@@ -51,4 +51,10 @@ ok(noWinner.best?.id === "a", "no winner -> highest-scoring ad is best");
 ok(noWinner.worst?.id === "b", "a refresh ad is worst");
 ok(pickBestWorst([ad({ id: "only", verdict: "winner", score: 80 })]).worst === null, "no dying ad -> worst null (never same as best)");
 
+// event economics section: reports the best event + the bleed; honest fallback when no event data.
+const withEvents = buildCreativeReport({ ...base, eventBestName: "PURCHASE", eventBestRoiPct: 444, eventBleedRs: 194544 });
+ok(withEvents.sections.some((s) => s.title === "Event economics" && s.lines.some((l) => /PURCHASE at \+444% ROI/.test(l))), "report names the best-returning event");
+ok(withEvents.sections.some((s) => s.title === "Event economics" && s.lines.some((l) => /Rs 1,94,544 is on conversion-intent/.test(l))), "report sizes the event bleed");
+ok(buildCreativeReport(base).sections.some((s) => s.title === "Event economics" && s.lines.some((l) => /No event economics yet/.test(l))), "no event data -> honest fallback, no fake number");
+
 console.log(`check-creative-report: ${pass} assertions passed.`);

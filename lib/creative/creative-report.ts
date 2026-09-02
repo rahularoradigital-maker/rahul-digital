@@ -15,6 +15,10 @@ export type ReportInput = {
   wasteRs: number | null;
   opportunityLossRs: number | null;
   deepReadCount: number;
+  // event economics (optional): the best-returning optimisation event + any conversion-event bleed
+  eventBestName?: string | null;
+  eventBestRoiPct?: number | null;
+  eventBleedRs?: number | null;
 };
 
 // A minimal per-ad shape for the best-vs-worst pick, so the logic stays pure/testable.
@@ -84,6 +88,12 @@ export function buildCreativeReport(i: ReportInput): CreativeReport {
     lines: [i.deepReadCount > 0 ? `${i.deepReadCount} of your top spenders were read as real video motion (deep analysis).` : "Run the deep read to analyse your top spenders' video motion, not just cover frames."],
   };
 
+  const event_lines: string[] = [];
+  if (i.eventBestName && i.eventBestRoiPct != null) event_lines.push(`Best-returning event: ${i.eventBestName} at ${i.eventBestRoiPct >= 0 ? "+" : ""}${i.eventBestRoiPct}% ROI.`);
+  if (i.eventBleedRs != null && i.eventBleedRs > 0) event_lines.push(`${inr(i.eventBleedRs)} is on conversion-intent events returning below break-even - consider reallocating toward the best event.`);
+  if (event_lines.length === 0) event_lines.push("No event economics yet - sync your ad-set optimisation events to see spend and ROI by event.");
+  const event_section: ReportSection = { title: "Event economics", lines: event_lines };
+
   // Deterministic "what to do" - only the actions the numbers actually support.
   const todo: string[] = [];
   if (i.fatiguing > 0) todo.push("Refresh or replace the fatiguing ads before they decay further.");
@@ -95,7 +105,7 @@ export function buildCreativeReport(i: ReportInput): CreativeReport {
   return {
     headline,
     generatedFor: `${i.accountName} - last ${i.days} days`,
-    sections: [health_section, fatigue_section, concentration_section, money_section, dna_section, todo_section],
+    sections: [health_section, fatigue_section, concentration_section, money_section, event_section, dna_section, todo_section],
   };
 }
 

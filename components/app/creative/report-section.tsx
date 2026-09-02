@@ -3,6 +3,9 @@ import type { CockpitData } from "@/lib/app/cockpit-data";
 import { buildCreativeReport, pickBestWorst, type AdBrief } from "@/lib/creative/creative-report";
 import { CreativeReportCard } from "@/components/app/creative/creative-report-card";
 import { AdLink } from "@/components/cockpit/AdLink";
+import { getCurrentUser } from "@/lib/app/user";
+import { getEventRoi } from "@/lib/scoring/event-roi-store";
+import { eventBleedSummary } from "@/lib/scoring/event-roi";
 
 const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -33,12 +36,20 @@ function BestWorst({ best, worst, accountId, dateParam }: { best: AdBrief | null
 
 // Assembles the creative health report from numbers the cockpit already computed (no new data, no AI) and
 // hands it to the client card to render + download. Not connected -> the shared Connect state.
-export function ReportSection({ data, deepReadCount = 0 }: { data: CockpitData; deepReadCount?: number }) {
+export async function ReportSection({ data, deepReadCount = 0 }: { data: CockpitData; deepReadCount?: number }) {
   if (!data.connected) {
     return <ConnectState reason={data.reason} errorNote={data.errorNote} accountName={data.accountName} days={data.days} />;
   }
   const v = data.view;
   const lb = v.leaderboard;
+
+  // Event economics for the report (self-contained read over the same window). Best revenue event + any bleed.
+  const user = await getCurrentUser();
+  const [since, until] = (data.dateParam || "").split("_");
+  const eventRoi = user && since && until ? await getEventRoi(user.id, data.accountId, since, until) : [];
+  const bestEvent = eventRoi.filter((e) => e.material && e.hasRevenue && e.roiPct !== null).reduce<(typeof eventRoi)[number] | null>((b, e) => (!b || (e.roiPct as number) > (b.roiPct as number) ? e : b), null);
+  const bleed = eventBleedSummary(eventRoi);
+
   const report = buildCreativeReport({
     accountName: data.accountName,
     days: data.days,
@@ -51,6 +62,9 @@ export function ReportSection({ data, deepReadCount = 0 }: { data: CockpitData; 
     wasteRs: v.waste?.status === "ok" ? v.waste.totalWastedRs : null,
     opportunityLossRs: v.opportunity?.totalLossRs ?? null,
     deepReadCount,
+    eventBestName: bestEvent ? bestEvent.event.replace(/_/g, " ") : null,
+    eventBestRoiPct: bestEvent?.roiPct ?? null,
+    eventBleedRs: bleed?.bleedRs ?? null,
   });
 
   const briefs: AdBrief[] = lb.map((a) => ({ id: a.id, name: a.name, score: a.score, verdict: a.verdict, spendRs: a.spendRs, fatigueState: a.fatigueRead?.state ?? null, actionLabel: a.action.label }));
