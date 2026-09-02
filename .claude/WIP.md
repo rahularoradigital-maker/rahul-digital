@@ -38,5 +38,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-5a (intelligence) | Made the 2 latent adapters visible: winner->`components/cockpit/Leaderboard.tsx`, diversity->`components/app/creative/diversity-section.tsx`. | DONE | commits 38cff99,bcf365c pushed; tsc+build green (tree fully green now). All 5 contract adapters render on 5 surfaces. NOT live-verified (needs Rahul's session). |
 
+| rahul-linkedin-2-e9 | Creative Health Report: NEW `lib/creative/creative-report.ts` + `components/app/creative/{creative-report-card,report-section}.tsx` + `scripts/check-creative-report.ts` + a "Report" tab in `app/app/creative/page.tsx` (mine). Also CSV export on the deep-analysis card. | DONE | pushed; check:creative-report 11 + wired into check:all; deterministic, downloadable. No errors in my files. |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
