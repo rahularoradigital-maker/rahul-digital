@@ -40,5 +40,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-e9 | Creative Health Report: NEW `lib/creative/creative-report.ts` + `components/app/creative/{creative-report-card,report-section}.tsx` + `scripts/check-creative-report.ts` + a "Report" tab in `app/app/creative/page.tsx` (mine). Also CSV export on the deep-analysis card. | DONE | pushed; check:creative-report 11 + wired into check:all; deterministic, downloadable. No errors in my files. |
 
+| rahul-linkedin-2-b6 | change-ranking shrinkage (media-buyer feature rigor): `lib/scoring/change-ranking.ts` rankBuyers + rollupChangeTypes now order by an empirical-Bayes shrunk hit-rate (prior 0.5, pseudo 3) so a lucky 3/3 can't out-rank a proven 45/50; raw hitRate kept for display. `scripts/check-change-ranking.ts` extended. | DONE | aff36f8 + ddeb586, tsc+build green, pushed. Local-verifiable (no deploy/DB needed). |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
