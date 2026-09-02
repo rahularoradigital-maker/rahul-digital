@@ -4,6 +4,8 @@ import { CreativeDnaFilterable } from "@/components/app/creative/creative-dna-fi
 import { DeepAnalysisCard } from "@/components/app/creative/deep-analysis-card";
 import type { CockpitData } from "@/lib/app/cockpit-data";
 import type { DiversityComparison } from "@/lib/creative/diversity-vs-competitors";
+import { diversityToContract } from "@/lib/intelligence/from-diversity";
+import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 
 // Diversity & White Space (rulebook 5.2 retrieval distinctness). Real portfolio-spread
 // numbers come from the connected cockpit today (active ad count, top-1 spend share);
@@ -51,6 +53,11 @@ export function DiversitySection({ data, days, competitors, deepReadCount = 0 }:
             )}
           </div>
         </div>
+        {/* §110 fragility reasoning: if spend is over-concentrated in one creative bucket, the full DATA->...->LEARNING trail. */}
+        {data.ownDiversity && (() => {
+          const c = diversityToContract(data.ownDiversity, { entityId: data.accountId ?? "account", accountSpendRs: view.leaderboard.reduce((s, a) => s + a.spendRs, 0) });
+          return c ? <div className="mt-4 border-t border-[var(--surface-alt)] pt-3"><ReasoningTrace contract={c} /></div> : null;
+        })()}
       </div>
 
       {/* Creative format diversity + Creative DNA, filterable by action (Pause / Refresh / Hold / Continue). */}
