@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: "Log in - AdScale",
   description: "Log in to your AdScale account to open your Meta ads cockpit.",
   alternates: { canonical: "/login" },
+  // Private-beta-by-approval (Rahul): auth pages are not public conversion surfaces (the public CTA is
+  // "Request access" -> /book-demo), so keep them out of the index. follow:true lets link equity flow.
+  robots: { index: false, follow: true },
 };
 
 export default function LoginPage() {

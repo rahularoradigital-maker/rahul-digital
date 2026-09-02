@@ -8,12 +8,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.verc
 export const metadata = {
   title: "Pricing — AdScale",
   description:
-    "Every plan includes unlimited ad-account decisions. Tokens power the AI extras - chat and creative generation. Start free with unlimited decisions plus 50 tokens, no card required.",
+    "Every plan includes unlimited ad-account decisions. Tokens power the AI extras - chat and creative generation. AdScale is in private beta; request access to get started.",
   alternates: { canonical: "/pricing" },
   openGraph: {
     type: "website",
-    title: "AdScale pricing — start free, scale with your ad spend",
-    description: "Free plan with 50 tokens a month, then Starter, Growth, and Scale. Tokens map to real ad-account analyses.",
+    title: "AdScale pricing — usage-based, unlimited decisions",
+    description: "Free, Starter, Growth, and Scale plans. Unlimited decisions on every plan; tokens power the AI extras. Private beta - request access.",
     url: `${SITE_URL}/pricing`,
     siteName: "AdScale AI",
   },
@@ -38,7 +38,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Is the Free plan really free?",
-    a: "Yes. Free includes unlimited scale, refresh, and kill decisions, plus 50 tokens a month for AI chat and ad copy, with no card required. Image generation needs a paid plan.",
+    a: "Yes. Free includes unlimited scale, refresh, and kill decisions, plus 50 tokens a month for AI chat and ad copy. Image generation needs a paid plan. AdScale is currently in private beta, so access is granted by approval - request access and we will get you in.",
   },
   {
     q: "Will AdScale change my ads automatically?",
@@ -78,11 +78,14 @@ export default function PricingPage() {
             Pricing
           </span>
           <h1 className="mx-auto mt-6 max-w-2xl text-5xl leading-[1.06] tracking-tight sm:text-6xl">
-            Start free. Scale with your ad spend.
+            Simple, usage-based pricing.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg text-[var(--ink-muted)]">
             Every plan includes unlimited scale, refresh, and kill decisions, with a reason for each. Tokens power
             the AI extras - chat answers and creative generation - so you only pay for what actually costs to produce.
+          </p>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-[var(--ink-muted)]">
+            AdScale is currently in private beta - access is granted by approval. Request access and we will get you in.
           </p>
         </section>
 

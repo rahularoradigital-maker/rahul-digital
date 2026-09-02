@@ -34,9 +34,9 @@ const TIERS: Tier[] = [
     annualBilledUsd: null,
     tokens: 50,
     sub: "for AI chat & ad copy",
-    cta: { label: "Start free", href: "/signup" },
+    cta: { label: "Request access", href: "/book-demo" },
     features: ["Unlimited scale / refresh / kill decisions", "1 ad account", "A reason for every call", "No image generation"],
-    footnote: "No card required. Image generation needs a paid plan.",
+    footnote: "Image generation needs a paid plan.",
   },
   {
     name: "Starter",
@@ -46,7 +46,7 @@ const TIERS: Tier[] = [
     annualBilledUsd: 990,
     tokens: 1500,
     sub: "for AI chat, copy & images",
-    cta: { label: "Get started", href: "/book-demo" },
+    cta: { label: "Request access", href: "/book-demo" },
     features: ["Unlimited scale / refresh / kill decisions", "Meta + Google ad accounts", "AI chat, copy & image generation", "Multiple ad accounts"],
   },
   {
@@ -58,7 +58,7 @@ const TIERS: Tier[] = [
     tokens: 7500,
     sub: "for AI chat, copy & images",
     popular: true,
-    cta: { label: "Get started", href: "/book-demo" },
+    cta: { label: "Request access", href: "/book-demo" },
     features: ["Unlimited scale / refresh / kill decisions", "Meta + Google ad accounts", "AI chat, copy & image generation", "Multiple ad accounts"],
   },
   {
@@ -69,7 +69,7 @@ const TIERS: Tier[] = [
     annualBilledUsd: 9990,
     tokens: 25000,
     sub: "for AI chat, copy & images",
-    cta: { label: "Talk to sales", href: "/book-demo" },
+    cta: { label: "Request access", href: "/book-demo" },
     features: ["Unlimited scale / refresh / kill decisions", "Meta + Google ad accounts", "AI chat, copy & image generation", "Multiple ad accounts"],
   },
 ];

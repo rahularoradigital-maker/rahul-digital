@@ -66,11 +66,12 @@ export function PricingEstimator() {
           Recommended: <span className="font-semibold text-[var(--accent)]">{planLabel}</span>
         </span>
         <span className="text-[13px] text-[var(--ink-muted)]">{note}</span>
+        {/* Private-beta-by-approval (Rahul): one honest CTA to the lead form, not self-serve "Start free". */}
         <Link
-          href={isFree ? "/signup" : "/book-demo"}
+          href="/book-demo"
           className="mt-3 inline-flex items-center justify-center rounded-full bg-[var(--ink)] px-5 py-2.5 text-[15px] font-medium text-white transition hover:opacity-90"
         >
-          {isFree ? "Start free" : `Get started with ${planLabel}`}
+          Request access
         </Link>
       </div>
     </div>

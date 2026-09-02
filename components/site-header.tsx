@@ -21,11 +21,13 @@ export function SiteHeader() {
           <Link href="/login" className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
             Log in
           </Link>
+          {/* Private-beta-by-approval (Rahul): one honest conversion action. Self-serve "Sign up" implied
+              instant access the approval gate does not grant; "Request access" routes to the lead form. */}
           <Link
-            href="/signup"
+            href="/book-demo"
             className="inline-flex items-center rounded-full bg-[var(--ink)] px-5 py-3 font-medium text-white transition hover:opacity-90"
           >
-            Sign up
+            Request access
           </Link>
         </div>
       </div>
