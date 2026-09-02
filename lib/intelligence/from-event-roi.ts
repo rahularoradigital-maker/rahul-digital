@@ -2,8 +2,7 @@
 // "these conversion events bleed vs your best" into a reasoning-backed decision (DATA -> ... -> LEARNING),
 // WITHOUT editing the engine (protocol: new files). Deterministic + pure. Returns null when nothing bleeds.
 
-import type { EventRoi } from "@/lib/scoring/event-roi";
-import { eventBleedSummary } from "@/lib/scoring/event-roi";
+import { eventBleedSummary, type EventRoi } from "../scoring/event-roi.ts";
 import { decide, type OutputContract } from "./output-contract.ts";
 
 const evt = (s: string) => s.replace(/_/g, " ").toLowerCase();
