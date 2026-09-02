@@ -44,5 +44,7 @@ honest and current so other chats can trust it. Status: WIP (editing now) | DONE
 
 | rahul-linkedin-2-5a (intelligence) | Scaling-elasticity adapter (§47) `lib/intelligence/from-marginal.ts` + made it LIVE on `components/app/media/budget-section.tsx` (Scaling headroom card, uses data.marginal). | DONE | commits 8927776,cad80c4 pushed; tsc+build green. 6th adapter; now all 6 render on 6 surfaces. Account-level (data.marginal is account-wide), not per-ad. NOT live-verified. |
 
+| rahul-linkedin-2-04 | Image-gen quality: wire SCENE mode into `lib/creative-production/providers/openai-image.ts` (mirror the existing google-gemini buildPrompt renderRecipe/sceneText/productMode logic) so OpenAI/gpt-image-1 renders the 42 format scenes instead of a generic editorial background. ONE file, additive. | WIP | Rahul asked (chose "better ad quality"). No active WIP claim on providers. @whoever built the 42-format library — heads-up, this completes it for the OpenAI path; I am NOT touching google-gemini.ts, only openai-image.ts. |
+
 <!-- Other chats: add your rows here. Claim the hot files (meta-sync, from-store, cockpit-data, analyze,
      decision, studio, app/app/page) before editing them so we stop colliding. -->
