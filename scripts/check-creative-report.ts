@@ -2,7 +2,7 @@
 // numbers support them, never a fabricated figure.
 // Run: node --experimental-strip-types scripts/check-creative-report.ts
 
-import { buildCreativeReport, reportToText, reportToHtml, type ReportInput } from "../lib/creative/creative-report.ts";
+import { buildCreativeReport, reportToText, reportToHtml, pickBestWorst, type ReportInput, type AdBrief } from "../lib/creative/creative-report.ts";
 
 let pass = 0;
 function ok(cond: boolean, msg: string) {
@@ -39,5 +39,16 @@ const html = reportToHtml(buildCreativeReport({ ...base, accountName: "A & <b>Co
 ok(/^<!doctype html>/i.test(html) && /<\/html>$/i.test(html.trim()), "html is a complete document");
 ok(/Creative health report/.test(html) && html.includes("What to do"), "html carries the report content");
 ok(html.includes("A &amp; &lt;b&gt;Co&lt;/b&gt;") && !html.includes("<b>Co</b>"), "dynamic strings are HTML-escaped (no injection)");
+
+// best vs worst: winner is best, a refresh/loser is worst, never the same ad, empty -> both null.
+const ad = (o: Partial<AdBrief>): AdBrief => ({ id: "x", name: "Ad", score: 50, verdict: "watch", spendRs: 0, fatigueState: null, actionLabel: "Hold", ...o });
+ok(pickBestWorst([]).best === null && pickBestWorst([]).worst === null, "no ads -> both null");
+const bw = pickBestWorst([ad({ id: "w", verdict: "winner", score: 88 }), ad({ id: "l", verdict: "loser", score: 20 }), ad({ id: "m", verdict: "watch", score: 55 })]);
+ok(bw.best?.id === "w", "highest-scoring winner is best");
+ok(bw.worst?.id === "l", "a loser is worst");
+const noWinner = pickBestWorst([ad({ id: "a", verdict: "watch", score: 70 }), ad({ id: "b", verdict: "refresh", score: 30 })]);
+ok(noWinner.best?.id === "a", "no winner -> highest-scoring ad is best");
+ok(noWinner.worst?.id === "b", "a refresh ad is worst");
+ok(pickBestWorst([ad({ id: "only", verdict: "winner", score: 80 })]).worst === null, "no dying ad -> worst null (never same as best)");
 
 console.log(`check-creative-report: ${pass} assertions passed.`);

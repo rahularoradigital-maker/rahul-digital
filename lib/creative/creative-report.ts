@@ -17,6 +17,22 @@ export type ReportInput = {
   deepReadCount: number;
 };
 
+// A minimal per-ad shape for the best-vs-worst pick, so the logic stays pure/testable.
+export type AdBrief = { id: string; name: string; score: number; verdict: string; spendRs: number; fatigueState: string | null; actionLabel: string };
+
+// The account's clearest winner vs its clearest fading ad - an instant "what's working vs what's dying" read.
+// best = highest-scoring proven winner (falls back to the highest-scoring ad if there are no winners yet);
+// worst = lowest-scoring ad the engine flagged to refresh/kill. Never returns the same ad as both.
+export function pickBestWorst(ads: AdBrief[]): { best: AdBrief | null; worst: AdBrief | null } {
+  if (ads.length === 0) return { best: null, worst: null };
+  const winners = ads.filter((a) => a.verdict === "winner");
+  const best = (winners.length ? winners : ads).reduce((x, y) => (y.score > x.score ? y : x));
+  const dying = ads.filter((a) => a.verdict === "loser" || a.verdict === "refresh");
+  const worst = dying.length ? dying.reduce((x, y) => (y.score < x.score ? y : x)) : null;
+  if (best && worst && best.id === worst.id) return { best, worst: null };
+  return { best, worst };
+}
+
 export type ReportSection = { title: string; lines: string[] };
 export type CreativeReport = { headline: string; generatedFor: string; sections: ReportSection[] };
 
