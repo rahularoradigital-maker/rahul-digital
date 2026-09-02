@@ -74,6 +74,7 @@ export function EventRoiCard({ rows }: { rows: EventRoi[] }) {
                     </span>
                     {e.roas !== null && <span className="text-[var(--ink-muted)] tabular-nums">{e.roas}x ROAS</span>}
                     {e.costPerPurchaseRs !== null && <span className="text-[var(--ink-muted)] tabular-nums">{inr.format(e.costPerPurchaseRs)}/purchase</span>}
+                    {e.thinSample && <span className="rounded-full bg-[var(--surface-alt)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">directional</span>}
                   </>
                 ) : (
                   <span className="text-[var(--ink-muted)]">ROI n/a - no revenue for this event; judge on cost per result</span>
