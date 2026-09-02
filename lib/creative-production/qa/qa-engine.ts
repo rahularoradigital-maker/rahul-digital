@@ -5,6 +5,7 @@
 // (no model re-typing), so the only "text" risk is the composer not confirming it drew them.
 import type { ComposedAsset, GenerationBrief, QACheck, QAResult } from "@/lib/creative-production/types";
 import { checkCharLimits } from "./platform-checks.ts";
+import { lintAdCopy } from "./policy-lint.ts";
 
 // Map a format to its ad placement so char limits are checked against the RIGHT surface (a story truncates
 // differently from a feed post, and Google RSA is tighter still).
@@ -139,6 +140,13 @@ export function runQA(
   // single generic limit. Advisory only (warning) - a long headline is not blocked, just surfaced.
   for (const lim of checkCharLimits({ headline: approvedText.headline, primary: brief.concept.supportingCopy }, placementFor(fmt))) {
     checks.push({ name: lim.name, pass: false, severity: "warning", detail: lim.detail });
+  }
+
+  // (warning) ad-policy lint (#5): flag likely Meta-rejection phrasing in the APPROVED copy so it lands in
+  // the stored QA and shows at Review - the client only pre-flighted it on the Concepts step. Advisory: a
+  // policy risk drops the ad to REVIEW (a human should look), it never hard-FAILS or rewrites the copy.
+  for (const f of lintAdCopy({ headline: approvedText.headline, supportingCopy: brief.concept.supportingCopy, cta: approvedText.cta, offer: approvedText.offer })) {
+    checks.push({ name: `policy_${f.area}`, pass: false, severity: "warning", detail: `"${f.phrase}" (${f.where}) - ${f.fix}` });
   }
 
   const critFail = checks.some((c) => c.severity === "critical" && !c.pass);
