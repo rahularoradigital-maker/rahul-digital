@@ -18,6 +18,7 @@ import { readSemanticsCache, decodeMissingVisual } from "@/lib/creative/decode";
 import type { CreativeFormat, CreativeAsset } from "@/lib/creative/fingerprint";
 import { VERDICT_WEIGHTS, type ScoreWeights } from "@/lib/rules/verdict";
 import type { LiveCockpit, AccountMetrics, ProcessedCounts, CatalogMode } from "@/lib/meta-sync";
+import { captureError } from "@/lib/observability";
 
 // Stable per-creative identity for the semantic cache. Ingestion normally stores content_hash (derived
 // from creative facts); when it is absent - older rows synced before that logic, or any account with a
@@ -282,7 +283,8 @@ export async function buildCockpitFromStore(opts: {
         }
         if (changed) inputs = toCockpitInputs(realAds).filter((a) => (a.impressions ?? 0) > 0 && a.spendRs > 0 && a.active !== false);
       }
-    } catch {
+    } catch (e) {
+      captureError(e, { fn: "buildCockpitFromStore.spendOf" }); // P1 observability: was a silent empty catch (fail-open preserved)
       // keep the stored status - the action queue is never worse than before
     }
   }

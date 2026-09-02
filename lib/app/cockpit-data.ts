@@ -28,6 +28,7 @@ export type { AccountMetrics } from "@/lib/meta-sync";
 // Date-window constants live in a client-safe module (no server imports); imported for use here and
 // re-exported so server pages keep a single import site for the loader + windows.
 import { WINDOWS, parseDays } from "./windows";
+import { captureError } from "@/lib/observability";
 export { WINDOWS, parseDays };
 
 export type ConnectReason = "not_connected" | "error" | "no_data" | "syncing";
@@ -80,7 +81,8 @@ export async function loadCockpit(days: number): Promise<CockpitData> {
     // Log the run's recommendations as labeled triples (deferred, deduped per day). Best-effort.
     try {
       after(() => recordDecisionTriples(user.id, live.accountExternalId, dateParam, live.view));
-    } catch {
+    } catch (e) {
+      captureError(e, { fn: "loadCockpit" }); // P1 observability: was a silent empty catch (fail-open preserved)
       // after() unavailable outside a request scope; skip logging rather than fail the load.
     }
     return { connected: true, view: live.view, metrics: live.metrics, scopeTotals: live.scopeTotals, funnel: live.funnel, marginal: live.marginal, dataQuality: live.dataQuality, ownDiversity: live.ownDiversity, ownDiversityRecords: live.ownDiversityRecords, ownStrategy: live.ownStrategy, dailySeries: live.dailySeries, funnelLevels: live.funnelLevels, accountName: live.accountName, accountId: live.accountExternalId, dateParam, adsAnalyzed: live.adsAnalyzed, processed: live.processed, days: effectiveDays, syncedAt: live.syncedAt, stale: live.stale, headlineIncomplete: live.headlineIncomplete, perf, userEmail };

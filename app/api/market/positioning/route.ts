@@ -116,6 +116,8 @@ export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ content: null });
+  const denied = await guardProductApi(); // P1: every product-API method is entitlement-gated (per-method gate)
+  if (denied) return denied;
   // Consolidated read (cleanup #6): the same query the server positioning section uses.
   return NextResponse.json({ content: await loadLatestInsight(user.id, "positioning") });
 }

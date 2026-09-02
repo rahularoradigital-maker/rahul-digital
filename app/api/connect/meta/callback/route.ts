@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { storeToken } from "@/lib/oauth-store";
 import { listAllAccessibleAdAccounts } from "@/lib/meta-source";
 import { recordAudit } from "@/lib/security/audit-log";
+import { captureError } from "@/lib/observability";
 
 // Meta OAuth callback: exchange the code for a token, create an ad_accounts row, store the
 // ENCRYPTED token. Token values are never returned to the client (audit F4 boundary).
@@ -75,7 +76,8 @@ export async function GET(request: NextRequest) {
         expiresIn = ll.expires_in;
       }
     }
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "meta.callback" }); // P1 observability: was a silent empty catch (fail-open preserved)
     // keep the short-lived token
   }
 

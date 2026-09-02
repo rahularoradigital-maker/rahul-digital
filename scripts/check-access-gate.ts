@@ -29,29 +29,48 @@ assert.ok(gate.includes("isAdminEmail"), "admin allowlist short-circuit present 
 const layout = read("app/app/layout.tsx");
 assert.ok(layout.includes("requireProductAccess"), "app layout must call requireProductAccess");
 
-// 3) Every expensive product API gates BEFORE the expensive call. A guard that is missing = a spend bypass.
-const MUST_GATE = [
-  "app/api/ask/route.ts",
-  "app/api/creative/analyze/route.ts",
-  "app/api/brand/discover/route.ts",
-  "app/api/market/positioning/route.ts",
-  "app/api/creative-production/generate/route.ts",
-  "app/api/creative-production/concepts/route.ts",
-  "app/api/competitors/run/route.ts",
-  "app/api/competitors/analyze/route.ts",
-  "app/api/influencer/run/route.ts",
-  "app/api/ingest/run/route.ts",
-  "app/api/meta/accounts/route.ts",
-  "app/api/meta/campaigns/route.ts",
-  "app/api/funnel/route.ts",
-  "app/api/reconcile/route.ts",
-  "app/api/connect/meta/authorize/route.ts",
-  "app/api/connect/meta/callback/route.ts",
-  "app/api/connect/meta/select-account/route.ts",
-];
-for (const r of MUST_GATE) {
+// 3) EVERY exported HTTP method of EVERY product route is gated - asserted PER METHOD, not per file.
+//    Phase-0 audit: the old file-granular check (`src.includes("guardProductApi")`) passed a file whose GET was
+//    gated while its POST was wide open - that is exactly how 5 mutating handlers (2 of them billing LLM calls)
+//    shipped without the entitlement gate. A method counts as gated when it is wrapped in withProductApi /
+//    withAdminApi, or its OWN body calls guardProductApi(). Routes that are intentionally NOT product-gated
+//    (public funnel, cron/bearer, admin-allowlist, own-user reads) are named explicitly below - anything new
+//    under app/api is gated by default, so a forgotten guard turns this red instead of shipping.
+import { readdirSync } from "node:fs";
+const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+const NOT_PRODUCT_GATED = new Set([
+  "app/api/leads/route.ts", // public lead form (rate-limited + honeypot)
+  "app/api/health/route.ts", // public liveness; detail is admin-gated inside
+  "app/api/influencer/avatar/route.ts", // session + rate-limit + byte cap (image proxy)
+  "app/api/usage/route.ts", // own-user token meter (read-only)
+  "app/api/jobs/[id]/route.ts", // own-user job status (user_id-scoped)
+  "app/api/jobs/drain/route.ts", // CRON_SECRET bearer
+  "app/api/cron/sync/route.ts", // CRON_SECRET bearer
+  "app/api/cron/growth/route.ts", // CRON_SECRET bearer
+  "app/api/admin/access/route.ts", // isAdminEmail
+  "app/api/admin/invite/route.ts", // isAdminEmail
+  "app/api/admin/keys/route.ts", // isAdminEmail
+  "app/api/growth/article/route.ts", // isAdminEmail
+  "app/api/growth/review/route.ts", // isAdminEmail
+]);
+const routeFiles = readdirSync(ROOT + "app/api", { recursive: true, encoding: "utf8" })
+  .filter((p) => p.endsWith("route.ts"))
+  .map((p) => "app/api/" + p.replace(/\\/g, "/"));
+assert.ok(routeFiles.length >= 40, `route discovery found ${routeFiles.length} files (expected 40+)`);
+
+let gatedMethods = 0;
+for (const r of routeFiles) {
+  if (NOT_PRODUCT_GATED.has(r)) continue;
   const src = read(r);
-  assert.ok(src.includes("guardProductApi"), `${r} must call guardProductApi (spend bypass otherwise)`);
+  for (const m of METHODS) {
+    // Wrapped form: `export const POST = withProductApi(` / `withAdminApi(`.
+    if (new RegExp(`export\\s+const\\s+${m}\\s*=\\s*with(Product|Admin)Api\\(`).test(src)) { gatedMethods++; continue; }
+    // Function form: capture THIS handler's body (up to the next top-level export or EOF) and require the guard inside it.
+    const fn = src.match(new RegExp(`export\\s+async\\s+function\\s+${m}\\s*\\(([\\s\\S]*?)(?=\\n\\s*export\\s|$)`));
+    if (!fn) continue; // method not exported by this route
+    assert.ok(/guardProductApi\s*\(/.test(fn[1]), `${r} ${m}: handler body must call guardProductApi() or be wrapped in withProductApi (spend/authz bypass otherwise)`);
+    gatedMethods++;
+  }
 }
 
 // 4) The public / admin / cron routes must NOT be product-gated (would break the funnel or their own auth).
@@ -59,4 +78,4 @@ for (const r of ["app/api/leads/route.ts", "app/api/admin/invite/route.ts", "app
   assert.ok(!read(r).includes("guardProductApi"), `${r} must NOT be product-gated`);
 }
 
-console.log(`OK check-access-gate: fail-closed gate, layout enforced, ${MUST_GATE.length} expensive APIs guarded, public/admin/cron ungated.`);
+console.log(`OK check-access-gate: fail-closed gate, layout enforced, ${gatedMethods} exported product-API methods gated across ${routeFiles.length - NOT_PRODUCT_GATED.size} routes, ${NOT_PRODUCT_GATED.size} public/admin/cron routes explicitly exempt.`);

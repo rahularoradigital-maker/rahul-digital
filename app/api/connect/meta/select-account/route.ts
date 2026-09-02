@@ -8,6 +8,7 @@ import { listAllAccessibleAdAccounts } from "@/lib/meta-source";
 import { storeToken } from "@/lib/oauth-store";
 import { logEvent } from "@/lib/owner/events";
 import { autoDeriveBrandDraft } from "@/lib/brand/auto";
+import { captureError } from "@/lib/observability";
 
 // Switch the active ad account. One user OAuth token works across all their accounts,
 // so we upsert the chosen account with a fresh connected_at (making it the most-recent,
@@ -76,10 +77,11 @@ export async function GET(request: NextRequest) {
   // pull), and Market > Brand already has a DRAFT profile waiting to review. Both are best-effort.
   try {
     after(async () => {
-      await fetchLiveCockpit(user.id, 90).catch(() => {}); // warm the app-wide 90-day window first
-      await autoDeriveBrandDraft(user.id, id, match.name, session.token).catch(() => {}); // reuse warm ads
+      await fetchLiveCockpit(user.id, 90).catch((e) => captureError(e, { fn: "meta.select-account.warm" })); // warm the app-wide 90-day window first
+      await autoDeriveBrandDraft(user.id, id, match.name, session.token).catch((e) => captureError(e, { fn: "meta.select-account.brandDraft" })); // reuse warm ads
     });
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "meta.select-account" }); // P1 observability: was a silent empty catch (fail-open preserved)
     // after() unavailable outside a request scope; the /app load will pull, and Brand can learn on demand.
   }
   // Clear campaign + objective filters: both belong to the previous account and would otherwise

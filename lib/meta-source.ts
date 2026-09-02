@@ -9,6 +9,7 @@ import type { Objective } from "./rules/comparator.ts";
 import type { CreativeAsset } from "./creative/fingerprint.ts";
 import type { NormalizedAd } from "./competitors/types.ts";
 import type { Candidate } from "./brand/discover.ts";
+import { captureError } from "@/lib/observability";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
@@ -204,7 +205,8 @@ export async function listAllAccessibleAdAccounts(token: TokenSet): Promise<Meta
   const byId = new Map<string, MetaAccountRef>();
   try {
     for (const a of await listMetaAdAccounts(token)) byId.set(a.externalId, a);
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "listAllAccessibleAdAccounts" }); // P1 observability: was a silent empty catch (fail-open preserved)
     // keep going; business edges may still work
   }
   try {
@@ -223,12 +225,14 @@ export async function listAllAccessibleAdAccounts(token: TokenSet): Promise<Meta
               byId.set(a.account_id, { externalId: a.account_id, name: a.name ?? a.account_id, businessId: b.id, businessName: b.name });
             }
           }
-        } catch {
+        } catch (e) {
+          captureError(e, { fn: "listAllAccessibleAdAccounts" }); // P1 observability: was a silent empty catch (fail-open preserved)
           // this edge is not permitted / empty; skip it
         }
       }
     }
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "listAllAccessibleAdAccounts" }); // P1 observability: was a silent empty catch (fail-open preserved)
     // no business access; direct accounts already collected above
   }
   return Array.from(byId.values());
@@ -385,7 +389,8 @@ export async function fetchAdCreatives(accountExternalId: string, adIds: string[
       try {
         const json = await graphGet<{ creative?: MetaCreative }>(id, token.accessToken, { fields });
         if (json?.creative) out.set(id, normalizeCreative(id, json.creative));
-      } catch {
+      } catch (e) {
+        captureError(e, { fn: "fetchAdCreatives.worker" }); // P1 observability: was a silent empty catch (fail-open preserved)
         // this ad has no fingerprint this run; keep going
       }
     }
@@ -725,7 +730,8 @@ export async function fetchAdMeta(accountExternalId: string, adIds: string[], to
       try {
         const e = await graphGet<MetaAdMetaJson>(id, token.accessToken, { fields: "effective_status,adset{name},campaign{name}" });
         if (e) out.set(id, { status: e.effective_status, adsetName: e.adset?.name, campaignName: e.campaign?.name });
-      } catch {
+      } catch (e) {
+        captureError(e, { fn: "fetchAdMeta.worker" }); // P1 observability: was a silent empty catch (fail-open preserved)
         // this ad stays unknown; keep going
       }
     }
@@ -833,7 +839,8 @@ export async function fetchLevelNative(accountExternalId: string, token: TokenSe
       if (!id) continue;
       out.set(id, { reach: numOrNull(r.reach), frequency: numOrNull(r.frequency), budgetRs: null, budgetType: null });
     }
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "fetchLevelNative" }); // P1 observability: was a silent empty catch (fail-open preserved)
     /* reach/frequency unavailable -> stays n/a */
   }
   try {
@@ -854,7 +861,8 @@ export async function fetchLevelNative(accountExternalId: string, token: TokenSe
         out.set(b.id, { reach: null, frequency: null, budgetRs, budgetType });
       }
     }
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "fetchLevelNative" }); // P1 observability: was a silent empty catch (fail-open preserved)
     /* budget unavailable -> stays n/a */
   }
   return out;

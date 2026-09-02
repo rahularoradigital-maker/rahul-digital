@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { CockpitView } from "@/lib/cockpit/analyze";
+import { captureError } from "@/lib/observability";
 
 // In-process guard: the DB already dedupes per (user, ad, window, day) via a unique key, but
 // every /app navigation would still fire ~100 no-op upserts. Skip a repeat write for the same
@@ -50,7 +51,8 @@ export async function recordDecisionTriples(
     await admin
       .from("decision_triples")
       .upsert(rows, { onConflict: "user_id,ad_id,time_window,snapshot_day", ignoreDuplicates: true });
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "recordDecisionTriples" }); // P1 observability: was a silent empty catch (fail-open preserved)
     // audit logging is best-effort; a failure here must never affect the dashboard
   }
 }

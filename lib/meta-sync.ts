@@ -26,6 +26,7 @@ import { levelFunnels, type LevelFunnels } from "./cockpit/level-funnel.ts";
 import { assessDataQuality, type DataQuality, type QualityRow } from "./scoring/data-quality.ts";
 import { daysUntilEnd } from "./scoring/fatigue.ts";
 import { buildCockpitFromStore } from "./cockpit/from-store.ts";
+import { captureError } from "@/lib/observability";
 
 // The user's currently-active Meta account (most-recently connected) and its token.
 // One user OAuth token works across all their ad accounts, so the account picker and
@@ -309,7 +310,8 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     let adsetEnds = new Map<string, number>();
     try {
       adsetEnds = await listAdSetEnds(acct.external_id, adsetIds, token);
-    } catch {
+    } catch (e) {
+      captureError(e, { fn: "nativePromise" }); // P1 observability: was a silent empty catch (fail-open preserved)
       // end dates are optional; a failure here just means no half-life cap
     }
     tp = perfMark("listAdSetEnds", tp);
@@ -583,7 +585,8 @@ export async function bustCockpitCache(userId?: string): Promise<void> {
   try {
     const admin = createAdminClient();
     await admin.from("cockpit_cache").delete().eq("user_id", userId);
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "bustCockpitCache" }); // P1 observability: was a silent empty catch (fail-open preserved)
     // L2 unavailable; this user's L1 is already cleared
   }
 }
@@ -606,7 +609,8 @@ async function writeCockpitL2(userId: string, cacheKey: string, value: LiveCockp
       .delete()
       .eq("user_id", userId)
       .lt("updated_at", new Date(Date.now() - STALE_MS).toISOString());
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "writeCockpitL2" }); // P1 observability: was a silent empty catch (fail-open preserved)
     // L2 write/cleanup failed; L1 still holds the value for this instance
   }
 }
@@ -698,7 +702,8 @@ export async function fetchLiveCockpit(
         cached = { value, age: now - new Date(data.updated_at as string).getTime() };
       }
     }
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "fetchLiveCockpit.activeId" }); // P1 observability: was a silent empty catch (fail-open preserved)
     // L2 unavailable; fall through to a live pull
   }
 
@@ -712,7 +717,8 @@ export async function fetchLiveCockpit(
       // Serve stale immediately, refresh in the background so the next load is fresh.
       try {
         after(() => pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog, false, events));
-      } catch {
+      } catch (e) {
+        captureError(e, { fn: "fetchLiveCockpit.activeId" }); // P1 observability: was a silent empty catch (fail-open preserved)
         // after() unavailable outside a request scope; the stale value is still fine.
       }
       perfMark("warm:L2-STALE-total (bg refresh queued)", w0);
@@ -731,7 +737,8 @@ export async function fetchLiveCockpit(
   const pull = pullAndStoreSingleFlight(userId, lookbackDays, campaignId, objectives, cacheKey, memKey, window, weights, catalog, true, events);
   try {
     after(pull); // survive past the response; no-op-safe if the pull rejects (Next logs it)
-  } catch {
+  } catch (e) {
+    captureError(e, { fn: "fetchLiveCockpit.timeout" }); // P1 observability: was a silent empty catch (fail-open preserved)
     // after() unavailable (non-request scope, e.g. cron): the caller already awaits us, so skip.
   }
   const timeout = new Promise<LiveCockpit>((resolve) =>

@@ -5,6 +5,7 @@ import { thumbUrlOf, deterministicFingerprint } from "@/lib/creative/fingerprint
 import { selectAdsToSync } from "@/lib/ingest/select-ads";
 import { notify, notifyFailure } from "@/lib/notifications/store";
 import type { TokenSet } from "@/lib/ad-source";
+import { captureError } from "@/lib/observability";
 
 // Ingestion pipeline (roadmap #1): pull EVERY ad's day-wise metrics for an account into the ad_metrics
 // store, so the app can analyze every spending ad regardless of size (built for $100M/month brands with
@@ -199,7 +200,8 @@ async function syncAdMeta(
         format = fp.format;
         contentHash = fp.contentHash; // fingerprint-once key into creative_semantics (hook/emotion/subject)
         isCatalog = c.isCatalog ?? false;
-      } catch {
+      } catch (e) {
+        captureError(e, { fn: "syncAdMeta" }); // P1 observability: was a silent empty catch (fail-open preserved)
         /* malformed creative -> leave format/thumb null, keep the row */
       }
     }
