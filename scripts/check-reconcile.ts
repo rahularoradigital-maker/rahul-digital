@@ -12,15 +12,15 @@ function ok(cond: boolean, msg: string) {
 }
 
 // match: within 1%.
-const m = reconcile("spend", 100000, 100500, "AdBrain store", "Meta live");
+const m = reconcile("spend", 100000, 100500, "AdScale store", "Meta live");
 ok(m.status === "match" && m.confidencePenalty === 0, "0.5% apart = match, no penalty");
 
 // minor drift: 1-5%.
-const d = reconcile("revenue", 100000, 103000, "AdBrain", "Meta");
+const d = reconcile("revenue", 100000, 103000, "AdScale", "Meta");
 ok(d.status === "minor_drift" && d.confidencePenalty === 1, "3% apart = minor drift, one tier down");
 
 // conflict: >= 5%.
-const c = reconcile("roas", 3.0, 2.4, "AdBrain", "Meta");
+const c = reconcile("roas", 3.0, 2.4, "AdScale", "Meta");
 ok(c.status === "conflict" && c.confidencePenalty === 2, "20% apart = conflict, two tiers / HOLD");
 ok(/CONFLICTS/.test(c.note) && /reconcile the definitions/.test(c.note), "conflict note says do not trust + reconcile definitions (§129)");
 

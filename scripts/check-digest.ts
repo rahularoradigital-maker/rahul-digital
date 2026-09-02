@@ -26,7 +26,7 @@ const feed: DecisionFeed = {
 // subject
 const subj = digestSubject(feed);
 ok(/₹/.test(subj) && /act on/.test(subj), "subject shows money on the table");
-ok(digestSubject({ priorities: [], accountReads: [] }) === "AdBrain: nothing urgent today", "empty feed subject");
+ok(digestSubject({ priorities: [], accountReads: [] }) === "AdScale: nothing urgent today", "empty feed subject");
 
 // body
 const md = buildDigest(feed, { accountName: "Soch", date: "2026-09-01" });

@@ -1,4 +1,4 @@
-// The learning loop core (charter §111/§112/§114): compare what AdBrain PREDICTED against what the metric
+// The learning loop core (charter §111/§112/§114): compare what AdScale PREDICTED against what the metric
 // ACTUALLY did, so the system can say "our scale calls were right 84% of the time" and stop repeating the
 // wrong ones. Pure + deterministic. Persistence fills the OUTCOME half of the EXISTING `decision_triples`
 // table (lib/audit/record.ts already writes situation+recommendation; outcome was designed-but-empty) - so no

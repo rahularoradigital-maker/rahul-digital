@@ -1,5 +1,5 @@
 // Self-proving accuracy: the pure diff + drift + verdict engine of source reconciliation (charter §6/§93/§94,
-// §129). Given TWO independent values for the same critical metric - e.g. AdBrain's stored number vs a fresh
+// §129). Given TWO independent values for the same critical metric - e.g. AdScale's stored number vs a fresh
 // Meta pull, or two calc paths - it decides whether they MATCH, DRIFT a little, or CONFLICT, and how much to
 // lower downstream confidence. The data-layer lane supplies the second path; this file is the deterministic
 // judgement + a rollup, fully testable. Rule (§129): on real conflict, never silently pick the nicer number -

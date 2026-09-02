@@ -12,9 +12,9 @@ const inr = (n: number | null | undefined) => (n != null ? `₹${Math.round(n).t
 export function digestSubject(feed: DecisionFeed): string {
   const total = feed.priorities.reduce((s, c) => s + (c.economicImpactRs ?? 0), 0);
   const n = feed.priorities.length + feed.accountReads.length;
-  if (n === 0) return "AdBrain: nothing urgent today";
-  if (total > 0) return `AdBrain: ${feed.priorities.length} ad${feed.priorities.length === 1 ? "" : "s"} worth ${inr(total)} to act on`;
-  return `AdBrain: ${n} thing${n === 1 ? "" : "s"} to review today`;
+  if (n === 0) return "AdScale: nothing urgent today";
+  if (total > 0) return `AdScale: ${feed.priorities.length} ad${feed.priorities.length === 1 ? "" : "s"} worth ${inr(total)} to act on`;
+  return `AdScale: ${n} thing${n === 1 ? "" : "s"} to review today`;
 }
 
 function line(c: OutputContract): string {
