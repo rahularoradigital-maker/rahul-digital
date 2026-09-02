@@ -14,6 +14,7 @@ import { fatigueToContract } from "./from-fatigue.ts";
 import { winnerToContract } from "./from-winner.ts";
 import { diversityToContract } from "./from-diversity.ts";
 import { marginalToContract } from "./from-marginal.ts";
+import { critiqued } from "./critic-review.ts";
 
 export type DecisionFeed = {
   priorities: OutputContract[]; // per-ad decisions, ranked by money at stake (biggest first)
@@ -30,8 +31,9 @@ export function collectDecisions(data: CockpitData): DecisionFeed {
   // Per-ad: fatigue + winner. Keep only decisions; one row per ad (highest ₹ wins).
   const byAd = new Map<string, OutputContract>();
   for (const ad of data.view.leaderboard) {
-    for (const c of [fatigueToContract(ad), winnerToContract(ad)]) {
-      if (!c || !c.decision) continue;
+    for (const raw of [fatigueToContract(ad), winnerToContract(ad)]) {
+      if (!raw || !raw.decision) continue;
+      const c = critiqued(raw); // §53-56: the always-on critic caps confidence to the evidence tier
       const key = c.entity?.id ?? c.id;
       const prev = byAd.get(key);
       if (!prev || impact(c) > impact(prev)) byAd.set(key, c);
@@ -43,10 +45,10 @@ export function collectDecisions(data: CockpitData): DecisionFeed {
   const accountReads: OutputContract[] = [];
   if (data.ownDiversity) {
     const d = diversityToContract(data.ownDiversity, { entityId: accountId, accountSpendRs: spend });
-    if (d?.decision) accountReads.push(d);
+    if (d?.decision) accountReads.push(critiqued(d));
   }
   const m = marginalToContract(data.marginal, { entityId: accountId, name: data.accountName, spendRs: spend, level: "account" });
-  if (m?.decision) accountReads.push(m);
+  if (m?.decision) accountReads.push(critiqued(m));
 
   return { priorities, accountReads };
 }
