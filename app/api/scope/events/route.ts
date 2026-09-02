@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getActiveAccountExternalId } from "@/lib/meta-sync";
 
 // Distinct optimization EVENTS the signed-in user's ads actually optimize for (ad_meta.optimization_event:
 // the ad set's promoted_object.custom_event_type, e.g. ADD_TO_CART / PURCHASE, or its optimization_goal).
@@ -23,12 +24,16 @@ export async function GET() {
   // enabled with NO authenticated-select policy (default-deny), so the user client reads nothing - the
   // cockpit itself reads ad_meta through the admin client for the same reason. Scoping by the session's
   // user.id keeps it strictly this user's events.
-  const { data } = await createAdminClient()
+  // Scoped to the ACTIVE account too (perf + correctness, Phase-0 audit): a multi-brand user was offered
+  // events from every account they own, including ones that would empty the current brand's screens.
+  const acct = await getActiveAccountExternalId(user.id);
+  let q = createAdminClient()
     .from("ad_meta")
     .select("optimization_event")
     .eq("user_id", user.id)
-    .not("optimization_event", "is", null)
-    .limit(5000);
+    .not("optimization_event", "is", null);
+  if (acct) q = q.eq("account_external_id", acct);
+  const { data } = await q.limit(5000);
 
   const events = Array.from(new Set((data ?? []).map((r) => (r as { optimization_event: string | null }).optimization_event).filter((e): e is string => !!e))).sort();
   return NextResponse.json({ events });

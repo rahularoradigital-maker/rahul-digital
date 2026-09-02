@@ -16,7 +16,7 @@ const EXT = /\.(ts|tsx|mjs)$/;
 // so those are stripped from each line before the test - they are internal state keys, never user-facing brand.
 const BANNED = /\badbrain\b/i;
 const ALLOW =
-  /adbrain\.(campaign|objectives|platform|catalog|weights|window|events|accounts|brands|kpis|competitors|lastEmail)|adbrain-mvp|adbrain-decision|ADBRAIN_PERF|ADBRAIN\.test/gi;
+  /adbrain\.(campaign|campaigns|objectives|platform|catalog|weights|window|events|eventOptions|accounts|brands|kpis|competitors|lastEmail)|adbrain-mvp|adbrain-decision|ADBRAIN_PERF|ADBRAIN\.test/gi;
 
 function walk(dir: string): string[] {
   const out: string[] = [];

@@ -43,10 +43,33 @@ export function EventSwitcher() {
   useEffect(() => {
     const raw = readCookie("adbrain.events");
     setSel(new Set(raw ? raw.split(",").filter(Boolean) : []));
+    // Perf (Phase-0 audit): same 5-minute sessionStorage TTL cache as the brand + campaign switchers, so
+    // repeat /app navigations don't re-hit the store for a picker the user may never open.
+    const CACHE_KEY = "adbrain.eventOptions";
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const c = JSON.parse(cached) as { at: number; events: string[] };
+        if (Date.now() - c.at < 5 * 60 * 1000) {
+          setOptions(c.events ?? []);
+          return;
+        }
+      }
+    } catch {
+      // ignore cache read errors
+    }
     let alive = true;
     fetch("/api/scope/events")
       .then((r) => (r.ok ? r.json() : { events: [] }))
-      .then((d: { events?: string[] }) => { if (alive) setOptions(d.events ?? []); })
+      .then((d: { events?: string[] }) => {
+        if (!alive) return;
+        setOptions(d.events ?? []);
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), events: d.events ?? [] }));
+        } catch {
+          // ignore cache write errors
+        }
+      })
       .catch(() => { if (alive) setOptions([]); });
     return () => { alive = false; };
   }, []);

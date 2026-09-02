@@ -45,6 +45,24 @@ export function CampaignSwitcher() {
     const raw = readCookie("adbrain.campaign");
     setSel(new Set(raw ? raw.split(",").filter(Boolean) : []));
     setObjSel(readObjectives());
+    // Perf (Phase-0 audit): /api/meta/campaigns is a LIVE Meta Graph call (up to 25 pages) and this fired on
+    // EVERY /app page load, for a dropdown the user may never open - the single worst per-navigation cost
+    // and a steady drain on Meta's rate limit. Same 5-minute sessionStorage TTL cache the brand switcher
+    // already uses, so repeat navigations within the window make zero network calls.
+    const CACHE_KEY = "adbrain.campaigns";
+    try {
+      const cached = sessionStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const c = JSON.parse(cached) as { at: number; campaigns: Camp[] };
+        if (Date.now() - c.at < 5 * 60 * 1000) {
+          setCampaigns(c.campaigns ?? []);
+          setLoaded(true);
+          return;
+        }
+      }
+    } catch {
+      // ignore cache read errors
+    }
     let alive = true;
     fetch("/api/meta/campaigns")
       .then((r) => r.json())
@@ -52,6 +70,11 @@ export function CampaignSwitcher() {
         if (!alive) return;
         setCampaigns(d.campaigns ?? []);
         setLoaded(true);
+        try {
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), campaigns: d.campaigns ?? [] }));
+        } catch {
+          // ignore cache write errors
+        }
       })
       .catch(() => {
         if (alive) setLoaded(true);
