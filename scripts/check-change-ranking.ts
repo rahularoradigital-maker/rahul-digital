@@ -52,4 +52,15 @@ assert.ok(budget, "budget rollup exists");
 assert.equal(budget?.improved, 3, "budget improved = Priya x2 + Raj x1");
 assert.equal(budget?.worsened, 1, "budget worsened = Priya x1");
 
-console.log("PASS: change ranking (buyer hit-rate, algo excluded, insufficient handling, confidence, type rollup)");
+// Change-type rollup ordering is shrinkage-safe too: a 1/1 type must not sit above a proven 40/50 type.
+const typeResults: ChangeResult[] = [
+  r("A", "rare", "improved", 30), // "rare" is 1/1 = raw 100%
+  ...Array.from({ length: 50 }, (_, i) => r("B", "common", i < 40 ? "improved" : "worsened", i < 40 ? 15 : -15)), // 40/50 = 80%
+];
+const tord = rollupChangeTypes(typeResults);
+assert.equal(tord[0].changeType, "common", "40/50 change-type out-ranks a lucky 1/1 after shrinkage");
+const rare = tord.find((t) => t.changeType === "rare")!;
+assert.ok((rare.hitRate ?? 0) === 1, "rare still shows raw 100%");
+assert.ok((rare.shrunkHitRate ?? 0) < 1, "but its shrunk rate is below 1");
+
+console.log("PASS: change ranking (buyer hit-rate, algo excluded, insufficient handling, confidence, shrinkage, type rollup)");

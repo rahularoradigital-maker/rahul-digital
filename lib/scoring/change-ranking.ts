@@ -36,7 +36,8 @@ export type ChangeTypeRollup = {
   worsened: number;
   flat: number;
   insufficient: number;
-  hitRate: number | null;
+  hitRate: number | null; // RAW, for display
+  shrunkHitRate: number | null; // shrunk toward 0.5 by sample size (what the ordering uses)
   medianDeltaPct: number | null;
 };
 
@@ -105,7 +106,8 @@ export function rollupChangeTypes(results: ChangeResult[]): ChangeTypeRollup[] {
   const out: ChangeTypeRollup[] = [];
   for (const [changeType, rs] of byType) {
     const t = tally(rs);
-    out.push({ changeType, ...t });
+    out.push({ changeType, ...t, shrunkHitRate: shrinkHitRate(t.improved, t.usable) });
   }
-  return out.sort((a, b) => (b.hitRate ?? -1) - (a.hitRate ?? -1) || b.usable - a.usable);
+  // Order by the SHRUNK hit-rate so a 1/1 change-type can't sit above a proven 40/50; raw hitRate stays for display.
+  return out.sort((a, b) => (b.shrunkHitRate ?? -1) - (a.shrunkHitRate ?? -1) || b.usable - a.usable);
 }
