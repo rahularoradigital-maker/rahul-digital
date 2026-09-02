@@ -1,7 +1,10 @@
 // Runnable check for the change-impact engine (lib/scoring/change-impact.ts). No I/O.
 // node --experimental-strip-types scripts/check-change-impact.ts
 import assert from "node:assert/strict";
-import { measureChangeImpact, type ImpactRow } from "../lib/scoring/change-impact.ts";
+import { measureChangeImpact, isolatedWindow, type ImpactRow } from "../lib/scoring/change-impact.ts";
+
+const DAY = 86_400_000;
+const day = (s: string) => new Date(`${s}T00:00:00Z`).getTime();
 
 // Build N days of identical rows starting at a date.
 function days(n: number, row: Omit<ImpactRow, "date">, startDay = 1): ImpactRow[] {
@@ -60,4 +63,31 @@ const settled = measureChangeImpact({
 });
 assert.ok(settled.reason.includes("7d settled after"), `after-window should be trimmed to 7 settled days, got: ${settled.reason}`);
 
-console.log("PASS: change-impact engine (improved/worsened/flat/insufficient, objective metric, settled-tail trim)");
+// --- isolatedWindow: a change's window must not cross an adjacent change on the same object ---
+const c0 = day("2026-08-10");
+// No neighbours -> full +/-7d window.
+const full = isolatedWindow(c0, [], 7, 7);
+assert.equal(full.beforeStart, c0 - 7 * DAY, "no prior change -> full 7d before");
+assert.equal(full.afterEnd, c0 + 7 * DAY, "no next change -> full 7d after");
+
+// A later change 3 days out clips the after-window to end the day BEFORE it (isolates this change).
+const clippedAfter = isolatedWindow(c0, [day("2026-08-13")], 7, 7);
+assert.equal(clippedAfter.afterEnd, day("2026-08-13") - DAY, "after-window ends the day before the next change");
+assert.equal(clippedAfter.beforeStart, c0 - 7 * DAY, "before-window unaffected by a later change");
+
+// A prior change 2 days back clips the before-window to start the day AFTER it.
+const clippedBefore = isolatedWindow(c0, [day("2026-08-08")], 7, 7);
+assert.equal(clippedBefore.beforeStart, day("2026-08-08") + DAY, "before-window starts the day after the prior change");
+
+// A neighbour the very next day collapses the after-window (afterEnd <= changeDay) -> caller gets no after
+// rows -> the engine returns insufficient rather than a confounded verdict.
+const collapsed = isolatedWindow(c0, [day("2026-08-11")], 7, 7);
+assert.ok(collapsed.afterEnd <= c0, "adjacent next-day change collapses the after-window");
+const confounded = measureChangeImpact({
+  objective: "conversion",
+  beforeRows: days(7, { spend: 100, impressions: 2000, clicks: 60, conversions: 3, revenue: 200 }),
+  afterRows: [], // collapsed window -> no after rows
+});
+assert.equal(confounded.verdict, "insufficient", "collapsed after-window -> insufficient, not confounded");
+
+console.log("PASS: change-impact engine (verdicts, objective metric, settled-tail trim, neighbour-isolated windows)");

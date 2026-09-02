@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { measureChangeImpact, type ImpactRow, type Objective } from "./change-impact.ts";
+import { measureChangeImpact, isolatedWindow, type ImpactRow, type Objective } from "./change-impact.ts";
 import { rankBuyers, rollupChangeTypes, type ChangeResult } from "./change-ranking.ts";
 
 // Orchestrator (Media-Buyer Change Intelligence, Phase 4). Joins ad_changes -> ad_metrics, measures each
@@ -91,6 +91,17 @@ export async function analyzeAccountChanges(userId: string, accountExternalId: s
     if (rows.length < PAGE) break;
   }
 
+  // 2b. Index every change's day per object, so a change's window can be clipped at its neighbours (a later
+  // change on the same object must not bleed into this change's after-window). Keyed by "level:object_id".
+  const changeDaysByObject = new Map<string, number[]>();
+  for (const c of changes) {
+    if (!c.object_id) continue;
+    const key = `${c.level}:${c.object_id}`;
+    const arr = changeDaysByObject.get(key);
+    if (arr) arr.push(dayMs(c.date));
+    else changeDaysByObject.set(key, [dayMs(c.date)]);
+  }
+
   // 3. Measure each judgeable change.
   const results: ChangeResult[] = [];
   let judged = 0;
@@ -103,8 +114,11 @@ export async function analyzeAccountChanges(userId: string, accountExternalId: s
       continue; // account-level, or an object we have no metrics for -> cannot measure, never guess
     }
     const cd = dayMs(c.date);
-    const beforeRows = toImpactRows(pool.filter((m) => { const t = dayMs(m.date); return t < cd && t >= cd - BEFORE_DAYS * 86_400_000; }));
-    const afterRows = toImpactRows(pool.filter((m) => { const t = dayMs(m.date); return t > cd && t <= cd + AFTER_DAYS * 86_400_000; }));
+    // Clip the windows at the nearest OTHER change on this same object so the verdict isolates THIS change.
+    const others = (changeDaysByObject.get(`${c.level}:${oid}`) ?? []).filter((t) => t !== cd);
+    const { beforeStart, afterEnd } = isolatedWindow(cd, others, BEFORE_DAYS, AFTER_DAYS);
+    const beforeRows = toImpactRows(pool.filter((m) => { const t = dayMs(m.date); return t < cd && t >= beforeStart; }));
+    const afterRows = toImpactRows(pool.filter((m) => { const t = dayMs(m.date); return t > cd && t <= afterEnd; }));
     const impact = measureChangeImpact({ objective: toObjective(modalObjective(pool)), beforeRows, afterRows });
     results.push({ actorId: c.actor_id, actorName: c.actor_name, changeType: c.change_type, source: c.source, impact });
     judged++;

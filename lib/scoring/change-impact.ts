@@ -80,6 +80,30 @@ function metricFor(objective: Objective): { name: string; higherIsBetter: boolea
 
 const round = (n: number) => Math.round(n * 10) / 10;
 
+const DAY_MS = 86_400_000;
+
+/**
+ * Isolate a change's before/after windows so neither crosses an ADJACENT change on the SAME object - otherwise
+ * a change's "after" would include a later change's effect (or its "before" a prior change's), confounding the
+ * verdict. Given the change day and the day-timestamps of the object's OTHER changes, clip:
+ *   before = [beforeStart, changeDay)   after = (changeDay, afterEnd]
+ * to start the day AFTER the previous change and end the day BEFORE the next one. When a neighbour is so close
+ * the window collapses (afterEnd <= changeDay), the caller gets an empty window -> the engine returns
+ * "insufficient" rather than a confounded verdict. Day granularity: two changes on the SAME day on the same
+ * object can't be separated and are left to collapse to insufficient.
+ */
+export function isolatedWindow(changeDayMs: number, otherChangeDaysMs: number[], beforeDays: number, afterDays: number): { beforeStart: number; afterEnd: number } {
+  let prev = -Infinity;
+  let next = Infinity;
+  for (const d of otherChangeDaysMs) {
+    if (d < changeDayMs) prev = Math.max(prev, d);
+    else if (d > changeDayMs) next = Math.min(next, d);
+  }
+  const beforeStart = Math.max(changeDayMs - beforeDays * DAY_MS, prev + DAY_MS); // day after the prior change
+  const afterEnd = Math.min(changeDayMs + afterDays * DAY_MS, next - DAY_MS); // day before the next change
+  return { beforeStart, afterEnd };
+}
+
 /**
  * Measure a single change's impact. `beforeRows` = the object's day-wise metrics in the window BEFORE the
  * change; `afterRows` = the window AFTER (raw; the settling tail is trimmed here). `objective` decides the
