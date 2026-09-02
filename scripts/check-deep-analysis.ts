@@ -3,7 +3,7 @@
 // mapping is honest (analyzed only when a model actually read it).
 // Run: node --experimental-strip-types scripts/check-deep-analysis.ts
 
-import { parseDeepRead, hasUsedFreeRun, rowToManifest, summariseDeepReads, deepDiversityNudge, deepReadsToText, MAX_CREATIVES, FREE_RUNS, type DeepCreativeRow } from "../lib/creative/deep-analysis-pure.ts";
+import { parseDeepRead, hasUsedFreeRun, rowToManifest, summariseDeepReads, deepDiversityNudge, deepReadsToText, deepReadsToCsv, MAX_CREATIVES, FREE_RUNS, type DeepCreativeRow } from "../lib/creative/deep-analysis-pure.ts";
 
 const mk = (o: Partial<DeepCreativeRow>): DeepCreativeRow => ({ contentHash: "h", adId: null, adName: null, format: "image", spendRs: null, sceneType: null, setting: null, palette: null, visualMood: null, contentSubject: null, motionSummary: null, analyzed: true, ...o });
 
@@ -72,5 +72,11 @@ ok(deepDiversityNudge(varied) === null, "a varied mix -> no nudge (never nags)")
 const txt = deepReadsToText([mk({ adName: "Hero", format: "video", spendRs: 24000, sceneType: "lifestyle", motionSummary: "reveal at 3s" }), mk({ adName: "Card", format: "image", analyzed: false })]);
 ok(/1\. Hero/.test(txt) && /\[video\]/.test(txt) && /motion: reveal at 3s/.test(txt), "video export line carries motion");
 ok(/could not read/.test(txt), "unread creative is marked in the export");
+
+// 11) CSV export: header + RFC-4180 quoting (a comma inside a field never breaks a column).
+const csv = deepReadsToCsv([mk({ adName: "Hero", format: "video", spendRs: 24000, palette: "warm, muted", analyzed: true }), mk({ adName: "X", analyzed: false })]);
+ok(csv.split("\n")[0] === "ad,format,spend_rs,scene,setting,palette,mood,subject,motion,read", "csv header is stable");
+ok(/"warm, muted"/.test(csv), "a comma-containing field is quoted (no broken columns)");
+ok(/could not read/.test(csv), "unread creative marked in csv");
 
 console.log(`check-deep-analysis: ${pass} assertions passed.`);

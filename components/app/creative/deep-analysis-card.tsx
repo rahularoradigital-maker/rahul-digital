@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { summariseDeepReads, deepDiversityNudge, deepReadsToText } from "@/lib/creative/deep-analysis-pure";
+import { summariseDeepReads, deepDiversityNudge, deepReadsToText, deepReadsToCsv } from "@/lib/creative/deep-analysis-pure";
 
 type Read = {
   contentHash: string;
@@ -40,6 +40,21 @@ export function DeepAnalysisCard({ accountId }: { accountId: string }) {
       setTimeout(() => setCopied(false), 1500);
     } catch {
       /* clipboard blocked - no-op */
+    }
+  }
+
+  function downloadCsv(csv: string) {
+    try {
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "creative-deep-reads.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      /* download blocked - no-op */
     }
   }
 
@@ -126,13 +141,18 @@ export function DeepAnalysisCard({ accountId }: { accountId: string }) {
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
                   Creatives analysed (your top {reads.length} by spend)
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copySummary([summariseDeepReads(reads)?.line, deepDiversityNudge(reads), "", deepReadsToText(reads)].filter((x) => x != null).join("\n"))}
-                >
-                  {copied ? "Copied" : "Copy"}
-                </Button>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copySummary([summariseDeepReads(reads)?.line, deepDiversityNudge(reads), "", deepReadsToText(reads)].filter((x) => x != null).join("\n"))}
+                  >
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => downloadCsv(deepReadsToCsv(reads))}>
+                    Download CSV
+                  </Button>
+                </div>
               </div>
               {(() => {
                 const done = reads.filter((r) => r.analyzed).length;

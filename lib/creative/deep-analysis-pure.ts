@@ -81,6 +81,21 @@ export function summariseDeepReads(reads: DeepCreativeRow[]): DeepInsight | null
   return { line, patterns };
 }
 
+// CSV export of the deep reads, so a buyer can open the read in a spreadsheet. RFC-4180 quoting: any field
+// with a comma, quote, or newline is wrapped in quotes and its quotes are doubled - so a palette like
+// "warm, muted" never breaks a column.
+export function deepReadsToCsv(reads: DeepCreativeRow[]): string {
+  const cell = (v: unknown) => {
+    const s = v === null || v === undefined ? "" : String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const header = ["ad", "format", "spend_rs", "scene", "setting", "palette", "mood", "subject", "motion", "read"];
+  const rows = reads.map((r) =>
+    [r.adName ?? r.adId ?? "", r.format ?? "", r.spendRs ?? "", r.sceneType ?? "", r.setting ?? "", r.palette ?? "", r.visualMood ?? "", r.contentSubject ?? "", r.motionSummary ?? "", r.analyzed ? "read" : "could not read"].map(cell).join(","),
+  );
+  return [header.join(","), ...rows].join("\n");
+}
+
 // Plain-text export of the deep reads, so a buyer can copy the whole read into a brief / doc / message.
 export function deepReadsToText(reads: DeepCreativeRow[]): string {
   return reads
