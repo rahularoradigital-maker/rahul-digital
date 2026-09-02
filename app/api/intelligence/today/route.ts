@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { loadCockpit } from "@/lib/app/cockpit-data";
 import { collectDecisions } from "@/lib/intelligence/collect";
 import { buildDigest, digestSubject } from "@/lib/intelligence/digest";
+import { cockpitTrust } from "@/lib/intelligence/cockpit-trust";
 
 // The daily decision brief as data + text, for the current signed-in account (loadCockpit resolves the user's
 // own scope - a viewer only ever gets their own account, never another tenant's). Makes the digest readable
@@ -23,6 +24,7 @@ export async function GET(req: Request) {
     connected: true,
     account: data.accountName,
     date,
+    trust: cockpitTrust(data), // how much to trust today's numbers (data completeness/freshness) - §8-12
     subject: digestSubject(feed),
     markdown: buildDigest(feed, { accountName: data.accountName, date }),
     counts: { priorities: feed.priorities.length, accountReads: feed.accountReads.length },
