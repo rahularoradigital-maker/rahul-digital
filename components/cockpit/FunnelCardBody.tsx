@@ -5,7 +5,6 @@ import type { FunnelMetrics } from "@/lib/metrics/funnel-metrics";
 import { DAILY_KPIS, type DailyKpiKey, type DailyPoint, type WindowTotals } from "@/lib/cockpit/daily-series";
 import { windowHeadline } from "@/lib/cockpit/daily-series";
 import type { LevelFunnels, GroupFunnel } from "@/lib/cockpit/level-funnel";
-import { KPI_CATALOG } from "@/lib/app/kpi-catalog";
 import { Sparkline } from "@/components/app/analytics/sparkline";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,13 +39,6 @@ function computableFor(level: Level): { key: MetricKey; label: string }[] {
   return [...daily, ...(["reach", "frequency", "budget"] as NativeKey[]).map((k) => ({ key: k as MetricKey, label: NATIVE_LABEL[k] }))];
 }
 // The rest of the KPI sheet - shown disabled so the user sees the full menu and what unlocks it.
-const NON_META_KPIS = (() => {
-  const seen = new Set<string>();
-  return KPI_CATALOG.filter((k) => !k.platform.toLowerCase().includes("meta"))
-    .filter((k) => (seen.has(k.name) ? false : (seen.add(k.name), true)))
-    .map((k) => ({ name: k.name, source: k.platform }));
-})();
-
 function fmtVal(v: number | null | undefined, fmt: string): string {
   if (v == null || !Number.isFinite(v)) return "n/a";
   switch (fmt) {
@@ -138,7 +130,7 @@ function Pill({ level, active, onClick, children }: { level: Level; active: bool
   );
 }
 
-function MetricPicker({ level, selected, toggle, reset }: { level: Level; selected: MetricKey[]; toggle: (k: MetricKey) => void; reset: () => void }) {
+function MetricPicker({ level, selected, toggle, reset, nonMetaKpis }: { level: Level; selected: MetricKey[]; toggle: (k: MetricKey) => void; reset: () => void; nonMetaKpis: { name: string; source: string }[] }) {
   const [showAll, setShowAll] = useState(false);
   return (
     <div className="mb-4 rounded-[10px] border border-[var(--hairline)] bg-[var(--bg)] p-3">
@@ -157,12 +149,12 @@ function MetricPicker({ level, selected, toggle, reset }: { level: Level; select
         })}
       </div>
       <Button type="button" variant="link" size="sm" onClick={() => setShowAll((s) => !s)} className="h-auto p-0 mt-2 text-[11px] text-[var(--ink-muted)] hover:text-[var(--ink)]">
-        {showAll ? "Hide" : "Show"} the rest of the KPI sheet ({NON_META_KPIS.length} need Shopify / finance data)
+        {showAll ? "Hide" : "Show"} the rest of the KPI sheet ({nonMetaKpis.length} need Shopify / finance data)
       </Button>
       {showAll && (
         <div className="mt-2 max-h-[160px] overflow-y-auto rounded-lg border border-[var(--hairline)] bg-[var(--surface)] p-2">
           <div className="flex flex-wrap gap-1.5">
-            {NON_META_KPIS.map((k) => (
+            {nonMetaKpis.map((k) => (
               <span key={k.name} className="rounded-full bg-[var(--surface-alt)] px-2.5 py-1 text-[11px] text-[var(--ink-muted)] opacity-70" title={`Needs ${k.source}`}>{k.name}</span>
             ))}
           </div>
@@ -191,7 +183,9 @@ function EntityDrilldown({ level, groups, selected }: { level: "adset" | "campai
   );
 }
 
-export function FunnelCardBody({ funnel, dailySeries, funnelLevels }: { funnel: FunnelMetrics; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels }) {
+// nonMetaKpis: the non-Meta KPI sheet, derived from the catalog on the server (FunnelCard) so the 70 KB
+// catalog never ships to the browser.
+export function FunnelCardBody({ funnel, dailySeries, funnelLevels, nonMetaKpis }: { funnel: FunnelMetrics; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; nonMetaKpis: { name: string; source: string }[] }) {
   const [level, setLevel] = useState<Level>("ad");
   const [selected, toggle, reset] = useMetricSelection(level);
   const hasLevels = Boolean(funnelLevels && (funnelLevels.adset.length > 0 || funnelLevels.campaign.length > 0));
@@ -217,7 +211,7 @@ export function FunnelCardBody({ funnel, dailySeries, funnelLevels }: { funnel: 
         {level === "ad" ? "Creative + funnel for every ad, this window." : level === "adset" ? "Pick an ad set - delivery, efficiency, and native reach / frequency / budget." : "Pick a campaign - its objective outcome (ROAS, cost per result, revenue)."}
       </div>
 
-      <MetricPicker level={level} selected={selected} toggle={toggle} reset={reset} />
+      <MetricPicker level={level} selected={selected} toggle={toggle} reset={reset} nonMetaKpis={nonMetaKpis} />
 
       {level === "ad" ? (
         <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">

@@ -51,9 +51,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const showGoogle = platform === "google" || platform === "both";
   const showMeta = platform !== "google";
 
-  const [metaData, googleData] = await Promise.all([
+  // Perf (Phase-0 audit): the brand-confirmed lookup (getUserMetaSession -> loadBrandProfile) used to run
+  // AFTER the cockpit resolved, serially - two extra DB round-trips on the critical path of every cockpit
+  // load for a value that does not depend on the cockpit. It now runs alongside it. Only consulted when the
+  // cockpit is connected (its result is otherwise unused, exactly as before).
+  const [metaData, googleData, brandConfirmed] = await Promise.all([
     showMeta ? loadCockpit(lookback) : Promise.resolve(null),
     showGoogle ? getCurrentUser().then((u) => (u ? buildGoogleCockpitData(u.id, lookback) : null)) : Promise.resolve(null),
+    showMeta
+      ? getCurrentUser().then(async (user) => {
+          const session = user ? await getUserMetaSession(user.id) : null;
+          return !!(user && session && (await loadBrandProfile(user.id, session.activeExternalId))?.status === "confirmed");
+        }).catch(() => false)
+      : Promise.resolve(false),
   ]);
 
   // Sole-selected-platform empty state -> Connect screen. When BOTH are selected, one platform being empty
@@ -70,14 +80,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     return <ConnectState reason={googleData?.reason ?? "not_connected"} accountName={googleData?.accountName ?? "Google Ads"} days={googleData?.days ?? lookback} />;
   }
 
-  // Connected + Meta selected: keep the setup checklist visible only until the brand is confirmed (it
-  // returns null once done, so a fully set-up account's cockpit is unchanged). One indexed row read.
-  let brandConfirmed = false;
-  if (showMeta && metaData?.connected) {
-    const user = await getCurrentUser();
-    const session = user ? await getUserMetaSession(user.id) : null;
-    if (user && session) brandConfirmed = (await loadBrandProfile(user.id, session.activeExternalId))?.status === "confirmed";
-  }
+  // Connected + Meta selected: the setup checklist stays visible only until the brand is confirmed (it
+  // returns null once done, so a fully set-up account's cockpit is unchanged). brandConfirmed was resolved
+  // in parallel above.
 
   // ?perf=1 surfaces the server-side warm-path breakdown so it can be read in the browser (measure
   // before optimizing). Rendered as machine-readable text; harmless and invisible-ish for normal use.
