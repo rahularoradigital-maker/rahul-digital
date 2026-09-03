@@ -6,6 +6,7 @@ import { analyzeAccountChanges } from "@/lib/scoring/change-analysis";
 import { ConnectState } from "@/components/app/connect-state";
 import { ChangeImpactSection } from "@/components/app/changes/change-impact-section";
 import { DataFreshness } from "@/components/app/data-freshness";
+import { NextStep } from "@/components/app/next-step";
 
 // Change Impact page: measures each media-buyer change's before/after effect and ranks buyers + change-types.
 // Server-rendered; reads the account's ad_changes + ad_metrics through the engine (Phases 1/3/4).
@@ -46,6 +47,7 @@ export default async function ChangesPage() {
       </div>
       <DataFreshness userId={user.id} accountExternalId={session.activeExternalId} />
       <ChangeImpactSection analysis={analysis} />
+      <NextStep href="/app/action-center" label="See what to do next in Actions" hint="The ranked plan that turns these change effects into decisions." />
     </div>
   );
 }

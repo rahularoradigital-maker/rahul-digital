@@ -8,6 +8,7 @@ import { loadFunnelReport } from "@/lib/funnel/store";
 import { ConnectState } from "@/components/app/connect-state";
 import { FunnelReportView } from "@/components/app/funnel/funnel-report";
 import { DataFreshness } from "@/components/app/data-freshness";
+import { NextStep } from "@/components/app/next-step";
 
 // Funnel page: deterministic funnel-step diagnosis. Tags each ad TOF/MOF/BOF and names the single weakest
 // step against the account's own best same-objective ad - refusing to answer when it cannot trust the data.
@@ -66,7 +67,10 @@ export default async function FunnelPage() {
       {header}
       <DataFreshness userId={user.id} accountExternalId={session.activeExternalId} />
       {bundle ? (
-        <FunnelReportView report={bundle.report} accountName={bundle.accountName} accountId={bundle.accountId} since={bundle.since} until={bundle.until} />
+        <>
+          <FunnelReportView report={bundle.report} accountName={bundle.accountName} accountId={bundle.accountId} since={bundle.since} until={bundle.until} />
+          <NextStep href="/app/action-center" label="See these fixes ranked in Actions" hint="Every weakest-step leak, prioritised by the money at stake." />
+        </>
       ) : (
         <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-[14px] text-[var(--ink-muted)]">
           This brand hasn&apos;t synced yet. It syncs automatically in the background - check back shortly and your funnel diagnosis will appear here.

@@ -2,6 +2,7 @@ import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { Tabs } from "@/components/app/tabs";
 import { BudgetSection } from "@/components/app/media/budget-section";
 import { KpiSection } from "@/components/app/media/kpi-section";
+import { NextStep } from "@/components/app/next-step";
 
 // Media: consolidates Budget & Scaling and KPIs into one page with a 2-tab bar,
 // loading the cockpit once and handing the same data to both tabs.
@@ -27,6 +28,9 @@ export default async function MediaPage({ searchParams }: { searchParams: Promis
       />
 
       {tab === "budget" ? <BudgetSection data={data} days={data.days} /> : <KpiSection data={data} />}
+      {data.connected ? (
+        <NextStep href="/app/action-center" label="See the ranked plan in Actions" hint="Budget and scaling moves, prioritised by impact." />
+      ) : null}
     </div>
   );
 }
