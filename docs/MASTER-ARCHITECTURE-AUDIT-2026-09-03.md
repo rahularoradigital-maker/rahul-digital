@@ -408,3 +408,13 @@ Specifically confirmed unsafe-to-solo right now:
 - The cockpit assembler split (Phase 8) and cockpit streaming (Phase 4) touch `app/app/page.tsx` + `lib/cockpit/*` + `lib/meta-*`, edited by multiple sessions this session alone.
 
 **The enabling investment is done:** the gate is now fast (~2s) and green and CI-enforced, which is exactly what makes phases 3–8 safe to do **incrementally, with ownership, in a coordinated window** — the right way, not a solo race. Recommend scheduling those against a quieter tree (or a dedicated branch) with the golden invariants as the contract.
+
+---
+
+## More phased steps — EXECUTED 2026-09-03 (safe, isolated; golden path left for coordination)
+
+- **Phase 9 (proactive)** `ffdec12`: the store-vs-Meta drift notification now RESOLVES in place ("Numbers match Meta again") when trust returns, and only if a warning was actually raised — no per-sync spam on healthy accounts. New `getNotificationByDedupe` helper.
+- **Phase 3 (de-entropy)** `a03bc4a`: `docs/README.md` canonical index (which docs to read + how the fast gate/CI work), superseded-pointer on the old audit, TrustLine uses the defined `--warn-ink` token.
+- **Phase 5 (store boundary, slice)** `b5ec130`: `check:rollup-boundary` — the rollup/verification tables are accessible only via `lib/rollups/*` + the health probe; a precise, non-fragile boundary for my subsystem (wired into `check:all`).
+
+**Still deliberately staged (need a coordinated/quiet window, not a solo race):** Phase 4 cockpit first-paint, Phase 5 full store boundary + Phase 8 cockpit assembler split (golden money path — `app/app/page.tsx`, `lib/cockpit/*`, `lib/meta-*` are the hottest files, edited by multiple sessions this session), Phase 7 broad frontend perf, Phase 11 shared-component a11y. The fast green CI gate (Phase 1) is what makes these safe to do incrementally with ownership.
