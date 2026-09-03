@@ -564,9 +564,9 @@ export function CreativeStudio() {
                 </div>
                 {types.length > 1 ? (
                   <div className="mb-3 flex flex-wrap gap-1.5">
-                    <button className={`rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-medium transition ${activeType === "" ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--accent)]"}`} onClick={() => setActiveType("")}>All</button>
+                    <button aria-pressed={activeType === ""} className={`rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-medium transition ${activeType === "" ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--accent)]"}`} onClick={() => setActiveType("")}>All</button>
                     {types.map((t) => (
-                      <button key={t.type} className={`rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-medium transition ${activeType === t.type ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--accent)]"}`} onClick={() => setActiveType(activeType === t.type ? "" : t.type)}>{t.type} <span className="opacity-60">{t.n}</span></button>
+                      <button key={t.type} aria-pressed={activeType === t.type} className={`rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-medium transition ${activeType === t.type ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--accent)]"}`} onClick={() => setActiveType(activeType === t.type ? "" : t.type)}>{t.type} <span className="opacity-60">{t.n}</span></button>
                     ))}
                   </div>
                 ) : null}
@@ -577,7 +577,7 @@ export function CreativeStudio() {
                     {products.map((p) => {
                       const isSel = selected.includes(p.productId);
                       return (
-                        <button key={p.productId} onClick={() => toggleSelect(p.productId)} className={`flex gap-2.5 rounded-[12px] border p-2.5 text-left transition ${isSel ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-[var(--hairline)] hover:border-[var(--accent)]"}`}>
+                        <button key={p.productId} onClick={() => toggleSelect(p.productId)} aria-pressed={isSel} aria-label={`${isSel ? "Deselect" : "Select"} ${p.title}`} className={`flex gap-2.5 rounded-[12px] border p-2.5 text-left transition ${isSel ? "border-[var(--accent)] ring-1 ring-[var(--accent)]" : "border-[var(--hairline)] hover:border-[var(--accent)]"}`}>
                           {p.image ? <img src={p.image} alt="" className="h-14 w-14 shrink-0 rounded-[8px] object-cover" /> : <div className="h-14 w-14 shrink-0 rounded-[8px] bg-[var(--hairline)]" />}
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-[13px] font-medium">{p.title}{p.advertised ? <span className="ml-1.5 rounded-[4px] bg-emerald-500/10 px-1 text-[10px] font-medium text-emerald-600">✓ ads</span> : null}</p>
@@ -610,12 +610,12 @@ export function CreativeStudio() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[12px] text-[var(--ink-muted)]">Product:</span>
                 {selected.map((id) => (
-                  <button key={id} className={`max-w-[200px] truncate rounded-[var(--radius-pill)] px-3 py-1.5 text-[12px] font-medium transition ${id === active ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] hover:border-[var(--accent)]"}`} onClick={() => openProduct(id)}>{productTitle(id)}</button>
+                  <button key={id} aria-pressed={id === active} className={`max-w-[200px] truncate rounded-[var(--radius-pill)] px-3 py-1.5 text-[12px] font-medium transition ${id === active ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] hover:border-[var(--accent)]"}`} onClick={() => openProduct(id)}>{productTitle(id)}</button>
                 ))}
                 <div className="ml-auto flex items-center gap-2">
                   <span className="text-[12px] text-[var(--ink-muted)]">Platform:</span>
                   {(["meta", "google"] as const).map((pf) => (
-                    <button key={pf} className={pf === platform ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setPlatform(pf)}>{pf === "meta" ? "Meta" : "Google"}</button>
+                    <button key={pf} aria-pressed={pf === platform} className={pf === platform ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setPlatform(pf)}>{pf === "meta" ? "Meta" : "Google"}</button>
                   ))}
                   <Button variant="default" className={`${BTN_PRIMARY} py-1.5`} onClick={enterReview}>Review all →</Button>
                 </div>
@@ -630,6 +630,8 @@ export function CreativeStudio() {
                     <button
                       key={f.id}
                       title={f.name}
+                      aria-pressed={on}
+                      aria-label={`${on ? "Remove" : "Add"} ${f.name} size`}
                       className={`rounded-[var(--radius-pill)] px-2.5 py-1 text-[12px] font-medium transition ${on ? "bg-[var(--accent)] text-white" : "border border-[var(--hairline)] text-[var(--ink-muted)] hover:border-[var(--accent)]"}`}
                       onClick={() => setDeselFormats((prev) => { const n = new Set(prev); if (n.has(f.id)) n.delete(f.id); else n.add(f.id); return n; })}
                     >
@@ -802,12 +804,12 @@ export function CreativeStudio() {
                 <span className="ml-2 text-[12px] text-[var(--ink-muted)]">Filter:</span>
                 {["all", "approved", "rejected", "draft"].map((f) => {
                   const n = f === "all" ? assets.length : assets.filter((a) => a.approval === f).length;
-                  return <button key={f} className={f === reviewFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setReviewFilter(f)}>{f[0].toUpperCase() + f.slice(1)} <span className="opacity-60">{n}</span></button>;
+                  return <button key={f} aria-pressed={f === reviewFilter} className={f === reviewFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setReviewFilter(f)}>{f[0].toUpperCase() + f.slice(1)} <span className="opacity-60">{n}</span></button>;
                 })}
                 <span className="ml-1 text-[12px] text-[var(--ink-muted)]">QA:</span>
                 {["all", "READY", "REVIEW", "FAILED"].map((f) => {
                   const n = f === "all" ? assets.length : assets.filter((a) => a.qa?.status === f).length;
-                  return <button key={f} className={f === qaFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setQaFilter(f)}>{f === "all" ? "All" : f[0] + f.slice(1).toLowerCase()} <span className="opacity-60">{n}</span></button>;
+                  return <button key={f} aria-pressed={f === qaFilter} className={f === qaFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setQaFilter(f)}>{f === "all" ? "All" : f[0] + f.slice(1).toLowerCase()} <span className="opacity-60">{n}</span></button>;
                 })}
                 {(() => {
                   const readyN = assets.filter((a) => a.qa?.status === "READY" && a.approval !== "approved").length;
@@ -889,9 +891,9 @@ function AssetCard({ asset, busy, label, onApprove, onReject, onDownload, onRege
       })()}
       <p className={`truncate text-[10px] ${genStateColor(asset.generationState)}`} title={asset.model ?? ""}>{genStateLabel(asset.generationState, asset.model)}</p>
       <div className="mt-1.5 flex gap-1">
-        <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "approved" ? "bg-emerald-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onApprove} title="Approve">✓</button>
-        <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "rejected" ? "bg-red-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onReject} title="Reject">✕</button>
-        {asset.url ? <button className="flex-1 rounded-[6px] border border-[var(--hairline)] py-1 text-center text-[11px] font-medium disabled:opacity-40" disabled={busy} onClick={onDownload} title="Download PNG">↧ PNG</button> : null}
+        <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "approved" ? "bg-emerald-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onApprove} title="Approve" aria-label="Approve this ad" aria-pressed={asset.approval === "approved"}>✓</button>
+        <button className={`flex-1 rounded-[6px] py-1 text-[11px] font-medium ${asset.approval === "rejected" ? "bg-red-500 text-white" : "border border-[var(--hairline)]"}`} disabled={busy} onClick={onReject} title="Reject" aria-label="Reject this ad" aria-pressed={asset.approval === "rejected"}>✕</button>
+        {asset.url ? <button className="flex-1 rounded-[6px] border border-[var(--hairline)] py-1 text-center text-[11px] font-medium disabled:opacity-40" disabled={busy} onClick={onDownload} title="Download PNG" aria-label="Download this ad as PNG">↧ PNG</button> : null}
       </div>
       {onRegenerate ? <button className="mt-1 w-full rounded-[6px] border border-[var(--hairline)] py-1 text-[11px] font-medium text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-40" disabled={busy} onClick={onRegenerate} title="Regenerate this size only">{busy ? "…" : "⟳ Regenerate"}</button> : null}
     </div>
