@@ -84,6 +84,19 @@ export async function listNotifications(userId: string, limit = 30): Promise<Not
   return (data ?? []) as NotificationRow[];
 }
 
+// One notification by its dedupe key (or null). Used to decide whether an ongoing condition (e.g. a drift
+// alarm) is currently RAISED, so it can be resolved-in-place instead of spamming a new row.
+export async function getNotificationByDedupe(userId: string, dedupeKey: string): Promise<{ status: NotifStatus } | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("notifications")
+    .select("status")
+    .eq("user_id", userId)
+    .eq("dedupe_key", dedupeKey)
+    .maybeSingle();
+  return (data as { status: NotifStatus } | null) ?? null;
+}
+
 export async function unreadCount(userId: string): Promise<number> {
   const admin = createAdminClient();
   const { count } = await admin.from("notifications").select("id", { count: "exact", head: true }).eq("user_id", userId).is("read_at", null);
