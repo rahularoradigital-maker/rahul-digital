@@ -6,6 +6,7 @@ import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
 import { syncChangeHistory } from "@/lib/ingest/change-history";
 import { refreshAccountRollup } from "@/lib/rollups/account";
 import { refreshCreativeRollup } from "@/lib/rollups/creative";
+import { verifyAndLog } from "@/lib/rollups/verify";
 
 // Run the day-wise ingestion for the signed-in user's active account, on demand. Auth-gated (a user can
 // only sync their own account). Complete coverage: captures EVERY spending ad day-wise into ad_metrics,
@@ -42,6 +43,9 @@ export async function POST(request: NextRequest) {
   if (res.complete) {
     await refreshAccountRollup(user.id, session.activeExternalId).catch(() => {});
     await refreshCreativeRollup(user.id, session.activeExternalId).catch(() => {});
+    // Automatic self-proving accuracy (#1): diff the fresh rollup vs live Meta and log the verdict, so drift
+    // alarms fire on their own (not only when a user opens verify). Best-effort - never blocks the sync.
+    await verifyAndLog(user.id, session.activeExternalId, session.token).catch(() => {});
   }
   return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since, processed: res.processed, remaining: res.remaining, complete: res.complete, changesSeen: changes?.seen ?? null, changesOk: changes?.ok ?? false });
 }

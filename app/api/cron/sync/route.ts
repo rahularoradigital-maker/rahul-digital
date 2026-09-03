@@ -7,6 +7,7 @@ import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
 import { syncChangeHistory } from "@/lib/ingest/change-history";
 import { refreshAccountRollup } from "@/lib/rollups/account";
 import { refreshCreativeRollup } from "@/lib/rollups/creative";
+import { verifyAndLog } from "@/lib/rollups/verify";
 import { getAiCallsToday } from "@/lib/ai/usage";
 import { sendAlert } from "@/lib/alerts";
 
@@ -85,6 +86,8 @@ export async function GET(request: NextRequest) {
     if (res.complete) {
       await refreshAccountRollup(uid, acctExternalId).catch(() => {});
       await refreshCreativeRollup(uid, acctExternalId).catch(() => {});
+      // Automatic drift alarm (#1): store-vs-Meta verdict logged each sync, best-effort.
+      await verifyAndLog(uid, acctExternalId, token).catch(() => {});
     }
     return NextResponse.json({ ok: res.ok, uid, acct: acctExternalId, hop, processed: res.processed, remaining: res.remaining, complete: res.complete, error: res.error });
   }
