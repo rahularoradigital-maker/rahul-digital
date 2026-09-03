@@ -1,15 +1,19 @@
+import { getCurrentUser } from "@/lib/app/user";
 import { loadVerificationHistory } from "@/lib/rollups/verification";
 
-// "Verified against Meta" line for the reconcile screen (10x #1 self-proving accuracy, user-facing surface).
-// Reads the latest LOGGED store-vs-Meta verification (one indexed row, NO live Meta call - the on-demand
-// /api/account/verify and the automatic post-sync check both write these), and states plainly whether our
-// headline matches Meta. Renders nothing until a first verification exists, or on any read failure - never
-// blocks, never fabricates a "verified" it hasn't actually checked.
-export async function TrustLine({ userId, accountExternalId }: { userId: string; accountExternalId: string | null }) {
+// "Verified against Meta" line (10x #1 self-proving accuracy, user-facing surface). Reads the latest LOGGED
+// store-vs-Meta verification (one indexed row, NO live Meta call - the on-demand /api/account/verify and the
+// automatic post-sync check both write these), and states plainly whether our headline matches Meta. Renders
+// nothing until a first verification exists, or on any read failure - never blocks, never fabricates a
+// "verified" it hasn't actually checked. Resolves the user itself (getCurrentUser is React-cached), so a
+// caller only passes the account id.
+export async function TrustLine({ accountExternalId }: { accountExternalId: string | null }) {
   if (!accountExternalId) return null;
   let last;
   try {
-    [last] = await loadVerificationHistory(userId, accountExternalId, 1);
+    const user = await getCurrentUser();
+    if (!user) return null;
+    [last] = await loadVerificationHistory(user.id, accountExternalId, 1);
   } catch {
     return null;
   }

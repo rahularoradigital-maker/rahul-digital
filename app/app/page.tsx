@@ -12,6 +12,7 @@ import { buildGoogleNative } from "@/lib/google/native";
 import { GoogleNativePanel } from "@/components/app/google/google-native-panel";
 import { ConnectState } from "@/components/app/connect-state";
 import { OnboardingChecklist } from "@/components/app/onboarding-checklist";
+import { TrustLine } from "@/components/app/trust-line";
 import { FirstRunProgress } from "@/components/app/first-run-progress";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadBrandProfile } from "@/lib/brand/profile";
@@ -133,6 +134,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {showMeta && metaData?.connected ? (
         <section className="space-y-3">
           {showGoogle ? <h2 className={sectionLabel}>Facebook / Instagram</h2> : null}
+          {/* Self-proving accuracy (10x #1): a quiet "verified against Meta" line from the latest logged check (no live Meta call). */}
+          <TrustLine accountExternalId={metaData.accountId} />
           <Cockpit view={metaData.view} accountName={metaData.accountName} accountId={metaData.accountId} dateParam={metaData.dateParam} adsAnalyzed={metaData.adsAnalyzed} processed={metaData.processed} funnel={metaData.funnel} marginal={metaData.marginal} dataQuality={metaData.dataQuality} scopeTotals={metaData.scopeTotals} dailySeries={metaData.dailySeries} funnelLevels={metaData.funnelLevels} days={metaData.days} syncedAt={metaData.syncedAt} stale={metaData.stale} headlineIncomplete={metaData.headlineIncomplete} eventRoi={eventRoi} eventTrend={eventTrend} todayFeed={todayFeed} />
         </section>
       ) : null}

@@ -38,7 +38,7 @@ export default async function ReconcilePage() {
   return (
     <div className="space-y-6">
       {header}
-      <TrustLine userId={user.id} accountExternalId={session.activeExternalId} />
+      <TrustLine accountExternalId={session.activeExternalId} />
       {bundle ? (
         <>
           <ReconcileView report={bundle.report} accountName={bundle.accountName} since={bundle.since} until={bundle.until} />
