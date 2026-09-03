@@ -3,7 +3,7 @@
 
 import { strict as assert } from "node:assert";
 import { computeScopes, type ReconAd } from "../lib/reconcile/scopes.ts";
-import { rollupHeadline, isRollupFresh, buildRollupRecon, reconHeadlines } from "../lib/rollups/pure.ts";
+import { rollupHeadline, isRollupFresh, buildRollupRecon, reconHeadlines, summaryStatus, cleanStreak } from "../lib/rollups/pure.ts";
 
 function main() {
   // rollupHeadline extracts the whole-account scope exactly (same math the reconcile page shows).
@@ -49,7 +49,17 @@ function main() {
   const conflictMeta = reconHeadlines({ spend: 1000, revenue: 3000 }, { spend: 1300, revenue: 3000 }, "store", "meta"); // spend +30%
   assert.equal(conflictMeta.summary.trustworthy, false, "a 30% spend gap vs Meta is a conflict");
 
-  console.log("PASS: account rollups (headline = whole-account scope, empty-safe, freshness window, drift verdict)");
+  // summaryStatus: worst wins (conflict > minor_drift > match).
+  assert.equal(summaryStatus(reconHeadlines({ spend: 100, revenue: 100 }, { spend: 100, revenue: 100 }, "a", "b").summary), "match");
+  assert.equal(summaryStatus(reconHeadlines({ spend: 100, revenue: 100 }, { spend: 100, revenue: 130 }, "a", "b").summary), "conflict", "a 30% revenue gap is the worst -> conflict");
+  assert.equal(summaryStatus(reconHeadlines({ spend: 100, revenue: 100 }, { spend: 100, revenue: 103 }, "a", "b").summary), "minor_drift", "a 3% gap -> minor_drift");
+
+  // cleanStreak: counts consecutive trustworthy from newest, stops at the first bad one.
+  assert.equal(cleanStreak([{ trustworthy: true }, { trustworthy: true }, { trustworthy: false }, { trustworthy: true }]), 2);
+  assert.equal(cleanStreak([{ trustworthy: false }, { trustworthy: true }]), 0, "a bad newest row = streak 0");
+  assert.equal(cleanStreak([]), 0);
+
+  console.log("PASS: account rollups (headline, freshness, drift verdict, worst-status + clean-streak)");
 }
 
 main();

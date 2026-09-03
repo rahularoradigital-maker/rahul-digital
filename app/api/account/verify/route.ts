@@ -3,7 +3,8 @@ import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadAccountRollup } from "@/lib/rollups/account";
-import { reconHeadlines, ROLLUP_WINDOW_DAYS } from "@/lib/rollups/pure";
+import { reconHeadlines, summaryStatus, cleanStreak, ROLLUP_WINDOW_DAYS } from "@/lib/rollups/pure";
+import { recordVerification, loadVerificationHistory } from "@/lib/rollups/verification";
 import { fetchScopeInsights } from "@/lib/meta-source";
 import { captureError } from "@/lib/observability";
 
@@ -41,6 +42,21 @@ export async function GET() {
   }
 
   const { recs, summary } = reconHeadlines({ spend: rollup.spend, revenue: rollup.revenue }, live, "store", "meta");
+  const status = summaryStatus(summary);
+
+  // Log this verification (append-only, best-effort) so accuracy is a trend, then read the streak back.
+  await recordVerification(user.id, session.activeExternalId, {
+    windowDays: ROLLUP_WINDOW_DAYS,
+    spendStore: rollup.spend,
+    spendMeta: live.spend,
+    revenueStore: rollup.revenue,
+    revenueMeta: live.revenue,
+    worstDriftPct: summary.worstDriftPct,
+    status,
+    trustworthy: summary.trustworthy,
+  });
+  const history = await loadVerificationHistory(user.id, session.activeExternalId, 10);
+
   return NextResponse.json({
     ok: true,
     connected: true,
@@ -48,8 +64,11 @@ export async function GET() {
     window: { since, until },
     store: { spend: rollup.spend, revenue: rollup.revenue, computedAt: rollup.computedAt },
     meta: live,
+    status, // match | minor_drift | conflict
     trustworthy: summary.trustworthy, // false => a headline CONFLICTS with Meta: do not trust blindly
     verdict: summary,
     notes: recs.map((r) => r.note),
+    cleanStreak: cleanStreak(history), // consecutive trustworthy verifications, newest-first
+    history: history.slice(0, 5).map((h) => ({ at: h.createdAt, status: h.status, trustworthy: h.trustworthy, worstDriftPct: h.worstDriftPct })),
   });
 }

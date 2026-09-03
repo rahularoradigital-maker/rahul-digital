@@ -3,7 +3,7 @@
 import type { ReconReport } from "@/lib/reconcile/scopes";
 // Relative + .ts so the check runner (node --experimental-strip-types) can resolve this VALUE import; the `@/`
 // alias only resolves under tsc/Next, and a check imports this module directly.
-import { reconcile, reconSummary, type Reconciliation, type ReconSummary } from "../intelligence/reconcile.ts";
+import { reconcile, reconSummary, type Reconciliation, type ReconSummary, type ReconStatus } from "../intelligence/reconcile.ts";
 
 export const ROLLUP_WINDOW_DAYS = 90; // the fixed app-wide comparison window (LOOKBACK_DAYS)
 export const ROLLUP_FRESH_MS = 26 * 60 * 60 * 1000; // daily sync cadence + slack
@@ -30,6 +30,23 @@ export function buildRollupRecon(
   fresh: { spend: number; revenue: number },
 ): { recs: Reconciliation[]; summary: ReconSummary } {
   return reconHeadlines(stored, fresh, "rollup", "store-now");
+}
+
+// The worst verdict across a summary: conflict if any conflicts, else minor_drift if any drifts, else match.
+// This is the single status stored per verification so a streak is easy to read.
+export function summaryStatus(summary: ReconSummary): ReconStatus {
+  return summary.conflicts > 0 ? "conflict" : summary.drifts > 0 ? "minor_drift" : "match";
+}
+
+// How many of the most-recent verifications were trustworthy in a row (a "verified N in a row" streak). Rows
+// must be newest-first. Stops at the first untrustworthy row.
+export function cleanStreak(rowsNewestFirst: { trustworthy: boolean }[]): number {
+  let n = 0;
+  for (const r of rowsNewestFirst) {
+    if (!r.trustworthy) break;
+    n++;
+  }
+  return n;
 }
 
 // Reconcile the two headline numbers (spend + revenue) between ANY two sources. Used for rollup-vs-store
