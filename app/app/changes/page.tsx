@@ -5,6 +5,7 @@ import { accountStoreTag } from "@/lib/cache";
 import { analyzeAccountChanges } from "@/lib/scoring/change-analysis";
 import { ConnectState } from "@/components/app/connect-state";
 import { ChangeImpactSection } from "@/components/app/changes/change-impact-section";
+import { DataFreshness } from "@/components/app/data-freshness";
 
 // Change Impact page: measures each media-buyer change's before/after effect and ranks buyers + change-types.
 // Server-rendered; reads the account's ad_changes + ad_metrics through the engine (Phases 1/3/4).
@@ -43,6 +44,7 @@ export default async function ChangesPage() {
           objective&apos;s own metric. Correlation with controls (settled window + volume gate), not proof of cause.
         </p>
       </div>
+      <DataFreshness userId={user.id} accountExternalId={session.activeExternalId} />
       <ChangeImpactSection analysis={analysis} />
     </div>
   );

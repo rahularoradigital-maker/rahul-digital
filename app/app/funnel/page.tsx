@@ -7,6 +7,7 @@ import { resolveCockpitScope } from "@/lib/app/cockpit-data";
 import { loadFunnelReport } from "@/lib/funnel/store";
 import { ConnectState } from "@/components/app/connect-state";
 import { FunnelReportView } from "@/components/app/funnel/funnel-report";
+import { DataFreshness } from "@/components/app/data-freshness";
 
 // Funnel page: deterministic funnel-step diagnosis. Tags each ad TOF/MOF/BOF and names the single weakest
 // step against the account's own best same-objective ad - refusing to answer when it cannot trust the data.
@@ -63,6 +64,7 @@ export default async function FunnelPage() {
   return (
     <div className="space-y-6">
       {header}
+      <DataFreshness userId={user.id} accountExternalId={session.activeExternalId} />
       {bundle ? (
         <FunnelReportView report={bundle.report} accountName={bundle.accountName} accountId={bundle.accountId} since={bundle.since} until={bundle.until} />
       ) : (
