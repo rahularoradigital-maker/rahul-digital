@@ -6,7 +6,7 @@ import { ACTION_TOKENS } from "@/lib/billing/plans";
 import { FormatCoveragePanel } from "./format-coverage-panel";
 import { makeZip, type ZipEntry } from "@/lib/creative-production/media/zip";
 import { lintAdCopy } from "@/lib/creative-production/qa/policy-lint";
-import { checkCharLimits } from "@/lib/creative-production/qa/platform-checks";
+import { checkCharLimits, charLimitFor, trimToLimit } from "@/lib/creative-production/qa/platform-checks";
 import { buildTestSet } from "@/lib/creative-production/strategy/test-set";
 import { META_DEFAULT_SET, GOOGLE_DEFAULT_SET } from "@/lib/creative-production/formats/ad-formats";
 import { Button } from "@/components/ui/button";
@@ -766,6 +766,20 @@ export function CreativeStudio() {
                               <li key={`l${i}`}>{l.detail}</li>
                             ))}
                           </ul>
+                          {/* One-click deterministic fix for the truncation warnings: trim the over-long
+                              field(s) to the Meta-feed limit at a word boundary. Opt-in + reversible (Reset). */}
+                          {limits.length ? (
+                            <button
+                              className="mt-1.5 rounded-[6px] border border-[#c0392b]/40 px-2 py-0.5 text-[11px] font-medium text-[#c0392b] hover:bg-[#c0392b]/10"
+                              onClick={() => {
+                                const lim = charLimitFor("meta_feed");
+                                if (eff.headline.trim().length > lim.headline) setCopyField(c.id, "headline", trimToLimit(eff.headline, lim.headline));
+                                if (eff.supportingCopy.trim().length > lim.primary) setCopyField(c.id, "supportingCopy", trimToLimit(eff.supportingCopy, lim.primary));
+                              }}
+                            >
+                              ✂ Trim to fit
+                            </button>
+                          ) : null}
                         </div>
                       );
                     })()}

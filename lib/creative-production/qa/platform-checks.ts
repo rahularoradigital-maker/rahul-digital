@@ -13,6 +13,25 @@ const LIMITS: Record<string, { headline: number; primary: number }> = {
   google_rsa: { headline: 30, primary: 90 },
 };
 
+// The visible-text limits for a placement (falls back to meta_feed). Exposed so the UI can offer a "trim to
+// fit" fix that targets the exact number checkCharLimits enforces (one source of truth for the limits).
+export function charLimitFor(placement: keyof typeof LIMITS | string): { headline: number; primary: number } {
+  return LIMITS[placement] ?? LIMITS.meta_feed;
+}
+
+// Deterministically shorten copy to <= max chars WITHOUT cutting a word mid-way (back off to the last space),
+// and without adding an ellipsis (the platform adds its own). A single over-long word is hard-cut. Pure; the
+// buyer opts in - it never rewrites meaning, only trims the tail. Returns the input unchanged when it fits.
+export function trimToLimit(text: string, max: number): string {
+  const t = (text ?? "").trim();
+  if (max <= 0) return "";
+  if (t.length <= max) return t;
+  const hard = t.slice(0, max);
+  const lastSpace = hard.lastIndexOf(" ");
+  const cut = lastSpace > max * 0.5 ? hard.slice(0, lastSpace) : hard; // keep a real word boundary when there is one
+  return cut.replace(/[\s,;:.!\-]+$/, "").trim(); // drop a dangling separator left by the cut
+}
+
 export function checkCharLimits(copy: { headline?: string | null; primary?: string | null }, placement: keyof typeof LIMITS | string): PlatformCheck[] {
   const lim = LIMITS[placement] ?? LIMITS.meta_feed;
   const out: PlatformCheck[] = [];
