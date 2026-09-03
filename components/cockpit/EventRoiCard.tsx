@@ -1,4 +1,4 @@
-import type { EventRoi } from "@/lib/scoring/event-roi";
+import type { EventRoi, EventTrend } from "@/lib/scoring/event-roi";
 import { eventBleedSummary, eventSpendSplit } from "@/lib/scoring/event-roi";
 import { eventBleedToContract } from "@/lib/intelligence/from-event-roi";
 import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
@@ -27,7 +27,22 @@ function InfoDot() {
   );
 }
 
-export function EventRoiCard({ rows }: { rows: EventRoi[] }) {
+// A small trend chip: only shown where the event had real revenue in BOTH windows and the ROI moved beyond
+// the noise threshold. "worsening" is the one a media buyer must see first, so it carries the alert colour.
+function TrendChip({ t }: { t?: EventTrend }) {
+  if (!t || t.direction === "flat") return null;
+  const worse = t.direction === "worsening";
+  return (
+    <span
+      className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${worse ? "bg-[var(--bad-bg,#fdecea)] text-[var(--bad-ink)]" : "bg-[var(--good-bg,#e7f5ee)] text-[var(--good-ink)]"}`}
+      title={`ROI ${worse ? "down" : "up"} ${Math.abs(t.deltaPct)} points vs the previous equal-length window`}
+    >
+      {worse ? "↓" : "↑"} {Math.abs(t.deltaPct)} pts
+    </span>
+  );
+}
+
+export function EventRoiCard({ rows, trend }: { rows: EventRoi[]; trend?: Map<string, EventTrend> }) {
   return (
     <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
       <div className="mb-1 flex items-center justify-between gap-2">
@@ -85,6 +100,7 @@ export function EventRoiCard({ rows }: { rows: EventRoi[] }) {
                     {e.roas !== null && <span className="text-[var(--ink-muted)] tabular-nums">{e.roas}x ROAS</span>}
                     {e.costPerPurchaseRs !== null && <span className="text-[var(--ink-muted)] tabular-nums">{inr.format(e.costPerPurchaseRs)}/purchase</span>}
                     {e.thinSample && <span className="rounded-full bg-[var(--surface-alt)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--ink-muted)]">directional</span>}
+                    <TrendChip t={trend?.get(e.event)} />
                   </>
                 ) : (
                   <span className="text-[var(--ink-muted)]">ROI n/a - no revenue for this event; judge on cost per result</span>

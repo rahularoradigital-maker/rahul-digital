@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 import { loadCockpit, parseDays } from "@/lib/app/cockpit-data";
 import { getCurrentUser } from "@/lib/app/user";
-import { getEventRoi } from "@/lib/scoring/event-roi-store";
+import { getEventRoiWithTrend } from "@/lib/scoring/event-roi-store";
 import { EventRoiCard } from "@/components/cockpit/EventRoiCard";
-import type { EventRoi } from "@/lib/scoring/event-roi";
+import type { EventRoi, EventTrend } from "@/lib/scoring/event-roi";
 import { collectDecisions, type DecisionFeed } from "@/lib/intelligence/collect";
 import { eventBleedToContract } from "@/lib/intelligence/from-event-roi";
 import { TodayCard } from "@/components/app/today/today-card";
@@ -102,10 +102,15 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   // Event-wise spend + honest ROI% for the SAME window the cockpit shows. Self-contained read; empty until
   // the sync populates ad_meta.optimization_event (then the card fills in). getCurrentUser is React-cached.
   let eventRoi: EventRoi[] = [];
+  let eventTrend: Map<string, EventTrend> | undefined;
   if (showMeta && metaData?.connected) {
     const user = await getCurrentUser();
     const [since, until] = (metaData.dateParam || "").split("_");
-    if (user && since && until) eventRoi = await getEventRoi(user.id, metaData.accountId, since, until);
+    if (user && since && until) {
+      const er = await getEventRoiWithTrend(user.id, metaData.accountId, since, until);
+      eventRoi = er.current;
+      eventTrend = er.trend;
+    }
   }
 
   // "Today - what to fix first": the reasoning-backed daily brief (intelligence team's collectDecisions).
@@ -128,7 +133,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {showMeta && metaData?.connected ? (
         <section className="space-y-3">
           {showGoogle ? <h2 className={sectionLabel}>Facebook / Instagram</h2> : null}
-          <Cockpit view={metaData.view} accountName={metaData.accountName} accountId={metaData.accountId} dateParam={metaData.dateParam} adsAnalyzed={metaData.adsAnalyzed} processed={metaData.processed} funnel={metaData.funnel} marginal={metaData.marginal} dataQuality={metaData.dataQuality} scopeTotals={metaData.scopeTotals} dailySeries={metaData.dailySeries} funnelLevels={metaData.funnelLevels} days={metaData.days} syncedAt={metaData.syncedAt} stale={metaData.stale} headlineIncomplete={metaData.headlineIncomplete} eventRoi={eventRoi} todayFeed={todayFeed} />
+          <Cockpit view={metaData.view} accountName={metaData.accountName} accountId={metaData.accountId} dateParam={metaData.dateParam} adsAnalyzed={metaData.adsAnalyzed} processed={metaData.processed} funnel={metaData.funnel} marginal={metaData.marginal} dataQuality={metaData.dataQuality} scopeTotals={metaData.scopeTotals} dailySeries={metaData.dailySeries} funnelLevels={metaData.funnelLevels} days={metaData.days} syncedAt={metaData.syncedAt} stale={metaData.stale} headlineIncomplete={metaData.headlineIncomplete} eventRoi={eventRoi} eventTrend={eventTrend} todayFeed={todayFeed} />
         </section>
       ) : null}
       {showGoogle && googleData?.connected ? (
@@ -269,7 +274,7 @@ function syncedLabel(iso?: string): string {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
-function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, funnelLevels, days, syncedAt, stale, headlineIncomplete, demo, eventRoi = [], todayFeed = { priorities: [], accountReads: [] } }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; days: number; syncedAt?: string; stale?: boolean; headlineIncomplete?: boolean; demo?: boolean; eventRoi?: EventRoi[]; todayFeed?: DecisionFeed }) {
+function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, processed, funnel, marginal, dataQuality, scopeTotals, dailySeries, funnelLevels, days, syncedAt, stale, headlineIncomplete, demo, eventRoi = [], eventTrend, todayFeed = { priorities: [], accountReads: [] } }: { view: CockpitView; accountName: string; accountId: string; dateParam: string; adsAnalyzed: number; processed: { campaigns: number; adSets: number; ads: number }; funnel: FunnelMetrics; marginal: MarginalRead; dataQuality: DataQuality; scopeTotals: ScopeTotals; dailySeries: DailyPoint[]; funnelLevels?: LevelFunnels; days: number; syncedAt?: string; stale?: boolean; headlineIncomplete?: boolean; demo?: boolean; eventRoi?: EventRoi[]; eventTrend?: Map<string, EventTrend>; todayFeed?: DecisionFeed }) {
   const health = view.accountHealth;
   // Headline KPIs use the TRUE scope totals (all campaigns/ads of the selected objective),
   // so spend / revenue / ROAS match Ads Manager - not the analyzed-ads subset in view.totals.
@@ -399,7 +404,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
       </div>
 
       {/* Spend + honest ROI% by optimisation event (the formula is on the card's "i" hover). */}
-      <EventRoiCard rows={eventRoi} />
+      <EventRoiCard rows={eventRoi} trend={eventTrend} />
 
       {/* Scaling headroom (marginal economics) + ad-level funnel metrics */}
       <ScalingCard marginal={marginal} />

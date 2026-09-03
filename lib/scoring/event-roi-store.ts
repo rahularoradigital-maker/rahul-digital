@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { computeEventRoi, type EventRow, type EventRoi } from "./event-roi";
+import { computeEventRoi, eventRoiTrend, priorWindow, type EventRow, type EventRoi, type EventTrend } from "./event-roi";
 
 // Assemble event ROI from the store: join each ad's optimisation EVENT (ad_meta.optimization_event, written
 // by the sync) with its spend/revenue/purchases (ad_metrics) over the window, group by event, then apply the
@@ -45,5 +45,57 @@ export async function getEventRoi(userId: string, accountExternalId: string, sin
     return computeEventRoi([...agg.values()]);
   } catch {
     return [];
+  }
+}
+
+// Same as getEventRoi, plus a per-event trend vs the equal-length window just before. ONE ad_meta read + ONE
+// metrics paging over the doubled window (prior+current), bucketed by date - cheaper than two separate calls,
+// and the current rows are identical to getEventRoi's. Returns an empty trend map when there is no prior data.
+export async function getEventRoiWithTrend(
+  userId: string,
+  accountExternalId: string,
+  since: string,
+  until: string,
+): Promise<{ current: EventRoi[]; trend: Map<string, EventTrend> }> {
+  try {
+    const admin = createAdminClient();
+    const { priorSince } = priorWindow(since, until);
+
+    const eventByAd = new Map<string, string>();
+    const { data: meta } = await admin.from("ad_meta").select("ad_id,optimization_event").eq("user_id", userId).eq("account_external_id", accountExternalId);
+    for (const m of (meta ?? []) as { ad_id: string; optimization_event: string | null }[]) {
+      if (m.optimization_event) eventByAd.set(m.ad_id, m.optimization_event);
+    }
+    if (eventByAd.size === 0) return { current: [], trend: new Map() };
+
+    const cur = new Map<string, EventRow>();
+    const prior = new Map<string, EventRow>();
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await admin
+        .from("ad_metrics")
+        .select("ad_id,date,spend,revenue,purchases")
+        .eq("user_id", userId)
+        .eq("account_external_id", accountExternalId)
+        .gte("date", priorSince)
+        .lte("date", until)
+        .range(from, from + PAGE - 1);
+      if (error) break;
+      const rows = (data ?? []) as { ad_id: string; date: string; spend: number | null; revenue: number | null; purchases: number | null }[];
+      for (const r of rows) {
+        const ev = eventByAd.get(r.ad_id);
+        if (!ev) continue;
+        const bucket = r.date >= since ? cur : prior; // lexical compare is correct for YYYY-MM-DD
+        const acc = bucket.get(ev) ?? { event: ev, spendRs: 0, revenueRs: 0, purchases: 0 };
+        acc.spendRs += Number(r.spend ?? 0);
+        acc.revenueRs += Number(r.revenue ?? 0);
+        acc.purchases += Number(r.purchases ?? 0);
+        bucket.set(ev, acc);
+      }
+      if (rows.length < PAGE) break;
+    }
+    const current = computeEventRoi([...cur.values()]);
+    return { current, trend: eventRoiTrend(current, computeEventRoi([...prior.values()])) };
+  } catch {
+    return { current: [], trend: new Map() };
   }
 }

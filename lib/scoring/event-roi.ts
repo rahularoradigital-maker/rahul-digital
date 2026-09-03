@@ -56,6 +56,39 @@ export function eventBleedSummary(rows: EventRoi[]): { line: string; bleedRs: nu
   return { bleedRs, line: `Rs ${bleedRs.toLocaleString("en-IN")} is on conversion-intent events returning below break-even (${names})${bestPart}. Shifting that budget toward your best-returning event is likely higher ROI.` };
 }
 
+// --- Trend: is a bleeding event getting worse or recovering? A single-window ROI cannot tell a new problem
+// from a chronic one, so we compare the same event's ROI against the equal-length window just before it. Only
+// events with real revenue in BOTH windows get a trend - never a fabricated arrow on thin/awareness data.
+export type EventTrend = { event: string; deltaPct: number; direction: "worsening" | "improving" | "flat" };
+const TREND_THRESHOLD = 5; // ROI percentage points; smaller moves are noise, shown as flat
+
+export function eventRoiTrend(current: EventRoi[], prior: EventRoi[]): Map<string, EventTrend> {
+  const prev = new Map(prior.filter((e) => e.roiPct !== null).map((e) => [e.event, e.roiPct as number]));
+  const out = new Map<string, EventTrend>();
+  for (const e of current) {
+    if (e.roiPct === null) continue;
+    const before = prev.get(e.event);
+    if (before === undefined) continue; // no comparable revenue last window - no trend, not a guess
+    const deltaPct = e.roiPct - before;
+    const direction = Math.abs(deltaPct) < TREND_THRESHOLD ? "flat" : deltaPct < 0 ? "worsening" : "improving";
+    out.set(e.event, { event: e.event, deltaPct: Math.round(deltaPct), direction });
+  }
+  return out;
+}
+
+// The equal-length window immediately before [since, until] (UTC, inclusive "YYYY-MM-DD"). Pure, so it is
+// testable without a clock and never drifts by timezone.
+export function priorWindow(since: string, until: string): { priorSince: string; priorUntil: string } {
+  const DAY = 86400000;
+  const s = Date.parse(since + "T00:00:00Z");
+  const u = Date.parse(until + "T00:00:00Z");
+  const len = Math.round((u - s) / DAY) + 1; // inclusive day count
+  const priorUntil = new Date(s - DAY);
+  const priorSince = new Date(s - DAY * len);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  return { priorSince: iso(priorSince), priorUntil: iso(priorUntil) };
+}
+
 export function computeEventRoi(rows: EventRow[], opts?: { minSpendRs?: number }): EventRoi[] {
   const minSpend = opts?.minSpendRs ?? DEFAULT_MIN_SPEND;
   const total = rows.reduce((s, r) => s + Math.max(0, r.spendRs), 0);
