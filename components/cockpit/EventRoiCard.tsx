@@ -2,6 +2,8 @@ import type { EventRoi } from "@/lib/scoring/event-roi";
 import { eventBleedSummary, eventSpendSplit } from "@/lib/scoring/event-roi";
 import { eventBleedToContract } from "@/lib/intelligence/from-event-roi";
 import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
+import { eventMoneyMapHtml } from "@/lib/scoring/money-map";
+import { DownloadButton } from "@/components/cockpit/DownloadButton";
 
 const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -28,9 +30,12 @@ function InfoDot() {
 export function EventRoiCard({ rows }: { rows: EventRoi[] }) {
   return (
     <div className="rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6">
-      <div className="mb-1 flex items-center gap-2">
-        <div className="text-base font-normal">Spend &amp; return by event</div>
-        <InfoDot />
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="text-base font-normal">Spend &amp; return by event</div>
+          <InfoDot />
+        </div>
+        {rows.length > 0 && <DownloadButton content={eventMoneyMapHtml(rows)} filename="money-map.html" mime="text/html" label="Money map" />}
       </div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
         How much you spend on each optimisation event, and the ROI where the event actually makes money.
