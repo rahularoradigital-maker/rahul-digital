@@ -1,3 +1,5 @@
+> SUPERSEDED by docs/MASTER-ARCHITECTURE-AUDIT-2026-09-03.md (the canonical audit). Kept for history.
+
 # Phase 0 — Complete Codebase Audit & Execution Plan (adbrain-mvp / AdScale)
 
 **Date:** 2026-09-02 · **Scope:** `/Users/lyxelflamingo/adbrain-mvp` (Next.js 16.3.2 · React 19.2.8 · Supabase · Vercel Hobby)

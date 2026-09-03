@@ -20,7 +20,7 @@ export async function TrustLine({ userId, accountExternalId }: { userId: string;
 
   if (!last.trustworthy) {
     return (
-      <p className="mt-1 text-[12px] text-[var(--warn-ink,#92400e)]">
+      <p className="mt-1 text-[12px] text-[var(--warn-ink)]">
         These numbers differ from Meta by {pct}% (last checked {when}). We show the stored figure; a re-sync refreshes it.
       </p>
     );
