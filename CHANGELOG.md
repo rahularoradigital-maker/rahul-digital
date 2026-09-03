@@ -58,3 +58,9 @@ All notable changes to AdScale (`adbrain-mvp`). Newest first. Commit hashes are 
 ### Cleanup
 - Deleted `lib/app/ads-manager-url.check.ts` (dead everywhere — not imported by the app or any script).
 - The other 28 unreachable `lib/` modules are **NOT** deleted: each has a self-check test and several are staged foundations built in the last few days (creative A/B engines, account-deletion foundation, control-plane security, durable queue). See the audit doc's "unreachable modules" note.
+
+## 2026-09-02 (later) — instant-app + self-proving sprint (10x #5 + #1, session 25)
+- **Rollups:** `account_rollups` (0035) + `creative_rollups` (0036) computed on sync; reconcile + new `/api/account/summary`, `/api/account/creatives` (with `?flag=winner|wasting|steady`), `/api/cron/rollups`, `/api/admin/rollups` read/refresh them. Winner/wasting flag is judged vs the account's own average ROAS, ≥1%-spend gated. `check:rollups` / `check:creative-rollups` / `check:rollup-wiring`.
+- **Self-proving accuracy (#1):** `/api/account/verify` diffs our rollup vs a fresh live Meta pull (reconcile verdict), logged to `account_verifications` (0037) as a trend with a clean-streak; latest trust surfaced on `/api/account/summary.trust`, conflicts + rollup staleness on `/api/health`. Fails honest when Meta is unreachable.
+- **Fix (foreign, unblock):** `app/api/intelligence/today` GET was ungated (private-beta bypass); added `guardProductApi` — `check:access-gate` green again (47 methods / 40 routes).
+- Migrations 0035, 0036, 0037 applied live.
