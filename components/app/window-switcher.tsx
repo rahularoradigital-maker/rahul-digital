@@ -114,6 +114,8 @@ export function WindowSwitcher() {
   const [committedLabel, setCommittedLabel] = useState("Last 90 days");
   const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Selection state (uncommitted until Update).
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -142,20 +144,48 @@ export function WindowSwitcher() {
     if (raw) document.cookie = "adbrain.window=; path=/; max-age=0";
   }, []);
 
+  // A11y (Phase-0 audit): this dialog had Escape + outside-click but no focus management. Trap Tab inside the
+  // panel while open, move focus in on open, and restore focus to the trigger on close (Escape/outside-click),
+  // matching the shared FilterPopover. The calendar's custom layout is why it isn't on FilterPopover itself.
+  const closePicker = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
   useEffect(() => {
+    if (!open) return;
+    const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),[tabindex]:not([tabindex="-1"])';
     function onDoc(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closePicker();
+        return;
+      }
+      if (e.key === "Tab" && panelRef.current) {
+        const f = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => el.offsetParent !== null);
+        if (f.length === 0) return;
+        const first = f[0];
+        const last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     }
+    panelRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   // Seed the calendar from the committed value each time the picker opens.
   function openPicker() {
@@ -213,10 +243,10 @@ export function WindowSwitcher() {
 
   return (
     <div ref={ref} className="relative">
-      <Button type="button" variant="outline" onClick={() => (open ? setOpen(false) : openPicker())} aria-haspopup="dialog" aria-expanded={open} className={FILTER_TRIGGER}>
+      <Button ref={triggerRef} type="button" variant="outline" onClick={() => (open ? closePicker() : openPicker())} aria-haspopup="dialog" aria-expanded={open} className={FILTER_TRIGGER}>
         {pending ? (
           <span className="flex items-center gap-1.5 text-[var(--accent)]">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
+            <span className="h-1.5 w-1.5 motion-safe:animate-pulse rounded-full bg-[var(--accent)]" />
             Updating...
           </span>
         ) : (
@@ -228,7 +258,7 @@ export function WindowSwitcher() {
       </Button>
 
       {open ? (
-        <div role="dialog" aria-label="Select date range" className="absolute right-0 top-[calc(100%+6px)] z-30 flex max-w-[94vw] flex-col overflow-hidden rounded-xl border border-[var(--hairline)] bg-[var(--surface)] shadow-xl sm:flex-row">
+        <div ref={panelRef} role="dialog" aria-label="Select date range" className="absolute right-0 top-[calc(100%+6px)] z-30 flex max-w-[94vw] flex-col overflow-hidden rounded-xl border border-[var(--hairline)] bg-[var(--surface)] shadow-xl sm:flex-row">
           {/* presets */}
           <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-[var(--hairline)] p-2 sm:w-[150px] sm:flex-col sm:overflow-visible sm:border-b-0 sm:border-r">
             {PRESETS.map((p) => (
@@ -260,7 +290,7 @@ export function WindowSwitcher() {
               </div>
             </div>
             <div className="mt-3 flex items-center justify-end gap-2 border-t border-[var(--hairline)] pt-3">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)} className="rounded-lg px-3 py-1.5 text-[13px] text-[var(--ink-muted)] hover:bg-[var(--surface-alt)]">Cancel</Button>
+              <Button type="button" variant="ghost" size="sm" onClick={closePicker} className="rounded-lg px-3 py-1.5 text-[13px] text-[var(--ink-muted)] hover:bg-[var(--surface-alt)]">Cancel</Button>
               <Button type="button" variant="default" size="sm" onClick={update} disabled={!selStart || !selEnd} className="rounded-lg bg-[var(--accent)] px-4 py-1.5 text-[13px] font-medium text-white transition disabled:opacity-40">Update</Button>
             </div>
           </div>
