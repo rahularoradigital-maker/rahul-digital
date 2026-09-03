@@ -5,6 +5,7 @@ import { getUserMetaSession } from "@/lib/meta-sync";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
 import { syncChangeHistory } from "@/lib/ingest/change-history";
 import { refreshAccountRollup } from "@/lib/rollups/account";
+import { refreshCreativeRollup } from "@/lib/rollups/creative";
 
 // Run the day-wise ingestion for the signed-in user's active account, on demand. Auth-gated (a user can
 // only sync their own account). Complete coverage: captures EVERY spending ad day-wise into ad_metrics,
@@ -38,6 +39,9 @@ export async function POST(request: NextRequest) {
   const changes = await syncChangeHistory(user.id, session.activeExternalId, session.token, { backfillDays }).catch(() => null);
   // 10x #5: when the account is fully synced, refresh its rollup off no extra request (this response already
   // paid for the sync). Best-effort - a rollup failure never affects the sync outcome.
-  if (res.complete) await refreshAccountRollup(user.id, session.activeExternalId).catch(() => {});
+  if (res.complete) {
+    await refreshAccountRollup(user.id, session.activeExternalId).catch(() => {});
+    await refreshCreativeRollup(user.id, session.activeExternalId).catch(() => {});
+  }
   return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since, processed: res.processed, remaining: res.remaining, complete: res.complete, changesSeen: changes?.seen ?? null, changesOk: changes?.ok ?? false });
 }

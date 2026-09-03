@@ -3,6 +3,7 @@ import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadAccountRollup, verifyAccountRollup } from "@/lib/rollups/account";
+import { loadVerificationHistory } from "@/lib/rollups/verification";
 
 // 10x #5 instant-app: the active account's whole-account headline read from the precomputed rollup - a single
 // indexed row, no ad_metrics scan. Instant by design: if no fresh rollup exists yet (account not synced), it
@@ -29,6 +30,11 @@ export async function GET(request: NextRequest) {
     ? await verifyAccountRollup(user.id, session.activeExternalId)
     : undefined;
 
+  // Latest store-vs-Meta trust status (one indexed row, no Meta call) so a UI can show a trust badge on the
+  // instant read. null = never verified yet.
+  const [last] = await loadVerificationHistory(user.id, session.activeExternalId, 1);
+  const trust = last ? { trustworthy: last.trustworthy, status: last.status, verifiedAt: last.createdAt, worstDriftPct: last.worstDriftPct } : null;
+
   return NextResponse.json({
     ready: true,
     connected: true,
@@ -41,6 +47,7 @@ export async function GET(request: NextRequest) {
       ads: rollup.ads,
       roas: rollup.spend > 0 ? rollup.revenue / rollup.spend : null,
     },
+    trust,
     ...(drift ? { drift } : {}),
   });
 }
