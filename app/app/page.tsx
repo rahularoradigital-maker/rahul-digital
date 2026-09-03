@@ -5,6 +5,7 @@ import { getEventRoi } from "@/lib/scoring/event-roi-store";
 import { EventRoiCard } from "@/components/cockpit/EventRoiCard";
 import type { EventRoi } from "@/lib/scoring/event-roi";
 import { collectDecisions, type DecisionFeed } from "@/lib/intelligence/collect";
+import { eventBleedToContract } from "@/lib/intelligence/from-event-roi";
 import { TodayCard } from "@/components/app/today/today-card";
 import { buildGoogleCockpitData } from "@/lib/google/cockpit";
 import { buildGoogleNative } from "@/lib/google/native";
@@ -109,6 +110,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   // "Today - what to fix first": the reasoning-backed daily brief (intelligence team's collectDecisions).
   const todayFeed: DecisionFeed = showMeta && metaData?.connected ? collectDecisions(metaData) : { priorities: [], accountReads: [] };
+  // Surface the event-ROI reallocation in the daily brief too (account-level read), reusing the event data
+  // already loaded above - no change to the shared collectDecisions engine.
+  const eventContract = metaData?.connected ? eventBleedToContract(eventRoi, { entityId: metaData.accountId, accountName: metaData.accountName }) : null;
+  if (eventContract) todayFeed.accountReads.push(eventContract);
 
   const perfEl = perf === "1" && metaData?.connected && metaData.perf ? (
     <pre id="perf-data" data-perf={JSON.stringify(metaData.perf)} className="fixed bottom-1 right-1 z-50 rounded bg-black/80 px-2 py-1 text-[10px] text-white">{JSON.stringify(metaData.perf)}</pre>
