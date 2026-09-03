@@ -29,9 +29,20 @@ export function buildRollupRecon(
   stored: { spend: number; revenue: number },
   fresh: { spend: number; revenue: number },
 ): { recs: Reconciliation[]; summary: ReconSummary } {
+  return reconHeadlines(stored, fresh, "rollup", "store-now");
+}
+
+// Reconcile the two headline numbers (spend + revenue) between ANY two sources. Used for rollup-vs-store
+// (staleness) AND store-vs-Meta (the true cross-source #1 accuracy check).
+export function reconHeadlines(
+  a: { spend: number; revenue: number },
+  b: { spend: number; revenue: number },
+  sourceA: string,
+  sourceB: string,
+): { recs: Reconciliation[]; summary: ReconSummary } {
   const recs = [
-    reconcile("spend", stored.spend, fresh.spend, "rollup", "store-now"),
-    reconcile("revenue", stored.revenue, fresh.revenue, "rollup", "store-now"),
+    reconcile("spend", a.spend, b.spend, sourceA, sourceB),
+    reconcile("revenue", a.revenue, b.revenue, sourceA, sourceB),
   ];
   return { recs, summary: reconSummary(recs) };
 }

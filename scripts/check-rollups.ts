@@ -3,7 +3,7 @@
 
 import { strict as assert } from "node:assert";
 import { computeScopes, type ReconAd } from "../lib/reconcile/scopes.ts";
-import { rollupHeadline, isRollupFresh, buildRollupRecon } from "../lib/rollups/pure.ts";
+import { rollupHeadline, isRollupFresh, buildRollupRecon, reconHeadlines } from "../lib/rollups/pure.ts";
 
 function main() {
   // rollupHeadline extracts the whole-account scope exactly (same math the reconcile page shows).
@@ -41,6 +41,13 @@ function main() {
   const stale = buildRollupRecon({ spend: 1000, revenue: 3000 }, { spend: 1000, revenue: 3600 }); // revenue +20%
   assert.equal(stale.summary.trustworthy, false, "a 20% revenue gap is a conflict (rollup stale)");
   assert.ok(stale.summary.conflicts >= 1);
+
+  // reconHeadlines: cross-source (store vs Meta) with the given source labels; matching => trustworthy.
+  const vsMeta = reconHeadlines({ spend: 1000, revenue: 3000 }, { spend: 1000, revenue: 3000 }, "store", "meta");
+  assert.equal(vsMeta.summary.trustworthy, true, "store == meta is trustworthy");
+  assert.ok(vsMeta.recs[0].note.includes("store") && vsMeta.recs[0].note.includes("meta"), "notes name both sources");
+  const conflictMeta = reconHeadlines({ spend: 1000, revenue: 3000 }, { spend: 1300, revenue: 3000 }, "store", "meta"); // spend +30%
+  assert.equal(conflictMeta.summary.trustworthy, false, "a 30% spend gap vs Meta is a conflict");
 
   console.log("PASS: account rollups (headline = whole-account scope, empty-safe, freshness window, drift verdict)");
 }
