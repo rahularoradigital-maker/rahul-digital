@@ -22,6 +22,7 @@ export function FilterPopover({
   dialogLabel,
   width = "w-56",
   align = "right",
+  onOpen,
   children,
 }: {
   label: string; // the muted prefix, e.g. "Objective"
@@ -30,6 +31,7 @@ export function FilterPopover({
   dialogLabel?: string; // accessible name for the panel (defaults to `label`)
   width?: string; // tailwind width class for the panel
   align?: "left" | "right";
+  onOpen?: () => void; // fired when the panel opens (e.g. re-read a sibling filter's cookie)
   children: ReactNode | ((close: () => void) => ReactNode);
 }) {
   const [open, setOpen] = useState(false);
@@ -78,10 +80,13 @@ export function FilterPopover({
     };
   }, [open]);
 
-  // Move focus into the panel when it opens (first focusable = the search box, matching the old autoFocus).
+  // Move focus into the panel when it opens (first focusable = the search box, matching the old autoFocus),
+  // and notify the caller so it can sync sibling state (e.g. the campaign list to the current objective).
   useEffect(() => {
     if (!open) return;
+    onOpen?.();
     panelRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   return (

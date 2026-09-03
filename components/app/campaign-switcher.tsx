@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { FILTER_TRIGGER, FILTER_LABEL } from "./control-styles";
+import { FilterPopover } from "./filter-popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -28,10 +28,8 @@ export function CampaignSwitcher() {
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [objSel, setObjSel] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [, startTransition] = useTransition();
-  const ref = useRef<HTMLDivElement>(null);
 
   // The objective filter lives in a sibling component; router.refresh() does not remount this
   // one, so re-read the objectives cookie fresh whenever the dropdown opens - that is how the
@@ -84,21 +82,6 @@ export function CampaignSwitcher() {
     };
   }, []);
 
-  useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, []);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return campaigns.filter((c) => {
@@ -125,68 +108,54 @@ export function CampaignSwitcher() {
     apply(next);
   }
 
-  const label = sel.size === 0 ? "All campaigns" : sel.size === 1 ? campaigns.find((c) => sel.has(c.id))?.name ?? "1 campaign" : `${sel.size} campaigns`;
+  const summary = sel.size === 0 ? "All campaigns" : sel.size === 1 ? campaigns.find((c) => sel.has(c.id))?.name ?? "1 campaign" : `${sel.size} campaigns`;
 
   return (
-    <div ref={ref} className="relative">
-      <Button
-        type="button"
-        variant="outline"
-        onClick={() => {
-          if (!open) setObjSel(readObjectives()); // sync the list to the current objective before showing it
-          setOpen((o) => !o);
-        }}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className={FILTER_TRIGGER}
-      >
-        <span className={FILTER_LABEL}>Campaign</span>
-        <span className="max-w-[150px] truncate">{label}</span>
-        <span className={FILTER_LABEL}>▾</span>
-      </Button>
-      {open ? (
-        <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-80 max-w-[85vw] rounded-xl border border-[var(--hairline)] bg-[var(--surface)] p-2 shadow-lg">
-          <Input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search campaigns..."
-            aria-label="Search campaigns"
-            className="mb-1.5 w-full rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]"
-          />
-          <div className="max-h-72 overflow-y-auto">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => apply(new Set())}
-              className={`w-full justify-start truncate rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${sel.size === 0 ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
-            >
-              All campaigns
-            </Button>
-            {filtered.map((c) => (
-              <label
-                key={c.id}
-                title={c.name}
-                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
-              >
-                <input type="checkbox" checked={sel.has(c.id)} onChange={() => toggle(c.id)} className="h-4 w-4 shrink-0 accent-[var(--accent)]" />
-                <span className="truncate">{c.name}</span>
-              </label>
-            ))}
-            {filtered.length === 0 && <div className="px-2.5 py-2 text-[13px] text-[var(--ink-muted)]">No campaigns match.</div>}
-            {sel.size > 0 && (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => apply(new Set())}
-                className="mt-1 w-full justify-start rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--ink-muted)] transition hover:bg-[var(--surface-alt)] hover:text-[var(--ink)]"
-              >
-                Clear (show all)
-              </Button>
-            )}
-          </div>
-        </div>
-      ) : null}
-    </div>
+    <FilterPopover
+      label="Campaign"
+      summary={summary}
+      dialogLabel="Filter by campaign"
+      width="w-80 max-w-[85vw]"
+      onOpen={() => setObjSel(readObjectives())} // sync the list to the current objective each time it opens
+    >
+      <Input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search campaigns..."
+        aria-label="Search campaigns"
+        className="mb-1.5 w-full rounded-lg border border-[var(--hairline)] bg-[var(--bg)] px-3 py-2 text-[13px] outline-none focus:border-[var(--accent)]"
+      />
+      <div className="max-h-72 overflow-y-auto">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => apply(new Set())}
+          className={`w-full justify-start truncate rounded-lg px-2.5 py-2 text-left text-[13px] transition hover:bg-[var(--surface-alt)] ${sel.size === 0 ? "font-semibold text-[var(--accent)]" : "text-[var(--ink)]"}`}
+        >
+          All campaigns
+        </Button>
+        {filtered.map((c) => (
+          <label
+            key={c.id}
+            title={c.name}
+            className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] text-[var(--ink)] transition hover:bg-[var(--surface-alt)]"
+          >
+            <input type="checkbox" checked={sel.has(c.id)} onChange={() => toggle(c.id)} className="h-4 w-4 shrink-0 accent-[var(--accent)]" />
+            <span className="truncate">{c.name}</span>
+          </label>
+        ))}
+        {filtered.length === 0 && <div className="px-2.5 py-2 text-[13px] text-[var(--ink-muted)]">No campaigns match.</div>}
+        {sel.size > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => apply(new Set())}
+            className="mt-1 w-full justify-start rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--ink-muted)] transition hover:bg-[var(--surface-alt)] hover:text-[var(--ink)]"
+          >
+            Clear (show all)
+          </Button>
+        )}
+      </div>
+    </FilterPopover>
   );
 }
