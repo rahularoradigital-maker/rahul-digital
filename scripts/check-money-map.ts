@@ -1,7 +1,7 @@
 // Proof for the event money-map HTML export (lib/scoring/money-map): complete escaped doc, ROI only where
 // revenue exists, honest fallback when empty.
 // Run: node --experimental-strip-types scripts/check-money-map.ts
-import { computeEventRoi } from "../lib/scoring/event-roi.ts";
+import { computeEventRoi, type EventTrend } from "../lib/scoring/event-roi.ts";
 import { eventMoneyMapHtml } from "../lib/scoring/money-map.ts";
 let pass = 0;
 function ok(c: boolean, m: string) { if (!c) throw new Error("FAIL: " + m); pass++; }
@@ -17,4 +17,8 @@ ok(/n\/a - no revenue/.test(html), "no-revenue event shows n/a, not a fake ROI")
 ok(html.includes("A &amp; &lt;b&gt;Co&lt;/b&gt;") && !html.includes("<b>Co</b>"), "account name is HTML-escaped (no injection)");
 ok(/directional/.test(html), "thin-sample event flagged directional in the map");
 ok(/No event data yet/.test(eventMoneyMapHtml([])), "empty -> honest fallback, no fabricated rows");
+ok(!/&#9660; \d+ pts|&#9650; \d+ pts/.test(html), "no trend arrow in a data row without a trend map - never invented");
+const trend = new Map<string, EventTrend>([["CONTENT_VIEW", { event: "CONTENT_VIEW", deltaPct: -30, direction: "worsening" }]]);
+const withTrend = eventMoneyMapHtml(rows, { trend });
+ok(/&#9660; 30 pts/.test(withTrend), "worsening event shows the down-arrow + point delta in the export");
 console.log(`check-money-map: ${pass} assertions passed.`);

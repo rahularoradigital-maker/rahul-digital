@@ -50,7 +50,7 @@ export function EventRoiCard({ rows, trend }: { rows: EventRoi[]; trend?: Map<st
           <div className="text-base font-normal">Spend &amp; return by event</div>
           <InfoDot />
         </div>
-        {rows.length > 0 && <DownloadButton content={eventMoneyMapHtml(rows)} filename="money-map.html" mime="text/html" label="Money map" />}
+        {rows.length > 0 && <DownloadButton content={eventMoneyMapHtml(rows, { trend })} filename="money-map.html" mime="text/html" label="Money map" />}
       </div>
       <div className="mb-4 text-[13px] text-[var(--ink-muted)]">
         How much you spend on each optimisation event, and the ROI where the event actually makes money.
