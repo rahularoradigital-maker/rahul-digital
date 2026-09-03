@@ -366,3 +366,20 @@ The highest-ROI move is **Phase 1 (CI-blocking gates)** — near-zero effort, ki
 **Not changed:** no product behavior; all edits are tooling/gate/data-classification. `check:all` (serial) kept as the job-list source + fallback.
 
 **Next (awaiting go):** Phase 2 — security close-out (leaked-password toggle is yours; broaden `check:tenancy`; keep access-gate green).
+
+---
+
+## Phase 2 — EXECUTED 2026-09-03 (security close-out)
+
+**Objective:** close the remaining actionable security-advisor items; confirm posture.
+
+**Done + verified (live):**
+- Re-ran the Supabase security advisor. The 3 `cp_*` cross-tenant RPCs are GONE (0033 held). The ~57 `rls_enabled_no_policy` entries are **INFO by design** — the default-deny + service-role tenancy model, not a defect.
+- **`handle_new_user` least-privilege** (migration `0039`, applied): revoked EXECUTE from `anon`/`authenticated`/`public`. The advisor WARNed it as anon-executable, but it is a trigger (returns `trigger`) — proven not `/rpc`-callable. This is defense-in-depth (remove the unusable grant so the linter is clean and no future change can expose it). **Verified:** `anon_exec=false, authed_exec=false`, and the auth.users trigger is **still wired** — signups unaffected (trigger execution does not check the EXECUTE grant).
+- **Only remaining security item: leaked-password protection** — a Supabase Auth dashboard toggle, OWNER action (Authentication → Sign In / Providers → Email).
+
+**Deliberately deferred (anti-over-engineering):** a static "every admin-client read is user-scoped" tenancy check would false-positive on legitimately-unscoped reads (public/system/aggregate tables) and red the gate. The correct, enforceable place is the **store-layer boundary in Phase 5** — a check that all `createAdminClient().from(<tenant table>)` lives in `lib/**/store.ts` and is user-scoped, where the boundary makes the assertion precise. Noted, not shipped as a fragile gate.
+
+**Result:** advisor clean of actionable items except the owner's leaked-password toggle; gate green; no product behavior changed.
+
+**Next (awaiting go):** Phase 3 — de-entropy (dedupe `readCookie`/switchers, archive the v1 rules engine, consolidate docs).
