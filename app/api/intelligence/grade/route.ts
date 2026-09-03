@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { guardProductApi } from "@/lib/app/access";
 import { loadCockpit } from "@/lib/app/cockpit-data";
 import { gradeRows, type DecisionTripleRow } from "@/lib/intelligence/grade-store";
 
@@ -18,6 +19,8 @@ const MAX_ROWS = 400;
 export async function POST() {
   const { data: { user } } = await (await createClient()).auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  const denied = await guardProductApi(); // post-approval: this loads the cockpit (spend) + writes outcomes
+  if (denied) return denied;
 
   // Current per-ad ROAS from the cockpit (own scope).
   const data = await loadCockpit(30);
