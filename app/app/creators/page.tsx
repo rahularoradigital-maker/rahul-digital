@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/app/user";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadLatestDiscovery } from "@/lib/influencer/store";
+import { loadShortlistIds } from "@/lib/influencer/shortlist";
 import { CreatorsExplorer } from "@/components/app/creators/creators-explorer";
 import { RunButton } from "@/components/app/influencer/run-button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +16,7 @@ export default async function CreatorsPage() {
   const user = await getCurrentUser();
   const session = user ? await getUserMetaSession(user.id) : null;
   const run = user && session ? await loadLatestDiscovery(user.id, session.activeExternalId) : null;
+  const savedIds = user && session ? [...await loadShortlistIds(user.id, session.activeExternalId)] : [];
   // §24 freshness: run.createdAt was loaded but never shown - a weeks-old shortlist looked current. Surface
   // its age, and nudge a re-run once it's old enough to likely be stale.
   const runAge = run ? relativeTime(run.createdAt) : null;
@@ -39,7 +41,7 @@ export default async function CreatorsPage() {
       </div>
 
       {run && run.ranked.length > 0 ? (
-        <CreatorsExplorer creators={run.ranked} accountName={session?.activeAccountName ?? "your account"} />
+        <CreatorsExplorer creators={run.ranked} accountName={session?.activeAccountName ?? "your account"} savedIds={savedIds} />
       ) : (
         <Card>
           <CardContent className="space-y-4 p-6">

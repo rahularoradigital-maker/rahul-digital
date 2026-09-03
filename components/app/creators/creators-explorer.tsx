@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ExternalLink, Mail, TrendingUp, Users, Activity, MapPin, SlidersHorizontal, Search } from "lucide-react";
+import { ExternalLink, Mail, TrendingUp, Users, Activity, MapPin, SlidersHorizontal, Search, Bookmark, BookmarkCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,10 @@ const benchView: Record<BenchmarkVerdict, { cls: string; label: string }> = {
   below: { cls: "text-[var(--warn-ink)]", label: "below typical" },
 };
 
-export function CreatorsExplorer({ creators, accountName }: { creators: RankedCreator[]; accountName: string }) {
+export function CreatorsExplorer({ creators, accountName, savedIds = [] }: { creators: RankedCreator[]; accountName: string; savedIds?: string[] }) {
+  // Shortlist (spec §28): saved creators for this account. Seeded from the server, updated optimistically.
+  const [saved, setSaved] = useState<Set<string>>(() => new Set(savedIds));
+  const [savedOnly, setSavedOnly] = useState(false);
   const [eng, setEng] = useState<EngBand>("any");
   const [gender, setGender] = useState<"any" | "f" | "m">("any");
   const [region, setRegion] = useState<string>("any");
@@ -66,6 +69,7 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
     return creators
       .filter((r) => {
         const c = r.creator;
+        if (savedOnly && !saved.has(c.identity.platformUserId)) return false;
         if (!inEngBand(c.engagementRate.value, eng)) return false;
         if (Number.isFinite(minF) && (c.followers.value ?? 0) < minF) return false;
         // Gender/region are INFERRED (name/bio). Only drop a CONFIRMED non-match; keep unknowns, so picking a
@@ -86,7 +90,7 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
         return true;
       })
       .map((r, i) => ({ ...r, rank: i + 1 }));
-  }, [creators, eng, gender, region, minConf, minFollowers, keyword, minViews, activeWithin, hasEmail, minAuth]);
+  }, [creators, eng, gender, region, minConf, minFollowers, keyword, minViews, activeWithin, hasEmail, minAuth, savedOnly, saved]);
 
   const active = eng !== "any" || gender !== "any" || region !== "any" || minConf !== "any" || minFollowers !== "" || keyword !== "" || minViews !== "" || activeWithin !== "any" || hasEmail || minAuth !== "any";
   const clear = () => { setEng("any"); setGender("any"); setRegion("any"); setMinConf("any"); setMinFollowers(""); setKeyword(""); setMinViews(""); setActiveWithin("any"); setHasEmail(false); setMinAuth("any"); };
@@ -116,6 +120,23 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
     }
   };
   const busy = searching || pending;
+
+  // Save / unsave a creator. Optimistic: flip local state immediately, POST, and revert only if it fails - so
+  // the button feels instant and never lies about what's persisted.
+  const toggleSave = async (platformUserId: string, platform: string) => {
+    const wasSaved = saved.has(platformUserId);
+    setSaved((prev) => { const n = new Set(prev); if (wasSaved) n.delete(platformUserId); else n.add(platformUserId); return n; });
+    try {
+      const res = await fetch("/api/influencer/shortlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platformUserId, platform, action: wasSaved ? "remove" : "add" }),
+      });
+      if (!res.ok) throw new Error("save failed");
+    } catch {
+      setSaved((prev) => { const n = new Set(prev); if (wasSaved) n.add(platformUserId); else n.delete(platformUserId); return n; });
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -210,9 +231,13 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
             </label>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-            <span className="text-[13px] text-muted-foreground"><span className="font-medium text-foreground">{filtered.length}</span> of {creators.length} shown{eng !== "any" ? ` · ${eng.replace("+", "%+").replace("-", "–")}% eng` : ""}</span>
+            <span className="text-[13px] text-muted-foreground"><span className="font-medium text-foreground">{filtered.length}</span> of {creators.length} shown{eng !== "any" ? ` · ${eng.replace("+", "%+").replace("-", "–")}% eng` : ""}{saved.size > 0 ? ` · ${saved.size} saved` : ""}</span>
             <div className="flex items-center gap-2">
               {active ? <Button variant="ghost" size="sm" onClick={clear} disabled={busy}>Clear</Button> : null}
+              <label className="flex cursor-pointer items-center gap-1.5 text-[12.5px] text-muted-foreground" title="Show only creators you've saved to your shortlist">
+                <input type="checkbox" checked={savedOnly} onChange={(e) => setSavedOnly(e.target.checked)} className="h-3.5 w-3.5 rounded border-input accent-[var(--ink)]" />
+                Saved only
+              </label>
               <label className="flex cursor-pointer items-center gap-1.5 text-[12.5px] text-muted-foreground" title="Exclude every creator you've already been shown in past searches">
                 <input type="checkbox" checked={newOnly} onChange={(e) => setNewOnly(e.target.checked)} className="h-3.5 w-3.5 rounded border-input accent-[var(--ink)]" />
                 New influencers only
@@ -229,14 +254,14 @@ export function CreatorsExplorer({ creators, accountName }: { creators: RankedCr
         <Card><CardContent className="p-6 text-sm text-muted-foreground">No creators match these filters. Loosen them, or re-run the hunt for a fresh set.</CardContent></Card>
       ) : (
         <div className="space-y-3">
-          {filtered.map((r) => <CreatorRow key={r.creator.identity.platformUserId} r={r} />)}
+          {filtered.map((r) => <CreatorRow key={r.creator.identity.platformUserId} r={r} isSaved={saved.has(r.creator.identity.platformUserId)} onToggleSave={toggleSave} />)}
         </div>
       )}
     </div>
   );
 }
 
-function CreatorRow({ r }: { r: RankedCreator }) {
+function CreatorRow({ r, isSaved, onToggleSave }: { r: RankedCreator; isSaved: boolean; onToggleSave: (platformUserId: string, platform: string) => void }) {
   const c = r.creator;
   const q = r.scorecard.quality;
   const tier = c.followers.value !== null ? tierOf(c.followers.value) : null;
@@ -280,6 +305,9 @@ function CreatorRow({ r }: { r: RankedCreator }) {
 
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <Button asChild size="sm"><Link href={`/app/creators/${c.identity.platformUserId}`}>View profile</Link></Button>
+              <Button size="sm" variant={isSaved ? "default" : "outline"} onClick={() => onToggleSave(c.identity.platformUserId, c.identity.platform)} aria-pressed={isSaved}>
+                {isSaved ? <><BookmarkCheck /> Saved</> : <><Bookmark /> Save</>}
+              </Button>
               {c.businessEmail.value ? <Button asChild size="sm" variant="outline"><a href={`mailto:${c.businessEmail.value}`}><Mail /> Email</a></Button> : null}
               <Button asChild size="sm" variant="ghost"><a href={c.identity.profileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink /> Instagram</a></Button>
             </div>
