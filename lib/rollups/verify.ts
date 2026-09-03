@@ -3,6 +3,7 @@ import type { TokenSet } from "@/lib/ad-source";
 import { loadAccountRollup } from "@/lib/rollups/account";
 import { reconHeadlines, summaryStatus, ROLLUP_WINDOW_DAYS } from "@/lib/rollups/pure";
 import { recordVerification } from "@/lib/rollups/verification";
+import { notify } from "@/lib/notifications/store";
 import { fetchScopeInsights } from "@/lib/meta-source";
 import { captureError } from "@/lib/observability";
 import type { ReconSummary } from "@/lib/intelligence/reconcile";
@@ -42,5 +43,21 @@ export async function verifyAndLog(userId: string, account: string, token: Token
     status,
     trustworthy: summary.trustworthy,
   });
+
+  // Actionable drift alarm: only a real CONFLICT raises a notification, deduped per account so repeated syncs
+  // collapse into one updated row (never spams). The happy path (match / minor drift) stays silent.
+  if (!summary.trustworthy) {
+    const worst = recs.find((r) => r.status === "conflict") ?? recs[0];
+    await notify({
+      userId,
+      kind: "system",
+      status: "warning",
+      title: "Your numbers disagree with Meta",
+      detail: `${worst ? worst.metric[0].toUpperCase() + worst.metric.slice(1) : "A headline metric"} is off by ${(summary.worstDriftPct * 100).toFixed(0)}% between AdScale and Meta for the last ${windowDays} days. We're still showing the stored number; a re-sync will refresh it.`,
+      action: "Reconcile with Meta",
+      dedupeKey: `accuracy:${account}`,
+      context: { account, worstDriftPct: summary.worstDriftPct, store: { spend: rollup.spend, revenue: rollup.revenue }, meta: live },
+    }).catch(() => {});
+  }
   return { ok: true, status, trustworthy: summary.trustworthy, summary, store: { spend: rollup.spend, revenue: rollup.revenue }, meta: live, window: { since, until }, notes: recs.map((r) => r.note) };
 }
