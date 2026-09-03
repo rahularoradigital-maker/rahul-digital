@@ -786,13 +786,15 @@ export function CreativeStudio() {
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" className={`${BTN_GHOST}`} onClick={() => setStep("concepts")}>← Back to concepts</Button>
                 <span className="ml-2 text-[12px] text-[var(--ink-muted)]">Filter:</span>
-                {["all", "approved", "rejected", "draft"].map((f) => (
-                  <button key={f} className={f === reviewFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setReviewFilter(f)}>{f[0].toUpperCase() + f.slice(1)}</button>
-                ))}
+                {["all", "approved", "rejected", "draft"].map((f) => {
+                  const n = f === "all" ? assets.length : assets.filter((a) => a.approval === f).length;
+                  return <button key={f} className={f === reviewFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setReviewFilter(f)}>{f[0].toUpperCase() + f.slice(1)} <span className="opacity-60">{n}</span></button>;
+                })}
                 <span className="ml-1 text-[12px] text-[var(--ink-muted)]">QA:</span>
-                {["all", "READY", "REVIEW", "FAILED"].map((f) => (
-                  <button key={f} className={f === qaFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setQaFilter(f)}>{f === "all" ? "All" : f[0] + f.slice(1).toLowerCase()}</button>
-                ))}
+                {["all", "READY", "REVIEW", "FAILED"].map((f) => {
+                  const n = f === "all" ? assets.length : assets.filter((a) => a.qa?.status === f).length;
+                  return <button key={f} className={f === qaFilter ? `${BTN_PRIMARY} py-1.5` : `${BTN_GHOST} py-1.5`} onClick={() => setQaFilter(f)}>{f === "all" ? "All" : f[0] + f.slice(1).toLowerCase()} <span className="opacity-60">{n}</span></button>;
+                })}
                 {(() => {
                   const readyN = assets.filter((a) => a.qa?.status === "READY" && a.approval !== "approved").length;
                   const failedN = assets.filter((a) => a.qa?.status === "FAILED" && a.approval !== "rejected").length;
