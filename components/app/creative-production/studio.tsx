@@ -23,7 +23,17 @@ const IMAGE_TOKENS = ACTION_TOKENS.image;
 // pipeline composes deterministic placeholders so the flow is fully testable end-to-end.
 
 type Product = { productId: string; title: string; description: string; price: number | null; compareAtPrice: number | null; image: string | null; status: string | null; productType: string | null; advertised?: boolean };
-type Rec = { productId: string; title: string; price: number | null; compareAtPrice: number | null; image: string | null; productType: string | null; discountPct: number; saving: number; advertised: boolean; reason: string };
+type RecPriority = "refresh-winner" | "new-whitespace" | "test-offer" | "scale-working" | "low";
+type Rec = { productId: string; title: string; price: number | null; compareAtPrice: number | null; image: string | null; productType: string | null; discountPct: number; saving: number; advertised: boolean; priority?: RecPriority; reason: string };
+// Plain-English label + colour for each recommendation priority (from the performance-rank ladder), so the
+// buyer sees WHY a product is recommended and in what order - not just a discount number.
+const RECO_CHIP: Record<RecPriority, { label: string; cls: string }> = {
+  "refresh-winner": { label: "Refresh a winner", cls: "bg-amber-500/15 text-amber-600" },
+  "new-whitespace": { label: "New — test it", cls: "bg-[var(--accent)]/10 text-[var(--accent)]" },
+  "test-offer": { label: "Try a new angle", cls: "bg-sky-500/15 text-sky-600" },
+  "scale-working": { label: "Working — scale", cls: "bg-emerald-500/15 text-emerald-600" },
+  low: { label: "Low priority", cls: "bg-[var(--hairline)] text-[var(--ink-muted)]" },
+};
 // What Studio derived about a product (a subset of Product DNA). Fields may be the literal "UNKNOWN".
 type ProductDNA = { name: string; category: string; primaryBenefit: string; problemSolved: string; targetPersona: string; usps: string[]; proof: string[]; confidence: number };
 type Concept = { id: string; formatId: string; headline: string; supportingCopy: string; cta: string; offer: string | null; angle: string; whyThisConcept: string; whyNow: string; score: number; awarenessStage: string; visualDirection: string };
@@ -527,7 +537,8 @@ export function CreativeStudio() {
                         <p className="line-clamp-2 min-h-[32px] text-[12px] font-medium">{r.title}</p>
                         <p className="text-[12px] text-[var(--ink-muted)]">{money(r.price)}{r.discountPct > 0 ? <span className="ml-1 rounded-[4px] bg-[var(--accent)]/10 px-1 text-[11px] font-medium text-[var(--accent)]">{r.discountPct}% off</span> : null}</p>
                         {r.saving > 0 ? <p className="text-[11px] text-[var(--ink-muted)]">Save {money(r.saving)}</p> : null}
-                        {r.advertised ? <p className="text-[11px] text-emerald-500">✓ already advertised</p> : <p className="text-[11px] text-[var(--accent)]">new — not advertised yet</p>}
+                        {r.priority ? <span className={`mt-1 inline-block self-start rounded-[4px] px-1.5 py-0.5 text-[10px] font-medium ${RECO_CHIP[r.priority].cls}`}>{RECO_CHIP[r.priority].label}</span> : (r.advertised ? <p className="text-[11px] text-emerald-500">✓ already advertised</p> : <p className="text-[11px] text-[var(--accent)]">new — not advertised yet</p>)}
+                        {r.reason ? <p className="mt-1 line-clamp-2 text-[10px] leading-tight text-[var(--ink-muted)]" title={r.reason}>{r.reason}</p> : null}
                         <button className={`${isSel ? BTN_PRIMARY : BTN_GHOST} mt-2 py-1.5`} onClick={() => toggleSelect(r.productId)}>{isSel ? "Selected" : "Select"}</button>
                       </div>
                     );
