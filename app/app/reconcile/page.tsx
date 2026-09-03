@@ -3,6 +3,8 @@ import { getUserMetaSession } from "@/lib/meta-sync";
 import { loadReconcile } from "@/lib/reconcile/store";
 import { ConnectState } from "@/components/app/connect-state";
 import { ReconcileView } from "@/components/app/reconcile/reconcile-view";
+import { TrustLine } from "@/components/app/trust-line";
+import { NextStep } from "@/components/app/next-step";
 
 // Reconcile page: lines up AdScale's whole-account numbers against the filtered scopes a Meta view uses, so
 // any "your numbers differ from Meta" question is answerable at a glance. Server-rendered from the store.
@@ -36,8 +38,12 @@ export default async function ReconcilePage() {
   return (
     <div className="space-y-6">
       {header}
+      <TrustLine userId={user.id} accountExternalId={session.activeExternalId} />
       {bundle ? (
-        <ReconcileView report={bundle.report} accountName={bundle.accountName} since={bundle.since} until={bundle.until} />
+        <>
+          <ReconcileView report={bundle.report} accountName={bundle.accountName} since={bundle.since} until={bundle.until} />
+          <NextStep href="/app" label="Back to your cockpit" hint="Now that the numbers reconcile, see your account health and this week's plan." />
+        </>
       ) : (
         <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-5 text-[14px] text-[var(--ink-muted)]">
           This brand hasn&apos;t synced yet. It syncs automatically in the background - check back shortly and the reconciliation will appear here.
