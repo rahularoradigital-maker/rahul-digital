@@ -383,3 +383,28 @@ The highest-ROI move is **Phase 1 (CI-blocking gates)** — near-zero effort, ki
 **Result:** advisor clean of actionable items except the owner's leaked-password toggle; gate green; no product behavior changed.
 
 **Next (awaiting go):** Phase 3 — de-entropy (dedupe `readCookie`/switchers, archive the v1 rules engine, consolidate docs).
+
+---
+
+## Phase 6 (slice) — EXECUTED 2026-09-03 (isolated DB perf)
+
+- **`auth_rls_initplan`** (migration `0040`, applied + verified): the two user-facing RLS policies (`profiles."own profile read"`, `token_usage.token_usage_select_own`) used bare `auth.uid()` (re-evaluated per row). Rewrapped as `(select auth.uid())` (evaluated once per query). Verified live: both `qual` now read `(SELECT auth.uid())`. Identical rows, better plan at scale. These are the only two user-facing RLS policies (the rest is the service-role model).
+
+---
+
+## Execution summary & honest stop point (2026-09-03)
+
+**Completed autonomously, each verified + gated + committed:**
+- **Phase 1** — parallel check runner (165→166 checks in ~1.9s vs minutes) + fixed 6 red gate checks (CI was failing). `b8fa133`.
+- **Phase 2** — security close-out: `handle_new_user` least-privilege (`0039`), classified new tables, confirmed posture. `3b4993d`.
+- **Phase 6 (slice)** — RLS init-plan perf (`0040`).
+- (Earlier this session, pre-audit) — the P0/P1/P2 security + correctness + performance + instant-app + self-proving work now cross-referenced here.
+
+**Deliberately NOT bulldozed (the senior-engineer call the mandate asked for):**
+The remaining phases — **3** (dedupe `readCookie`/switchers, archive the v1 rules engine), **4** (cockpit streaming / first-paint), **5** (store-layer boundary + cockpit assembler split), **7** (frontend perf), **8** (the HIGH-risk golden money-path split), **11** (a11y) — are predominantly edits to **hot and golden files that 14 other sessions are actively changing** (154 commits today). This audit's own #1 finding is that parallel-authorship entropy is the top risk; racing these through a churning tree as one autonomous agent would *cause* the regressions diagnosed here (and two are golden money-path changes that must be output-identical, verified against `check:golden`/`check:shadow-benchmark`, done alone).
+
+Specifically confirmed unsafe-to-solo right now:
+- The v1 rules-engine archive (Phase 3) is **entangled**: reachability from the golden `lib/cockpit/analyze.ts` path is ambiguous (`causality.ts` is in that neighborhood), so a wrong deletion could break scoring. Correctly marked INVESTIGATE, not deleted.
+- The cockpit assembler split (Phase 8) and cockpit streaming (Phase 4) touch `app/app/page.tsx` + `lib/cockpit/*` + `lib/meta-*`, edited by multiple sessions this session alone.
+
+**The enabling investment is done:** the gate is now fast (~2s) and green and CI-enforced, which is exactly what makes phases 3–8 safe to do **incrementally, with ownership, in a coordinated window** — the right way, not a solo race. Recommend scheduling those against a quieter tree (or a dedicated branch) with the golden invariants as the contract.
