@@ -3,8 +3,8 @@
 -- (brands/cp_brand_dna, cp_product_dna, ad_meta+creative_semantics, ad_metrics+rollups, competitor_ads,
 -- decision_triples). RLS default-deny (service-role only) — same tenancy model as the rest of the app.
 --
--- ⚠️ NOT YET APPLIED. This file is written for review; apply only on Rahul's green-light (schema migration is
--- a stated stop condition). Mirrors lib/creative-os/schema.ts.
+-- APPLIED live 2026-09-03 (Rahul green-lit). Verified: both tables RLS-enabled, 0 policies (default-deny),
+-- indexes present. Mirrors lib/creative-os/schema.ts.
 
 -- 1) creative_patterns — the unified pattern object. persona/problem/desire/objection/trigger/angle/hook/
 --    visual_hook/format/language/proof are all rows here, discriminated by `type`, each tied to a real source.
