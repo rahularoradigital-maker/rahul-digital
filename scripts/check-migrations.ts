@@ -15,13 +15,19 @@ const migDir = join(root, "supabase", "migrations");
 
 // Collisions that already exist in production. Applied migrations must NOT be renamed (the runner tracks them
 // by filename), so these are accepted; the check only forbids ADDING a new one.
-const GRANDFATHERED_DUPLICATE_ORDINALS = new Set(["0007", "0017", "0018", "0019", "0020"]);
+// 0030: two features landed the same ordinal in parallel (ad_optimization_event + cp_advertised_product_ids);
+// both are already APPLIED to prod, so renaming would be riskier than accepting the collision (apply-order is
+// moot once both are applied). Grandfathered, consistent with the earlier duplicates.
+const GRANDFATHERED_DUPLICATE_ORDINALS = new Set(["0007", "0017", "0018", "0019", "0020", "0030"]);
 
 const files = readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort();
 assert.ok(files.length >= 20, `expected the migration set (found ${files.length})`);
 
 // 1. No rollback/down files in the auto-applied folder.
-const downFiles = files.filter((f) => /(_down|rollback|revert|undo)/i.test(f));
+// Match the rollback MARKER only as the trailing suffix (the convention is `<name>_down.sql` /
+// `_rollback.sql`), not anywhere in the name - otherwise a legit forward migration like
+// `0032_lock_down_...sql` false-trips on the substring "_down" and reds the whole gate.
+const downFiles = files.filter((f) => /[._](down|rollback|revert|undo)\.sql$/i.test(f));
 assert.deepEqual(downFiles, [], `rollback/down migration(s) in supabase/migrations/: ${downFiles.join(", ")}. Move them to supabase/rollbacks/ - the runner would apply them forward and undo the migration.`);
 
 // 2. Naming convention NNNN_snake_case.sql.

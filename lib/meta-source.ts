@@ -9,7 +9,9 @@ import type { Objective } from "./rules/comparator.ts";
 import type { CreativeAsset } from "./creative/fingerprint.ts";
 import type { NormalizedAd } from "./competitors/types.ts";
 import type { Candidate } from "./brand/discover.ts";
-import { captureError } from "@/lib/observability";
+// Relative (not "@/") so the assert-script runner (node --experimental-strip-types) can resolve this VALUE
+// import - many checks transitively import this module, and the `@/` alias only resolves under tsc/Next.
+import { captureError } from "./observability.ts";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 

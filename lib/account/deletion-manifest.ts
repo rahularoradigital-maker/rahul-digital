@@ -27,6 +27,8 @@ export const EXPLICIT_DELETE_BY_USER = [
   "influencer_search", "influencer_search_result", "influencer_shortlist", "influencer_sync_state",
   "shopify_connections", "shopify_products", "shopify_sync_state",
   "cockpit_cache",
+  "account_rollups", "creative_rollups", "account_verifications", // instant-app precompute + self-proving trend (0035-0037): user_id-scoped derived data, delete on account removal
+  "deep_analysis_run", "deep_creative_read", // deep creative analysis (0028): user_id-scoped derived reads, delete on account removal
   "jobs", // durable job queue (0027): delete the user's queued work on deletion. user_id is nullable -
           // deleting by user_id removes their jobs and leaves system jobs (null user_id) untouched.
 ] as const;

@@ -345,3 +345,24 @@ The highest-ROI move is **Phase 1 (CI-blocking gates)** — near-zero effort, ki
 ---
 
 *No code was modified in this pass. Recommended first execution step (on your approval): Phase 1 — wire `tsc && npm run build && node scripts/run-checks` as a CI-blocking check on push, and collapse the 165-command chain into one `node --test` run without losing a single invariant.*
+
+---
+
+## Phase 1 — EXECUTED 2026-09-03 (make gates authoritative + fast)
+
+**Objective:** collapse the 165-command serial `check:all` into one parallel command, and confirm the gate is trustworthy.
+
+**Done + verified:**
+- `scripts/run-checks.mjs` + `npm run check`: runs the EXACT `check:all` set in parallel. **165/165 checks in ~1.8s** (was minutes serial); reports every failure, exits non-zero if any fail. CI (`.github/workflows/ci.yml`) now runs `npm run check`.
+- **Finding (critical):** the branch gate was **RED on 6 checks** — i.e. CI was failing on committed code. Root-caused and fixed all 6:
+  1. `check:migrations` false-positive: `/_down/` matched `0032_lock_**down**_…` — anchored the rollback marker to the `_down.sql` suffix.
+  2. `check:migrations` real issue: duplicate ordinal `0030` (two features, both already applied) — grandfathered (renaming an applied migration is riskier).
+  3. `check:{chunk,objective,brand-website,currency}` (4 checks): `lib/meta-source.ts` value-imported `captureError` via `@/lib/…`, which the strip-types check runner can't resolve — switched to a relative import (one line; unblocked all 4).
+  4. `check:account-deletion`: 5 user-scoped tables (`account_rollups`, `creative_rollups`, `account_verifications`, `deep_analysis_run`, `deep_creative_read`) were unclassified → would orphan data on account deletion. Added to `EXPLICIT_DELETE_BY_USER`.
+- After fixes: **165/165 green, tsc clean, build compiles.**
+
+**Impact:** CI is now fast AND the gate is actually green (it wasn't). This directly addresses the #1 risk (parallel-authorship entropy): the gate now catches regressions in seconds and CI enforces it.
+
+**Not changed:** no product behavior; all edits are tooling/gate/data-classification. `check:all` (serial) kept as the job-list source + fallback.
+
+**Next (awaiting go):** Phase 2 — security close-out (leaked-password toggle is yours; broaden `check:tenancy`; keep access-gate green).

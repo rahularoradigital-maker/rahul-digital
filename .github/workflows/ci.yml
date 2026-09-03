@@ -47,6 +47,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      # One step runs ALL correctness gates, so a new check script can never silently miss CI.
+      # One step runs ALL correctness gates in PARALLEL (scripts/run-checks.mjs runs the exact check:all set,
+      # ~50x faster wall-clock, and reports EVERY failure instead of stopping at the first). `check:all` (the
+      # serial chain) is kept as the source of the job list and a fallback.
       - name: Run all checks
-        run: npm run check:all
+        run: npm run check
