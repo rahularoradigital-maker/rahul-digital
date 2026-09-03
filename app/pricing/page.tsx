@@ -100,16 +100,24 @@ export default function PricingPage() {
         <section className="border-t border-[var(--hairline)] py-20">
           <div className="mx-auto max-w-3xl px-6">
             <h2 className="text-center text-[32px] leading-tight">Pricing questions</h2>
-            <dl className="mt-10 divide-y divide-[var(--hairline)]">
+            {/* Collapsible via native <details> (2026-09-03): answers stay in the HTML + JSON-LD, so AEO is
+                preserved while the list collapses. No client JS. */}
+            <div className="mt-10 divide-y divide-[var(--hairline)]">
               {FAQS.map((f) => (
-                <div key={f.q} className="py-6 first:pt-0">
-                  <dt>
+                <details key={f.q} className="group">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-6 [&::-webkit-details-marker]:hidden">
                     <h3 className="text-[18px] font-medium leading-snug text-[var(--ink)]">{f.q}</h3>
-                  </dt>
-                  <dd className="mt-2 max-w-2xl text-[15px] leading-relaxed text-[var(--ink-muted)]">{f.a}</dd>
-                </div>
+                    <span
+                      aria-hidden
+                      className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full border border-[var(--hairline)] text-[18px] leading-none text-[var(--ink-muted)] transition-transform duration-200 group-open:rotate-45"
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <p className="-mt-1 max-w-2xl pb-6 text-[15px] leading-relaxed text-[var(--ink-muted)]">{f.a}</p>
+                </details>
               ))}
-            </dl>
+            </div>
           </div>
         </section>
       </main>

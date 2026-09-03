@@ -1,9 +1,11 @@
 // Homepage FAQ. Built for answer-engine extraction (AEO): each question is a real question a buyer asks,
-// phrased as an H3, with the answer stated directly and visibly underneath (no accordion - collapsed/tab
-// content is not reliably read by AI answer engines). The FAQPage JSON-LD is generated from the SAME array,
-// so the structured data always matches the visible text (a Google requirement). Every answer is factually
-// true to the product: AdScale reads accounts and recommends, it never acts; it never points at paused/ended
-// entities as actions; pricing is early-access -> demo (no fabricated price).
+// phrased as an H3, with the answer stated directly underneath. Collapsible via NATIVE <details>/<summary>
+// (Rahul, 2026-09-03): the answer text stays server-rendered IN THE HTML (native details only visually
+// collapses it - crawlers and answer engines still read it, unlike JS display:none tabs), and the FAQPage
+// JSON-LD is generated from the SAME array, so structured data still matches the text (a Google requirement)
+// and the AEO benefit is preserved. No client JS - this stays a server component. Every answer is factually
+// true: AdScale reads accounts and recommends, it never acts; it never points at paused/ended entities as
+// actions; pricing is early-access -> demo (no fabricated price).
 
 const FAQS: { q: string; a: string }[] = [
   {
@@ -68,16 +70,22 @@ export function FAQ() {
           </span>
           <h2 className="text-[40px] leading-[1.08]">Common questions</h2>
         </div>
-        <dl className="mt-12 divide-y divide-[var(--hairline)]">
+        <div className="mt-12 divide-y divide-[var(--hairline)]">
           {FAQS.map((f) => (
-            <div key={f.q} className="py-6 first:pt-0">
-              <dt>
+            <details key={f.q} className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-6 [&::-webkit-details-marker]:hidden">
                 <h3 className="text-[19px] font-medium leading-snug text-[var(--ink)]">{f.q}</h3>
-              </dt>
-              <dd className="mt-2 max-w-2xl text-[16px] leading-relaxed text-[var(--ink-muted)]">{f.a}</dd>
-            </div>
+                <span
+                  aria-hidden
+                  className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full border border-[var(--hairline)] text-[18px] leading-none text-[var(--ink-muted)] transition-transform duration-200 group-open:rotate-45"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="-mt-1 max-w-2xl pb-6 text-[16px] leading-relaxed text-[var(--ink-muted)]">{f.a}</p>
+            </details>
           ))}
-        </dl>
+        </div>
       </div>
     </section>
   );
