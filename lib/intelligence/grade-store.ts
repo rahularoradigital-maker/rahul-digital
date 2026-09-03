@@ -13,6 +13,7 @@ import type { Confidence } from "./output-contract.ts";
 export type DecisionTripleRow = {
   ad_id: string;
   snapshot_day?: string | null;
+  time_window?: string | null; // part of the row key (user_id, ad_id, time_window, snapshot_day)
   rule_id?: string | null;
   situation?: { roas?: number | null; confidence?: number | null } | null;
   recommendation?: { action?: string | null } | null;
@@ -38,7 +39,7 @@ export function rowToPrediction(row: DecisionTripleRow): { prediction: Predictio
   };
 }
 
-export type OutcomeWrite = { adId: string; snapshotDay: string | null; outcome: { metric: string; before: number; after: number; movePct: number; actual: string; correct: boolean | null } };
+export type OutcomeWrite = { adId: string; snapshotDay: string | null; timeWindow: string | null; outcome: { metric: string; before: number; after: number; movePct: number; actual: string; correct: boolean | null } };
 export type GradeResult = { evaluations: Evaluation[]; writes: OutcomeWrite[]; accuracy: AccuracyStats };
 
 // Grade a batch of rows against each ad's CURRENT ROAS (currentRoasByAd[ad_id]). Rows with no baseline, or no
@@ -53,7 +54,7 @@ export function gradeRows(rows: DecisionTripleRow[], currentRoasByAd: Record<str
     if (after == null || !isFinite(after)) continue; // no current metric -> can't grade yet
     const ev = evaluate(mapped.prediction, { before: mapped.before, after, higherIsBetter: true });
     evaluations.push(ev);
-    writes.push({ adId: row.ad_id, snapshotDay: row.snapshot_day ?? null, outcome: { metric: "roas", before: mapped.before, after, movePct: ev.movePct, actual: ev.actual, correct: ev.correct } });
+    writes.push({ adId: row.ad_id, snapshotDay: row.snapshot_day ?? null, timeWindow: row.time_window ?? null, outcome: { metric: "roas", before: mapped.before, after, movePct: ev.movePct, actual: ev.actual, correct: ev.correct } });
   }
   return { evaluations, writes, accuracy: accuracyStats(evaluations) };
 }
