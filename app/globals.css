@@ -12,10 +12,12 @@
   --accent-soft: #e6f2fe;
   --hairline: #e4e4e4;
 
-  /* verdict / semantic (app) */
-  --good-ink: #0f8a4d;
+  /* verdict / semantic (app). Ink darkened 2026-09-03 so ink-on-tint clears WCAG AA 4.5:1 for the 11px
+     verdict chips (audit UNKNOWN, now measured): good #0f8a4d->#0d7a44 (was 3.89:1, now 4.78:1),
+     warn #b06b00->#9a5a00 (was 3.79:1, now 4.89:1); bad #c0392b already 4.74:1. Guarded by check:contrast. */
+  --good-ink: #0d7a44;
   --good-bg: #e7f4ec;
-  --warn-ink: #b06b00;
+  --warn-ink: #9a5a00;
   --warn-bg: #fbf1df;
   --bad-ink: #c0392b;
   --bad-bg: #fbecea;
