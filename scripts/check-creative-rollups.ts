@@ -1,9 +1,12 @@
 // Runnable check for the pure creative-rollup ranking (10x #5). Run: npm run check:creative-rollups
 import { strict as assert } from "node:assert";
-import { topCreatives, type CreativeAgg, DEFAULT_TOP_N } from "../lib/rollups/creative-pure.ts";
+import { topCreatives, classifyCreatives, type CreativeAgg, DEFAULT_TOP_N } from "../lib/rollups/creative-pure.ts";
 
 function ad(adId: string, spend: number): CreativeAgg {
   return { adId, name: adId, spend, revenue: spend * 2, purchases: 1, roas: 2, active: true };
+}
+function adRoas(adId: string, spend: number, roas: number | null): CreativeAgg {
+  return { adId, name: adId, spend, revenue: roas == null ? 0 : spend * roas, purchases: 1, roas, active: true };
 }
 
 function main() {
@@ -25,7 +28,21 @@ function main() {
   assert.equal(topCreatives(many).length, DEFAULT_TOP_N, "defaults to DEFAULT_TOP_N");
   assert.equal(topCreatives(many)[0].adId, "ad199", "highest spend first");
 
-  console.log("PASS: creative rollups (rank by spend, deterministic tie-break, N cap, empty-safe)");
+  // classifyCreatives: judged against the account's OWN average ROAS, material-spend gated (1% of total).
+  // Account: one big winner, one big waster, one tiny ad (immaterial -> steady regardless).
+  const flagged = classifyCreatives([
+    adRoas("win", 1000, 5), // well above avg
+    adRoas("bleed", 1000, 0.2), // spending, near-zero return
+    adRoas("tiny", 5, 0.01), // immaterial spend -> steady
+  ]);
+  const byId = Object.fromEntries(flagged.map((f) => [f.adId, f.flag]));
+  assert.equal(byId["win"], "winner", "materially above account avg ROAS -> winner");
+  assert.equal(byId["bleed"], "wasting", "material spend, far below avg -> wasting");
+  assert.equal(byId["tiny"], "steady", "immaterial spend -> steady (never judged)");
+  // No account bar (all zero spend) -> everything steady, no crash.
+  assert.ok(classifyCreatives([{ adId: "z", name: "z", spend: 0, revenue: 0, purchases: 0, roas: null, active: null }]).every((f) => f.flag === "steady"));
+
+  console.log("PASS: creative rollups (rank by spend, deterministic tie-break, N cap, empty-safe, own-avg flagging)");
 }
 
 main();

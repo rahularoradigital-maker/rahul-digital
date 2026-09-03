@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readAllPages } from "@/lib/supabase/paged";
-import { topCreatives, type CreativeAgg, DEFAULT_TOP_N } from "@/lib/rollups/creative-pure";
+import { topCreatives, classifyCreatives, type CreativeAgg, DEFAULT_TOP_N } from "@/lib/rollups/creative-pure";
 import { ROLLUP_WINDOW_DAYS, isRollupFresh } from "@/lib/rollups/pure";
 
 // 10x #5 instant-app: the top creatives (by spend) for an account, precomputed so the Creative page / Studio
@@ -54,7 +54,8 @@ async function computeCreatives(userId: string, account: string, windowDays: num
     roas: m.spend > 0 ? m.revenue / m.spend : null,
     active: meta.get(adId)?.active ?? null,
   }));
-  return { top: topCreatives(aggs, DEFAULT_TOP_N), count: aggs.length };
+  // Flag each ad against the account's own average ROAS, then keep the top N by spend (flags ride along).
+  return { top: topCreatives(classifyCreatives(aggs), DEFAULT_TOP_N), count: aggs.length };
 }
 
 export async function refreshCreativeRollup(userId: string, account: string, windowDays: number = ROLLUP_WINDOW_DAYS): Promise<boolean> {

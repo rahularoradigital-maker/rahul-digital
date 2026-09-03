@@ -30,6 +30,8 @@ export async function GET() {
   let changeErrors = 0;
   let rollupAccounts = 0; // rows in account_rollups (instant-app precompute)
   let rollupFresh = 0; // ...of those, computed within AUTOMATION_STALE_HOURS
+  let rollupOldestAgeHours: number | null = null;
+  let recentConflicts = 0; // account_verifications (store-vs-Meta) that were NOT trustworthy, last 7d
 
   try {
     const admin = createAdminClient();
@@ -55,7 +57,23 @@ export async function GET() {
     const rRows = (rData ?? []) as { computed_at: string | null }[];
     rollupAccounts = rRows.length;
     const rollupCutoff = Date.now() - AUTOMATION_STALE_HOURS * 3_600_000;
-    for (const r of rRows) if (r.computed_at && Date.parse(r.computed_at) >= rollupCutoff) rollupFresh++;
+    let oldestMs: number | null = null;
+    for (const r of rRows) {
+      const t = r.computed_at ? Date.parse(r.computed_at) : NaN;
+      if (Number.isFinite(t)) {
+        if (t >= rollupCutoff) rollupFresh++;
+        if (oldestMs === null || t < oldestMs) oldestMs = t;
+      }
+    }
+    rollupOldestAgeHours = oldestMs === null ? null : Math.round((Date.now() - oldestMs) / 3_600_000);
+    // Data-trust: any store-vs-Meta verification that CONFLICTED in the last 7 days (a real accuracy alarm).
+    const conflictCutoff = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const { count: cCount } = await admin
+      .from("account_verifications")
+      .select("id", { count: "exact", head: true })
+      .eq("trustworthy", false)
+      .gte("created_at", conflictCutoff);
+    recentConflicts = cCount ?? 0;
   } catch {
     db = "down";
   }
@@ -111,7 +129,7 @@ export async function GET() {
         lastRunAt, // when a sync last actually ran (bumped by cron OR manual /api/ingest/run)
         lastRunAgeHours,
         changeHistory: { accounts: changeAccounts, withErrors: changeErrors }, // 0 accounts => Change-Impact has no data
-        rollups: { accounts: rollupAccounts, fresh: rollupFresh, connected: syncAccounts }, // fresh << connected => rollup path is behind
+        rollups: { accounts: rollupAccounts, fresh: rollupFresh, connected: syncAccounts, oldestAgeHours: rollupOldestAgeHours, recentConflicts }, // fresh << connected => behind; recentConflicts>0 => a headline disagreed with Meta
       },
       time,
     },
