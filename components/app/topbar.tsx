@@ -37,6 +37,7 @@ export function Topbar() {
   const [answer, setAnswer] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const [focused, setFocused] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false); // mobile: the 7 scope filters collapse behind one toggle
 
   // Shared by the form submit AND the suggestion chips, so both go through one grounded call.
   async function runAsk(raw: string) {
@@ -137,21 +138,41 @@ export function Topbar() {
         </div>
       </div>
 
-      {/* Tier 2 - scope filters, a calm toolbar under a hairline. Wraps cleanly on narrow screens. */}
-      <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--hairline)] pt-3">
-        <BrandSwitcher />
-        {/* Platform: Facebook/Instagram (Meta), Google Ads, or Both combined. Meta + Google are separate
-            sources for now (merged later); this scopes which platform's numbers the dashboard reflects. */}
-        <PlatformSwitcher />
-        {/* Window selects the DISPLAY range (7/14/30/60/90 + custom). Fatigue/trend/scaling stay on the
-            fixed 90-day baseline regardless (enforced in the store), so switching is instant + no re-pull. */}
-        <WindowSwitcher />
-        <ObjectiveSwitcher />
-        {/* Optimization-event filter (global): scopes every screen to campaigns optimizing for the chosen
-            events (e.g. Add to cart, Purchase). Sibling of Objective; options are the events actually synced. */}
-        <EventSwitcher />
-        <CatalogSwitcher />
-        <CampaignSwitcher />
+      {/* Tier 2 - scope filters. Responsive (Phase-0 audit): on desktop this is the inline toolbar; on mobile
+          the 7 pills wrapped to ~4 rows and dominated a 375px viewport before any content, so on small screens
+          they collapse behind a single "Filters" toggle and reveal stacked on demand (Hick's/Miller). One
+          instance of each switcher - only the layout changes by breakpoint. */}
+      <div className="mt-3 border-t border-[var(--hairline)] pt-3">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-expanded={filtersOpen}
+          aria-controls="topbar-filters"
+          className={`${FILTER_TRIGGER} w-full justify-between md:hidden`}
+        >
+          <span className={FILTER_LABEL}>Filters</span>
+          <span className={FILTER_LABEL} aria-hidden>
+            {filtersOpen ? "▴" : "▾"}
+          </span>
+        </button>
+        <div
+          id="topbar-filters"
+          className={`${filtersOpen ? "mt-2 flex" : "hidden"} flex-col items-stretch gap-2 md:mt-0 md:flex md:flex-row md:flex-wrap md:items-center`}
+        >
+          <BrandSwitcher />
+          {/* Platform: Facebook/Instagram (Meta), Google Ads, or Both combined. Meta + Google are separate
+              sources for now (merged later); this scopes which platform's numbers the dashboard reflects. */}
+          <PlatformSwitcher />
+          {/* Window selects the DISPLAY range (7/14/30/60/90 + custom). Fatigue/trend/scaling stay on the
+              fixed 90-day baseline regardless (enforced in the store), so switching is instant + no re-pull. */}
+          <WindowSwitcher />
+          <ObjectiveSwitcher />
+          {/* Optimization-event filter (global): scopes every screen to campaigns optimizing for the chosen
+              events (e.g. Add to cart, Purchase). Sibling of Objective; options are the events actually synced. */}
+          <EventSwitcher />
+          <CatalogSwitcher />
+          <CampaignSwitcher />
+        </div>
       </div>
     </div>
   );
