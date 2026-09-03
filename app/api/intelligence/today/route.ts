@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardProductApi } from "@/lib/app/access";
 import { loadCockpit } from "@/lib/app/cockpit-data";
 import { collectDecisions } from "@/lib/intelligence/collect";
 import { buildDigest, digestSubject } from "@/lib/intelligence/digest";
@@ -13,6 +14,10 @@ import { cockpitTrust } from "@/lib/intelligence/cockpit-trust";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  // Product-gate: this serves the user's cockpit decision feed, so it must require an APPROVED account like
+  // every other /app data route (was ungated - a private-beta bypass; identical fix to onboarding/status).
+  const denied = await guardProductApi();
+  if (denied) return denied;
   const days = Math.min(90, Math.max(1, Number(new URL(req.url).searchParams.get("days") ?? 30) || 30));
   const data = await loadCockpit(days);
   if (!data.connected) {
