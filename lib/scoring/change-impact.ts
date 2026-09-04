@@ -116,13 +116,17 @@ export function measureChangeImpact(opts: { objective: Objective; beforeRows: Im
   const minDelta = opts.minDeltaPct ?? DEFAULT_MIN_DELTA_PCT;
   const verdict = improvePct >= minDelta ? "improved" : improvePct <= -minDelta ? "worsened" : "flat";
   const dir = verdict === "improved" ? "better" : verdict === "worsened" ? "worse" : "about the same";
+  // Report DISTINCT DAYS, not row count: at a coarse grain the window holds many rows per day (one per ad in
+  // the ad-set/campaign), so before.length would read "131d" for a 7-day window. Count unique dates instead.
+  const beforeDays = new Set(before.map((r) => r.date)).size;
+  const afterDays = new Set(after.map((r) => r.date)).size;
   return {
     verdict,
     metric: m.name,
     before: round(vB),
     after: round(vA),
     deltaPct: round(improvePct),
-    reason: `${m.name} ${dir}: ${round(vB)} -> ${round(vA)} (${improvePct >= 0 ? "+" : ""}${round(improvePct)}% in the better direction) over ${before.length}d before vs ${after.length}d settled after`,
+    reason: `${m.name} ${dir}: ${round(vB)} -> ${round(vA)} (${improvePct >= 0 ? "+" : ""}${round(improvePct)}% in the better direction) over ${beforeDays}d before vs ${afterDays}d settled after`,
   };
 }
 
