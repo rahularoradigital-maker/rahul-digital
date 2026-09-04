@@ -63,6 +63,46 @@ export default async function AdminPage() {
         <p className="mt-1 text-[13px] text-[var(--ink-muted)]">AI spend, usage, and background-job health over the last {d.windowDays} days. Costs are list-price estimates.</p>
       </div>
 
+      {/* Website & blog traffic (first-party, cookie-free). Visitors are approximate daily-unique. */}
+      <Card title="Website & blog" sub={`Public-site traffic over the last ${d.windowDays} days. Cookie-free; visitors are approximate daily-unique. "Blog reads" = visitors who actually scrolled/stayed, not just landed.`}>
+        <div className="grid gap-4 grid-cols-3">
+          {[
+            { label: "Visitors", value: num(d.website.visitors) },
+            { label: "Page views", value: num(d.website.pageViews) },
+            { label: "Blog reads", value: num(d.website.blogReads) },
+          ].map((s) => (
+            <div key={s.label} className="rounded-[10px] border border-[var(--hairline)] p-4">
+              <div className="text-[12px] text-[var(--ink-muted)]">{s.label}</div>
+              <div className="mt-1 text-[22px] font-semibold text-[var(--ink)]">{s.value}</div>
+            </div>
+          ))}
+        </div>
+        {d.website.pageViews === 0 ? (
+          <p className="mt-4 text-[13px] text-[var(--ink-muted)]">No traffic recorded yet. Views appear as people visit the public site and blog.</p>
+        ) : (
+          <div className="mt-4 grid gap-6 md:grid-cols-3">
+            <div>
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Top pages</div>
+              {d.website.topPages.map((p) => (
+                <div key={p.path} className="flex justify-between gap-3 border-t border-[var(--hairline)] py-1.5 text-[13px] first:border-0"><span className="truncate text-[var(--ink)]">{p.path}</span><span className="tabular-nums text-[var(--ink-muted)]">{num(p.views)}</span></div>
+              ))}
+            </div>
+            <div>
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Top sources</div>
+              {d.website.topReferrers.map((r) => (
+                <div key={r.host} className="flex justify-between gap-3 border-t border-[var(--hairline)] py-1.5 text-[13px] first:border-0"><span className="truncate text-[var(--ink)]">{r.host}</span><span className="tabular-nums text-[var(--ink-muted)]">{num(r.views)}</span></div>
+              ))}
+            </div>
+            <div>
+              <div className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">Most-read blogs</div>
+              {d.website.topBlogs.length === 0 ? <p className="text-[13px] text-[var(--ink-muted)]">No blog reads yet.</p> : d.website.topBlogs.map((b) => (
+                <div key={b.slug} className="flex justify-between gap-3 border-t border-[var(--hairline)] py-1.5 text-[13px] first:border-0"><span className="truncate text-[var(--ink)]">{b.slug}</span><span className="tabular-nums text-[var(--ink-muted)]">{num(b.reads)}</span></div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
         {[
           { label: "Active today (DAU)", value: num(d.overview.dau) },

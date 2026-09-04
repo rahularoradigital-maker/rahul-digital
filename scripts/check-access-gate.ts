@@ -44,6 +44,7 @@ const NOT_PRODUCT_GATED = new Set([
   "app/api/influencer/avatar/route.ts", // session + rate-limit + byte cap (image proxy)
   "app/api/usage/route.ts", // own-user token meter (read-only)
   "app/api/vitals/route.ts", // public RUM beacon: write-only, validated + bounded, no spend, RLS default-deny (may fire post-navigation without a session)
+  "app/api/analytics/route.ts", // public website-analytics beacon: write-only, validated + bounded, no PII stored, RLS default-deny
   "app/api/jobs/[id]/route.ts", // own-user job status (user_id-scoped)
   "app/api/jobs/drain/route.ts", // CRON_SECRET bearer
   "app/api/cron/sync/route.ts", // CRON_SECRET bearer

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { listAudit } from "@/lib/security/audit-log";
 import { listRecentEvents } from "@/lib/owner/events";
 import { p75 as percentile75, rateVital, isVitalName, type VitalRating } from "@/lib/vitals/rate";
+import { blogSlug } from "@/lib/analytics/classify";
 
 // Data for the admin cost/ops console: per-user + per-provider + per-task AI spend (from ai_usage), and the
 // background-job health (ad + change sync state). Reads via the service-role admin client. Aggregation is in
@@ -19,6 +20,14 @@ export type ActivityRow = { at: string; event: string; user: string; feature: st
 export type UserFeature = { email: string; features: { feature: string; calls: number; costUsd: number }[]; costUsd: number };
 export type ProblemRow = { at: string; feature: string; message: string; user: string };
 export type WebVitalRow = { metric: string; p75: number | null; rating: VitalRating | null; samples: number };
+export type WebsiteAnalytics = {
+  pageViews: number;
+  visitors: number; // approximate: distinct daily visitor hashes in the window
+  blogReads: number;
+  topPages: { path: string; views: number }[];
+  topReferrers: { host: string; views: number }[];
+  topBlogs: { slug: string; reads: number }[];
+};
 export type AuditEventRow = { at: string; actor: string; action: string; target: string; result: string; reason: string | null };
 export type AdminDashboard = {
   windowDays: number;
@@ -37,6 +46,7 @@ export type AdminDashboard = {
   userFeatures: UserFeature[];
   problems: ProblemRow[];
   webVitals: WebVitalRow[];
+  website: WebsiteAnalytics;
 };
 
 type UsageRow = { user_id: string | null; task: string | null; provider: string; model: string; prompt_tokens: number; completion_tokens: number; cost_usd: number };
@@ -198,6 +208,52 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     /* table may be absent pre-migration - leave the zero-sample rows */
   }
 
+  // Website & blog analytics (first-party): pageviews, approximate unique visitors, and blog READS (real
+  // engagement, not landings), over the window. Bounded read + JS aggregation (fine at current volume; move to
+  // a SQL rollup if traffic grows). Best-effort - table may be absent pre-migration.
+  let website: WebsiteAnalytics = { pageViews: 0, visitors: 0, blogReads: 0, topPages: [], topReferrers: [], topBlogs: [] };
+  try {
+    const { data: pv } = await admin
+      .from("page_views")
+      .select("path,ref_host,visitor_hash,event")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(100000);
+    const rows = (pv ?? []) as { path: string; ref_host: string | null; visitor_hash: string | null; event: string }[];
+    const visitorSet = new Set<string>();
+    const pageCount = new Map<string, number>();
+    const refCount = new Map<string, number>();
+    const blogReadCount = new Map<string, number>();
+    let pageViews = 0;
+    let blogReads = 0;
+    for (const r of rows) {
+      if (r.visitor_hash) visitorSet.add(r.visitor_hash);
+      if (r.event === "view") {
+        pageViews++;
+        pageCount.set(r.path, (pageCount.get(r.path) ?? 0) + 1);
+        const host = r.ref_host || "direct";
+        refCount.set(host, (refCount.get(host) ?? 0) + 1);
+      } else if (r.event === "read") {
+        const slug = blogSlug(r.path);
+        if (slug) {
+          blogReads++;
+          blogReadCount.set(slug, (blogReadCount.get(slug) ?? 0) + 1);
+        }
+      }
+    }
+    const top = (m: Map<string, number>) => [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+    website = {
+      pageViews,
+      visitors: visitorSet.size,
+      blogReads,
+      topPages: top(pageCount).map(([path, views]) => ({ path, views })),
+      topReferrers: top(refCount).map(([host, views]) => ({ host, views })),
+      topBlogs: top(blogReadCount).map(([slug, reads]) => ({ slug, reads })),
+    };
+  } catch {
+    /* table may be absent pre-migration - leave the zeroed analytics */
+  }
+
   return {
     windowDays,
     totalCalls,
@@ -215,5 +271,6 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     userFeatures,
     problems,
     webVitals,
+    website,
   };
 }
