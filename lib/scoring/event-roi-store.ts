@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/paged";
 import { computeEventRoi, eventRoiTrend, priorWindow, type EventRow, type EventRoi, type EventTrend } from "./event-roi";
 
 // Assemble event ROI from the store: join each ad's optimisation EVENT (ad_meta.optimization_event, written
@@ -13,8 +14,12 @@ export async function getEventRoi(userId: string, accountExternalId: string, sin
   try {
     const admin = createAdminClient();
     const eventByAd = new Map<string, string>();
-    const { data: meta } = await admin.from("ad_meta").select("ad_id,optimization_event").eq("user_id", userId).eq("account_external_id", accountExternalId);
-    for (const m of (meta ?? []) as { ad_id: string; optimization_event: string | null }[]) {
+    // S0 (scale): page the ad_meta read - a bare select caps at 1,000 rows, so a big account would silently
+    // drop the events on its later ads and skew every event-ROI number.
+    const meta = await readAllPages<{ ad_id: string; optimization_event: string | null }>((f, t) =>
+      admin.from("ad_meta").select("ad_id,optimization_event").eq("user_id", userId).eq("account_external_id", accountExternalId).order("ad_id", { ascending: true }).range(f, t),
+    );
+    for (const m of meta) {
       if (m.optimization_event) eventByAd.set(m.ad_id, m.optimization_event);
     }
     if (eventByAd.size === 0) return []; // optimization_event not populated yet
@@ -62,8 +67,12 @@ export async function getEventRoiWithTrend(
     const { priorSince } = priorWindow(since, until);
 
     const eventByAd = new Map<string, string>();
-    const { data: meta } = await admin.from("ad_meta").select("ad_id,optimization_event").eq("user_id", userId).eq("account_external_id", accountExternalId);
-    for (const m of (meta ?? []) as { ad_id: string; optimization_event: string | null }[]) {
+    // S0 (scale): page the ad_meta read - a bare select caps at 1,000 rows, so a big account would silently
+    // drop the events on its later ads and skew every event-ROI number.
+    const meta = await readAllPages<{ ad_id: string; optimization_event: string | null }>((f, t) =>
+      admin.from("ad_meta").select("ad_id,optimization_event").eq("user_id", userId).eq("account_external_id", accountExternalId).order("ad_id", { ascending: true }).range(f, t),
+    );
+    for (const m of meta) {
       if (m.optimization_event) eventByAd.set(m.ad_id, m.optimization_event);
     }
     if (eventByAd.size === 0) return { current: [], trend: new Map() };

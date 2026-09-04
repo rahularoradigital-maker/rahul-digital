@@ -1,6 +1,7 @@
 import { NextResponse, after, type NextRequest } from "next/server";
 import { cronSecretGate } from "@/lib/app/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/paged";
 import { fetchLiveCockpit, getUserMetaSession } from "@/lib/meta-sync";
 import { readToken } from "@/lib/oauth-store";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
@@ -95,10 +96,16 @@ export async function GET(request: NextRequest) {
   // DAILY MODE: warm each user's (active) cockpit once, then start an ingestion chain for EVERY connected
   // account - so every brand's store stays complete + accurate, not just the currently-active one.
   const admin = createAdminClient();
-  const { data, error } = await admin.from("ad_accounts").select("id, user_id, external_id").eq("platform", "meta").eq("status", "connected");
-  if (error) return NextResponse.json({ error: "Could not list accounts." }, { status: 500 });
-
-  const accounts = (data ?? []) as { id: string; user_id: string; external_id: string }[];
+  // S0 (scale plan): page the full account list. A bare select is capped at 1,000 rows by PostgREST, so past
+  // ~1,000 connected accounts the nightly sync would silently skip every later tenant with no error.
+  let accounts: { id: string; user_id: string; external_id: string }[];
+  try {
+    accounts = await readAllPages<{ id: string; user_id: string; external_id: string }>((from, to) =>
+      admin.from("ad_accounts").select("id, user_id, external_id").eq("platform", "meta").eq("status", "connected").order("id", { ascending: true }).range(from, to),
+    );
+  } catch {
+    return NextResponse.json({ error: "Could not list accounts." }, { status: 500 });
+  }
   const userIds = [...new Set(accounts.map((a) => a.user_id))];
   let warmed = 0;
   let empty = 0;

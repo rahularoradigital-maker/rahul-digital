@@ -31,9 +31,10 @@ export async function GET() {
     .from("ad_meta")
     .select("optimization_event")
     .eq("user_id", user.id)
-    .not("optimization_event", "is", null);
+    .not("optimization_event", "is", null)
+    .limit(5000); // bounded: distinct events only; 5000 ads' worth is far more than any real event set
   if (acct) q = q.eq("account_external_id", acct);
-  const { data } = await q.limit(5000);
+  const { data } = await q;
 
   const events = Array.from(new Set((data ?? []).map((r) => (r as { optimization_event: string | null }).optimization_event).filter((e): e is string => !!e))).sort();
   return NextResponse.json({ events });

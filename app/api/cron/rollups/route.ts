@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { cronSecretGate } from "@/lib/app/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/paged";
 import { refreshAccountRollup } from "@/lib/rollups/account";
 import { refreshCreativeRollup } from "@/lib/rollups/creative";
 import { captureError } from "@/lib/observability";
@@ -19,10 +20,15 @@ export async function GET(request: NextRequest) {
   if (!gate.ok) return gate.response;
 
   const admin = createAdminClient();
-  const { data, error } = await admin.from("ad_accounts").select("user_id, external_id").eq("platform", "meta").eq("status", "connected");
-  if (error) return NextResponse.json({ error: "Could not list accounts." }, { status: 500 });
-
-  const accounts = (data ?? []) as { user_id: string; external_id: string }[];
+  // S0 (scale plan): page the full list - a bare select caps at 1,000 rows, silently skipping later tenants.
+  let accounts: { user_id: string; external_id: string }[];
+  try {
+    accounts = await readAllPages<{ user_id: string; external_id: string }>((from, to) =>
+      admin.from("ad_accounts").select("user_id, external_id").eq("platform", "meta").eq("status", "connected").order("id", { ascending: true }).range(from, to),
+    );
+  } catch {
+    return NextResponse.json({ error: "Could not list accounts." }, { status: 500 });
+  }
   const queue = [...accounts];
   let refreshed = 0;
   let empty = 0;

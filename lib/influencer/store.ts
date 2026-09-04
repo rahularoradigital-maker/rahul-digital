@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { readAllPages } from "@/lib/supabase/paged";
 import type { BrandTarget } from "./types";
 import type { RankedCreator } from "./rank";
 import type { DiscoverStats } from "./discover";
@@ -23,8 +24,12 @@ export async function loadSeenCreatorIds(userId: string, accountExternalId: stri
     .eq("account_external_id", accountExternalId);
   const searchIds = ((searches ?? []) as { id: string }[]).map((s) => s.id);
   if (searchIds.length === 0) return new Set();
-  const { data: rows } = await admin.from("influencer_search_result").select("platform_user_id").in("search_id", searchIds);
-  return new Set(((rows ?? []) as { platform_user_id: string }[]).map((r) => r.platform_user_id));
+  // S0 (scale): page - a single search can yield >1,000 results, and a bare select would drop some, so a
+  // "new only" search could re-show already-seen creators. Order is for page stability (dupes collapse in the Set).
+  const rows = await readAllPages<{ platform_user_id: string }>((f, t) =>
+    admin.from("influencer_search_result").select("platform_user_id").in("search_id", searchIds).order("search_id", { ascending: true }).order("platform_user_id", { ascending: true }).range(f, t),
+  ).catch(() => []);
+  return new Set(rows.map((r) => r.platform_user_id));
 }
 
 /** Save one completed discovery run + its ranked results. Best-effort: a store failure must not lose the
@@ -80,13 +85,12 @@ export async function loadLatestDiscovery(userId: string, accountExternalId: str
     .maybeSingle();
   if (!search) return null;
 
-  const { data: rows } = await admin
-    .from("influencer_search_result")
-    .select("scores")
-    .eq("search_id", (search as { id: string }).id)
-    .order("rank", { ascending: true });
+  // S0 (scale): page - a run can store >1,000 ranked results and a bare select would drop the tail silently.
+  const rows = await readAllPages<{ scores: RankedCreator }>((f, t) =>
+    admin.from("influencer_search_result").select("scores").eq("search_id", (search as { id: string }).id).order("rank", { ascending: true }).range(f, t),
+  ).catch(() => []);
 
-  const ranked = ((rows ?? []) as { scores: RankedCreator }[]).map((r) => r.scores).filter(Boolean);
+  const ranked = rows.map((r) => r.scores).filter(Boolean);
   const spec = (search as { spec: { target?: BrandTarget; stats?: DiscoverStats } | null }).spec;
   return {
     ranked,
