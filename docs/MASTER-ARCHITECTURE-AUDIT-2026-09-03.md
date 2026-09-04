@@ -418,3 +418,13 @@ Specifically confirmed unsafe-to-solo right now:
 - **Phase 5 (store boundary, slice)** `b5ec130`: `check:rollup-boundary` — the rollup/verification tables are accessible only via `lib/rollups/*` + the health probe; a precise, non-fragile boundary for my subsystem (wired into `check:all`).
 
 **Still deliberately staged (need a coordinated/quiet window, not a solo race):** Phase 4 cockpit first-paint, Phase 5 full store boundary + Phase 8 cockpit assembler split (golden money path — `app/app/page.tsx`, `lib/cockpit/*`, `lib/meta-*` are the hottest files, edited by multiple sessions this session), Phase 7 broad frontend perf, Phase 11 shared-component a11y. The fast green CI gate (Phase 1) is what makes these safe to do incrementally with ownership.
+
+---
+
+## Phase 8 (slice) — EXECUTED 2026-09-04 (golden money-path, done in an isolated worktree)
+
+The highest-risk phase, done the safe way. First slice of the cockpit refactor: extracted the 7 shared cockpit types out of the 443-line `lib/cockpit/analyze.ts` into a dedicated `lib/cockpit/types.ts`. `analyze.ts` imports them for its logic and **re-exports** them, so every existing `@/lib/cockpit/analyze` import keeps working unchanged — a pure move, zero logic touched.
+
+**Method (why it was safe):** done in an isolated git worktree off the churn; the touched files (`analyze.ts`, `types.ts`) had NOT diverged on origin, so the cherry-pick onto the live branch was conflict-free. **Verified byte-identical** by the scoring contract — `check:golden`, `check:shadow-benchmark`, `check:cockpit`, `check:scoring` — plus a full build + tsc + the 167-check gate on the live branch before push. Commit `71034e4`.
+
+This proves the pattern for the rest of Phase 8 (further `analyze.ts`/`from-store.ts` decomposition, the `meta-source.ts` split): worktree → golden-verify → conflict-free cherry-pick. The remaining Phase-8 work should follow the same path, one bounded slice at a time.
