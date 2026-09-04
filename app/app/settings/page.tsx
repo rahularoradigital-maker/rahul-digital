@@ -4,6 +4,9 @@ import { getUserMetaSession } from "@/lib/meta-sync";
 import { getConnectionHealth } from "@/lib/connection/status";
 import { ConnectionHealthCard } from "@/components/app/connection-health";
 import { SettingsPanel } from "@/components/app/settings-panel";
+import { DeleteAccountCard } from "@/components/app/delete-account-card";
+import { getPendingDeletion } from "@/lib/account/deletion";
+import { GRACE_PERIOD_DAYS } from "@/lib/account/deletion-manifest";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +23,7 @@ export default async function SettingsPage() {
   const data = { connected: !!session, accountName: session?.activeAccountName };
   // Honest connection health (freshness / last error / reconnect) - reads ad_sync_state, tenancy-scoped.
   const health = await getConnectionHealth(user.id, !!session, session?.activeExternalId ?? null);
+  const pendingDeletion = await getPendingDeletion(user.id);
 
   return (
     <div className="space-y-6">
@@ -77,6 +81,9 @@ export default async function SettingsPage() {
 
       {/* Editable verdict weights */}
       <SettingsPanel />
+
+      {/* Danger zone: self-serve account deletion (soft-delete + grace). */}
+      <DeleteAccountCard initialPurgeAfter={pendingDeletion?.purgeAfter ?? null} graceDays={GRACE_PERIOD_DAYS} />
     </div>
   );
 }

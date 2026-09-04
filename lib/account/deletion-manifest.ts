@@ -17,6 +17,7 @@ export const REVOKE_META_ON_DELETE = true; // call Meta to revoke the OAuth toke
 export const CASCADE_FROM_AUTH_USER = [
   "ad_accounts", "ai_usage", "brand_members", "brands", "creative_semantics",
   "notifications", "org_members", "orgs", "profiles", "token_usage",
+  "account_deletions", // soft-delete tracking (0042): FK to auth.users on delete cascade - removed with the user
 ] as const;
 
 // SET B - user_id-scoped but NO auth.users FK cascade: the executor MUST delete these explicitly by user_id
