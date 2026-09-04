@@ -950,7 +950,7 @@ export async function fetchAdInsights(
     // campaign_id + adset_id let us report how many campaigns / ad sets / ads a run processed;
     // the video + outbound-click fields feed the D2C funnel metrics (thumb-stop, hold, LP...).
     fields:
-      "ad_id,campaign_id,adset_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective,video_play_actions,video_thruplay_watched_actions,outbound_clicks",
+      "ad_id,campaign_id,adset_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective,video_play_actions,video_thruplay_watched_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,outbound_clicks",
     // until defaults to today so existing preset callers are unaffected; a range passes both.
     time_range: JSON.stringify({ since, until: until ?? today() }),
     time_increment: "1",
@@ -1021,6 +1021,10 @@ export type AdMetricRow = {
   revenue: number;
   video3s: number;
   videoThruplays: number;
+  videoP25: number;
+  videoP50: number;
+  videoP75: number;
+  videoP100: number;
   outboundClicks: number;
   landingPageViews: number;
   addToCarts: number;
@@ -1068,6 +1072,10 @@ type DayWiseRaw = MetaInsightRow & {
   objective?: string;
   video_play_actions?: MetaInsightAction[];
   video_thruplay_watched_actions?: MetaInsightAction[];
+  video_p25_watched_actions?: MetaInsightAction[];
+  video_p50_watched_actions?: MetaInsightAction[];
+  video_p75_watched_actions?: MetaInsightAction[];
+  video_p100_watched_actions?: MetaInsightAction[];
   outbound_clicks?: MetaInsightAction[];
 };
 
@@ -1086,6 +1094,10 @@ function mapDayWiseRow(row: DayWiseRaw): AdMetricRow {
     revenue: purchaseValue(row.action_values),
     video3s: sumActions(row.video_play_actions),
     videoThruplays: sumActions(row.video_thruplay_watched_actions),
+    videoP25: sumActions(row.video_p25_watched_actions),
+    videoP50: sumActions(row.video_p50_watched_actions),
+    videoP75: sumActions(row.video_p75_watched_actions),
+    videoP100: sumActions(row.video_p100_watched_actions),
     outboundClicks: sumActions(row.outbound_clicks),
     landingPageViews: firstActionValue(row.actions, ["landing_page_view", "omni_landing_page_view"]),
     addToCarts: firstActionValue(row.actions, ["add_to_cart", "omni_add_to_cart", "offsite_conversion.fct_add_to_cart"]),
@@ -1113,7 +1125,7 @@ export async function streamAccountDayWiseRows(
   const params: Record<string, string> = {
     level: "ad",
     fields:
-      "ad_id,campaign_id,adset_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective,video_play_actions,video_thruplay_watched_actions,outbound_clicks",
+      "ad_id,campaign_id,adset_id,date_start,spend,impressions,clicks,frequency,actions,action_values,objective,video_play_actions,video_thruplay_watched_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,outbound_clicks",
     time_range: JSON.stringify({ since, until: until ?? today() }),
     time_increment: "1",
     // Attribution accuracy is applied ONLY here (the nightly store ingestion), NOT on the interactive/live

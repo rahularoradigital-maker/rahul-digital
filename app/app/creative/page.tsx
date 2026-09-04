@@ -12,6 +12,8 @@ import { getDeepReadCount } from "@/lib/creative/deep-analysis";
 import { ReportSection } from "@/components/app/creative/report-section";
 import { getHookHold, type HookHoldSummary } from "@/lib/scoring/hook-hold-store";
 import { HookHoldSection } from "@/components/app/creative/hook-hold-section";
+import { getRetentionCurve, type RetentionCurve } from "@/lib/scoring/retention-curve";
+import { RetentionCurveSection } from "@/components/app/creative/retention-curve-section";
 
 // Creative: one consolidated page for the four creative screens (Fatigue, Diversity,
 // Brand Brain, Concepts). loadCockpit runs exactly once here; each tab section is a
@@ -47,9 +49,10 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
 
   // Hook x Hold 2x2 (self-contained read, same window the page shows). Only on the Report tab + connected.
   let hookHold: HookHoldSummary | null = null;
+  let retention: RetentionCurve | null = null;
   if (tab === "report" && data.connected && user) {
     const [since, until] = (data.dateParam || "").split("_");
-    if (since && until) hookHold = await getHookHold(user.id, data.accountId, since, until);
+    if (since && until) [hookHold, retention] = await Promise.all([getHookHold(user.id, data.accountId, since, until), getRetentionCurve(user.id, data.accountId, since, until)]);
   }
 
   return (
@@ -64,6 +67,7 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
       {tab === "diversity" && <DiversitySection data={data} days={data.days} competitors={diversityVsCompetitors} deepReadCount={deepReadCount} />}
       {tab === "report" && <ReportSection data={data} deepReadCount={deepReadCount} />}
       {tab === "report" && hookHold && <HookHoldSection summary={hookHold} />}
+      {tab === "report" && retention && <RetentionCurveSection curve={retention} />}
       {tab === "brand" && <BrandBrainSection initialContent={insights.brand ?? null} />}
       {tab === "concepts" && <ConceptsSection initialContent={insights.concepts ?? null} />}
     </div>
