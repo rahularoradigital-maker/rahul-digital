@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logEvent, failedLoginCount } from "@/lib/owner/events";
+import { cancelAccountDeletion } from "@/lib/account/deletion";
 
 export type AuthState = { error?: string; message?: string } | null;
 
@@ -29,6 +30,10 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
     return { error: error.message };
   }
   logEvent("login", { userId: data.user?.id ?? null });
+  // "Re-login cancels" (Rahul's deletion decision): signing back in during the grace aborts a pending
+  // account deletion. One write, only at login, and a no-op unless a pending row exists. Best-effort - a
+  // hiccup here must never block a valid sign-in.
+  if (data.user?.id) await cancelAccountDeletion(data.user.id).catch(() => {});
   redirect("/app");
 }
 
