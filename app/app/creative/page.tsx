@@ -10,6 +10,8 @@ import { loadCompetitorFormatAds } from "@/lib/competitors/data";
 import { compareDiversityToCompetitors } from "@/lib/creative/diversity-vs-competitors";
 import { getDeepReadCount } from "@/lib/creative/deep-analysis";
 import { ReportSection } from "@/components/app/creative/report-section";
+import { getHookHold, type HookHoldSummary } from "@/lib/scoring/hook-hold-store";
+import { HookHoldSection } from "@/components/app/creative/hook-hold-section";
 
 // Creative: one consolidated page for the four creative screens (Fatigue, Diversity,
 // Brand Brain, Concepts). loadCockpit runs exactly once here; each tab section is a
@@ -43,6 +45,13 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
   // How many creatives have a deep (video-motion) read, so the Diversity tab can show the DNA is richer.
   const deepReadCount = (tab === "diversity" || tab === "report") && data.connected && user ? await getDeepReadCount(user.id) : 0;
 
+  // Hook x Hold 2x2 (self-contained read, same window the page shows). Only on the Report tab + connected.
+  let hookHold: HookHoldSummary | null = null;
+  if (tab === "report" && data.connected && user) {
+    const [since, until] = (data.dateParam || "").split("_");
+    if (since && until) hookHold = await getHookHold(user.id, data.accountId, since, until);
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -54,6 +63,7 @@ export default async function CreativePage({ searchParams }: { searchParams: Pro
       {tab === "fatigue" && <FatigueSection data={data} days={data.days} />}
       {tab === "diversity" && <DiversitySection data={data} days={data.days} competitors={diversityVsCompetitors} deepReadCount={deepReadCount} />}
       {tab === "report" && <ReportSection data={data} deepReadCount={deepReadCount} />}
+      {tab === "report" && hookHold && <HookHoldSection summary={hookHold} />}
       {tab === "brand" && <BrandBrainSection initialContent={insights.brand ?? null} />}
       {tab === "concepts" && <ConceptsSection initialContent={insights.concepts ?? null} />}
     </div>
