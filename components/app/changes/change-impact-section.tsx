@@ -97,6 +97,11 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
                   <span className="capitalize">{r.changeType}</span>
                   {r.actorName && <span className="text-[var(--ink-muted)]"> by {r.actorName}</span>}
                   {r.source === "algo" && <span className="text-[var(--ink-muted)]"> (algorithm)</span>}
+                  {/* Honesty: when a change was too thin to judge on its own, we read the parent - say so, so a
+                      looser attribution is never presented as a precise ad-level verdict. */}
+                  {r.impact.grain && r.impact.grain !== "ad" && r.impact.verdict !== "insufficient" && (
+                    <span className="ml-1 rounded bg-[var(--surface-alt)] px-1.5 py-0.5 text-[10px] text-[var(--ink-muted)]">measured at {r.impact.grain === "adset" ? "ad-set" : "campaign"} level{r.impact.windowDays ? `, ${r.impact.windowDays}d` : ""}</span>
+                  )}
                 </div>
                 <div className="text-[12px] leading-relaxed text-[var(--ink-muted)]">{r.impact.reason}</div>
               </div>

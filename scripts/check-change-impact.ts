@@ -1,7 +1,7 @@
 // Runnable check for the change-impact engine (lib/scoring/change-impact.ts). No I/O.
 // node --experimental-strip-types scripts/check-change-impact.ts
 import assert from "node:assert/strict";
-import { measureChangeImpact, isolatedWindow, type ImpactRow } from "../lib/scoring/change-impact.ts";
+import { measureChangeImpact, isolatedWindow, measureWithCascade, type CascadeLevel, type ImpactRow } from "../lib/scoring/change-impact.ts";
 
 const DAY = 86_400_000;
 const day = (s: string) => new Date(`${s}T00:00:00Z`).getTime();
@@ -90,4 +90,38 @@ const confounded = measureChangeImpact({
 });
 assert.equal(confounded.verdict, "insufficient", "collapsed after-window -> insufficient, not confounded");
 
-console.log("PASS: change-impact engine (verdicts, objective metric, settled-tail trim, neighbour-isolated windows)");
+// --- coverage cascade: measure at the finest grain + shortest window that clears the volume floor ---
+const cDay = day("2026-08-20");
+// Ad grain: 7 conversions/window (< 15) -> insufficient at ad level. Ad-set grain: 30 conversions/window,
+// ROAS doubles -> the cascade must fall back to ad-set and return "improved", labeled grain "adset".
+const adThin = (rev: number, start: number) => days(7, { spend: 100, impressions: 2000, clicks: 60, conversions: 1, revenue: rev }, start);
+const adsetFat = (rev: number, start: number) => days(7, { spend: 100, impressions: 2000, clicks: 60, conversions: 5, revenue: rev }, start);
+const cascade = measureWithCascade(
+  [
+    { grain: "ad", objective: "conversion", rows: [...adThin(200, 13), ...adThin(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
+    { grain: "adset", objective: "conversion", rows: [...adsetFat(200, 13), ...adsetFat(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
+  ],
+  [7, 10, 14],
+);
+assert.equal(cascade.verdict, "improved", `cascade should fall back to ad-set and read improved, got ${JSON.stringify(cascade)}`);
+assert.equal(cascade.grain, "adset", `cascade must label the grain it actually measured, got ${cascade.grain}`);
+
+// Finest-first: when the ad level itself clears the floor, the cascade must NOT climb to the parent.
+const adFat = (rev: number, start: number) => days(7, { spend: 100, impressions: 2000, clicks: 60, conversions: 5, revenue: rev }, start);
+const staysFine = measureWithCascade(
+  [
+    { grain: "ad", objective: "conversion", rows: [...adFat(200, 13), ...adFat(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
+    { grain: "adset", objective: "conversion", rows: [...adFat(200, 13), ...adFat(9999, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
+  ],
+  [7, 10, 14],
+);
+assert.equal(staysFine.grain, "ad", `cascade must prefer the finest grain that clears, got ${staysFine.grain}`);
+
+// All levels too thin -> insufficient, never a fabricated verdict (coverage never overrides honesty).
+const allThin = measureWithCascade(
+  [{ grain: "ad", objective: "conversion", rows: [...adThin(200, 13), ...adThin(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] }],
+  [7, 10, 14],
+);
+assert.equal(allThin.verdict, "insufficient", `too-thin at every level must stay insufficient, got ${allThin.verdict}`);
+
+console.log("PASS: change-impact engine (verdicts, objective metric, settled-tail trim, neighbour-isolated windows, coverage cascade)");

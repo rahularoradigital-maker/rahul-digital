@@ -21,6 +21,7 @@ const DEFAULT_MIN_DELTA_PCT = 10; // a move smaller than this (in the better dir
 
 export type Objective = "conversion" | "traffic" | "engagement" | "awareness" | "leads" | "app_installs";
 export type ImpactRow = { date: string; spend: number; impressions: number; clicks: number; conversions: number; revenue: number };
+export type Grain = "ad" | "adset" | "campaign";
 export type ChangeImpact = {
   verdict: "improved" | "worsened" | "flat" | "insufficient";
   metric: string; // the objective's headline metric that was judged
@@ -28,6 +29,9 @@ export type ChangeImpact = {
   after: number | null;
   deltaPct: number | null; // signed % in the BETTER direction (positive = improvement)
   reason: string;
+  grain?: Grain; // the level the verdict was actually measured at (ad = most precise; a coarser grain means
+  // the ad's own window was too thin, so we read the parent - honest, but attribution is looser)
+  windowDays?: number; // the after/before window length used (the shortest that cleared the volume floor)
 };
 
 type Agg = MetricAgg & { days: number };
@@ -120,4 +124,34 @@ export function measureChangeImpact(opts: { objective: Objective; beforeRows: Im
     deltaPct: round(improvePct),
     reason: `${m.name} ${dir}: ${round(vB)} -> ${round(vA)} (${improvePct >= 0 ? "+" : ""}${round(improvePct)}% in the better direction) over ${before.length}d before vs ${after.length}d settled after`,
   };
+}
+
+const asMs = (d: string) => new Date(`${d}T00:00:00Z`).getTime();
+
+// One rung of the coverage cascade: the object's day-wise rows at a given grain, plus that object's OTHER
+// change days (at the SAME grain) so the window can be isolated from adjacent structural changes.
+export type CascadeLevel = { grain: Grain; objective: Objective; rows: ImpactRow[]; changeDayMs: number; otherChangeDaysMs: number[] };
+
+// COVERAGE (Media-Buyer Change Intelligence): a single ad's own conversions in a ~7-day window almost never
+// clear the volume floor on a large account, so ad-level-only judging leaves ~97% of changes "insufficient"
+// (measured live: 3 of ~4,500). Cascade instead - measure at the FINEST grain and SHORTEST window that clears
+// the floor, cascading ad -> ad-set -> campaign and short -> long window. This maximizes honest coverage
+// (parents aggregate enough volume) while never fabricating a verdict: it still returns "insufficient" when
+// even the coarsest/longest window is too thin, and it labels the grain + window used so a coarser (looser)
+// attribution is always visible, not hidden. Rigor unchanged - only WHICH window feeds measureChangeImpact.
+// `levels` MUST be ordered finest -> coarsest; `windows` shortest -> longest.
+export function measureWithCascade(levels: CascadeLevel[], windows: number[]): ChangeImpact {
+  let firstInsufficient: ChangeImpact | null = null;
+  for (const lvl of levels) {
+    if (lvl.rows.length === 0) continue;
+    for (const w of windows) {
+      const { beforeStart, afterEnd } = isolatedWindow(lvl.changeDayMs, lvl.otherChangeDaysMs, w, w);
+      const beforeRows = lvl.rows.filter((r) => { const t = asMs(r.date); return t < lvl.changeDayMs && t >= beforeStart; });
+      const afterRows = lvl.rows.filter((r) => { const t = asMs(r.date); return t > lvl.changeDayMs && t <= afterEnd; });
+      const impact = measureChangeImpact({ objective: lvl.objective, beforeRows, afterRows });
+      if (impact.verdict !== "insufficient") return { ...impact, grain: lvl.grain, windowDays: w };
+      if (!firstInsufficient) firstInsufficient = { ...impact, grain: lvl.grain, windowDays: w };
+    }
+  }
+  return firstInsufficient ?? { verdict: "insufficient", metric: metricFor(levels[0]?.objective ?? "engagement").name, before: null, after: null, deltaPct: null, reason: "no measurable window at any level", grain: levels[0]?.grain, windowDays: windows[0] };
 }

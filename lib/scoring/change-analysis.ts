@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readAllPages } from "@/lib/supabase/paged";
-import { measureChangeImpact, isolatedWindow, type ImpactRow, type Objective } from "./change-impact.ts";
+import { measureWithCascade, type CascadeLevel, type ImpactRow, type Objective, type Grain } from "./change-impact.ts";
 import { rankBuyers, rollupChangeTypes, type ChangeResult } from "./change-ranking.ts";
 
 // Orchestrator (Media-Buyer Change Intelligence, Phase 4). Joins ad_changes -> ad_metrics, measures each
@@ -9,9 +9,11 @@ import { rankBuyers, rollupChangeTypes, type ChangeResult } from "./change-ranki
 // (change-ranking.ts). Server-only (admin reads). It only judges changes OLD ENOUGH to have a full
 // after-window; changes on an object with no metrics (or account-level) are skipped, never guessed.
 
-const BEFORE_DAYS = 7;
-const AFTER_DAYS = 7;
-const MIN_AGE_DAYS = AFTER_DAYS; // a change needs a complete after-window before we can judge it
+// Windows the cascade tries, shortest first (Media-Buyer coverage): most ad-level windows are too thin to
+// clear the volume floor, so we also try the 10- and 14-day windows Rahul asked for - the SHORTEST that
+// clears wins, so a verdict is always as tight as the data honestly allows.
+const WINDOWS = [7, 10, 14];
+const MIN_AGE_DAYS = WINDOWS[0]; // a change needs a complete (shortest) after-window before we can judge it
 const METRICS_LOOKBACK_DAYS = 120; // enough to cover before-windows of the oldest judged change
 
 type MetricRow = { ad_id: string; adset_id: string | null; campaign_id: string | null; date: string; objective: string | null; spend: number; impressions: number; clicks: number; purchases: number; revenue: number };
@@ -93,10 +95,17 @@ export async function analyzeAccountChanges(userId: string, accountExternalId: s
   } catch {
     // was: errors ignored, treated as an empty page
   }
+  // Parent maps so an ad-level change can cascade to its ad-set / campaign when its own window is too thin.
+  const adToAdset = new Map<string, string>();
+  const adToCampaign = new Map<string, string>();
+  const adsetToCampaign = new Map<string, string>();
   for (const m of metricRows) {
     push(byAd, m.ad_id, m);
     push(byAdset, m.adset_id, m);
     push(byCampaign, m.campaign_id, m);
+    if (m.adset_id && !adToAdset.has(m.ad_id)) adToAdset.set(m.ad_id, m.adset_id);
+    if (m.campaign_id && !adToCampaign.has(m.ad_id)) adToCampaign.set(m.ad_id, m.campaign_id);
+    if (m.adset_id && m.campaign_id && !adsetToCampaign.has(m.adset_id)) adsetToCampaign.set(m.adset_id, m.campaign_id);
   }
 
   // 2b. Index every change's day per object, so a change's window can be clipped at its neighbours (a later
@@ -110,24 +119,51 @@ export async function analyzeAccountChanges(userId: string, accountExternalId: s
     else changeDaysByObject.set(key, [dayMs(c.date)]);
   }
 
-  // 3. Measure each judgeable change.
+  // Build the finest -> coarsest grain chain for a change, resolving parents so a thin ad-level window can
+  // fall back to its ad-set / campaign (which aggregate enough volume to clear the floor).
+  const cd = (c: ChangeRowDB) => dayMs(c.date);
+  function levelsFor(c: ChangeRowDB): CascadeLevel[] {
+    const oid = c.object_id;
+    if (!oid) return [];
+    const chain: { grain: Grain; id: string; pool: Map<string, MetricRow[]> }[] = [];
+    if (c.level === "ad") {
+      chain.push({ grain: "ad", id: oid, pool: byAd });
+      const as = adToAdset.get(oid);
+      if (as) chain.push({ grain: "adset", id: as, pool: byAdset });
+      const cp = adToCampaign.get(oid);
+      if (cp) chain.push({ grain: "campaign", id: cp, pool: byCampaign });
+    } else if (c.level === "adset") {
+      chain.push({ grain: "adset", id: oid, pool: byAdset });
+      const cp = adsetToCampaign.get(oid);
+      if (cp) chain.push({ grain: "campaign", id: cp, pool: byCampaign });
+    } else if (c.level === "campaign") {
+      chain.push({ grain: "campaign", id: oid, pool: byCampaign });
+    }
+    const changeDayMs = cd(c);
+    const out: CascadeLevel[] = [];
+    for (const { grain, id, pool } of chain) {
+      const rows = pool.get(id);
+      if (!rows || rows.length === 0) continue;
+      // Isolate against OTHER changes at the SAME grain on this object (a coarser grain's sub-level changes
+      // are the activity we are aggregating over, not confounders to clip on - clipping on them would
+      // re-collapse the very window the cascade widened).
+      const others = (changeDaysByObject.get(`${grain}:${id}`) ?? []).filter((t) => t !== changeDayMs);
+      out.push({ grain, objective: toObjective(modalObjective(rows)), rows: toImpactRows(rows), changeDayMs, otherChangeDaysMs: others });
+    }
+    return out;
+  }
+
+  // 3. Measure each judgeable change via the coverage cascade (finest grain + shortest window that clears).
   const results: ChangeResult[] = [];
   let judged = 0;
   let skipped = 0;
   for (const c of changes) {
-    const oid = c.object_id;
-    const pool = !oid ? null : c.level === "ad" ? byAd.get(oid) : c.level === "adset" ? byAdset.get(oid) : c.level === "campaign" ? byCampaign.get(oid) : null;
-    if (!pool || pool.length === 0) {
+    const levels = levelsFor(c);
+    if (levels.length === 0) {
       skipped++;
-      continue; // account-level, or an object we have no metrics for -> cannot measure, never guess
+      continue; // account-level, or an object we have no metrics for at any grain -> cannot measure, never guess
     }
-    const cd = dayMs(c.date);
-    // Clip the windows at the nearest OTHER change on this same object so the verdict isolates THIS change.
-    const others = (changeDaysByObject.get(`${c.level}:${oid}`) ?? []).filter((t) => t !== cd);
-    const { beforeStart, afterEnd } = isolatedWindow(cd, others, BEFORE_DAYS, AFTER_DAYS);
-    const beforeRows = toImpactRows(pool.filter((m) => { const t = dayMs(m.date); return t < cd && t >= beforeStart; }));
-    const afterRows = toImpactRows(pool.filter((m) => { const t = dayMs(m.date); return t > cd && t <= afterEnd; }));
-    const impact = measureChangeImpact({ objective: toObjective(modalObjective(pool)), beforeRows, afterRows });
+    const impact = measureWithCascade(levels, WINDOWS);
     results.push({ actorId: c.actor_id, actorName: c.actor_name, changeType: c.change_type, source: c.source, impact });
     judged++;
   }
