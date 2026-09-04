@@ -27,7 +27,18 @@ function sourceLabel(source: string): string {
   return first || "data source";
 }
 
-export function KpiSelector({ catalog, liveValues }: { catalog: Kpi[]; liveValues: Record<string, string> }) {
+// Honest per-row state (P0 catalog honesty pass): a KPI is either LIVE (we actually compute it and have a
+// value), BUILDABLE (metaOnly - computable from the connected Meta account, but not wired yet), or NEEDS a
+// source we don't have. The old UI showed a green "Meta" badge on every metaOnly row even when it rendered
+// "-", implying we track ~38 Meta KPIs when only ~12 populate. This tells the truth instead.
+type KpiState = "live" | "buildable" | "needs-source";
+function kpiState(kpi: Kpi, live: string | undefined, connected: boolean): KpiState {
+  if (live !== undefined) return "live";
+  if (kpi.metaOnly) return connected ? "buildable" : "needs-source"; // pre-connect, everything just needs Meta
+  return "needs-source";
+}
+
+export function KpiSelector({ catalog, liveValues, connected = false }: { catalog: Kpi[]; liveValues: Record<string, string>; connected?: boolean }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [ready, setReady] = useState(false);
 
@@ -136,6 +147,7 @@ export function KpiSelector({ catalog, liveValues }: { catalog: Kpi[]; liveValue
             <div className="divide-y divide-[var(--hairline)]">
               {kpis.map((kpi) => {
                 const live = liveValues[kpi.code];
+                const state = kpiState(kpi, live, connected);
                 return (
                   <label key={kpi.code} className="flex items-start gap-3 px-4 py-3 text-sm">
                     <input
@@ -149,20 +161,24 @@ export function KpiSelector({ catalog, liveValues }: { catalog: Kpi[]; liveValue
                         <span className="font-medium text-[var(--ink)]">{kpi.name}</span>
                         <span className="text-xs text-[var(--ink-muted)]">{kpi.code}</span>
                         <span className="text-xs text-[var(--ink-muted)]">{kpi.unit}</span>
-                        {kpi.metaOnly ? (
-                          <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--good-ink)]">
-                            Meta
-                          </span>
+                        {state === "live" ? (
+                          <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--good-ink)]">Live</span>
+                        ) : state === "buildable" ? (
+                          <span className="rounded-full border border-[var(--hairline)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]" title="Computable from your Meta account; not wired into a value yet.">Not tracked yet</span>
                         ) : (
-                          <span className="rounded-full border border-[var(--hairline)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">
-                            Needs {sourceLabel(kpi.source)}
-                          </span>
+                          <span className="rounded-full border border-[var(--hairline)] px-2 py-0.5 text-[11px] text-[var(--ink-muted)]">Needs {sourceLabel(kpi.source)}</span>
                         )}
                       </div>
                       <div className="mt-0.5 text-xs text-[var(--ink-muted)]">{kpi.formula}</div>
                     </div>
-                    <div className="shrink-0 pl-2 text-right text-sm font-medium tabular-nums text-[var(--ink)]">
-                      {live ?? <span className="text-[var(--ink-muted)]">-</span>}
+                    <div className="shrink-0 pl-2 text-right text-sm font-medium tabular-nums">
+                      {state === "live" ? (
+                        <span className="text-[var(--ink)]">{live}</span>
+                      ) : state === "buildable" ? (
+                        <span className="text-xs font-normal text-[var(--ink-muted)]">not tracked yet</span>
+                      ) : (
+                        <span className="text-xs font-normal text-[var(--ink-muted)]">needs {sourceLabel(kpi.source)}</span>
+                      )}
                     </div>
                   </label>
                 );

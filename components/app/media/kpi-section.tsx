@@ -52,14 +52,22 @@ export function KpiSection({ data }: { data: CockpitData }) {
     }
   }
 
+  // Honest counts (P0 catalog honesty pass): how many KPIs actually carry a live value now vs. are computable
+  // from Meta but not wired vs. need another source. Never imply we track more than we compute.
+  const liveCount = Object.keys(liveValues).length;
+  const metaBuildable = KPI_CATALOG.filter((k) => k.metaOnly && liveValues[k.code] === undefined).length;
+  const needsSource = KPI_CATALOG.length - liveCount - metaBuildable;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-[26px] font-normal tracking-tight text-[var(--ink)]">KPIs tracked per account</h1>
         <p className="mt-1.5 max-w-2xl text-sm text-[var(--ink-muted)]">
-          Every metric this product tracks, {KPI_CATALOG.length} in all. This is reference metadata, not fabricated account
-          data, so it always renders. Values light up next to a KPI as its data source connects, starting with your live
-          Meta account.
+          A reference catalog of {KPI_CATALOG.length} performance-marketing metrics. It is metadata, not fabricated data:
+          a value shows only where we actually compute it.
+          {data.connected
+            ? ` Right now ${liveCount} are live, ${metaBuildable} are computable from your Meta account but not wired yet, and ${needsSource} need another source (Shopify, finance, GA4).`
+            : " Connect Meta to light up the values we can compute today."}
         </p>
       </div>
 
@@ -109,7 +117,7 @@ export function KpiSection({ data }: { data: CockpitData }) {
         />
       )}
 
-      <KpiSelector catalog={KPI_CATALOG} liveValues={liveValues} />
+      <KpiSelector catalog={KPI_CATALOG} liveValues={liveValues} connected={data.connected} />
     </div>
   );
 }
