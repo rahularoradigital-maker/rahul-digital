@@ -8,8 +8,6 @@ import { computeEventRoi, eventRoiTrend, priorWindow, type EventRow, type EventR
 // rubric. Self-contained read (own admin query, tenant-scoped) so it never touches the cockpit pipeline.
 // Returns [] when the event column is not populated yet (sync has not run) - the card then shows "sync to enable".
 
-const PAGE = 1000;
-
 export async function getEventRoi(userId: string, accountExternalId: string, since: string, until: string): Promise<EventRoi[]> {
   try {
     const admin = createAdminClient();
@@ -24,28 +22,20 @@ export async function getEventRoi(userId: string, accountExternalId: string, sin
     }
     if (eventByAd.size === 0) return []; // optimization_event not populated yet
 
+    // Parallel-burst paging + total order (ad_id, date): was a serial .range() loop with NO ORDER BY - slow
+    // and offset-unstable (the Phase-0 paging fix). Aggregation is unchanged.
     const agg = new Map<string, EventRow>();
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await admin
-        .from("ad_metrics")
-        .select("ad_id,spend,revenue,purchases")
-        .eq("user_id", userId)
-        .eq("account_external_id", accountExternalId)
-        .gte("date", since)
-        .lte("date", until)
-        .range(from, from + PAGE - 1);
-      if (error) break;
-      const rows = (data ?? []) as { ad_id: string; spend: number | null; revenue: number | null; purchases: number | null }[];
-      for (const r of rows) {
-        const ev = eventByAd.get(r.ad_id);
-        if (!ev) continue;
-        const cur = agg.get(ev) ?? { event: ev, spendRs: 0, revenueRs: 0, purchases: 0 };
-        cur.spendRs += Number(r.spend ?? 0);
-        cur.revenueRs += Number(r.revenue ?? 0);
-        cur.purchases += Number(r.purchases ?? 0);
-        agg.set(ev, cur);
-      }
-      if (rows.length < PAGE) break;
+    const rows = await readAllPages<{ ad_id: string; spend: number | null; revenue: number | null; purchases: number | null }>((f, t) =>
+      admin.from("ad_metrics").select("ad_id,spend,revenue,purchases").eq("user_id", userId).eq("account_external_id", accountExternalId).gte("date", since).lte("date", until).order("ad_id", { ascending: true }).order("date", { ascending: true }).range(f, t),
+    );
+    for (const r of rows) {
+      const ev = eventByAd.get(r.ad_id);
+      if (!ev) continue;
+      const cur = agg.get(ev) ?? { event: ev, spendRs: 0, revenueRs: 0, purchases: 0 };
+      cur.spendRs += Number(r.spend ?? 0);
+      cur.revenueRs += Number(r.revenue ?? 0);
+      cur.purchases += Number(r.purchases ?? 0);
+      agg.set(ev, cur);
     }
     return computeEventRoi([...agg.values()]);
   } catch {
@@ -77,30 +67,21 @@ export async function getEventRoiWithTrend(
     }
     if (eventByAd.size === 0) return { current: [], trend: new Map() };
 
+    // Parallel-burst paging + total order over the doubled (prior+current) window: was serial + no ORDER BY.
     const cur = new Map<string, EventRow>();
     const prior = new Map<string, EventRow>();
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await admin
-        .from("ad_metrics")
-        .select("ad_id,date,spend,revenue,purchases")
-        .eq("user_id", userId)
-        .eq("account_external_id", accountExternalId)
-        .gte("date", priorSince)
-        .lte("date", until)
-        .range(from, from + PAGE - 1);
-      if (error) break;
-      const rows = (data ?? []) as { ad_id: string; date: string; spend: number | null; revenue: number | null; purchases: number | null }[];
-      for (const r of rows) {
-        const ev = eventByAd.get(r.ad_id);
-        if (!ev) continue;
-        const bucket = r.date >= since ? cur : prior; // lexical compare is correct for YYYY-MM-DD
-        const acc = bucket.get(ev) ?? { event: ev, spendRs: 0, revenueRs: 0, purchases: 0 };
-        acc.spendRs += Number(r.spend ?? 0);
-        acc.revenueRs += Number(r.revenue ?? 0);
-        acc.purchases += Number(r.purchases ?? 0);
-        bucket.set(ev, acc);
-      }
-      if (rows.length < PAGE) break;
+    const rows = await readAllPages<{ ad_id: string; date: string; spend: number | null; revenue: number | null; purchases: number | null }>((f, t) =>
+      admin.from("ad_metrics").select("ad_id,date,spend,revenue,purchases").eq("user_id", userId).eq("account_external_id", accountExternalId).gte("date", priorSince).lte("date", until).order("ad_id", { ascending: true }).order("date", { ascending: true }).range(f, t),
+    );
+    for (const r of rows) {
+      const ev = eventByAd.get(r.ad_id);
+      if (!ev) continue;
+      const bucket = r.date >= since ? cur : prior; // lexical compare is correct for YYYY-MM-DD
+      const acc = bucket.get(ev) ?? { event: ev, spendRs: 0, revenueRs: 0, purchases: 0 };
+      acc.spendRs += Number(r.spend ?? 0);
+      acc.revenueRs += Number(r.revenue ?? 0);
+      acc.purchases += Number(r.purchases ?? 0);
+      bucket.set(ev, acc);
     }
     const current = computeEventRoi([...cur.values()]);
     return { current, trend: eventRoiTrend(current, computeEventRoi([...prior.values()])) };
