@@ -12,7 +12,32 @@ export type ChangeResult = {
   changeType: string;
   source: "buyer" | "algo";
   impact: ChangeImpact;
+  outcomeKey?: string; // grain:object:day:window signature; results sharing it are ONE outcome (dedupe target)
 };
+
+// A change is credited to a BUYER only when it was measured at its own ad / ad-set level (reasonably theirs).
+// A campaign-level verdict means the ad's own window was too thin, so the number reflects the whole campaign
+// moving - not attributable to one person's one change. We show those in the timeline as directional context,
+// but they must NOT credit a buyer (that would rank activity, not outcomes). Missing grain = legacy ad-level.
+function attributableToBuyer(r: ChangeResult): boolean {
+  const g = r.impact.grain ?? "ad";
+  return g === "ad" || g === "adset";
+}
+
+// Collapse results that share an outcomeKey (same object+day+window measured) to ONE, so a single ad-set /
+// campaign move a buyer touched with several changes counts once, not once per change. Results with no
+// outcomeKey (legacy shape) are each kept as distinct.
+function dedupeByOutcome(rs: ChangeResult[]): ChangeResult[] {
+  const seen = new Set<string>();
+  const out: ChangeResult[] = [];
+  for (const r of rs) {
+    if (!r.outcomeKey) { out.push(r); continue; }
+    if (seen.has(r.outcomeKey)) continue;
+    seen.add(r.outcomeKey);
+    out.push(r);
+  }
+  return out;
+}
 
 // How precise a rollup's evidence is: the coverage cascade measures a change at the finest grain that clears
 // the volume floor, so a verdict "measured at ad level" is directly attributable to THIS change, while an
@@ -88,18 +113,21 @@ function tally(rs: ChangeResult[]) {
   return { improved, worsened, flat, insufficient, usable, hitRate, medianDeltaPct: median(deltas), grain };
 }
 
-// Rank media buyers by outcome (not activity). Buyer-source only.
+// Rank media buyers by outcome (not activity). Buyer-source only; only ad/ad-set-attributable verdicts count
+// (campaign-level moves aren't one person's), and each distinct outcome counts once (dedupe).
 export function rankBuyers(results: ChangeResult[]): BuyerRollup[] {
   const byActor = new Map<string, ChangeResult[]>();
   for (const r of results) {
     if (r.source !== "buyer") continue;
+    if (!attributableToBuyer(r)) continue; // campaign-level = directional context, not buyer credit
     const key = r.actorId ?? r.actorName ?? "unknown";
     const arr = byActor.get(key);
     if (arr) arr.push(r);
     else byActor.set(key, [r]);
   }
   const rollups: BuyerRollup[] = [];
-  for (const rs of byActor.values()) {
+  for (const rsRaw of byActor.values()) {
+    const rs = dedupeByOutcome(rsRaw); // one credit per distinct outcome, not per change touched
     const t = tally(rs);
     const confident = t.usable >= MIN_SAMPLE;
     const shrunkHitRate = shrinkHitRate(t.improved, t.usable);
@@ -122,7 +150,7 @@ export function rollupChangeTypes(results: ChangeResult[]): ChangeTypeRollup[] {
   }
   const out: ChangeTypeRollup[] = [];
   for (const [changeType, rs] of byType) {
-    const t = tally(rs);
+    const t = tally(dedupeByOutcome(rs)); // count each distinct outcome once per type, not once per change
     out.push({ changeType, ...t, shrunkHitRate: shrinkHitRate(t.improved, t.usable) });
   }
   // Order by the SHRUNK hit-rate so a 1/1 change-type can't sit above a proven 40/50; raw hitRate stays for display.

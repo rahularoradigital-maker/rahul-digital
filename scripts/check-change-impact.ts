@@ -98,8 +98,8 @@ const adThin = (rev: number, start: number) => days(7, { spend: 100, impressions
 const adsetFat = (rev: number, start: number) => days(7, { spend: 100, impressions: 2000, clicks: 60, conversions: 5, revenue: rev }, start);
 const cascade = measureWithCascade(
   [
-    { grain: "ad", objective: "conversion", rows: [...adThin(200, 13), ...adThin(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
-    { grain: "adset", objective: "conversion", rows: [...adsetFat(200, 13), ...adsetFat(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
+    { grain: "ad", objectId: "a1", objective: "conversion", rows: [...adThin(200, 13), ...adThin(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
+    { grain: "adset", objectId: "s1", objective: "conversion", rows: [...adsetFat(200, 13), ...adsetFat(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
   ],
   [7, 10, 14],
 );
@@ -110,8 +110,8 @@ assert.equal(cascade.grain, "adset", `cascade must label the grain it actually m
 const adFat = (rev: number, start: number) => days(7, { spend: 100, impressions: 2000, clicks: 60, conversions: 5, revenue: rev }, start);
 const staysFine = measureWithCascade(
   [
-    { grain: "ad", objective: "conversion", rows: [...adFat(200, 13), ...adFat(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
-    { grain: "adset", objective: "conversion", rows: [...adFat(200, 13), ...adFat(9999, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
+    { grain: "ad", objectId: "a1", objective: "conversion", rows: [...adFat(200, 13), ...adFat(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
+    { grain: "adset", objectId: "s1", objective: "conversion", rows: [...adFat(200, 13), ...adFat(9999, 21)], changeDayMs: cDay, otherChangeDaysMs: [] },
   ],
   [7, 10, 14],
 );
@@ -119,7 +119,7 @@ assert.equal(staysFine.grain, "ad", `cascade must prefer the finest grain that c
 
 // All levels too thin -> insufficient, never a fabricated verdict (coverage never overrides honesty).
 const allThin = measureWithCascade(
-  [{ grain: "ad", objective: "conversion", rows: [...adThin(200, 13), ...adThin(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] }],
+  [{ grain: "ad", objectId: "a1", objective: "conversion", rows: [...adThin(200, 13), ...adThin(400, 21)], changeDayMs: cDay, otherChangeDaysMs: [] }],
   [7, 10, 14],
 );
 assert.equal(allThin.verdict, "insufficient", `too-thin at every level must stay insufficient, got ${allThin.verdict}`);

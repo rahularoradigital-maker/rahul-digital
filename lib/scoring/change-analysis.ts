@@ -148,7 +148,7 @@ export async function analyzeAccountChanges(userId: string, accountExternalId: s
       // are the activity we are aggregating over, not confounders to clip on - clipping on them would
       // re-collapse the very window the cascade widened).
       const others = (changeDaysByObject.get(`${grain}:${id}`) ?? []).filter((t) => t !== changeDayMs);
-      out.push({ grain, objective: toObjective(modalObjective(rows)), rows: toImpactRows(rows), changeDayMs, otherChangeDaysMs: others });
+      out.push({ grain, objectId: id, objective: toObjective(modalObjective(rows)), rows: toImpactRows(rows), changeDayMs, otherChangeDaysMs: others });
     }
     return out;
   }
@@ -164,7 +164,12 @@ export async function analyzeAccountChanges(userId: string, accountExternalId: s
       continue; // account-level, or an object we have no metrics for at any grain -> cannot measure, never guess
     }
     const impact = measureWithCascade(levels, WINDOWS);
-    results.push({ actorId: c.actor_id, actorName: c.actor_name, changeType: c.change_type, source: c.source, impact });
+    // Outcome signature: which object+window the verdict was actually measured on. Two changes that resolve to
+    // the SAME grain/object/day/window share ONE outcome - the rollups dedupe on this so a buyer isn't credited
+    // N times for a single campaign/ad-set move they touched N times (activity inflation).
+    const chosen = levels.find((l) => l.grain === impact.grain);
+    const outcomeKey = chosen ? `${impact.grain}:${chosen.objectId}:${c.date}:${impact.windowDays ?? ""}` : undefined;
+    results.push({ actorId: c.actor_id, actorName: c.actor_name, changeType: c.change_type, source: c.source, impact, outcomeKey });
     judged++;
   }
 

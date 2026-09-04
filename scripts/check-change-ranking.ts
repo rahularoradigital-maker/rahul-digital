@@ -63,20 +63,29 @@ const rare = tord.find((t) => t.changeType === "rare")!;
 assert.ok((rare.hitRate ?? 0) === 1, "rare still shows raw 100%");
 assert.ok((rare.shrunkHitRate ?? 0) < 1, "but its shrunk rate is below 1");
 
-// Grain mix (explicit-uncertainty): a rollup must report how much of its usable evidence is ad-level
-// (precise) vs ad-set/campaign (directional), so a hit-rate built on coarse reads isn't shown as precise.
+// Strict attribution: a buyer is credited ONLY for ad/ad-set-level verdicts; campaign-level moves are
+// directional context and must NOT count toward the buyer (that would rank activity, not outcomes).
 const impG = (verdict: ChangeImpact["verdict"], grain: "ad" | "adset" | "campaign"): ChangeImpact => ({ verdict, metric: "ROAS", before: 1, after: 1, deltaPct: 10, reason: "", grain });
-const rg = (actor: string, verdict: ChangeImpact["verdict"], grain: "ad" | "adset" | "campaign"): ChangeResult => ({ actorId: actor, actorName: actor, changeType: "budget", source: "buyer", impact: impG(verdict, grain) });
-const mixed = rankBuyers([
-  rg("Mix", "improved", "ad"), rg("Mix", "improved", "campaign"), rg("Mix", "worsened", "campaign"), rg("Mix", "improved", "adset"),
-  rg("Mix", "insufficient", "campaign"), // insufficient must NOT count toward the grain mix
+const rg = (actor: string, verdict: ChangeImpact["verdict"], grain: "ad" | "adset" | "campaign", outcomeKey?: string): ChangeResult => ({ actorId: actor, actorName: actor, changeType: "budget", source: "buyer", impact: impG(verdict, grain), outcomeKey });
+const gated = rankBuyers([
+  rg("Mix", "improved", "ad", "k1"), rg("Mix", "worsened", "adset", "k2"),
+  rg("Mix", "improved", "campaign", "k3"), rg("Mix", "worsened", "campaign", "k4"), // campaign -> excluded from buyer credit
 ]);
-const mix = mixed.find((b) => b.actorName === "Mix")!;
-assert.equal(mix.usable, 4, "4 usable verdicts");
-assert.deepEqual({ ad: mix.grain.ad, adset: mix.grain.adset, campaign: mix.grain.campaign }, { ad: 1, adset: 1, campaign: 2 }, "grain counted over usable only");
-assert.ok(Math.abs((mix.grain.preciseShare ?? 0) - 0.25) < 1e-9, "preciseShare = ad(1)/usable(4) = 0.25");
-// A verdict with no grain (older cached shape) counts as ad-level so precision never silently drops.
+const mix = gated.find((b) => b.actorName === "Mix")!;
+assert.equal(mix.usable, 2, "only ad + ad-set verdicts credit the buyer; campaign excluded");
+assert.deepEqual({ ad: mix.grain.ad, adset: mix.grain.adset, campaign: mix.grain.campaign }, { ad: 1, adset: 1, campaign: 0 }, "no campaign grain reaches a buyer tally");
+assert.ok(Math.abs((mix.grain.preciseShare ?? 0) - 0.5) < 1e-9, "preciseShare = ad(1)/usable(2) = 0.5");
+
+// Dedupe: several changes that resolve to the SAME outcome (same key) count ONCE, not once per change.
+const deduped = rankBuyers([
+  rg("Dup", "improved", "adset", "same"), rg("Dup", "improved", "adset", "same"), rg("Dup", "improved", "adset", "same"),
+]).find((b) => b.actorName === "Dup")!;
+assert.equal(deduped.usable, 1, "3 changes sharing one outcome count as a single credit");
+assert.equal(deduped.improved, 1, "the shared outcome is one improved, not three");
+
+// A verdict with no grain (older cached shape) counts as ad-level, and no outcomeKey means no dedupe.
 const legacy = rankBuyers([r("Old", "budget", "improved", 20), r("Old", "budget", "improved", 10), r("Old", "budget", "worsened", -10)]).find((b) => b.actorName === "Old")!;
+assert.equal(legacy.usable, 3, "no-grain, no-key legacy results are each kept");
 assert.ok(Math.abs((legacy.grain.preciseShare ?? 0) - 1) < 1e-9, "no-grain verdicts default to ad-level (preciseShare 1)");
 
-console.log("PASS: change ranking (buyer hit-rate, algo excluded, insufficient handling, confidence, shrinkage, type rollup, grain mix)");
+console.log("PASS: change ranking (buyer hit-rate, algo excluded, insufficient handling, confidence, shrinkage, type rollup, grain gate, dedupe, grain mix)");

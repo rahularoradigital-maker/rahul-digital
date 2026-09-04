@@ -133,8 +133,9 @@ export function measureChangeImpact(opts: { objective: Objective; beforeRows: Im
 const asMs = (d: string) => new Date(`${d}T00:00:00Z`).getTime();
 
 // One rung of the coverage cascade: the object's day-wise rows at a given grain, plus that object's OTHER
-// change days (at the SAME grain) so the window can be isolated from adjacent structural changes.
-export type CascadeLevel = { grain: Grain; objective: Objective; rows: ImpactRow[]; changeDayMs: number; otherChangeDaysMs: number[] };
+// change days (at the SAME grain) so the window can be isolated from adjacent structural changes. objectId
+// identifies the measured object so callers can dedupe changes that resolve to the SAME outcome.
+export type CascadeLevel = { grain: Grain; objectId: string; objective: Objective; rows: ImpactRow[]; changeDayMs: number; otherChangeDaysMs: number[] };
 
 // COVERAGE (Media-Buyer Change Intelligence): a single ad's own conversions in a ~7-day window almost never
 // clear the volume floor on a large account, so ad-level-only judging leaves ~97% of changes "insufficient"
