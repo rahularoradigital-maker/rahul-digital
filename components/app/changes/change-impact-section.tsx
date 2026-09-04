@@ -16,8 +16,9 @@ const rate = (n: number | null) => (n == null ? "-" : `${Math.round(n * 100)}%`)
 // Precision = share of a buyer's verdicts read at the ad level (directly attributable). A low share means the
 // hit-rate is mostly ad-set/campaign-level (directional) evidence - shown so a coarse read is never mistaken
 // for a precise one. Named after the dominant grain so it reads in plain English, with the ad-level %.
-const precision = (g: GrainMix) => {
-  if (g.preciseShare == null) return "-";
+const precision = (g: GrainMix | undefined) => {
+  // Trust-boundary guard: a cached analysis written BEFORE this field existed has no grain on its rollups.
+  if (!g || g.preciseShare == null) return "-";
   const p = Math.round(g.preciseShare * 100);
   const label = g.ad >= g.adset && g.ad >= g.campaign ? "ad-level" : g.campaign >= g.adset ? "campaign-level" : "ad-set level";
   return `${p}% ad · ${label}`;
