@@ -22,7 +22,10 @@ function Card({ title, sub, children }: { title: string; sub?: string; children:
   );
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
+  // Window selector: ?days=7 | 30 | 90 (default 30). Bounded so the URL can't ask for an unbounded scan.
+  const daysParam = Number((await searchParams).days);
+  const windowDays = [7, 30, 90].includes(daysParam) ? daysParam : 30;
   // Resolve the email via getUser() (guaranteed to include email) rather than the JWT claims, which may omit
   // it on this project's asymmetric-key setup - that omission would wrongly deny the real admin.
   const supabase = await createClient();
@@ -41,7 +44,7 @@ export default async function AdminPage() {
   let keys: Awaited<ReturnType<typeof keyStatus>> = [];
   let loadError: string | null = null;
   try {
-    d = await loadAdminDashboard(30);
+    d = await loadAdminDashboard(windowDays);
     keys = await keyStatus();
   } catch (e) {
     loadError = e instanceof Error ? e.message : "failed to load";
@@ -58,9 +61,19 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6" style={{ fontVariantNumeric: "tabular-nums" }}>
-      <div>
-        <h1 className="text-[26px] font-normal tracking-tight text-[var(--ink)]">Admin · Cost & Ops</h1>
-        <p className="mt-1 text-[13px] text-[var(--ink-muted)]">AI spend, usage, and background-job health over the last {d.windowDays} days. Costs are list-price estimates.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-[26px] font-normal tracking-tight text-[var(--ink)]">Admin · Cost & Ops</h1>
+          <p className="mt-1 text-[13px] text-[var(--ink-muted)]">AI spend, usage, website traffic, and job health over the last {d.windowDays} days. Costs are list-price estimates.</p>
+        </div>
+        {/* Window selector (server-rendered links; no client JS). */}
+        <div className="flex gap-1 rounded-full border border-[var(--hairline)] p-0.5 text-[13px]">
+          {[7, 30, 90].map((n) => (
+            <a key={n} href={`/app/admin?days=${n}`} className={`rounded-full px-3 py-1 ${d.windowDays === n ? "bg-[var(--ink)] text-white" : "text-[var(--ink-muted)] hover:text-[var(--ink)]"}`}>
+              {n}d
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Website & blog traffic (first-party, cookie-free). Visitors are approximate daily-unique. */}
