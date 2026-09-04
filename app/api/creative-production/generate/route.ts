@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
 import { spendTokens } from "@/lib/billing/meter";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 import { setAiUser } from "@/lib/ai/context";
 import { getShopifyConnectionStatus } from "@/lib/creative-production/shopify/store";
 import { ensureProductDNA } from "@/lib/creative-production/intelligence/product-dna";
@@ -22,6 +23,9 @@ export async function POST(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  // S3 (scale): per-user rate limit - image generation is expensive (AI cost + latency).
+  const rl = await enforceRateLimit(`cp-generate:${user.id}`, { windowMs: 60_000, max: 15 });
+  if (rl.limited) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } });
   const _denied = await guardProductApi();
   if (_denied) return _denied;
   setAiUser(user.id); // attribute AI spend to this user

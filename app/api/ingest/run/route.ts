@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
 import { syncChangeHistory } from "@/lib/ingest/change-history";
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  // S3 (scale): per-user rate limit - a run is a full Meta sync (many Graph calls + writes); cap re-triggers.
+  const rl = await enforceRateLimit(`ingest-run:${user.id}`, { windowMs: 600_000, max: 3 });
+  if (rl.limited) return NextResponse.json({ error: "A sync is rate-limited; try again shortly." }, { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } });
   const _denied = await guardProductApi();
   if (_denied) return _denied;
 

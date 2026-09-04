@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 import { guardProductApi } from "@/lib/app/access";
 import { setAiUser } from "@/lib/ai/context";
 import { getDeepAnalysisStatus, runDeepAnalysis } from "@/lib/creative/deep-analysis";
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const denied = await guardProductApi();
   if (denied) return denied;
+  // S3 (scale): per-user rate limit - a run downloads + vision-decodes up to 10 videos (heavy AI + bandwidth).
+  const rl = await enforceRateLimit(`deep-analysis:${user.id}`, { windowMs: 60_000, max: 3 });
+  if (rl.limited) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } });
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: "Deep analysis is not configured yet (GEMINI_API_KEY missing)." }, { status: 400 });
   }

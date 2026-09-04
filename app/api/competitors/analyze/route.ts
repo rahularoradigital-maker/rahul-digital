@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUserMetaSession } from "@/lib/meta-sync";
 import { setAiUser } from "@/lib/ai/context";
@@ -64,6 +65,9 @@ export async function POST(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ ok: false, error: "Not signed in" }, { status: 401 });
+  // S3 (scale): per-user rate limit - competitor analysis hits Meta + AI.
+  const rl = await enforceRateLimit(`competitors-analyze:${user.id}`, { windowMs: 60_000, max: 10 });
+  if (rl.limited) return NextResponse.json({ ok: false, error: "Too many requests. Please slow down." }, { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } });
   const _denied = await guardProductApi();
   if (_denied) return _denied;
   const userId = user.id;
