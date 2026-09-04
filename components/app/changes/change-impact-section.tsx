@@ -46,7 +46,9 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
   // (which stays rich) and demote the buyer board behind an honest note, rather than implying a confident
   // per-person ranking exists when it does not.
   const confidentBuyers = buyers.filter((b) => b.confident).length;
-  const thinAttribution = confidentBuyers === 0;
+  // Thin when at most one buyer can be ranked while others can't - the board then can't say much about the
+  // team, so we flag it as directional and keep "what tends to work" as the headline.
+  const thinAttribution = confidentBuyers <= 1 && buyers.some((b) => !b.confident);
 
   if (judged === 0) {
     return (
