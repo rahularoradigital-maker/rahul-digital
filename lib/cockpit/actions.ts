@@ -2,7 +2,12 @@
 // No I/O, no scoring - just how an engine decision becomes the leaderboard's action row and the do-now order.
 import type { Verdict } from "../rules/verdict.ts";
 import type { Decision } from "../scoring/decision.ts";
-import type { Priority, CockpitAction, CockpitAdInput } from "./types.ts";
+import type { MarginalRead } from "../scoring/marginal.ts";
+import type { Priority, CockpitAction, CockpitAdInput, CockpitView } from "./types.ts";
+
+// The single scale-action label, shared so both scale paths (actionFor winner + the objective-aware
+// DECISION_LABEL) emit the exact same string - which lets reconcileScaleWithSaturation match it robustly.
+export const SCALE_LABEL = "Scale the budget";
 
 // Map the objective-aware decision to the leaderboard's verdict vocabulary + the action row.
 export const DECISION_VERDICT: Record<Decision["action"], Verdict> = {
@@ -13,7 +18,7 @@ export const DECISION_VERDICT: Record<Decision["action"], Verdict> = {
   hold: "do_not_kill_yet",
 };
 export const DECISION_LABEL: Record<Decision["action"], string> = {
-  scale: "Scale the budget",
+  scale: SCALE_LABEL,
   continue: "Keep running",
   refresh: "Refresh the creative",
   pause: "Pause this ad",
@@ -45,7 +50,36 @@ export function actionFor(v: Verdict, input: CockpitAdInput): CockpitAction {
       return { label: "Hold — gather more data", priority: "WATCH", why: "Not enough signal to act without risk." };
     case "winner":
       return input.roomToScale
-        ? { label: "Scale the budget", priority: "DO_NEXT", why: "All winner gates met with room to scale." }
+        ? { label: SCALE_LABEL, priority: "DO_NEXT", why: "All winner gates met with room to scale." }
         : { label: "Keep running", priority: "WATCH", why: "A proven winner with no headroom to scale right now." };
   }
+}
+
+// Reconcile a per-ad SCALE call with the account's diminishing-returns read (marginal.ts). A per-ad "scale /
+// push budget" is an AVERAGE-ROAS decision, but the scale decision is MARGINAL - so when the account is
+// bending down (APPROACHING_SATURATION) or past the point where the next rupee pays (SATURATED), adding new
+// budget spends into waste. We keep the ad's winner status but reframe the ACTION as reallocation: fund the
+// winner by shifting budget off weak/saturated ads, not by adding spend. Pure; returns the view unchanged for
+// UNDERFUNDED / HEALTHY / UNKNOWN (where scaling by adding budget is still the right call, or unproven).
+type Saturation = MarginalRead["classification"];
+const SATURATING: ReadonlySet<Saturation> = new Set<Saturation>(["APPROACHING_SATURATION", "SATURATED"]);
+
+function reallocationAction(a: CockpitAction, saturated: boolean): CockpitAction {
+  return {
+    label: saturated ? "Scale by reallocation only" : "Scale by reallocation - hold total budget",
+    priority: a.priority,
+    why: saturated
+      ? "Account is saturated: the next NEW rupee returns less than it costs. Grow this winner only by reallocating budget off weak/saturated ads, not by adding spend."
+      : "Account returns are bending down (approaching saturation). Fund this winner by shifting budget off weak ads, not by adding new spend.",
+  };
+}
+
+export function reconcileScaleWithSaturation(view: CockpitView, classification: Saturation): CockpitView {
+  if (!SATURATING.has(classification)) return view;
+  const saturated = classification === "SATURATED";
+  return {
+    ...view,
+    leaderboard: view.leaderboard.map((a) => (a.action.label === SCALE_LABEL ? { ...a, action: reallocationAction(a.action, saturated) } : a)),
+    doThis: view.doThis.map((d) => (d.label === SCALE_LABEL ? { ...d, ...reallocationAction(d, saturated) } : d)),
+  };
 }

@@ -6,6 +6,7 @@ import type { MetricsRow, TokenSet } from "@/lib/ad-source";
 import { toCockpitInputs, type RealAd } from "@/lib/scoring";
 import { passesEventFilter } from "@/lib/scope/event-filter";
 import { analyzeAccount } from "@/lib/cockpit/analyze";
+import { reconcileScaleWithSaturation } from "@/lib/cockpit/actions";
 import { windowFunnel, type ExtendedMetricsRow } from "@/lib/metrics/funnel-metrics";
 import { buildDailySeries, type DailyInputRow } from "@/lib/cockpit/daily-series";
 import { levelFunnels, type NativeByLevel } from "@/lib/cockpit/level-funnel";
@@ -297,7 +298,7 @@ export async function buildCockpitFromStore(opts: {
     }
   }
 
-  const view = analyzeAccount(inputs, "LIVE", weights);
+  let view = analyzeAccount(inputs, "LIVE", weights);
 
   // Account funnel (thumb-stop/hold/LP/ATC/checkout) from the real day-wise rows.
   const extRows: ExtendedMetricsRow[] = realAds.flatMap((ad) =>
@@ -356,6 +357,9 @@ export async function buildCockpitFromStore(opts: {
   const dayRows = aggByDay(realAds.map((ad) => ad.rows)); // display window: headline totals + trend chart
   const baselineDayRows = aggByDay(realAds.map((ad) => ad.baselineRows ?? ad.rows)); // 90 days: scaling + data quality
   const marginal = marginalScaling(baselineDayRows);
+  // Reconcile per-ad SCALE calls with the account diminishing-returns read: when saturating, reframe "add
+  // budget" as "scale by reallocation" so the cockpit is coherent with its own marginal card (canon #10).
+  view = reconcileScaleWithSaturation(view, marginal.classification);
   const dataQuality = assessDataQuality(baselineDayRows);
   const dailySeries = buildDailySeries(dayRows);
 

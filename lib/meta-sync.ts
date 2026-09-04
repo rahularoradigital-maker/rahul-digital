@@ -17,6 +17,7 @@ import { assessDiversity, type CreativeRecord, type DiversityRead } from "./crea
 import { buildCreativeStrategy, type CreativeStrategy } from "./creative/strategy.ts";
 import { toCockpitInputs, type RealAd } from "./scoring.ts";
 import { analyzeAccount, type CockpitView } from "./cockpit/analyze.ts";
+import { reconcileScaleWithSaturation } from "./cockpit/actions.ts";
 import { VERDICT_WEIGHTS, type ScoreWeights } from "./rules/verdict.ts";
 import type { TokenSet } from "./ad-source.ts";
 import { windowFunnel, type FunnelMetrics, type ExtendedMetricsRow } from "./metrics/funnel-metrics.ts";
@@ -354,7 +355,7 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // EVERY downstream surface (leaderboard, do-now, waste, fatigue) inherits it. Headline scope totals
     // come from a separate account-level pull, so they still reflect all spend in the window.
     const inputs = toCockpitInputs(realAds).filter((a) => (a.impressions ?? 0) > 0 && a.spendRs > 0 && a.active !== false);
-    const view = analyzeAccount(inputs, "LIVE", weights);
+    let view = analyzeAccount(inputs, "LIVE", weights);
     tp = perfMark("analyzeAccount", tp);
     perfMark("COLD-PULL-TOTAL", t0);
 
@@ -488,6 +489,9 @@ async function fetchLiveCockpitUncached(userId: string, lookbackDays: number = L
     // in order, and marginal scaling wants a stable chronological curve.
     const dayRows = [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
     const marginal = marginalScaling(dayRows);
+    // Reconcile per-ad SCALE calls with the account diminishing-returns read (canon #10): when saturating,
+    // reframe "add budget" as "scale by reallocation" so the verdict is coherent with the marginal card.
+    view = reconcileScaleWithSaturation(view, marginal.classification);
     const dataQuality = assessDataQuality(dayRows);
     // Day-wise trend points (one per day, every KPI) for the chart. buildDailySeries reuses the funnel
     // engine and adds ROAS/CPA - it re-sorts internally, so passing dayRows (already sorted) is fine.
