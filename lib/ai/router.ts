@@ -9,9 +9,16 @@ import { gemini } from "./providers/gemini.ts";
 import { openai } from "./providers/openai.ts";
 import { anthropic } from "./providers/anthropic.ts";
 import { recordAiCall } from "./usage.ts";
-import { setAiTask } from "./context.ts";
-import { aiBudgetExceeded } from "./budget.ts";
+import { setAiTask, currentAiUserId } from "./context.ts";
+import { aiBudgetExceeded, tenantAiBudgetExceeded } from "./budget.ts";
 import { isKilled } from "../security/flags.ts";
+
+// S4: the per-tenant ceiling. Only meaningful when the request bound a user (setAiUser at the route
+// boundary); unattributed background calls (userId null) skip it and remain bounded by the global budget.
+async function tenantPaused(): Promise<boolean> {
+  const uid = currentAiUserId();
+  return uid != null && (await tenantAiBudgetExceeded(uid));
+}
 
 const ADAPTERS = { gemini, openai, anthropic };
 
@@ -23,7 +30,8 @@ function chain(kind: TaskKind): ModelRef[] {
 /** Text task: returns the raw model text (caller parses if needed), or null after all fallbacks. */
 export async function runTaskText(kind: TaskKind, prompt: string): Promise<string | null> {
   if (await isKilled("ai")) return null; // global AI kill switch: halt every call at the source (callers already handle null)
-  if (await aiBudgetExceeded()) return null; // daily AI cost ceiling hit -> pause AI
+  if (await aiBudgetExceeded()) return null; // global daily AI cost ceiling hit -> pause AI for all
+  if (await tenantPaused()) return null; // this tenant's own daily ceiling hit -> pause AI for them only (S4)
   setAiTask(kind); // attribute spend to this task
   for (const m of chain(kind)) {
     recordAiCall(); // fire-and-forget cost counter (no-op without Upstash)
@@ -42,7 +50,8 @@ export async function runTaskJson(
   inline?: InlineImage | null,
 ): Promise<Record<string, unknown> | null> {
   if (await isKilled("ai")) return null; // global AI kill switch: halt every call at the source (callers already handle null)
-  if (await aiBudgetExceeded()) return null; // daily AI cost ceiling hit -> pause AI
+  if (await aiBudgetExceeded()) return null; // global daily AI cost ceiling hit -> pause AI for all
+  if (await tenantPaused()) return null; // this tenant's own daily ceiling hit -> pause AI for them only (S4)
   setAiTask(kind); // attribute spend to this task
   for (const m of chain(kind)) {
     recordAiCall(); // fire-and-forget cost counter (no-op without Upstash)
