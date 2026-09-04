@@ -6,10 +6,10 @@ import { rupees } from "@/lib/format";
 // account has no video delivery to place.
 
 const QUAD_META: Record<string, { title: string; tone: string }> = {
-  scale: { title: "Scale - it works", tone: "text-[var(--good-ink)]" },
+  scale: { title: "Relatively strongest", tone: "text-[var(--good-ink)]" },
   rewrite_payoff: { title: "Rewrite the payoff", tone: "text-[var(--warn-ink)]" },
   recut_hook: { title: "Recut the hook", tone: "text-[var(--warn-ink)]" },
-  kill_concept: { title: "Kill the concept", tone: "text-[var(--bad-ink)]" },
+  kill_concept: { title: "Weakest - rework", tone: "text-[var(--bad-ink)]" },
 };
 const PILL: Record<string, string> = {
   scale: "bg-[var(--good-bg)] text-[var(--good-ink)]",
@@ -42,7 +42,8 @@ export function HookHoldSection({ summary }: { summary: HookHoldSummary }) {
       <p className="mt-1 text-[13px] leading-relaxed text-[var(--ink-muted)]">
         Every video ad placed by its hook (3s-view / impressions) and hold (thruplays / 3s-views), split at your own
         account medians (hook {pctOf(summary.hookMedian)}, hold {pctOf(summary.holdMedian)}) - not a published benchmark.
-        Each quadrant has a different fix.
+        Placement is RELATIVE to your account: &ldquo;relatively strongest&rdquo; means best of what you run, not
+        objectively good{summary.holdMedian !== null && summary.holdMedian < 0.05 ? " - and your account's hold is low overall, so even the top quadrant has real headroom" : ""}. Each quadrant has a different fix.
       </p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">

@@ -50,11 +50,14 @@ export function hookHoldMedians(ads: HookHoldInput[]): { hookMedian: number | nu
   return { hookMedian: median(hooks), holdMedian: median(holds) };
 }
 
+// Labels are RELATIVE to the account's own medians (self-baselined), never an absolute quality claim - on an
+// account whose hold is uniformly weak, the "top" quadrant is the relatively-best, not objectively good. The
+// wording says so, so a 2%-hold ad that beats a 1% median is never called "it holds".
 const QUAD: Record<Exclude<HookHoldQuadrant, "insufficient">, { label: string; action: string; why: string }> = {
-  scale: { label: "Scale - it works", action: "Test a budget increase; this creative hooks and holds.", why: "Above the account's median on BOTH hook and hold - the opener stops the thumb and the story pays it off." },
-  rewrite_payoff: { label: "Rewrite the payoff", action: "Keep the hook, re-cut the 5s AFTER it - the promise isn't being kept.", why: "Strong hook (above median) but weak hold (below median): people stop, then leave - a congruency failure between the opener and what follows." },
-  recut_hook: { label: "Recut the hook", action: "New first frame / opener - the asset is good, the opener isn't. Cheapest fix in creative.", why: "Weak hook (below median) but strong hold (above median): the few who stay watch it through, so the body works - only the opener is losing them." },
-  kill_concept: { label: "Kill the concept", action: "Don't iterate on this angle - retire it and test a new concept.", why: "Below the account's median on BOTH hook and hold - the angle isn't landing; execution tweaks won't save it." },
+  scale: { label: "Relatively strongest", action: "Your best hook+hold combination on this account - the first to consider for more budget (watch marginal ROAS).", why: "Above YOUR account median on both hook and hold - relatively strongest here, not an absolute benchmark." },
+  rewrite_payoff: { label: "Rewrite the payoff", action: "Keep the hook, re-cut the 5s AFTER it - the promise isn't being kept.", why: "Above-median hook but below-median hold: people stop, then leave - a congruency failure between the opener and what follows." },
+  recut_hook: { label: "Recut the hook", action: "New first frame / opener - the body holds better than the opener suggests. Cheapest fix in creative.", why: "Below-median hook but above-median hold: the few who stay watch on, so the body works - the opener is losing them." },
+  kill_concept: { label: "Weakest - rework the angle", action: "Below your account median on both - don't just tweak execution, rethink the angle.", why: "Below YOUR account median on both hook and hold - the relatively weakest here; execution tweaks rarely save it." },
 };
 
 // Place one ad in the 2x2 vs the account medians. Returns "insufficient" (never a quadrant) for a non-video
