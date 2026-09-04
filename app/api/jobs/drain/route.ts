@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, after, type NextRequest } from "next/server";
 import { cronSecretGate } from "@/lib/app/cron-auth";
 import { postgresQueue } from "@/lib/queue-postgres";
 import { getJobHandler } from "@/lib/jobs/handlers";
@@ -19,7 +19,16 @@ async function handle(request: NextRequest) {
   const gate = cronSecretGate(request); // one shared constant-time bearer primitive (was hand-copied in 3 routes)
   if (!gate.ok) return gate.response;
   try {
-    return NextResponse.json({ ok: true, ...(await drainQueue(postgresQueue, getJobHandler, BATCH)) });
+    const res = await drainQueue(postgresQueue, getJobHandler, BATCH);
+    // Self-chain (S2): a full batch means there is probably more pending, so kick another drain once this
+    // response flushes. This lets a large enqueue (e.g. one rollup job per account nightly) drain FULLY from a
+    // single kick, without waiting for a scheduled tick. The chain terminates naturally: it stops the moment a
+    // drain claims fewer than BATCH, and the queue's retry->dead-letter removes stuck jobs so it can't loop.
+    if (res.claimed >= BATCH) {
+      const origin = request.nextUrl.origin;
+      after(() => fetch(`${origin}/api/jobs/drain`, { method: "POST", headers: { authorization: `Bearer ${gate.secret}` } }).catch(() => {}));
+    }
+    return NextResponse.json({ ok: true, ...res });
   } catch (e) {
     captureError(e, { route: "jobs/drain" });
     return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "drain failed" }, { status: 500 });

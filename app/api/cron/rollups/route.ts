@@ -1,19 +1,17 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, after, type NextRequest } from "next/server";
 import { cronSecretGate } from "@/lib/app/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readAllPages } from "@/lib/supabase/paged";
-import { refreshAccountRollup } from "@/lib/rollups/account";
-import { refreshCreativeRollup } from "@/lib/rollups/creative";
-import { captureError } from "@/lib/observability";
 
-// 10x #5 instant-app: refresh EVERY connected account's rollup from the STORE. This is deliberately separate
-// from /api/cron/sync: a rollup reads ad_metrics/ad_meta that are already in the DB, so it is cheap and makes
-// no Meta call - it can run far more often than the heavy nightly Meta sync to keep dashboards instant even
-// between syncs. CRON_SECRET-gated (same primitive as the other crons). Inert until CRON_SECRET is set.
+// 10x #5 instant-app: refresh EVERY connected account's rollup from the STORE (cheap, no Meta call).
+// S2 (scale): instead of refreshing all accounts INLINE in this one request (which would time out past ~100
+// accounts), ENQUEUE one durable `rollup-account` job per account and kick the drain, which self-chains
+// through the whole backlog. Each account is then independently retryable + observable in the `jobs` table.
+// The actual refresh work lives in the rollup-account handler (lib/jobs/handlers.ts). CRON_SECRET-gated.
 export const dynamic = "force-dynamic";
-export const maxDuration = 300;
+export const maxDuration = 60; // now only lists + batch-enqueues (fast); the drain does the work
 
-const CONCURRENCY = 4; // store reads only; bounded so a large tenant list never floods the pool
+const INSERT_CHUNK = 500; // job rows per insert
 
 export async function GET(request: NextRequest) {
   const gate = cronSecretGate(request);
@@ -29,27 +27,19 @@ export async function GET(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Could not list accounts." }, { status: 500 });
   }
-  const queue = [...accounts];
-  let refreshed = 0;
-  let empty = 0;
-  let failed = 0;
 
-  async function worker() {
-    for (;;) {
-      const a = queue.shift();
-      if (!a) return;
-      try {
-        const ok = await refreshAccountRollup(a.user_id, a.external_id);
-        await refreshCreativeRollup(a.user_id, a.external_id).catch(() => {}); // same store read, top-creatives rollup
-        if (ok) refreshed++;
-        else empty++; // no store rows yet for this account (never synced) - nothing to roll up
-      } catch (e) {
-        failed++;
-        captureError(e, { route: "cron/rollups", account: a.external_id });
-      }
-    }
+  // Batch-enqueue one rollup-account job per account (fast; a single insert per chunk). Same shape the queue's
+  // enqueue writes ({type, payload, user_id}); status/attempts default. Idempotent handler, so re-enqueues are safe.
+  const rows = accounts.map((a) => ({ type: "rollup-account", payload: { userId: a.user_id, account: a.external_id }, user_id: a.user_id }));
+  let enqueued = 0;
+  for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
+    const { error } = await admin.from("jobs").insert(rows.slice(i, i + INSERT_CHUNK));
+    if (!error) enqueued += Math.min(INSERT_CHUNK, rows.length - i);
   }
-  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, Math.max(1, queue.length)) }, worker));
 
-  return NextResponse.json({ ok: true, accounts: accounts.length, refreshed, empty, failed });
+  // Kick the drain to start processing now; it self-chains through the rest. Best-effort.
+  const origin = request.nextUrl.origin;
+  after(() => fetch(`${origin}/api/jobs/drain`, { method: "POST", headers: { authorization: `Bearer ${gate.secret}` } }).catch(() => {}));
+
+  return NextResponse.json({ ok: true, accounts: accounts.length, enqueued });
 }
