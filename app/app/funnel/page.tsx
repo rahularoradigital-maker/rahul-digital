@@ -9,6 +9,8 @@ import { ConnectState } from "@/components/app/connect-state";
 import { FunnelReportView } from "@/components/app/funnel/funnel-report";
 import { DataFreshness } from "@/components/app/data-freshness";
 import { NextStep } from "@/components/app/next-step";
+import { getCpaDecomposition } from "@/lib/scoring/cpa-decomposition-store";
+import { CpaDecompositionSection } from "@/components/app/funnel/cpa-decomposition-section";
 
 // Funnel page: deterministic funnel-step diagnosis. Tags each ad TOF/MOF/BOF and names the single weakest
 // step against the account's own best same-objective ad - refusing to answer when it cannot trust the data.
@@ -69,6 +71,7 @@ export default async function FunnelPage() {
       {bundle ? (
         <>
           <FunnelReportView report={bundle.report} accountName={bundle.accountName} accountId={bundle.accountId} since={bundle.since} until={bundle.until} />
+          <CpaDecompositionSection d={await getCpaDecomposition(user.id, session.activeExternalId, bundle.since, bundle.until)} />
           <NextStep href="/app/action-center" label="See these fixes ranked in Actions" hint="Every weakest-step leak, prioritised by the money at stake." />
         </>
       ) : (
