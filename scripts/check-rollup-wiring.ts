@@ -32,4 +32,10 @@ assert.ok(/verifyAndLog\s*\(/.test(handlers), "the sync-account handler must log
 // The reconcile read path must keep its self-heal (save what it scanned) so a page works before any sync.
 assert.ok(/saveAccountReport\s*\(/.test(read("lib/reconcile/store.ts")), "reconcile store must self-heal the rollup (saveAccountReport)");
 
+// Perf (cold-load fix): every sync-COMPLETION path must pre-warm the cockpit cache, or the first load after a
+// queue/on-demand sync is a cold Meta pull (~8s+). Dropping any of these silently reintroduces that latency.
+for (const p of ["lib/jobs/handlers.ts", "app/api/ingest/run/route.ts", "app/api/cron/sync/route.ts"]) {
+  assert.ok(/warmCockpitCache\s*\(/.test(read(p)), `${p} must warm the cockpit cache on sync completion (cold-load fix)`);
+}
+
 console.log("PASS: rollup wiring (sync paths refresh account+creative rollups; queue sync-account wired; reconcile self-heals)");

@@ -3,6 +3,7 @@ import { cronSecretGate } from "@/lib/app/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readAllPages } from "@/lib/supabase/paged";
 import { fetchLiveCockpit, getUserMetaSession } from "@/lib/meta-sync";
+import { warmCockpitCache } from "@/lib/cockpit/warm";
 import { readToken } from "@/lib/oauth-store";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
 import { syncChangeHistory } from "@/lib/ingest/change-history";
@@ -89,6 +90,9 @@ export async function GET(request: NextRequest) {
       await refreshCreativeRollup(uid, acctExternalId).catch(() => {});
       // Automatic drift alarm (#1): store-vs-Meta verdict logged each sync, best-effort.
       await verifyAndLog(uid, acctExternalId, token).catch(() => {});
+      // Pre-warm the cockpit cache with fresh post-sync data (off the request path) so the first load is
+      // instant. The upfront warm loop is skipped in queue mode + this continue-hop, so warm here too.
+      after(() => warmCockpitCache(uid).catch(() => {}));
     }
     return NextResponse.json({ ok: res.ok, uid, acct: acctExternalId, hop, processed: res.processed, remaining: res.remaining, complete: res.complete, error: res.error });
   }

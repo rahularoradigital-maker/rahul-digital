@@ -7,6 +7,7 @@ import { readToken } from "@/lib/oauth-store";
 import { syncAdMetrics } from "@/lib/ingest/ad-metrics";
 import { syncChangeHistory } from "@/lib/ingest/change-history";
 import { verifyAndLog } from "@/lib/rollups/verify";
+import { warmCockpitCache } from "@/lib/cockpit/warm";
 import { postgresQueue } from "@/lib/queue-postgres";
 
 // Safety cap on how many times one account's sync re-enqueues itself in a cycle (mirrors cron/sync MAX_HOPS).
@@ -75,6 +76,9 @@ export const JOB_HANDLERS: Record<string, JobHandler> = {
     await refreshAccountRollup(userId, account).catch(() => {});
     await refreshCreativeRollup(userId, account).catch(() => {});
     await verifyAndLog(userId, account, token).catch(() => {});
+    // Pre-warm the cockpit cache with the FRESH post-sync data so the user's first load is instant, not a
+    // cold Meta pull. A job has no request scope for after(), so run inline - nobody waits on a queue job.
+    await warmCockpitCache(userId).catch(() => {});
   },
 };
 

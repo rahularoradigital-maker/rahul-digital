@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, after, type NextRequest } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { enforceRateLimit } from "@/lib/rate-limit-distributed";
@@ -8,6 +8,7 @@ import { syncChangeHistory } from "@/lib/ingest/change-history";
 import { refreshAccountRollup } from "@/lib/rollups/account";
 import { refreshCreativeRollup } from "@/lib/rollups/creative";
 import { verifyAndLog } from "@/lib/rollups/verify";
+import { warmCockpitCache } from "@/lib/cockpit/warm";
 
 // Run the day-wise ingestion for the signed-in user's active account, on demand. Auth-gated (a user can
 // only sync their own account). Complete coverage: captures EVERY spending ad day-wise into ad_metrics,
@@ -50,6 +51,9 @@ export async function POST(request: NextRequest) {
     // Automatic self-proving accuracy (#1): diff the fresh rollup vs live Meta and log the verdict, so drift
     // alarms fire on their own (not only when a user opens verify). Best-effort - never blocks the sync.
     await verifyAndLog(user.id, session.activeExternalId, session.token).catch(() => {});
+    // Pre-warm the cockpit cache off the response path (after() runs post-response) so the user's first
+    // dashboard load after this sync is instant instead of a cold Meta pull. Best-effort; never delays sync.
+    after(() => warmCockpitCache(user.id).catch(() => {}));
   }
   return NextResponse.json({ ok: true, adsSeen: res.adsSeen, rows: res.rows, since: res.since, processed: res.processed, remaining: res.remaining, complete: res.complete, changesSeen: changes?.seen ?? null, changesOk: changes?.ok ?? false });
 }
