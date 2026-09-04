@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listAudit } from "@/lib/security/audit-log";
 import { listRecentEvents } from "@/lib/owner/events";
+import { p75 as percentile75, rateVital, isVitalName, type VitalRating } from "@/lib/vitals/rate";
 
 // Data for the admin cost/ops console: per-user + per-provider + per-task AI spend (from ai_usage), and the
 // background-job health (ad + change sync state). Reads via the service-role admin client. Aggregation is in
@@ -17,6 +18,7 @@ export type OwnerOverview = { totalUsers: number; dau: number; wau: number; mau:
 export type ActivityRow = { at: string; event: string; user: string; feature: string | null };
 export type UserFeature = { email: string; features: { feature: string; calls: number; costUsd: number }[]; costUsd: number };
 export type ProblemRow = { at: string; feature: string; message: string; user: string };
+export type WebVitalRow = { metric: string; p75: number | null; rating: VitalRating | null; samples: number };
 export type AuditEventRow = { at: string; actor: string; action: string; target: string; result: string; reason: string | null };
 export type AdminDashboard = {
   windowDays: number;
@@ -34,6 +36,7 @@ export type AdminDashboard = {
   models: Bucket[];
   userFeatures: UserFeature[];
   problems: ProblemRow[];
+  webVitals: WebVitalRow[];
 };
 
 type UsageRow = { user_id: string | null; task: string | null; provider: string; model: string; prompt_tokens: number; completion_tokens: number; cost_usd: number };
@@ -170,6 +173,31 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     /* table may be empty */
   }
 
+  // S6 RUM: real-user Core Web Vitals p75 over the window, per metric - so read-path speed at scale is a
+  // measured number, not a guess. Bounded read; grouped + p75'd in JS (fine at this volume). Best-effort.
+  const REPORT_METRICS = ["LCP", "INP", "TTFB", "FCP", "CLS"];
+  let webVitals: WebVitalRow[] = REPORT_METRICS.map((metric) => ({ metric, p75: null, rating: null, samples: 0 }));
+  try {
+    const { data: vitalsData } = await admin
+      .from("web_vitals")
+      .select("metric,value")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(50000);
+    const byMetric = new Map<string, number[]>();
+    for (const r of (vitalsData ?? []) as { metric: string; value: number }[]) {
+      if (!byMetric.has(r.metric)) byMetric.set(r.metric, []);
+      byMetric.get(r.metric)!.push(Number(r.value));
+    }
+    webVitals = REPORT_METRICS.map((metric) => {
+      const vals = byMetric.get(metric) ?? [];
+      const val = percentile75(vals);
+      return { metric, p75: val === null ? null : round(val), rating: val !== null && isVitalName(metric) ? rateVital(metric, val) : null, samples: vals.length };
+    });
+  } catch {
+    /* table may be absent pre-migration - leave the zero-sample rows */
+  }
+
   return {
     windowDays,
     totalCalls,
@@ -186,5 +214,6 @@ export async function loadAdminDashboard(windowDays = 30): Promise<AdminDashboar
     models: [...byModel.values()].map((m) => ({ ...m, costUsd: round(m.costUsd) })).sort((a, b) => b.costUsd - a.costUsd),
     userFeatures,
     problems,
+    webVitals,
   };
 }

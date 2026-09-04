@@ -32,6 +32,8 @@ export const EXPLICIT_DELETE_BY_USER = [
   "creative_patterns", "opportunities", // creative-intelligence schema (0038): user_id-scoped (verified: user_id, no auth-user cascade), delete on account removal
   "jobs", // durable job queue (0027): delete the user's queued work on deletion. user_id is nullable -
           // deleting by user_id removes their jobs and leaves system jobs (null user_id) untouched.
+  "web_vitals", // RUM telemetry (0041): user_id-scoped (nullable), no auth-user cascade. Delete the user's
+                // rows on removal; anonymous-beacon rows (null user_id) are untied to anyone and stay.
 ] as const;
 // Notes on tables handled by CASCADE (not user_id-scoped, so not listed above), transitively removed with
 // their parent when the auth user is deleted:

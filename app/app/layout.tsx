@@ -11,6 +11,7 @@ import { UsageMeter } from "@/components/app/usage-meter";
 import { BackToTop } from "@/components/app/back-to-top";
 import { OfflineBanner } from "@/components/app/offline-banner";
 import { ConnectResultBanner } from "@/components/app/connect-result-banner";
+import { VitalsReporter } from "@/components/app/vitals-reporter";
 import { Button } from "@/components/ui/button";
 
 // AdScale app shell: fixed 256px sidebar (grouped nav + user footer) + working
@@ -46,6 +47,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-full flex-1">
+      {/* S6: real-user Core Web Vitals collector (renders nothing; beacons LCP/FCP/TTFB/CLS on page hide). */}
+      <VitalsReporter />
       <OfflineBanner />
       {/* Skip-link: lets keyboard users jump past the sidebar nav straight to the content. */}
       <a

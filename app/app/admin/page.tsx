@@ -127,6 +127,27 @@ export default async function AdminPage() {
         )}
       </Card>
 
+      <Card title="Read-path speed (real users)" sub="Core Web Vitals p75 from real /app loads this window - is the dashboard actually fast at scale? (LCP/FCP/TTFB in ms, CLS unitless.)">
+        {d.webVitals.every((v) => v.samples === 0) ? (
+          <p className="text-[13px] text-[var(--ink-muted)]">No real-user samples yet. They arrive as people use the app.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            {d.webVitals.map((v) => {
+              const color =
+                v.rating === "good" ? "text-[var(--good-ink)]" : v.rating === "poor" ? "text-[var(--bad-ink)]" : v.rating === "needs-improvement" ? "text-[var(--warn-ink)]" : "text-[var(--ink-muted)]";
+              const shown = v.p75 === null ? "n/a" : v.metric === "CLS" ? v.p75.toFixed(3) : `${Math.round(v.p75)}ms`;
+              return (
+                <div key={v.metric} className="rounded-lg border border-[var(--hairline)] p-3">
+                  <div className="text-[12px] font-medium text-[var(--ink-muted)]">{v.metric}</div>
+                  <div className={`text-[18px] font-semibold tabular-nums ${color}`}>{shown}</div>
+                  <div className="text-[11px] text-[var(--ink-muted)]">{v.samples} sample{v.samples === 1 ? "" : "s"}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
       <Card title="Spend by user" sub="Which user is spending how much on AI.">
         {d.users.length === 0 ? <Empty /> : (
           <table className="w-full text-[13px]">
