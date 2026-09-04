@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAdminEmail } from "@/lib/admin";
 import { PLANS, IMAGE_ACTIONS, planFor, tokensFor, periodOf, type PlanId, type TokenAction } from "./plans";
 
 // Product token meter (pricing Phase 2). Enforcement = spendTokens BEFORE the AI runs; the atomic cap lives in
@@ -14,7 +15,10 @@ export type SpendResult =
 
 async function planId(userId: string): Promise<PlanId> {
   try {
-    const { data } = await createAdminClient().from("profiles").select("plan").eq("id", userId).maybeSingle();
+    const { data } = await createAdminClient().from("profiles").select("plan, email").eq("id", userId).maybeSingle();
+    // Founder / admin allowlist (ADMIN_EMAILS, defaults to the founder): full access, top plan, so the product
+    // never shows a "buy plan" / upgrade prompt or blocks image generation for these accounts.
+    if (isAdminEmail(data?.email as string | null | undefined)) return "scale";
     return planFor(data?.plan as string | null | undefined);
   } catch {
     return "free"; // fail closed to the cheapest, image-blocked plan
