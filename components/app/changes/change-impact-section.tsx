@@ -41,6 +41,12 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
   // real verdicts, since the newest changes are the most likely to be unscoreable.
   const conclusive = results.filter((r) => r.impact.verdict !== "insufficient");
   const inconclusive = results.length - conclusive.length;
+  // Buyer attribution is thin when no buyer has enough ad/ad-set-level outcomes to rank with confidence -
+  // common on accounts run at the ad-set/campaign level. We LEAD with the account-level "what tends to work"
+  // (which stays rich) and demote the buyer board behind an honest note, rather than implying a confident
+  // per-person ranking exists when it does not.
+  const confidentBuyers = buyers.filter((b) => b.confident).length;
+  const thinAttribution = confidentBuyers === 0;
 
   if (judged === 0) {
     return (
@@ -56,7 +62,25 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
 
   return (
     <div className="space-y-6">
-      <Card title="Media-buyer leaderboard" sub="Ranked on outcomes, not activity. Only human changes count; algorithm moves are excluded. A buyer needs at least 3 measurable changes to be ranked with confidence. Precision = share of verdicts measured at ad level (directly attributable); a lower share means the signal is mostly ad-set / campaign level (directional).">
+      <Card title="What tends to work" sub="Change types ranked by how often they improved performance on this account. This account-level read is the most reliable signal here - it does not depend on tying a change to any one person.">
+        <div className="flex flex-wrap gap-2">
+          {changeTypes.map((t) => (
+            <div key={t.changeType} className="rounded-[10px] border border-[var(--hairline)] px-3 py-2 text-[13px]">
+              <span className="font-medium capitalize text-[var(--ink)]">{t.changeType}</span>
+              <span className="ml-2 text-[var(--ink-muted)]">{rate(t.hitRate)} good</span>
+              <span className="ml-2 text-[var(--good-ink)]">{t.improved}↑</span>
+              <span className="ml-1 text-[var(--bad-ink)]">{t.worsened}↓</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card title="Media-buyer leaderboard" sub="Ranked on outcomes, not activity. Only human changes count; algorithm moves are excluded. A buyer is credited only for changes attributable at ad / ad-set level (campaign-wide moves aren't tied to one person), and needs at least 3 such changes to rank with confidence. Precision = share measured at ad level (directly attributable); lower = mostly ad-set level (directional).">
+        {thinAttribution && (
+          <p className="mb-4 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface-alt)] px-3 py-2 text-[12px] leading-relaxed text-[var(--ink-muted)]">
+            Limited attributable data on this account: most changes here happen at the ad-set / campaign level, so few can be tied to a single buyer with confidence. Read the ranking below as directional, and lean on &ldquo;What tends to work&rdquo; above for the reliable signal.
+          </p>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]" style={{ fontVariantNumeric: "tabular-nums" }}>
             <thead>
@@ -89,19 +113,6 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
               ))}
             </tbody>
           </table>
-        </div>
-      </Card>
-
-      <Card title="What tends to work" sub="Change types ranked by how often they improved performance on this account.">
-        <div className="flex flex-wrap gap-2">
-          {changeTypes.map((t) => (
-            <div key={t.changeType} className="rounded-[10px] border border-[var(--hairline)] px-3 py-2 text-[13px]">
-              <span className="font-medium capitalize text-[var(--ink)]">{t.changeType}</span>
-              <span className="ml-2 text-[var(--ink-muted)]">{rate(t.hitRate)} good</span>
-              <span className="ml-2 text-[var(--good-ink)]">{t.improved}↑</span>
-              <span className="ml-1 text-[var(--bad-ink)]">{t.worsened}↓</span>
-            </div>
-          ))}
         </div>
       </Card>
 
