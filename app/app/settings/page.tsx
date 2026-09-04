@@ -82,6 +82,17 @@ export default async function SettingsPage() {
       {/* Editable verdict weights */}
       <SettingsPanel />
 
+      {/* Data portability (GDPR): download a JSON copy of your own data. Read-only, secrets excluded. */}
+      <Card>
+        <CardContent className="p-6">
+          <h2 className="text-[15px] font-semibold text-[var(--ink)]">Export your data</h2>
+          <p className="mt-2 text-[13px] text-[var(--ink-muted)]">Download a JSON copy of your account, connected ad accounts, and analysis data. Access tokens and secrets are never included.</p>
+          <a href="/api/account/export" download className="mt-3 inline-flex">
+            <Button variant="outline" size="sm">Download my data</Button>
+          </a>
+        </CardContent>
+      </Card>
+
       {/* Danger zone: self-serve account deletion (soft-delete + grace). */}
       <DeleteAccountCard initialPurgeAfter={pendingDeletion?.purgeAfter ?? null} graceDays={GRACE_PERIOD_DAYS} />
     </div>

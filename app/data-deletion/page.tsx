@@ -11,11 +11,11 @@ export default function DataDeletionPage() {
       </section>
       <section>
         <h2 className="text-xl font-medium">Delete your account and data</h2>
-        <p className="mt-2">To permanently delete your AdScale account and all associated data, email <a className="text-[var(--accent)] hover:underline" href="mailto:privacy@adscaledigital.co?subject=Delete%20my%20AdScale%20data">privacy@adscaledigital.co</a> from your account email. We will confirm and complete the deletion within 30 days, and remove your organisation&apos;s data unless another member still needs it.</p>
+        <p className="mt-2">You can delete your account yourself from <span className="font-medium">Settings &rarr; Delete account</span>. We keep your data for a 14-day grace period so you can change your mind (just cancel from the same place), then permanently erase it and revoke Meta access. Prefer email? Write to <a className="text-[var(--accent)] hover:underline" href="mailto:privacy@adscaledigital.co?subject=Delete%20my%20AdScale%20data">privacy@adscaledigital.co</a> from your account email and we will complete it within 30 days.</p>
       </section>
       <section>
         <h2 className="text-xl font-medium">Export your data</h2>
-        <p className="mt-2">Want a copy of your data before you go? Ask in the same email and we will provide an export of your account and analysis data.</p>
+        <p className="mt-2">Download a JSON copy of your account and analysis data any time from <span className="font-medium">Settings &rarr; Export your data</span>. Access tokens and other secrets are never included.</p>
       </section>
     </LegalPage>
   );
