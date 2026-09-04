@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/app/user";
 import { loadVerificationHistory } from "@/lib/rollups/verification";
+import { cleanStreak } from "@/lib/rollups/pure";
 
 // "Verified against Meta" line (10x #1 self-proving accuracy, user-facing surface). Reads the latest LOGGED
 // store-vs-Meta verification (one indexed row, NO live Meta call - the on-demand /api/account/verify and the
@@ -9,14 +10,15 @@ import { loadVerificationHistory } from "@/lib/rollups/verification";
 // caller only passes the account id.
 export async function TrustLine({ accountExternalId }: { accountExternalId: string | null }) {
   if (!accountExternalId) return null;
-  let last;
+  let history;
   try {
     const user = await getCurrentUser();
     if (!user) return null;
-    [last] = await loadVerificationHistory(user.id, accountExternalId, 1);
+    history = await loadVerificationHistory(user.id, accountExternalId, 10);
   } catch {
     return null;
   }
+  const last = history[0];
   if (!last) return null;
 
   const pct = Math.round(last.worstDriftPct * 100);
@@ -29,9 +31,13 @@ export async function TrustLine({ accountExternalId }: { accountExternalId: stri
       </p>
     );
   }
+  // Trustworthy: lead with the STREAK when there is one (a stronger trust signal than a single check), else
+  // the single verified line. Uses the already-logged trend - no extra work.
+  const streak = cleanStreak(history);
   return (
     <p className="mt-1 text-[12px] text-[var(--ink-muted)]">
-      Verified against Meta{pct > 0 ? ` — within ${pct}%` : ""} (checked {when}).
+      {streak >= 2 ? `Verified against Meta — ${streak} checks in a row` : "Verified against Meta"}
+      {pct > 0 ? ` (within ${pct}%)` : ""} · checked {when}.
     </p>
   );
 }
