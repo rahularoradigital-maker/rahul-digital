@@ -21,7 +21,15 @@ const handlers = read("lib/jobs/handlers.ts");
 assert.ok(/["']rollup-account["']\s*:/.test(handlers), "handlers.ts must register a rollup-account handler");
 assert.ok(/refreshAccountRollup\s*\(/.test(handlers) && /refreshCreativeRollup\s*\(/.test(handlers), "the rollup-account handler must call both refreshes");
 
+// S2/queue (golden path): cron/sync gained an opt-in queue mode - it ENQUEUES one `sync-account` job per
+// account (SYNC_VIA_QUEUE=1), and the sync-account HANDLER does the same work as the inline continue-hop.
+// Assert both so the durable-sync path can't be silently dropped, and so its rollup wiring is protected too.
+assert.ok(/["']sync-account["']/.test(read("app/api/cron/sync/route.ts")), "cron/sync must enqueue sync-account jobs (queue mode)");
+assert.ok(/["']sync-account["']\s*:/.test(handlers), "handlers.ts must register a sync-account handler");
+assert.ok(/syncAdMetrics\s*\(/.test(handlers), "the sync-account handler must run the metrics sync (syncAdMetrics)");
+assert.ok(/verifyAndLog\s*\(/.test(handlers), "the sync-account handler must log the store-vs-Meta drift verdict on completion");
+
 // The reconcile read path must keep its self-heal (save what it scanned) so a page works before any sync.
 assert.ok(/saveAccountReport\s*\(/.test(read("lib/reconcile/store.ts")), "reconcile store must self-heal the rollup (saveAccountReport)");
 
-console.log("PASS: rollup wiring (sync paths refresh account+creative rollups; reconcile self-heals)");
+console.log("PASS: rollup wiring (sync paths refresh account+creative rollups; queue sync-account wired; reconcile self-heals)");

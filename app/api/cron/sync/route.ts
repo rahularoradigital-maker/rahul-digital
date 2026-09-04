@@ -107,6 +107,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Could not list accounts." }, { status: 500 });
   }
   const userIds = [...new Set(accounts.map((a) => a.user_id))];
+
+  // S2/queue (scale, opt-in): when SYNC_VIA_QUEUE=1, enqueue one durable `sync-account` job per connected
+  // account instead of kicking a fragile after()-self-chain per account. The drain runs them with
+  // retry/backoff/dead-letter and self-chains through the whole backlog, so a dropped hop no longer costs a
+  // full day and every account is observable in `jobs`. Default OFF: the proven self-chain path below is
+  // untouched until the owner flips the flag (recommended once on Vercel Pro, where a scheduled drain sweep
+  // backstops the after()-kick). The per-account WORK is identical (same syncAdMetrics slice + rollups +
+  // verify, in the sync-account handler), so golden numbers do not change - only the transport does.
+  if (process.env.SYNC_VIA_QUEUE === "1") {
+    const INSERT_CHUNK = 500;
+    const rows = accounts.map((a) => ({ type: "sync-account", payload: { userId: a.user_id, account: a.external_id }, user_id: a.user_id }));
+    let enqueued = 0;
+    for (let i = 0; i < rows.length; i += INSERT_CHUNK) {
+      const { error } = await admin.from("jobs").insert(rows.slice(i, i + INSERT_CHUNK));
+      if (!error) enqueued += Math.min(INSERT_CHUNK, rows.length - i);
+    }
+    after(() => fetch(`${origin}/api/jobs/drain`, { method: "POST", headers: { authorization: `Bearer ${cronSecret}` } }).catch(() => {}));
+    return NextResponse.json({ ok: true, mode: "queue", accounts: userIds.length, enqueued });
+  }
+
   let warmed = 0;
   let empty = 0;
   let failed = 0;
