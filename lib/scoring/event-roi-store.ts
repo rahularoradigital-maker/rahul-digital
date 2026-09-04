@@ -1,6 +1,8 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readAllPages } from "@/lib/supabase/paged";
+import { unstable_cache } from "next/cache";
+import { accountStoreTag } from "@/lib/cache";
 import { computeEventRoi, eventRoiTrend, priorWindow, type EventRow, type EventRoi, type EventTrend } from "./event-roi";
 
 // Assemble event ROI from the store: join each ad's optimisation EVENT (ad_meta.optimization_event, written
@@ -45,13 +47,15 @@ export async function getEventRoi(userId: string, accountExternalId: string, sin
 
 // Same as getEventRoi, plus a per-event trend vs the equal-length window just before. ONE ad_meta read + ONE
 // metrics paging over the doubled window (prior+current), bucketed by date - cheaper than two separate calls,
-// and the current rows are identical to getEventRoi's. Returns an empty trend map when there is no prior data.
-export async function getEventRoiWithTrend(
+// and the current rows are identical to getEventRoi's. Returns empty trendEntries when there is no prior data.
+// Returns a SERIALIZABLE shape (trendEntries, not a Map) so the cached wrapper below can go through the
+// JSON-only data cache; the wrapper rebuilds the Map.
+async function computeEventRoiWithTrend(
   userId: string,
   accountExternalId: string,
   since: string,
   until: string,
-): Promise<{ current: EventRoi[]; trend: Map<string, EventTrend> }> {
+): Promise<{ current: EventRoi[]; trendEntries: [string, EventTrend][] }> {
   try {
     const admin = createAdminClient();
     const { priorSince } = priorWindow(since, until);
@@ -65,7 +69,7 @@ export async function getEventRoiWithTrend(
     for (const m of meta) {
       if (m.optimization_event) eventByAd.set(m.ad_id, m.optimization_event);
     }
-    if (eventByAd.size === 0) return { current: [], trend: new Map() };
+    if (eventByAd.size === 0) return { current: [], trendEntries: [] };
 
     // Parallel-burst paging + total order over the doubled (prior+current) window: was serial + no ORDER BY.
     const cur = new Map<string, EventRow>();
@@ -84,7 +88,24 @@ export async function getEventRoiWithTrend(
       bucket.set(ev, acc);
     }
     const current = computeEventRoi([...cur.values()]);
-    return { current, trend: eventRoiTrend(current, computeEventRoi([...prior.values()])) };
+    return { current, trendEntries: [...eventRoiTrend(current, computeEventRoi([...prior.values()]))] };
+  } catch {
+    return { current: [], trendEntries: [] };
+  }
+}
+
+// Cached wrapper: the compute is a store scan, so cache it in the data cache keyed by account + window (the
+// rolling since/until also keys today), busted by the ingest via accountStoreTag - the same pattern that makes
+// /app/changes and /app/funnel instant on repeat loads. This is what removes the dashboard's event-panel wait.
+// The Map is rebuilt from serializable entries (unstable_cache is JSON-only).
+export async function getEventRoiWithTrend(userId: string, accountExternalId: string, since: string, until: string): Promise<{ current: EventRoi[]; trend: Map<string, EventTrend> }> {
+  try {
+    const cached = await unstable_cache(
+      () => computeEventRoiWithTrend(userId, accountExternalId, since, until),
+      ["event-roi-trend", userId, accountExternalId, since, until],
+      { revalidate: 6 * 3600, tags: [accountStoreTag(userId, accountExternalId)] },
+    )();
+    return { current: cached.current, trend: new Map(cached.trendEntries) };
   } catch {
     return { current: [], trend: new Map() };
   }
