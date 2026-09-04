@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AnalyticsBeacon } from "@/components/analytics-beacon";
+import { GoogleAnalytics } from "@/components/google-analytics";
 
 // Telli type: Inter (the free match for telli's proprietary "Review").
 const inter = Inter({
@@ -27,6 +28,9 @@ export const metadata: Metadata = {
   // eligible for a full snippet + large image preview. These directives grant that (no special AI markup or
   // llms.txt is used or needed - the guide says the SEO fundamentals ARE the AI optimization).
   robots: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large", "max-video-preview": -1 },
+  // Google Search Console site verification (env-gated). Set GOOGLE_SITE_VERIFICATION to the token GSC gives
+  // you (the "HTML tag" method) and Next renders <meta name="google-site-verification" ...>. Unset -> omitted.
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 };
 
 // Site-wide entity signals (spec section 26/27): one consistent brand identity for search + answer engines.
@@ -47,6 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <script type="application/ld+json">{JSON_LD}</script>
         <AnalyticsBeacon />
+        <GoogleAnalytics />
         {children}
       </body>
     </html>
