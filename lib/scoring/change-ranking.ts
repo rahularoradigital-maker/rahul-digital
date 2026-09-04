@@ -4,7 +4,7 @@
 // "insufficient" verdicts are counted but never treated as a win or loss; a buyer below MIN_SAMPLE usable
 // verdicts is marked not-yet-confident rather than ranked on noise.
 
-import type { ChangeImpact } from "./change-impact.ts";
+import type { ChangeImpact, Grain } from "./change-impact.ts";
 
 export type ChangeResult = {
   actorId: string | null;
@@ -13,6 +13,12 @@ export type ChangeResult = {
   source: "buyer" | "algo";
   impact: ChangeImpact;
 };
+
+// How precise a rollup's evidence is: the coverage cascade measures a change at the finest grain that clears
+// the volume floor, so a verdict "measured at ad level" is directly attributable to THIS change, while an
+// ad-set / campaign verdict is directional (the change sits inside a bigger unit that also moved for other
+// reasons). Surfacing this stops a hit-rate built mostly on campaign-level reads from being read as precise.
+export type GrainMix = { ad: number; adset: number; campaign: number; preciseShare: number | null };
 
 export type BuyerRollup = {
   actorId: string | null;
@@ -27,6 +33,7 @@ export type BuyerRollup = {
   medianDeltaPct: number | null;
   confident: boolean; // usable >= MIN_SAMPLE
   score: number; // ranking score (SHRUNK hit-rate led, median-delta tiebreak)
+  grain: GrainMix; // how precise this buyer's usable verdicts are (ad = precise, adset/campaign = directional)
 };
 
 export type ChangeTypeRollup = {
@@ -39,6 +46,7 @@ export type ChangeTypeRollup = {
   hitRate: number | null; // RAW, for display
   shrunkHitRate: number | null; // shrunk toward 0.5 by sample size (what the ordering uses)
   medianDeltaPct: number | null;
+  grain: GrainMix;
 };
 
 const MIN_SAMPLE = 3; // fewer than this many usable verdicts = not enough to rank a buyer with confidence
@@ -68,7 +76,16 @@ function tally(rs: ChangeResult[]) {
   const usable = improved + worsened + flat;
   const hitRate = usable ? improved / usable : null;
   const deltas = rs.filter((r) => r.impact.verdict !== "insufficient" && r.impact.deltaPct != null).map((r) => r.impact.deltaPct as number);
-  return { improved, worsened, flat, insufficient, usable, hitRate, medianDeltaPct: median(deltas) };
+  // Grain mix of the USABLE verdicts (explicit-uncertainty, §charter): how much of this rollup's signal is
+  // ad-level (precise) vs ad-set/campaign (directional). An older verdict with no grain counts as ad-level.
+  const grain: GrainMix = { ad: 0, adset: 0, campaign: 0, preciseShare: null };
+  for (const r of rs) {
+    if (r.impact.verdict === "insufficient") continue;
+    const g: Grain = r.impact.grain ?? "ad";
+    grain[g]++;
+  }
+  grain.preciseShare = usable ? grain.ad / usable : null;
+  return { improved, worsened, flat, insufficient, usable, hitRate, medianDeltaPct: median(deltas), grain };
 }
 
 // Rank media buyers by outcome (not activity). Buyer-source only.

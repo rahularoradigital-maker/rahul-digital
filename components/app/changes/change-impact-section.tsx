@@ -1,4 +1,5 @@
 import type { ChangeAnalysis } from "@/lib/scoring/change-analysis";
+import type { GrainMix } from "@/lib/scoring/change-ranking";
 
 // Change Impact (Media-Buyer Change Intelligence, Phase 5 UI). Server-rendered read-out of the engine:
 // a buyer leaderboard (ranked on outcome, not activity), a change-type rollup (what helps vs hurts on this
@@ -12,6 +13,15 @@ const VERDICT_STYLE: Record<string, string> = {
 };
 const pct = (n: number | null) => (n == null ? "-" : `${n >= 0 ? "+" : ""}${n}%`);
 const rate = (n: number | null) => (n == null ? "-" : `${Math.round(n * 100)}%`);
+// Precision = share of a buyer's verdicts read at the ad level (directly attributable). A low share means the
+// hit-rate is mostly ad-set/campaign-level (directional) evidence - shown so a coarse read is never mistaken
+// for a precise one. Named after the dominant grain so it reads in plain English, with the ad-level %.
+const precision = (g: GrainMix) => {
+  if (g.preciseShare == null) return "-";
+  const p = Math.round(g.preciseShare * 100);
+  const label = g.ad >= g.adset && g.ad >= g.campaign ? "ad-level" : g.campaign >= g.adset ? "campaign-level" : "ad-set level";
+  return `${p}% ad · ${label}`;
+};
 
 function Card({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
   return (
@@ -25,6 +35,11 @@ function Card({ title, sub, children }: { title: string; sub?: string; children:
 
 export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) {
   const { buyers, changeTypes, results, judged, skipped } = analysis;
+  // The timeline shows changes we could actually score (a clear verdict); "insufficient" reads (too thin, or
+  // a neighbour change collapsed the window) are counted in the sub-line, not listed - they were burying the
+  // real verdicts, since the newest changes are the most likely to be unscoreable.
+  const conclusive = results.filter((r) => r.impact.verdict !== "insufficient");
+  const inconclusive = results.length - conclusive.length;
 
   if (judged === 0) {
     return (
@@ -40,7 +55,7 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
 
   return (
     <div className="space-y-6">
-      <Card title="Media-buyer leaderboard" sub="Ranked on outcomes, not activity. Only human changes count; algorithm moves are excluded. A buyer needs at least 3 measurable changes to be ranked with confidence.">
+      <Card title="Media-buyer leaderboard" sub="Ranked on outcomes, not activity. Only human changes count; algorithm moves are excluded. A buyer needs at least 3 measurable changes to be ranked with confidence. Precision = share of verdicts measured at ad level (directly attributable); a lower share means the signal is mostly ad-set / campaign level (directional).">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]" style={{ fontVariantNumeric: "tabular-nums" }}>
             <thead>
@@ -51,7 +66,8 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
                 <th scope="col" className="pb-2 pr-4 font-medium">Improved</th>
                 <th scope="col" className="pb-2 pr-4 font-medium">Worsened</th>
                 <th scope="col" className="pb-2 pr-4 font-medium">Flat</th>
-                <th scope="col" className="pb-2 font-medium">Judged</th>
+                <th scope="col" className="pb-2 pr-4 font-medium">Judged</th>
+                <th scope="col" className="pb-2 font-medium">Precision</th>
               </tr>
             </thead>
             <tbody>
@@ -66,7 +82,8 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
                   <td className="py-2 pr-4 text-[var(--good-ink)]">{b.improved}</td>
                   <td className="py-2 pr-4 text-[var(--bad-ink)]">{b.worsened}</td>
                   <td className="py-2 pr-4 text-[var(--ink-muted)]">{b.flat}</td>
-                  <td className="py-2 text-[var(--ink-muted)]">{b.usable}</td>
+                  <td className="py-2 pr-4 text-[var(--ink-muted)]">{b.usable}</td>
+                  <td className="py-2 text-[var(--ink-muted)]">{precision(b.grain)}</td>
                 </tr>
               ))}
             </tbody>
@@ -87,9 +104,12 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
         </div>
       </Card>
 
-      <Card title="Recent changes" sub={`${judged} change${judged === 1 ? "" : "s"} measured${skipped > 0 ? `; ${skipped} too new to judge` : ""}.`}>
+      <Card title="Recent changes" sub={`${conclusive.length} change${conclusive.length === 1 ? "" : "s"} with a clear verdict${inconclusive > 0 ? `; ${inconclusive} measured but too thin or too close to another change to call` : ""}${skipped > 0 ? `; ${skipped} too new to judge` : ""}.`}>
+        {conclusive.length === 0 ? (
+          <p className="text-[13px] leading-relaxed text-[var(--ink-muted)]">Changes were logged, but none yet have a clean enough before/after window to score. This resolves as more settled days accumulate between changes.</p>
+        ) : (
         <div className="space-y-2">
-          {results.slice(0, 40).map((r, i) => (
+          {conclusive.slice(0, 40).map((r, i) => (
             <div key={i} className="flex items-start gap-3 border-t border-[var(--hairline)] py-2 first:border-0">
               <span className={`mt-0.5 rounded px-2 py-0.5 text-[11px] font-medium capitalize ${VERDICT_STYLE[r.impact.verdict] ?? ""}`}>{r.impact.verdict}</span>
               <div className="min-w-0 flex-1">
@@ -108,6 +128,7 @@ export function ChangeImpactSection({ analysis }: { analysis: ChangeAnalysis }) 
             </div>
           ))}
         </div>
+        )}
       </Card>
     </div>
   );

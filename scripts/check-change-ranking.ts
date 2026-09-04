@@ -63,4 +63,20 @@ const rare = tord.find((t) => t.changeType === "rare")!;
 assert.ok((rare.hitRate ?? 0) === 1, "rare still shows raw 100%");
 assert.ok((rare.shrunkHitRate ?? 0) < 1, "but its shrunk rate is below 1");
 
-console.log("PASS: change ranking (buyer hit-rate, algo excluded, insufficient handling, confidence, shrinkage, type rollup)");
+// Grain mix (explicit-uncertainty): a rollup must report how much of its usable evidence is ad-level
+// (precise) vs ad-set/campaign (directional), so a hit-rate built on coarse reads isn't shown as precise.
+const impG = (verdict: ChangeImpact["verdict"], grain: "ad" | "adset" | "campaign"): ChangeImpact => ({ verdict, metric: "ROAS", before: 1, after: 1, deltaPct: 10, reason: "", grain });
+const rg = (actor: string, verdict: ChangeImpact["verdict"], grain: "ad" | "adset" | "campaign"): ChangeResult => ({ actorId: actor, actorName: actor, changeType: "budget", source: "buyer", impact: impG(verdict, grain) });
+const mixed = rankBuyers([
+  rg("Mix", "improved", "ad"), rg("Mix", "improved", "campaign"), rg("Mix", "worsened", "campaign"), rg("Mix", "improved", "adset"),
+  rg("Mix", "insufficient", "campaign"), // insufficient must NOT count toward the grain mix
+]);
+const mix = mixed.find((b) => b.actorName === "Mix")!;
+assert.equal(mix.usable, 4, "4 usable verdicts");
+assert.deepEqual({ ad: mix.grain.ad, adset: mix.grain.adset, campaign: mix.grain.campaign }, { ad: 1, adset: 1, campaign: 2 }, "grain counted over usable only");
+assert.ok(Math.abs((mix.grain.preciseShare ?? 0) - 0.25) < 1e-9, "preciseShare = ad(1)/usable(4) = 0.25");
+// A verdict with no grain (older cached shape) counts as ad-level so precision never silently drops.
+const legacy = rankBuyers([r("Old", "budget", "improved", 20), r("Old", "budget", "improved", 10), r("Old", "budget", "worsened", -10)]).find((b) => b.actorName === "Old")!;
+assert.ok(Math.abs((legacy.grain.preciseShare ?? 0) - 1) < 1e-9, "no-grain verdicts default to ad-level (preciseShare 1)");
+
+console.log("PASS: change ranking (buyer hit-rate, algo excluded, insufficient handling, confidence, shrinkage, type rollup, grain mix)");
