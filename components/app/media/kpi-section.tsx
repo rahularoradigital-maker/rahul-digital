@@ -45,16 +45,14 @@ export async function KpiSection({ data }: { data: CockpitData }) {
       liveValues.CPP = cpa; // cost per purchase = spend / purchases (same base)
     }
 
-    // Contribution economics (P1): a typed gross-margin % (Settings) turns Meta's own revenue/spend/purchases
-    // into margin-aware numbers - lighting up the previously-blank CONTRIB_ROAS / CM / COGS / NET_MARGIN rows.
-    // AOV needs no margin (revenue / purchases), so it lights up regardless.
+    // Contribution economics (P1): a typed gross-margin % (Settings) turns Meta's own revenue+spend into the
+    // margin-aware CONTRIB_ROAS - whose catalog formula is exactly "(revenue x margin percent) / ad spend".
+    // We ONLY light this row: AOV/CM/COGS/NET_MARGIN are Shopify/finance-sourced or differently defined
+    // (per-order %, net not gross, unit-cost COGS), so filling them from Meta data would misrepresent them -
+    // exactly the catalog-honesty rule. They stay "Needs {source}" until their real feed connects.
     const marginRaw = (await cookies()).get("adbrain.margin")?.value;
     const contrib = contribution({ revenueRs: totals.revenueRs, spendRs: totals.spendRs, purchases: m.purchases, marginPct: marginRaw ? Number(marginRaw) : null });
-    if (contrib.aov !== null) liveValues.AOV = rupees.format(contrib.aov);
     if (contrib.cmRoas !== null) liveValues.CONTRIB_ROAS = `${contrib.cmRoas.toFixed(2)}x`;
-    if (contrib.contributionProfitRs !== null) liveValues.CM = rupees.format(contrib.contributionProfitRs);
-    if (contrib.cogsRs !== null) liveValues.COGS = rupees.format(contrib.cogsRs);
-    if (contrib.netMarginPct !== null) liveValues.NET_MARGIN = `${contrib.netMarginPct.toFixed(0)}%`;
 
     // The catalog's "platform ROAS" entry may not share the literal "ROAS" code,
     // so map the same value onto any roas-coded entry too.
