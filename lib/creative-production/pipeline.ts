@@ -1,14 +1,14 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveBrandId } from "@/lib/tenancy/resolve";
-import { getImageProvider } from "./providers/registry.ts";
+import { getImageProvider, getFallbackImageProvider } from "./providers/registry.ts";
 import { getFormat } from "./formats/ad-formats.ts";
 import { getAdFormat } from "./formats/ad-format-library.ts";
 import { productCutout } from "./media/background-removal.ts";
 import { briefHash } from "./generation/brief-hash.ts";
 import { compose } from "./composition/compose.ts";
 import { runQA } from "./qa/qa-engine.ts";
-import type { AdFormat, BrandDNA, CreativeAssetRecord, CreativeConcept, GenerationBrief, GenerationResult, ProductDNA } from "@/lib/creative-production/types";
+import type { AdFormat, BrandDNA, CreativeAssetRecord, CreativeConcept, GenerationBrief, GenerationResult, ImageProvider, ProductDNA } from "@/lib/creative-production/types";
 import { deriveGenerationState } from "@/lib/creative-production/generation-state";
 
 // Creative Production - ORCHESTRATION (Phases 6-10). Turns one approved concept into finished, QA'd,
@@ -63,6 +63,7 @@ export async function generateAssetsForConcept(
   formats: AdFormat[],
 ): Promise<CreativeAssetRecord[]> {
   const provider = await getImageProvider();
+  const secondaryProvider = await getFallbackImageProvider(provider.name); // cross-provider safety net (null when only one real provider)
   const admin = createAdminClient();
   const out: CreativeAssetRecord[] = [];
   const approved = { headline: concept.headline, subhead: concept.supportingCopy, cta: concept.cta, offer: concept.offer };
@@ -85,19 +86,32 @@ export async function generateAssetsForConcept(
     //    removal key is set) and feed it to the provider's edit endpoint, so the model builds the scene AROUND
     //    the actual product - no pasted-card look. Falls back to plain generation + a composited cutout when
     //    editing is unavailable or fails, so output is never worse than before.
-    const caps = provider.getCapabilities();
     const cutout = brief.requiredProductFidelity && brief.productMode !== "none" ? await productCutout(product.images[0]) : null;
-    const canEditInScene = !!cutout && caps.editing && caps.referenceImages >= 1;
 
-    let gen: GenerationResult | undefined;
-    let productInScene = false;
-    if (canEditInScene) {
-      // ponytail: base image is sent as image/png; a no-removal-key source keeps its original bytes (usually
-      // JPEG) and OpenAI sniffs the actual content, so this holds in practice. Revisit if a live edit 400s.
-      const edited = await provider.editCreative(brief, cutout!.dataUri.split(",")[1] ?? "");
-      if (edited.ok && edited.imageBase64) { gen = edited; productInScene = true; }
+    // Run ONE provider: prefer editing the real product INTO the scene (fidelity), else plain generation.
+    const runProvider = async (p: ImageProvider): Promise<{ gen: GenerationResult; productInScene: boolean }> => {
+      const caps = p.getCapabilities();
+      if (cutout && caps.editing && caps.referenceImages >= 1) {
+        // ponytail: base image is sent as image/png; a no-removal-key source keeps its original bytes (usually
+        // JPEG) and the model sniffs the actual content, so this holds in practice. Revisit if a live edit 400s.
+        const edited = await p.editCreative(brief, cutout.dataUri.split(",")[1] ?? "");
+        if (edited.ok && edited.imageBase64) return { gen: edited, productInScene: true };
+      }
+      return { gen: await p.generateCreative(brief), productInScene: false }; // stub/degraded provider returns a placeholder so the pipeline still completes end-to-end without an image key.
+    };
+
+    let { gen, productInScene } = await runProvider(provider);
+    // CROSS-PROVIDER FALLBACK: if the preferred model (Nano Banana) could not return a real image - bad key, no
+    // image billing, safety refusal - retry on the other configured provider (gpt-image-1) so switching the
+    // default can NEVER regress to a flat placeholder. fallbackUsed is recorded so the asset never over-claims
+    // the model that actually ran.
+    if (!gen.ok && secondaryProvider) {
+      const alt = await runProvider(secondaryProvider);
+      if (alt.gen.ok) {
+        gen = { ...alt.gen, fallbackUsed: true, fallbackReason: gen.error ?? "primary image provider failed" };
+        productInScene = alt.productInScene;
+      }
     }
-    if (!gen) gen = await provider.generateCreative(brief); // stub/degraded provider returns a placeholder so the pipeline still completes end-to-end without an image key.
     const visualDataUri = gen.ok && gen.imageBase64 ? `data:${gen.mimeType ?? "image/png"};base64,${gen.imageBase64}` : null;
 
     // 1b) Composite the real product ONLY when the model did NOT place it in-scene. In-scene -> the product is
