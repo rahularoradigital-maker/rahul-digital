@@ -35,6 +35,22 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
+// Relative luminance of a #rrggbb (or #rgb) colour, 0 (black) - 1 (white). Used to pick a contrasting ink so
+// a CTA label / scrim is never light-on-light or dark-on-dark (the amateur-ad tell).
+function luminance(hex: string): number {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  if (full.length !== 6) return 0.5;
+  const r = parseInt(full.slice(0, 2), 16) / 255;
+  const g = parseInt(full.slice(2, 4), 16) / 255;
+  const b = parseInt(full.slice(4, 6), 16) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+// Black or white, whichever reads on the given background.
+function contrastInk(bg: string): string {
+  return luminance(bg) > 0.55 ? "#111114" : "#ffffff";
+}
+
 // A colour token that is real (not the UNKNOWN sentinel), else the fallback.
 function color(v: string | "UNKNOWN", fallback: string): string {
   return v && v !== "UNKNOWN" ? v : fallback;
@@ -57,13 +73,15 @@ function wrap(text: string, regionW: number, fontSize: number, maxLines: number)
     if (next.length <= perLine || !line) line = next;
     else {
       lines.push(line);
+      if (lines.length === maxLines) { line = ""; break; } // out of lines; this word + rest are dropped
       line = w;
-      if (lines.length === maxLines) break;
     }
   }
-  if (lines.length < maxLines && line) lines.push(line);
-  if (lines.length === maxLines && (line || words.length > lines.join(" ").split(/\s+/).length)) {
-    // Something got truncated: ellipsise the last visible line.
+  if (line && lines.length < maxLines) lines.push(line);
+  // Ellipsise ONLY when words were actually dropped (we filled every line and still had text left) - not
+  // whenever the last line happened to be non-empty (the old bug that appended "…" to copy that fit fine).
+  const rendered = lines.join(" ").split(/\s+/).filter(Boolean).length;
+  if (lines.length === maxLines && rendered < words.length) {
     const last = lines[maxLines - 1] ?? "";
     lines[maxLines - 1] = last.length > perLine - 1 ? `${last.slice(0, perLine - 1)}…` : `${last}…`;
   }
@@ -71,7 +89,7 @@ function wrap(text: string, regionW: number, fontSize: number, maxLines: number)
 }
 
 // Render one block of wrapped text, top-anchored inside its region, sized to fit the region height.
-function textBlock(text: string, r: Region, opts: { color: string; font: string; weight: number; maxLines: number; align?: "start" | "middle" }): string {
+function textBlock(text: string, r: Region, opts: { color: string; font: string; weight: number; maxLines: number; align?: "start" | "middle"; shadow?: boolean }): string {
   if (!text) return "";
   const align = opts.align ?? "start";
   const anchorX = align === "middle" ? r.x + r.w / 2 : r.x;
@@ -82,7 +100,8 @@ function textBlock(text: string, r: Region, opts: { color: string; font: string;
   const tspans = lines
     .map((l, i) => `<tspan x="${anchorX.toFixed(1)}" dy="${i === 0 ? 0 : lineH.toFixed(1)}">${esc(l)}</tspan>`)
     .join("");
-  return `<text x="${anchorX.toFixed(1)}" y="${(r.y + fontSize).toFixed(1)}" font-family="${opts.font}" font-size="${fontSize.toFixed(1)}" font-weight="${opts.weight}" fill="${opts.color}" text-anchor="${align}">${tspans}</text>`;
+  const filter = opts.shadow ? ` filter="url(#tshadow)"` : "";
+  return `<text x="${anchorX.toFixed(1)}" y="${(r.y + fontSize).toFixed(1)}" font-family="${opts.font}" font-size="${fontSize.toFixed(1)}" font-weight="${opts.weight}" fill="${opts.color}" text-anchor="${align}"${filter}>${tspans}</text>`;
 }
 
 // A filled pill (CTA / offer badge) with centred label.
@@ -116,7 +135,26 @@ export function compose(brief: GenerationBrief, approved: ApprovedText, visualDa
   const headFont = font(b.fonts.heading, "system-ui, -apple-system, Segoe UI, Roboto, sans-serif");
   const bodyFont = font(b.fonts.body, "system-ui, -apple-system, Segoe UI, Roboto, sans-serif");
 
+  // Text-over-photo legibility: when a real AI photo sits behind the copy, use WHITE text on a DARK gradient
+  // scrim - the universal premium-ad convention that reads on ANY photo, regardless of brand palette (a
+  // dark-ink brand over a dark photo was the unreadable case). On the solid-brand-colour fallback (no photo)
+  // keep the brand's own ink, which already contrasts its background, and skip the scrim.
+  const hasVisual = !!visualDataUri;
+  const overlayInk = hasVisual ? "#ffffff" : ink;
+  const scrimColor = "#0a0a0c";
   const parts: string[] = [];
+  // defs: a soft vertical gradient scrim (transparent -> scrimColor) and a subtle text drop-shadow, so the
+  // copy sits on a designed darkening instead of a hard rectangle and stays readable on any photo.
+  parts.push(
+    `<defs>` +
+      `<linearGradient id="scrim" x1="0" y1="0" x2="0" y2="1">` +
+      `<stop offset="0%" stop-color="${scrimColor}" stop-opacity="0"/>` +
+      `<stop offset="55%" stop-color="${scrimColor}" stop-opacity="0.55"/>` +
+      `<stop offset="100%" stop-color="${scrimColor}" stop-opacity="0.9"/>` +
+      `</linearGradient>` +
+      `<filter id="tshadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="${(height * 0.004).toFixed(1)}" stdDeviation="${(height * 0.005).toFixed(1)}" flood-color="${scrimColor}" flood-opacity="0.55"/></filter>` +
+      `</defs>`,
+  );
   // Background: solid brand colour, then the AI visual on top (cover) when present.
   parts.push(`<rect width="${width}" height="${height}" fill="${bg}"/>`);
   if (visualDataUri) {
@@ -139,21 +177,25 @@ export function compose(brief: GenerationBrief, approved: ApprovedText, visualDa
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${parts.join("")}</svg>`;
     return { formatId: format.id, width, height, svg };
   }
-  // Legibility scrim behind the text zone (bottom of tall/square, right column of wide).
-  const scrim = L.headline;
-  parts.push(
-    `<rect x="0" y="${Math.max(0, scrim.y - height * 0.04).toFixed(1)}" width="${width}" height="${(height - Math.max(0, scrim.y - height * 0.04)).toFixed(1)}" fill="${bg}" opacity="0.55"/>`,
-  );
+  // Legibility scrim behind the text zone (bottom of tall/square, right column of wide): a GRADIENT, not a
+  // flat slab, so text sits on a smooth darkening that reads as designed. Only when a photo sits behind it -
+  // on the solid brand-colour fallback the brand ink already contrasts, and a scrim would just muddy it.
+  if (hasVisual) {
+    const scrimTop = Math.max(0, L.headline.y - height * 0.08);
+    parts.push(`<rect x="0" y="${scrimTop.toFixed(1)}" width="${width}" height="${(height - scrimTop).toFixed(1)}" fill="url(#scrim)"/>`);
+  }
 
   // Logo (top-left of safe box) - drawn as the brand image when we have a URL.
   if (hasLogo && L.logo && b.logoUrl) {
     parts.push(`<image href="${esc(b.logoUrl)}" x="${L.logo.x.toFixed(1)}" y="${L.logo.y.toFixed(1)}" width="${L.logo.w.toFixed(1)}" height="${L.logo.h.toFixed(1)}" preserveAspectRatio="xMinYMin meet"/>`);
   }
 
-  parts.push(textBlock(approved.headline, L.headline, { color: ink, font: headFont, weight: 800, maxLines: 2 }));
-  parts.push(textBlock(approved.subhead, L.subhead, { color: ink, font: bodyFont, weight: 400, maxLines: 2 }));
-  if (hasOffer && L.offer && approved.offer) parts.push(pill(approved.offer, L.offer, accent, color(b.palette.background, "#ffffff"), headFont));
-  parts.push(pill(approved.cta, L.cta, accent, color(b.palette.background, "#ffffff"), headFont));
+  parts.push(textBlock(approved.headline, L.headline, { color: overlayInk, font: headFont, weight: 800, maxLines: 2, shadow: hasVisual }));
+  parts.push(textBlock(approved.subhead, L.subhead, { color: overlayInk, font: bodyFont, weight: 400, maxLines: 2, shadow: hasVisual }));
+  // Pills: label colour is chosen to CONTRAST the accent fill (never brand-background, which can match the
+  // accent and vanish). Offer badge and CTA both read at a glance.
+  if (hasOffer && L.offer && approved.offer) parts.push(pill(approved.offer, L.offer, accent, contrastInk(accent), headFont));
+  parts.push(pill(approved.cta, L.cta, accent, contrastInk(accent), headFont));
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${parts.join("")}</svg>`;
   return { formatId: format.id, width, height, svg };
