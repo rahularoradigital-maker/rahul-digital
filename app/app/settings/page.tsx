@@ -4,6 +4,7 @@ import { getUserMetaSession } from "@/lib/meta-sync";
 import { getConnectionHealth } from "@/lib/connection/status";
 import { ConnectionHealthCard } from "@/components/app/connection-health";
 import { SettingsPanel } from "@/components/app/settings-panel";
+import { MarginSetting } from "@/components/app/margin-setting";
 import { DeleteAccountCard } from "@/components/app/delete-account-card";
 import { getPendingDeletion } from "@/lib/account/deletion";
 import { GRACE_PERIOD_DAYS } from "@/lib/account/deletion-manifest";
@@ -80,6 +81,7 @@ export default async function SettingsPage() {
       </Card>
 
       {/* Editable verdict weights */}
+      <MarginSetting />
       <SettingsPanel />
 
       {/* Data portability (GDPR): download a JSON copy of your own data. Read-only, secrets excluded. */}

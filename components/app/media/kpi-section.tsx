@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import { KPI_CATALOG } from "@/lib/app/kpi-catalog";
+import { contribution } from "@/lib/scoring/contribution";
 import { KpiSelector } from "@/components/app/analytics/kpi-selector";
 import { DailyTrendChart } from "@/components/app/analytics/daily-trend-chart";
 import { windowHeadline } from "@/lib/cockpit/daily-series";
@@ -12,7 +14,7 @@ import { rupees } from "@/lib/format";
 // real connection, per the app's real-data-only rule.
 
 
-export function KpiSection({ data }: { data: CockpitData }) {
+export async function KpiSection({ data }: { data: CockpitData }) {
   const liveValues: Record<string, string> = {};
   if (data.connected) {
     // Scope-wide window totals (Ads-Manager-matching), NOT view.totals - view.totals is the top-N
@@ -42,6 +44,17 @@ export function KpiSection({ data }: { data: CockpitData }) {
       liveValues.CPA = cpa;
       liveValues.CPP = cpa; // cost per purchase = spend / purchases (same base)
     }
+
+    // Contribution economics (P1): a typed gross-margin % (Settings) turns Meta's own revenue/spend/purchases
+    // into margin-aware numbers - lighting up the previously-blank CONTRIB_ROAS / CM / COGS / NET_MARGIN rows.
+    // AOV needs no margin (revenue / purchases), so it lights up regardless.
+    const marginRaw = (await cookies()).get("adbrain.margin")?.value;
+    const contrib = contribution({ revenueRs: totals.revenueRs, spendRs: totals.spendRs, purchases: m.purchases, marginPct: marginRaw ? Number(marginRaw) : null });
+    if (contrib.aov !== null) liveValues.AOV = rupees.format(contrib.aov);
+    if (contrib.cmRoas !== null) liveValues.CONTRIB_ROAS = `${contrib.cmRoas.toFixed(2)}x`;
+    if (contrib.contributionProfitRs !== null) liveValues.CM = rupees.format(contrib.contributionProfitRs);
+    if (contrib.cogsRs !== null) liveValues.COGS = rupees.format(contrib.cogsRs);
+    if (contrib.netMarginPct !== null) liveValues.NET_MARGIN = `${contrib.netMarginPct.toFixed(0)}%`;
 
     // The catalog's "platform ROAS" entry may not share the literal "ROAS" code,
     // so map the same value onto any roas-coded entry too.
