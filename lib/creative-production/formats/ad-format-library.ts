@@ -173,8 +173,8 @@ export const AD_FORMAT_LIBRARY: AdFormatTemplate[] = [
   { id: "problem-vs-solution", name: "Problem vs solution", awarenessStage: "problem", category: "comparison",
     structure: "Two columns: 'your problems' listed vs 'our solution' (the product).", textSlots: ["headline", "body", "cta"],
     visualPattern: "Left column of problem bullets, a divider, right side the product as the single solution.",
-    renderRecipe: "A clean split layout. Left column headed 'your problems' with a short stack of pain-point bullets in speech-bubble tags. A thin vertical divider. Right side headed 'our solution' with the product hero. Minimal, lots of white space.",
-    productMode: "composite", sceneText: "render", bestFor: "Audiences who feel several pains but haven't found one fix." },
+    renderRecipe: "A clean split layout. Left column headed 'your problems' with a short stack of pain-point bullets in speech-bubble tags. A thin vertical divider. Right side headed 'our solution' showing the product as the hero, well lit and clearly the answer. Minimal, lots of white space.",
+    productMode: "in-scene", sceneText: "render", bestFor: "Audiences who feel several pains but haven't found one fix." },
 
   { id: "warning-witty", name: "Warning", awarenessStage: "problem", category: "humor",
     structure: "A dramatic product photo with a witty double-meaning warning line.", textSlots: ["headline", "cta"],

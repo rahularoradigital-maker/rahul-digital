@@ -21,7 +21,17 @@ function brandKnownFraction(b: BrandDNA): number {
   return known / fields.length;
 }
 
-function signalsFor(product: ProductDNA, brand: BrandDNA, fmt: ConceptFormat): StrategySignals {
+// Is this a product APPLIED TO THE BODY (skincare, hair, fitness, grooming, apparel...)? Only these make a
+// face/portrait "before/after" transformation truthful. keyIngredients is a strong tell (topicals/consumables
+// list them); otherwise match the category/name/use-case. Conservative: defaults to false, so face formats are
+// only picked when the product is clearly body-related - a gadget never gets a fabricated human transformation.
+function isBodyAppliedProduct(p: ProductDNA): boolean {
+  if (p.keyIngredients.length > 0) return true;
+  const parts = [p.category, p.name, p.useCase].map((v) => (v && v !== "UNKNOWN" ? v : "")).join(" ").toLowerCase();
+  return /skin|beauty|cosmet|makeup|make-up|serum|cream|lotion|moistur|hair|shampoo|derma|facial|dental|teeth|whiten|fitness|weight loss|muscle|supplement|nutrition|apparel|clothing|footwear|shoe|watch|grooming|shav|beard|fragrance|perfume|nail|wellness/.test(parts);
+}
+
+function signalsFor(product: ProductDNA, brand: BrandDNA, fmt: ConceptFormat, bodyApplied: boolean): StrategySignals {
   const hasReviews = product.proof.length > 0;
   const hasComparison = product.differentiators.length > 0 || product.usps.length > 0;
   return {
@@ -31,9 +41,33 @@ function signalsFor(product: ProductDNA, brand: BrandDNA, fmt: ConceptFormat): S
     creativeWhiteSpace: 0.7,
     audienceNeed: product.targetPersona !== "UNKNOWN" ? 0.85 : 0.6,
     historicalPerformance: 0.7,
-    formatSuitability: formatSuitability(fmt, fmt.awarenessStage, hasReviews, hasComparison),
+    formatSuitability: formatSuitability(fmt, fmt.awarenessStage, hasReviews, hasComparison, bodyApplied),
     brandFit: Math.max(0.4, brandKnownFraction(brand)),
   };
+}
+
+// Pick the top K with CATEGORY DIVERSITY, not just the K highest scores. Every format scores near-identically
+// on the constant signals, so a pure score sort filled all K slots with one category (all "comparison") - the
+// range looked flat. Cap each category at maxPerCat while walking the ranked list, then top up from the best
+// remaining if diversity left slots unfilled. Zero-score formats (a hard-requirement miss) are never picked.
+function pickDiverse<T extends { fmt: { category: string }; score: number }>(ranked: T[], k: number, maxPerCat: number): T[] {
+  const picked: T[] = [];
+  const counts: Record<string, number> = {};
+  for (const it of ranked) {
+    if (picked.length >= k) break;
+    if (it.score <= 0) continue;
+    if ((counts[it.fmt.category] ?? 0) >= maxPerCat) continue;
+    picked.push(it);
+    counts[it.fmt.category] = (counts[it.fmt.category] ?? 0) + 1;
+  }
+  if (picked.length < k) {
+    for (const it of ranked) {
+      if (picked.length >= k) break;
+      if (it.score <= 0 || picked.includes(it)) continue;
+      picked.push(it);
+    }
+  }
+  return picked;
 }
 
 type CopyOut = {
@@ -75,8 +109,11 @@ function copyPrompt(product: ProductDNA, brand: BrandDNA, formats: ConceptFormat
 export async function generateConcepts(userId: string, product: ProductDNA, brand: BrandDNA, currency: string | null = null): Promise<CreativeConcept[]> {
   // 1) score every executional format deterministically, 2) rank, 3) keep the top K to write copy for.
   // Pool = the 42 best-performing ad formats (source of truth); concept-formats.ts stays the extended fallback.
-  const scored = primaryFormats().map((fmt) => ({ fmt, score: scoreConcept(signalsFor(product, brand, fmt)) }));
-  const top = rankConcepts(scored).slice(0, TOP_K);
+  const bodyApplied = isBodyAppliedProduct(product);
+  const scored = primaryFormats().map((fmt) => ({ fmt, score: scoreConcept(signalsFor(product, brand, fmt, bodyApplied)) }));
+  // Category-diverse top K (max 2 per category) so the concepts span ui-mockup / editorial / comparison /
+  // humor / problem-education, not six near-tied comparison formats. See pickDiverse.
+  const top = pickDiverse(rankConcepts(scored), TOP_K, 2);
 
   // 4) batched grounded copy for the top K (one LLM call to keep tokens/cost down).
   const copy = (await deriveJSON<CopyOut>(copyPrompt(product, brand, top.map((t) => t.fmt), currency))) ?? [];
