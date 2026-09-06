@@ -91,7 +91,11 @@ export async function generateAssetsForConcept(
     // Run ONE provider: prefer editing the real product INTO the scene (fidelity), else plain generation.
     const runProvider = async (p: ImageProvider): Promise<{ gen: GenerationResult; productInScene: boolean }> => {
       const caps = p.getCapabilities();
-      if (cutout && caps.editing && caps.referenceImages >= 1) {
+      // IN-SCENE formats: hand the real product (transparent cutout when available) to the model so it builds
+      // the scene AROUND the actual product. COMPOSITE formats deliberately SKIP this - the model draws only
+      // the background/scene and the deterministic compositor places the EXACT product cutout (transparent,
+      // from the Shopify first image) into the product region, so the real product is never redrawn/altered.
+      if (cutout && caps.editing && caps.referenceImages >= 1 && brief.productMode === "in-scene") {
         // ponytail: base image is sent as image/png; a no-removal-key source keeps its original bytes (usually
         // JPEG) and the model sniffs the actual content, so this holds in practice. Revisit if a live edit 400s.
         const edited = await p.editCreative(brief, cutout.dataUri.split(",")[1] ?? "");
