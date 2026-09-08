@@ -36,6 +36,12 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // bundle-barrel-imports (Vercel React best practices): tree-shake these barrel packages so importing one
+  // icon or primitive does not pull the whole library into a route's bundle. Smaller bundles + faster cold
+  // starts (a real win on the hobby tier). Behaviour is unchanged; Next rewrites the imports at build time.
+  experimental: {
+    optimizePackageImports: ["lucide-react", "@radix-ui/react-select", "@radix-ui/react-tabs", "@radix-ui/react-separator", "@radix-ui/react-slot"],
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
