@@ -5,6 +5,7 @@ import { saveShopifyConnection } from "@/lib/creative-production/shopify/store";
 import { shopifyGraphQL } from "@/lib/creative-production/shopify/client";
 import { normalizeShopDomain } from "@/lib/creative-production/shopify/normalize";
 import { syncPublicShopifyProducts } from "@/lib/creative-production/shopify/public-sync";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 
 // Creative Production — connect a Shopify store. PRIMARY path: the user pastes only their store URL; we read
 // the shop's OWN public product feed (/products.json), which needs no token or store access. OPTIONAL upgrade:
@@ -18,6 +19,8 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const rl = await enforceRateLimit(`shopify-connect:${user.id}`, { windowMs: 60_000, max: 10 });
+  if (rl.limited) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } });
   const _denied = await guardProductApi();
   if (_denied) return _denied;
 
@@ -49,6 +52,7 @@ export async function POST(request: NextRequest) {
     if (!ok) return NextResponse.json({ error: "Could not save the connection. Please try again." }, { status: 500 });
     return NextResponse.json({ ok: true, status: "connected", shopDomain: data.shop?.myshopifyDomain ?? shopDomain, shopName });
   } catch (e) {
-    return NextResponse.json({ error: `Could not reach that store with this token (${e instanceof Error ? e.message : "failed"}). Check the domain and that the custom app has read_products.` }, { status: 400 });
+    console.error("[shopify/connect] token validation failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "Could not reach that store with this token. Check the store domain and that the custom app has the read_products scope." }, { status: 400 });
   }
 }

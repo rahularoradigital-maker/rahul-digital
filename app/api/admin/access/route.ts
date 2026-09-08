@@ -48,7 +48,10 @@ export async function POST(request: NextRequest) {
   const auditAction = action === "suspend" || action === "revoke" ? "user.suspend" : "credits.grant";
   await recordAudit({ action: auditAction, actorId: user.id, targetType: "user", targetId: userId,
     before: before ?? undefined, after: { access_state: state }, result: error ? "error" : "ok", reason: reason ?? `access ${action}` });
-  if (error) return NextResponse.json({ error: `Could not update: ${error.message}` }, { status: 400 });
+  if (error) {
+    console.error("[admin/access] update failed:", error.message);
+    return NextResponse.json({ error: "Could not update this user. Please try again." }, { status: 400 });
+  }
   logEvent(`access.${action}`, { userId: user.id, meta: { targetUserId: userId, state } });
   return NextResponse.json({ ok: true, state });
 }

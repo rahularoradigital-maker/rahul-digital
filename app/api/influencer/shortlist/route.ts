@@ -48,6 +48,7 @@ export async function POST(request: Request) {
     else await removeFromShortlist(ctx.userId, ctx.account, platform, platformUserId);
     return NextResponse.json({ ok: true, shortlisted: action === "add" });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Shortlist update failed" }, { status: 500 });
+    console.error("[influencer/shortlist] update failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ ok: false, error: "Could not update the shortlist. Please try again." }, { status: 500 });
   }
 }

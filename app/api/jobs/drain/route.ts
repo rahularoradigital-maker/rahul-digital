@@ -31,7 +31,8 @@ async function handle(request: NextRequest) {
     return NextResponse.json({ ok: true, ...res });
   } catch (e) {
     captureError(e, { route: "jobs/drain" });
-    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "drain failed" }, { status: 500 });
+    console.error("[jobs/drain] failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ ok: false, error: "drain failed" }, { status: 500 });
   }
 }
 

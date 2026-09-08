@@ -25,7 +25,10 @@ export async function POST(request: NextRequest) {
   const redirectTo = `${new URL(request.url).origin}/auth/callback?next=/app`;
   const { error } = await createAdminClient().auth.admin.inviteUserByEmail(email, { redirectTo });
   await recordAudit({ action: "credential.store", actorId: user.id, targetType: "user_invite", targetId: email, result: error ? "error" : "ok", reason: error ? `invite failed: ${error.message}` : "user invited" });
-  if (error) return NextResponse.json({ error: `Could not send invite: ${error.message}` }, { status: 400 });
+  if (error) {
+    console.error("[admin/invite] invite failed:", error.message);
+    return NextResponse.json({ error: "Could not send the invite. Please try again." }, { status: 400 });
+  }
   logEvent("user.invited", { userId: user.id, meta: { email } });
   return NextResponse.json({ ok: true });
 }

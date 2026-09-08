@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const results = await searchCompanies(q, 10);
     return NextResponse.json({ ok: true, results });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: e instanceof Error ? e.message : "Search failed" }, { status: 502 });
+    console.error("[competitors/search] failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ ok: false, error: "Could not run that search right now. Please try again." }, { status: 502 });
   }
 }

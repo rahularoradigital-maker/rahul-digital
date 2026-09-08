@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isTrackablePath, normalizePath, refHost } from "@/lib/analytics/classify";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 
 // First-party analytics beacon sink. The client sends only { path, event }; the server derives the referrer
 // host from the Referer header and a DAILY, non-reversible visitor hash from ip+ua (which are NEVER stored).
@@ -20,6 +21,16 @@ function visitorHash(ip: string, ua: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  // Public unauthenticated write: bound the abuse surface. Reject an oversized body before parsing (the beacon
+  // payload is tiny), then cap per-IP writes so it cannot be spammed into a row-flood / DoS.
+  if (Number(request.headers.get("content-length") ?? 0) > 2_000) {
+    return NextResponse.json({ ok: false }, { status: 413 });
+  }
+  const ipForRl = (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown";
+  if ((await enforceRateLimit(`analytics:${ipForRl}`, { windowMs: 60_000, max: 60 })).limited) {
+    return NextResponse.json({ ok: false }, { status: 429 });
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

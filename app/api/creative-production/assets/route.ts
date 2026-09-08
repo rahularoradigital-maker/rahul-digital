@@ -61,6 +61,9 @@ export async function POST(req: Request) {
   const brandId = await getActiveBrandId(user.id);
   if (!brandId) return NextResponse.json({ error: "No active brand" }, { status: 400 });
   const { error } = await createAdminClient().from("cp_assets").update({ approval }).eq("user_id", user.id).eq("brand_id", brandId).eq("creative_id", creativeId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("[creative-production/assets] approval update failed:", error.message);
+    return NextResponse.json({ error: "Could not save the approval. Please try again." }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

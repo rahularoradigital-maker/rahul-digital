@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { guardProductApi } from "@/lib/app/access";
 import { createClient } from "@/lib/supabase/server";
 import { getUserMetaSession } from "@/lib/meta-sync";
+import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 import { listPending, transitionPending } from "@/lib/operations/pending-store";
 import { adsManagerUrl } from "@/lib/app/ads-manager-url";
 import { recordAudit } from "@/lib/security/audit-log";
@@ -26,6 +27,8 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const rl = await enforceRateLimit(`op-pending:${user.id}`, { windowMs: 60_000, max: 30 });
+  if (rl.limited) return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } });
   const denied = await guardProductApi();
   if (denied) return denied;
 
