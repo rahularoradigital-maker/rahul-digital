@@ -19,7 +19,9 @@ declare global {
   }
 }
 
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+// GA4 Measurement ID. A GA id is public (it ships in every page's HTML), so baking it in is safe and means it
+// works without a Vercel env var; NEXT_PUBLIC_GA_ID still overrides it if you ever want a different property.
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? "G-Z3433XZDXL";
 
 export function GoogleAnalytics() {
   const pathname = usePathname();
