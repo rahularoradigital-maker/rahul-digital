@@ -32,43 +32,49 @@ export function CookieConsent() {
       role="dialog"
       aria-label="Cookie consent"
       style={{
-        position: "fixed", left: "16px", right: "16px", bottom: "16px", zIndex: 100,
-        maxWidth: "560px", margin: "0 auto",
+        position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 100,
         background: "var(--surface, #fff)", color: "var(--ink, #252525)",
-        border: "1px solid var(--hairline, #e4e4e4)", borderRadius: "12px",
-        boxShadow: "0 12px 40px rgba(37,37,37,.16)", padding: "16px 18px",
-        display: "flex", gap: "14px", alignItems: "center", flexWrap: "wrap",
-        font: "14px/1.5 Inter, system-ui, sans-serif",
+        borderTop: "1px solid var(--hairline, #e4e4e4)",
+        boxShadow: "0 -8px 30px rgba(37,37,37,.10)",
+        font: "14px/1.55 Inter, system-ui, sans-serif",
       }}
     >
-      <p style={{ margin: 0, flex: "1 1 240px", color: "var(--ink-muted, #6b6b6b)" }}>
-        We&rsquo;d like to use a cookie for analytics, only if you allow it, to understand how the site is used.
-        Decline and the site stays cookie-free.{" "}
-        <Link href="/privacy" style={{ color: "var(--accent, #0a66c2)", textDecoration: "underline" }}>
-          Privacy policy
-        </Link>
-      </p>
-      <div style={{ display: "flex", gap: "8px", flex: "0 0 auto" }}>
-        <button
-          onClick={() => choose("denied")}
-          style={{
-            font: "inherit", fontWeight: 500, cursor: "pointer", padding: "8px 16px",
-            borderRadius: "8px", border: "1px solid var(--hairline, #e4e4e4)",
-            background: "var(--surface, #fff)", color: "var(--ink, #252525)",
-          }}
-        >
-          Decline
-        </button>
-        <button
-          onClick={() => choose("granted")}
-          style={{
-            font: "inherit", fontWeight: 500, cursor: "pointer", padding: "8px 16px",
-            borderRadius: "8px", border: "1px solid transparent",
-            background: "var(--ink, #252525)", color: "#fff",
-          }}
-        >
-          Accept
-        </button>
+      {/* Centered inner row so the bar spans the full width but the content stays readable on wide screens. */}
+      <div
+        style={{
+          maxWidth: "1180px", margin: "0 auto", padding: "18px 24px",
+          display: "flex", gap: "16px 28px", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap",
+        }}
+      >
+        <p style={{ margin: 0, flex: "1 1 420px", color: "var(--ink-muted, #6b6b6b)", maxWidth: "70ch" }}>
+          We&rsquo;d like to use a cookie for analytics, only if you allow it, to understand how the site is used and
+          improve it. Decline and the site stays completely cookie-free.{" "}
+          <Link href="/privacy" style={{ color: "var(--accent, #0a66c2)", textDecoration: "underline" }}>
+            Privacy policy
+          </Link>
+        </p>
+        <div style={{ display: "flex", gap: "10px", flex: "0 0 auto" }}>
+          <button
+            onClick={() => choose("denied")}
+            style={{
+              font: "inherit", fontWeight: 500, cursor: "pointer", padding: "10px 22px",
+              borderRadius: "8px", border: "1px solid var(--hairline, #e4e4e4)",
+              background: "var(--surface, #fff)", color: "var(--ink, #252525)",
+            }}
+          >
+            Decline
+          </button>
+          <button
+            onClick={() => choose("granted")}
+            style={{
+              font: "inherit", fontWeight: 500, cursor: "pointer", padding: "10px 22px",
+              borderRadius: "8px", border: "1px solid transparent",
+              background: "var(--ink, #252525)", color: "#fff",
+            }}
+          >
+            Accept
+          </button>
+        </div>
       </div>
     </div>
   );
