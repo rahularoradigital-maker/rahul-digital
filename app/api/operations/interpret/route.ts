@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { enforceRateLimit } from "@/lib/rate-limit-distributed";
 import { setAiUser } from "@/lib/ai/context";
 import { interpretIntent } from "@/lib/operations/interpret";
+import { loadAdvertisingMemory } from "@/lib/operations/memory";
+import { getUserMetaSession } from "@/lib/meta-sync";
 
 // Phase A1 surface: interpret a raw request into a typed Operation and RETURN IT. It executes NOTHING and
 // writes NOTHING to any platform - it only classifies intent so the spine (A3-A6) can validate + route +
@@ -30,5 +32,8 @@ export async function POST(request: NextRequest) {
   if (!text) return NextResponse.json({ error: "Provide a request to interpret." }, { status: 400 });
 
   const operation = await interpretIntent(text, "ask");
-  return NextResponse.json({ operation });
+  // Stage 3: load ONLY the account rules + history keys this operation needs (Advertising Memory, A2).
+  const session = await getUserMetaSession(user.id);
+  const memory = await loadAdvertisingMemory(user.id, session?.activeExternalId ?? "*", operation);
+  return NextResponse.json({ operation, memory });
 }

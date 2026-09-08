@@ -29,6 +29,7 @@ export const EXPLICIT_DELETE_BY_USER = [
   "shopify_connections", "shopify_products", "shopify_sync_state",
   "cockpit_cache",
   "account_rollups", "creative_rollups", "account_verifications", // instant-app precompute + self-proving trend (0035-0037): user_id-scoped derived data, delete on account removal
+  "account_rules", // per-account automation rules (0045): user_id-scoped, no auth-user cascade, delete on account removal
   "deep_analysis_run", "deep_creative_read", // deep creative analysis (0028): user_id-scoped derived reads, delete on account removal
   "creative_patterns", "opportunities", // creative-intelligence schema (0038): user_id-scoped (verified: user_id, no auth-user cascade), delete on account removal
   "jobs", // durable job queue (0027): delete the user's queued work on deletion. user_id is nullable -

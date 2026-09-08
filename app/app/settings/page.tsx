@@ -5,6 +5,7 @@ import { getConnectionHealth } from "@/lib/connection/status";
 import { ConnectionHealthCard } from "@/components/app/connection-health";
 import { SettingsPanel } from "@/components/app/settings-panel";
 import { MarginSetting } from "@/components/app/margin-setting";
+import { AutomationRules } from "@/components/app/automation-rules";
 import { DeleteAccountCard } from "@/components/app/delete-account-card";
 import { getPendingDeletion } from "@/lib/account/deletion";
 import { GRACE_PERIOD_DAYS } from "@/lib/account/deletion-manifest";
@@ -82,6 +83,7 @@ export default async function SettingsPage() {
 
       {/* Editable verdict weights */}
       <MarginSetting />
+      <AutomationRules />
       <SettingsPanel />
 
       {/* Data portability (GDPR): download a JSON copy of your own data. Read-only, secrets excluded. */}
