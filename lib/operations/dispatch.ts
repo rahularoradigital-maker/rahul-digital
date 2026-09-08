@@ -9,7 +9,7 @@ import type { Operation } from "./types.ts";
 // (no image generation here); for a plain question it defers to Ask. The deterministic proposal numbers come in
 // A4, human approval in A5 - dispatch only gathers the honest read.
 
-export type DispatchTarget = { id: string; name: string; spendRs: number; revenueRs: number; roas: number | null };
+export type DispatchTarget = { id: string; name: string; adsetName: string | null; campaignName: string | null; spendRs: number; revenueRs: number; roas: number | null };
 export type DispatchResult = {
   tool: ToolName;
   routeTo: string;
@@ -52,7 +52,7 @@ export async function dispatch(operation: Operation, userId: string): Promise<Di
       tool: r.tool,
       routeTo: r.routeTo,
       status: "ready",
-      target: { id: hit.id, name: hit.name, spendRs: hit.spendRs, revenueRs: hit.revenueRs, roas: hit.roas },
+      target: { id: hit.id, name: hit.name, adsetName: hit.adsetName, campaignName: hit.campaignName, spendRs: hit.spendRs, revenueRs: hit.revenueRs, roas: hit.roas },
       read: { verdict: hit.verdict, action: hit.action, why: hit.why },
       note: "Real read of the named target - the evidence a proposal or diagnosis is built from.",
     };

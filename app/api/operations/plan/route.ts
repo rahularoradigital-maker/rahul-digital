@@ -6,6 +6,7 @@ import { setAiUser } from "@/lib/ai/context";
 import { interpretIntent } from "@/lib/operations/interpret";
 import { loadAdvertisingMemory } from "@/lib/operations/memory";
 import { dispatch } from "@/lib/operations/dispatch";
+import { validateOperation } from "@/lib/operations/validate";
 import { getUserMetaSession } from "@/lib/meta-sync";
 
 // The Track-A spine so far, end to end and READ-ONLY: intent -> typed operation (A1) -> relevant rules/memory
@@ -37,5 +38,11 @@ export async function POST(request: NextRequest) {
   const memory = await loadAdvertisingMemory(user.id, session?.activeExternalId ?? "*", operation);
   // Only dispatch when the operation is well-formed; a needs_clarification op waits for the user's answer.
   const dispatchResult = operation.status === "needs_clarification" ? null : await dispatch(operation, user.id);
-  return NextResponse.json({ operation, memory, dispatch: dispatchResult });
+  // A4: deterministic validation. Runs only when we have a real read to judge against (dispatch ready); the
+  // computed proposal number comes from code + rules, never the AI. Still no execution.
+  const validation =
+    dispatchResult?.status === "ready"
+      ? validateOperation(operation, memory.rules, { roas: dispatchResult.target?.roas, verdict: (dispatchResult.read?.verdict as string | undefined), name: dispatchResult.target?.name, campaignName: dispatchResult.target?.campaignName, adsetName: dispatchResult.target?.adsetName })
+      : null;
+  return NextResponse.json({ operation, memory, dispatch: dispatchResult, validation });
 }
