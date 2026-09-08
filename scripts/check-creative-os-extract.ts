@@ -1,6 +1,6 @@
 // Phase 2 pattern-extraction pure core. Run: npm run check:creative-os-extract
 import { strict as assert } from "node:assert";
-import { buildExtractPrompt, parsePatterns, dedupePatterns } from "../lib/creative-os/extract-pure.ts";
+import { buildExtractPrompt, parsePatterns, dedupePatterns, normalizeExtractItems, MAX_EXTRACT_ITEMS } from "../lib/creative-os/extract-pure.ts";
 import { PATTERN_TYPES } from "../lib/creative-os/schema.ts";
 
 function main() {
@@ -41,7 +41,23 @@ function main() {
   ]);
   assert.equal(deduped.length, 2, "same hook text collapses; a different type stays");
 
-  console.log("PASS: creative-os extract (prompt taxonomy, JSON parse + validation, fences, fail-safe, dedupe)");
+  // normalizeExtractItems: drops empties + bad shapes, defaults bad source to "manual", caps the batch.
+  const norm = normalizeExtractItems({
+    items: [
+      { caption: "hook line", source: "competitor", sourceRef: "u1", brandId: "b1" },
+      { source: "review" }, // no content -> dropped
+      { reviewText: "too pricey", source: "not-a-source" }, // bad source -> manual
+      "junk",
+    ],
+  });
+  assert.equal(norm.length, 2, "keeps the 2 with content, drops the empty + the string");
+  assert.equal(norm[0].ctx.source, "competitor");
+  assert.equal(norm[0].input.caption, "hook line");
+  assert.equal(norm[1].ctx.source, "manual", "unknown source falls back to manual");
+  assert.deepEqual(normalizeExtractItems({}), [], "no items -> []");
+  assert.ok(normalizeExtractItems({ items: Array(100).fill({ caption: "x", source: "manual" }) }).length === MAX_EXTRACT_ITEMS, "batch capped");
+
+  console.log("PASS: creative-os extract (prompt taxonomy, JSON parse + validation, fences, fail-safe, dedupe, request normalize)");
 }
 
 main();

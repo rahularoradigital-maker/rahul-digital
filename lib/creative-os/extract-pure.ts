@@ -3,7 +3,7 @@
 // CreativePattern drafts against the shared taxonomy. The Gemini call + DB write live in ./extract.ts.
 // Relative + .ts so the check runner (node --experimental-strip-types) resolves the VALUE imports
 // (PATTERN_TYPES, isPatternType); the `@/` alias only resolves under tsc/Next.
-import { PATTERN_TYPES, isPatternType, type CreativePattern, type PatternSource } from "./schema.ts";
+import { PATTERN_TYPES, isPatternType, isPatternSource, type CreativePattern, type PatternSource } from "./schema.ts";
 
 // A pattern before it hits the DB (the DB assigns id + created_at).
 export type PatternDraft = Omit<CreativePattern, "id" | "createdAt">;
@@ -67,6 +67,30 @@ export function parsePatterns(raw: string | null, ctx: ExtractContext): PatternD
     });
   }
   return dedupePatterns(out);
+}
+
+// Normalize a POST /api/creative-os/extract body into validated (input, ctx) pairs. Trust-boundary validation:
+// drops items with no content or a bad source, caps the batch so one call can't run unbounded Gemini cost.
+export const MAX_EXTRACT_ITEMS = 25;
+export function normalizeExtractItems(raw: unknown): { input: ExtractInput; ctx: ExtractContext }[] {
+  const items = Array.isArray((raw as { items?: unknown })?.items) ? (raw as { items: unknown[] }).items : [];
+  const out: { input: ExtractInput; ctx: ExtractContext }[] = [];
+  for (const it of items.slice(0, MAX_EXTRACT_ITEMS)) {
+    if (!it || typeof it !== "object") continue;
+    const o = it as Record<string, unknown>;
+    const input: ExtractInput = {
+      caption: typeof o.caption === "string" ? o.caption : null,
+      transcript: typeof o.transcript === "string" ? o.transcript : null,
+      textOverlay: typeof o.textOverlay === "string" ? o.textOverlay : null,
+      reviewText: typeof o.reviewText === "string" ? o.reviewText : null,
+      comments: Array.isArray(o.comments) ? o.comments.filter((c): c is string => typeof c === "string") : null,
+    };
+    const hasContent = input.caption || input.transcript || input.textOverlay || input.reviewText || (input.comments?.length ?? 0) > 0;
+    if (!hasContent) continue; // nothing to extract from -> skip (no empty Gemini call)
+    const source = isPatternSource(String(o.source)) ? (o.source as PatternSource) : "manual";
+    out.push({ input, ctx: { brandId: typeof o.brandId === "string" ? o.brandId : null, source, sourceRef: typeof o.sourceRef === "string" ? o.sourceRef : null } });
+  }
+  return out;
 }
 
 // Collapse duplicates within one extraction by (type + normalized text). Keeps the taxonomy tidy per source.
