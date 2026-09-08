@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 
 // Phase 1 pricing tiers (static, no billing yet - CTAs go to sign-up / book-a-demo). Two toggles: currency
-// (INR default for an India-heavy audience, USD available) and billing period (annual default - research shows
+// (USD default + shown first - USD is the canonical price; INR is an approx conversion) and billing period (annual default - research shows
 // defaulting to annual lifts revenue-per-customer). Token counts are the differentiator; every tier shows the
 // plain-English "~N analyses" translation so a "token" is never opaque. INR is an approximate conversion of the
 // canonical USD price (shown with "approx"); it is not a separate price list.
@@ -80,7 +80,7 @@ function fmt(cur: "inr" | "usd", n: number): string {
 }
 
 export function PricingTiers() {
-  const [cur, setCur] = useState<"inr" | "usd">("inr");
+  const [cur, setCur] = useState<"inr" | "usd">("usd");
   const [annual, setAnnual] = useState(true);
 
   return (
@@ -102,11 +102,11 @@ export function PricingTiers() {
           </button>
         </div>
         <div className="inline-flex items-center rounded-full border border-[var(--hairline)] p-0.5 text-[13px]">
-          <button onClick={() => setCur("inr")} className={`rounded-full px-3 py-1 transition ${cur === "inr" ? "bg-[var(--surface)] font-medium text-[var(--ink)]" : "text-[var(--ink-muted)]"}`}>
-            ₹ INR
-          </button>
           <button onClick={() => setCur("usd")} className={`rounded-full px-3 py-1 transition ${cur === "usd" ? "bg-[var(--surface)] font-medium text-[var(--ink)]" : "text-[var(--ink-muted)]"}`}>
             $ USD
+          </button>
+          <button onClick={() => setCur("inr")} className={`rounded-full px-3 py-1 transition ${cur === "inr" ? "bg-[var(--surface)] font-medium text-[var(--ink)]" : "text-[var(--ink-muted)]"}`}>
+            ₹ INR
           </button>
         </div>
       </div>
