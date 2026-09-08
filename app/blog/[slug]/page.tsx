@@ -41,7 +41,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const url = `${SITE_URL}/blog/${slug}`;
   // Article + breadcrumb entity signals. Honest only: author is the AdScale organization (no fabricated
   // person), dates come from the real published_at, no images/ratings we cannot substantiate.
-  const jsonLd = JSON.stringify([
+  const ldBlocks: Record<string, unknown>[] = [
     {
       "@context": "https://schema.org",
       "@type": "BlogPosting",
@@ -66,7 +66,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         { "@type": "ListItem", position: 2, name: a.title, item: url },
       ],
     },
-  ]);
+  ];
+  // FAQPage entity (AEO / rich results). Emitted ONLY when the article carries a curated faq, and the same
+  // Q&A is rendered visibly below - Google requires the structured data to match on-page content.
+  if (a.faq?.length) {
+    ldBlocks.push({
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: a.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+    });
+  }
+  const jsonLd = JSON.stringify(ldBlocks);
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-12">
@@ -105,6 +115,19 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <div className="mt-8">
           <Markdown md={a.body_md} />
         </div>
+        {a.faq?.length ? (
+          <section className="mt-10">
+            <h2 className="text-[19px] font-semibold">Frequently asked questions</h2>
+            <div className="mt-3 space-y-4">
+              {a.faq.map((f, i) => (
+                <div key={i}>
+                  <h3 className="text-[15px] font-semibold text-[var(--ink)]">{f.q}</h3>
+                  <p className="mt-1 text-[15px] leading-relaxed text-[var(--ink-muted)]">{f.a}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
         {/* Intent-appropriate next action: an informational reader learns, then can try the product. */}
         <aside className="mt-12 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface-alt)] p-5">
           <p className="text-[14px] text-[var(--ink)]">See what AdScale flags in your own ad account - what to scale, refresh, or kill, with a reason for every call.</p>

@@ -33,5 +33,6 @@ for (const t of ["Organization", "WebSite", "SoftwareApplication"]) assert.ok(la
 const post = read("app/blog/[slug]/page.tsx");
 assert.ok(post.includes("canonical"), "blog post needs a canonical");
 assert.ok(post.includes("BlogPosting") && post.includes("BreadcrumbList"), "blog post needs BlogPosting + BreadcrumbList schema");
+assert.ok(post.includes("FAQPage"), "blog post emits FAQPage schema when an article carries a curated faq (AEO rich results)");
 
 console.log("OK check-seo-metadata: robots disallows app/api/auth, sitemap includes blog, layout has canonical + Org/WebSite/SoftwareApplication JSON-LD, blog posts carry canonical + schema.");

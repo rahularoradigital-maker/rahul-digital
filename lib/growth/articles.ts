@@ -12,7 +12,7 @@ import { getCuratedArticles, getCuratedArticleBySlug } from "../blog/file-articl
 // educational and must not invent stats or results (the prompt forbids it). The public /blog reads published
 // rows server-side. Pure helpers (slugify) are testable; generateArticle needs the AI layer.
 
-export type Article = { id: string; slug: string; title: string; topic: string | null; dek: string | null; body_md: string; status: string; published_at: string | null };
+export type Article = { id: string; slug: string; title: string; topic: string | null; dek: string | null; body_md: string; status: string; published_at: string | null; faq?: { q: string; a: string }[] };
 
 export function slugify(title: string): string {
   return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70) || "article";
