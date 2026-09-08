@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AnalyticsBeacon } from "@/components/analytics-beacon";
 import { GoogleAnalytics } from "@/components/google-analytics";
+import { CookieConsent } from "@/components/cookie-consent";
 
 // Telli type: Inter (the free match for telli's proprietary "Review").
 const inter = Inter({
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script type="application/ld+json">{JSON_LD}</script>
         <AnalyticsBeacon />
         <GoogleAnalytics />
+        <CookieConsent />
         {children}
       </body>
     </html>
