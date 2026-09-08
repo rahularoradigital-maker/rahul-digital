@@ -23,6 +23,7 @@ const OPENAI_HEAVY: ModelRef = { provider: "openai", model: E("AI_MODEL_OPENAI_H
 // tasks the next model must be the other premium one, not the cheap flash.
 const BASE: Record<TaskKind, TaskRoute> = {
   "ask": { tier: "light", kind: "text", primary: GEMINI_TEXT, fallbacks: [OPENAI_LIGHT, CLAUDE_LIGHT] },
+  "interpret-intent": { tier: "light", kind: "text", primary: GEMINI_TEXT, fallbacks: [OPENAI_LIGHT, CLAUDE_LIGHT] },
   "analyze-text": { tier: "light", kind: "text", primary: GEMINI_TEXT, fallbacks: [OPENAI_LIGHT, CLAUDE_LIGHT] },
   "positioning": { tier: "standard", kind: "text", primary: GEMINI_TEXT, fallbacks: [CLAUDE_HEAVY] },
   "concept-gen": { tier: "heavy", kind: "text", primary: CLAUDE_HEAVY, fallbacks: [OPENAI_HEAVY, GEMINI_TEXT] },

@@ -7,6 +7,7 @@ export type Tier = "light" | "standard" | "heavy" | "vision";
 
 export type TaskKind =
   | "ask" // grounded Q&A over the user's data (high volume, light)
+  | "interpret-intent" // classify a request into a typed Operation + extract slots (light; classification only, never picks numbers)
   | "analyze-text" // explain/summarize a creative (light)
   | "positioning" // ICP + content pillars (standard)
   | "concept-gen" // creative concepts/hooks (HEAVY - quality is the product)
