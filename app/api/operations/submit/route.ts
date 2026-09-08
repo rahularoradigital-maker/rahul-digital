@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
   }
   if (!text) return NextResponse.json({ error: "Provide a request." }, { status: 400 });
 
-  const operation = await interpretIntent(text, "ask");
-  const session = await getUserMetaSession(user.id);
+  // async-parallel: interpret (Gemini) and the session read (DB) are independent - run them together.
+  const [operation, session] = await Promise.all([interpretIntent(text, "ask"), getUserMetaSession(user.id)]);
   const account = session?.activeExternalId ?? "*";
   const memory = await loadAdvertisingMemory(user.id, account, operation);
 

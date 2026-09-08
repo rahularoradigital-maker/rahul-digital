@@ -33,8 +33,9 @@ export async function POST(request: NextRequest) {
   }
   if (!text) return NextResponse.json({ error: "Provide a request." }, { status: 400 });
 
-  const operation = await interpretIntent(text, "ask");
-  const session = await getUserMetaSession(user.id);
+  // async-parallel: interpret (Gemini, ~1-2s) and the session read (DB) are independent, so run them together
+  // instead of one after the other - the session latency comes off the critical path.
+  const [operation, session] = await Promise.all([interpretIntent(text, "ask"), getUserMetaSession(user.id)]);
   const memory = await loadAdvertisingMemory(user.id, session?.activeExternalId ?? "*", operation);
   // Only dispatch when the operation is well-formed; a needs_clarification op waits for the user's answer.
   const dispatchResult = operation.status === "needs_clarification" ? null : await dispatch(operation, user.id);
