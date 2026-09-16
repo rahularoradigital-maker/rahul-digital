@@ -382,5 +382,53 @@
         "a": "Attribution windows credit the platform for sales it influenced but did not solely cause, so platform ROAS reads high. Watch MER and blended CAC against real revenue to correct it."
       }
     ]
+  },
+  {
+    "id": "file:good-roas-for-d2c-brand",
+    "slug": "good-roas-for-d2c-brand",
+    "title": "What is a good ROAS for a D2C brand? (the honest answer)",
+    "topic": "ad economics",
+    "dek": "There is no universal good ROAS. The only bar that matters is your own break-even, and your margin sets it.",
+    "body_md": "There is no universal \"good\" ROAS. A good ROAS is one that clears your break-even, and your break-even is set by your gross margin, not by a number you read in a blog. As a rule: break-even ROAS = 1 / gross margin. A brand at 60% margin breaks even near 1.7x; a brand at 30% margin needs about 3.3x just to not lose money. \"Good\" is comfortably above your own break-even, measured on real store revenue, not a platform's self-reported ROAS.\n\nAnyone who answers \"aim for 3x\" or \"4x is healthy\" is guessing at your P&L. The same 3x ROAS is a strong profit for a high-margin skincare brand and a slow loss for a low-margin apparel brand.\n\n## Your break-even ROAS, from your margin\n\nThe break-even point is where revenue from an ad exactly covers the product cost plus the ad spend. Expressed against ad spend, break-even ROAS is 1 divided by your gross margin (the share of revenue left after cost of goods). Above it you make money on the marginal sale; below it you lose money, no matter how \"good\" the number looks.\n\n| Gross margin | Break-even ROAS | A healthy target is above this |\n|---|---|---|\n| 70% | ~1.4x | comfortably higher, then scale |\n| 60% | ~1.7x | comfortably higher, then scale |\n| 50% | ~2.0x | comfortably higher, then scale |\n| 40% | ~2.5x | comfortably higher, then scale |\n| 30% | ~3.3x | comfortably higher, then scale |\n\nSo the first thing to know is not \"what is a good ROAS,\" it is \"what is MY break-even ROAS.\" Everything else is judged against that line.\n\n## Why the platform number overstates it\n\nThe ROAS Meta or Google reports is a channel's self-report, and it is systematically inflated because every platform claims credit for the same sale. If you set your target off the platform number, you will think you are winning while your bank balance says otherwise. Judge the business on blended ROAS and MER (real store revenue over spend), and use the platform number only to compare ad sets inside one account. The full breakdown is in [ROAS vs MER vs blended CAC](/blog/roas-vs-mer-vs-blended-cac).\n\n## New customers change the math\n\nBlended ROAS can look healthy while your paid engine loses money on every net-new customer, because repeat buyers prop up the average. If you are judging growth, look at new-customer acquisition cost against lifetime value, not blended ROAS. See [why nCAC beats blended CAC](/blog/ncac-new-customer-acquisition-cost).\n\n## What to actually target\n\nSet the target in three steps. First, calculate your break-even ROAS from your margin (the table above). Second, add the profit you need on the marginal sale to set a floor a comfortable distance above break-even. Third, judge performance on blended ROAS or MER, and use platform ROAS only for relative comparisons. When your ROAS drops below that floor, do not panic-cut; run the [why did my ROAS drop diagnostic](/blog/why-meta-ad-roas-dropped-diagnostic) first, because the number is often distorted before it is truly bad.\n\nA \"good\" ROAS, then, is personal. It is your break-even plus the margin of safety your business needs, read on numbers you can verify. For the full decision loop this sits inside, see [how to decide what to change in your Meta ads](/blog/how-to-decide-what-to-change-in-meta-ads).",
+    "status": "published",
+    "published_at": "2026-09-16T00:00:00.000Z",
+    "faq": [
+      {
+        "q": "What is a good ROAS for a D2C brand?",
+        "a": "There is no universal figure. A good ROAS is one comfortably above your break-even, which your gross margin sets: break-even ROAS is roughly 1 divided by your margin. A 60%-margin brand breaks even near 1.7x; a 30%-margin brand needs about 3.3x. Judge it on blended ROAS or MER, not the platform's inflated number."
+      },
+      {
+        "q": "How do you calculate break-even ROAS?",
+        "a": "Break-even ROAS = 1 / gross margin (the share of revenue left after cost of goods). At 50% margin that is 2.0x; at 40% it is 2.5x. Above that line the marginal sale is profitable; below it you lose money regardless of how the platform reports it."
+      },
+      {
+        "q": "Is a 3x ROAS good?",
+        "a": "It depends entirely on your margin. 3x is strong profit for a high-margin (70%+) brand and roughly break-even for a ~33%-margin brand. Compare 3x to your own break-even ROAS, not to a generic benchmark."
+      }
+    ]
+  },
+  {
+    "id": "file:meta-ads-vs-google-ads-where-to-start",
+    "slug": "meta-ads-vs-google-ads-where-to-start",
+    "title": "Meta Ads vs Google Ads: where should a new D2C brand start?",
+    "topic": "channel strategy",
+    "dek": "Start where your demand already is. One channel captures existing demand, the other creates it.",
+    "body_md": "Start where your demand already is. Google Ads captures demand that already exists (people actively searching for what you sell), while Meta Ads creates demand (interrupting people who were not looking). For a new D2C brand selling something people do not yet search for by name (impulse, discovery, or a new category), Meta usually comes first because it builds awareness and demand. For a product people actively search for (a known category or a problem with obvious search intent), Google search comes first. Most brands end up on both; the question is only where to start with a limited first budget.\n\n## The core difference: capture vs create\n\nThis one distinction drives everything else.\n\nGoogle search meets people at the moment of intent. Someone types \"best magnesium supplement\" and you can be the answer. The demand is already there; you are competing to capture it. That makes Google efficient early, but capped by how many people search.\n\nMeta shows your ad to people scrolling, before they have decided they want anything. You are creating the demand, which is harder to measure per click but is the only way to grow a category or a product nobody is searching for yet. It scales far beyond existing search volume, but it leans entirely on the creative.\n\n| Dimension | Google Ads (search) | Meta Ads |\n|---|---|---|\n| Demand | Captures existing demand | Creates new demand |\n| Trigger | Someone is searching now | Someone is scrolling |\n| Best for | Known category, clear search intent | Discovery, impulse, new category |\n| The main lever | Keywords, bid, Quality Score | The creative (hook first) |\n| Ceiling | Search volume for your terms | Audience size + creative supply |\n\n## When to start with Meta\n\nStart with Meta if people do not yet search for your product by name, if it is visual or impulse-driven, or if you need to build a brand and an audience from zero. Your success here lives or dies on creative, so the work is a real [creative testing framework](/blog/meta-creative-testing-framework) and getting the [hook right in the first three seconds](/blog/ad-hooks-first-three-seconds). Watch for [creative fatigue](/blog/meta-ads-creative-fatigue-signals) as you scale.\n\n## When to start with Google\n\nStart with Google if there is real search volume for your category or the problem you solve, because capturing existing intent is cheaper than creating new demand. The early work is diagnosing whether you are held back by budget or by rank, which the impression-share report tells you: [budget-capped or rank-capped](/blog/google-ads-impression-share-budget-vs-rank).\n\n## The budget reality for a new brand\n\nWith a small first budget, do not split it thinly across both. Pick the channel that matches your demand type, get one channel working to a profitable, verified number, then expand. Splitting a tiny budget two ways usually means neither channel exits its learning phase or gathers enough data to judge.\n\n## Measure across both, not per platform\n\nOnce you run both, each platform will claim the same sales, so their reported ROAS will add up to more revenue than you actually made. Judge the whole picture on blended ROAS and MER, using real store revenue, and use each platform's own number only to compare inside that channel. The full method is in [ROAS vs MER vs blended CAC](/blog/roas-vs-mer-vs-blended-cac), and the decision loop that ties it together is [how to decide what to change in your Meta ads](/blog/how-to-decide-what-to-change-in-meta-ads).\n\nThe short version: match the channel to your demand type, get one working first, then add the second, and measure both on blended numbers you can verify.",
+    "status": "published",
+    "published_at": "2026-09-16T00:00:00.000Z",
+    "faq": [
+      {
+        "q": "Should a new D2C brand start with Meta or Google Ads?",
+        "a": "Start where your demand already is. If people search for your product or category, start with Google (it captures existing demand efficiently). If they do not search for it yet (discovery or impulse products), start with Meta (it creates demand). Most brands scale to both, but with a small first budget pick one."
+      },
+      {
+        "q": "What is the difference between Meta Ads and Google Ads?",
+        "a": "Google search captures demand that already exists (people actively searching), so its lever is keywords, bid, and Quality Score. Meta creates demand by interrupting people who are scrolling, so its lever is the creative. Google is capped by search volume; Meta scales beyond it but depends on creative supply."
+      },
+      {
+        "q": "Should you run Meta and Google at the same time as a new brand?",
+        "a": "Not with a tiny budget. Splitting it thinly often means neither channel exits its learning phase or gathers enough data to judge. Get one channel to a profitable, verified number first, then expand to the second, and measure both on blended ROAS or MER."
+      }
+    ]
   }
 ]
