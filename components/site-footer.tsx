@@ -5,8 +5,8 @@ import { Logo } from "@/components/site-header";
 // yet); the legal + contact links point at real, published pages so no footer link is a dead end.
 const COLS: { title: string; links: { label: string; href: string }[] }[] = [
   { title: "Platform", links: [
-    { label: "Use Cases", href: "/product" }, { label: "Features", href: "/product" },
-    { label: "Pricing", href: "/pricing" }, { label: "Book a demo", href: "/book-demo" },
+    { label: "Overview", href: "/product" }, { label: "Meta Ads", href: "/integrations/meta" },
+    { label: "Google Ads", href: "/integrations/google-ads" }, { label: "Pricing", href: "/pricing" },
   ] },
   { title: "Solutions", links: [
     { label: "Beauty & Skincare", href: "/book-demo" }, { label: "Apparel", href: "/book-demo" },

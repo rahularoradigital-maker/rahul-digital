@@ -14,6 +14,9 @@ export function SiteHeader() {
           <a href="/#use-cases" className="hover:text-[var(--ink)]">Use Cases</a>
           <a href="/#method" className="hover:text-[var(--ink)]">How it works</a>
           <a href="/#features" className="hover:text-[var(--ink)]">Features</a>
+          {/* Money pages get a site-wide internal link (Phase-0 audit: nav omitted /product + /integrations,
+              starving them of PageRank). Platform -> the product page; integrations live in the footer. */}
+          <Link href="/product" className="hover:text-[var(--ink)]">Platform</Link>
           <Link href="/pricing" className="hover:text-[var(--ink)]">Pricing</Link>
           <Link href="/blog" className="hover:text-[var(--ink)]">Blog</Link>
         </nav>

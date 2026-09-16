@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 const TITLE = "Google Ads integration for AdScale";
 const DESCRIPTION =
   "AdScale reads Google Ads the way a media buyer thinks: budget-capped vs rank-capped, Quality Score drag, and value-bidding readiness, per campaign type. Read-only, and rolling out now.";

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { listPublishedArticles } from "@/lib/growth/articles";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 
 // Regenerate hourly so a newly-published blog post appears in the sitemap without a redeploy.
 export const revalidate = 3600;

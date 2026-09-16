@@ -12,7 +12,7 @@ const inter = Inter({
   weight: ["400", "500", "600"],
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 const TITLE = "AdScale AI — Creative Decision Intelligence";
 const DESCRIPTION =
   "Know what to test next, before you spend on it. AdScale reads your Meta and Google ads and tells you what to scale, refresh, or kill, and why.";
@@ -29,9 +29,17 @@ export const metadata: Metadata = {
   // eligible for a full snippet + large image preview. These directives grant that (no special AI markup or
   // llms.txt is used or needed - the guide says the SEO fundamentals ARE the AI optimization).
   robots: { index: true, follow: true, "max-snippet": -1, "max-image-preview": "large", "max-video-preview": -1 },
-  // Google Search Console site verification (env-gated). Set GOOGLE_SITE_VERIFICATION to the token GSC gives
-  // you (the "HTML tag" method) and Next renders <meta name="google-site-verification" ...>. Unset -> omitted.
-  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
+  // Search-engine site verification (env-gated, "HTML tag" method). GOOGLE_SITE_VERIFICATION renders
+  // <meta name="google-site-verification">; BING_SITE_VERIFICATION renders <meta name="msvalidate.01">
+  // (Bing Webmaster Tools - also the index gate ChatGPT/Copilot cite from). Each unset -> omitted.
+  ...((process.env.GOOGLE_SITE_VERIFICATION || process.env.BING_SITE_VERIFICATION)
+    ? {
+        verification: {
+          ...(process.env.GOOGLE_SITE_VERIFICATION ? { google: process.env.GOOGLE_SITE_VERIFICATION } : {}),
+          ...(process.env.BING_SITE_VERIFICATION ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } } : {}),
+        },
+      }
+    : {}),
 };
 
 // Site-wide entity signals (spec section 26/27): one consistent brand identity for search + answer engines.

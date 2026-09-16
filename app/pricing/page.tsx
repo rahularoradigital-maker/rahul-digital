@@ -3,7 +3,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { PricingTiers } from "@/components/marketing/pricing-tiers";
 import { PricingEstimator } from "@/components/marketing/pricing-estimator";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 
 export const metadata = {
   title: "Pricing — AdScale",

@@ -6,7 +6,7 @@ import { Markdown } from "../md";
 
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rahul-digital.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 
 // The cluster's pillar hub. Every spoke links up to it (and it links down to every spoke) so the topic
 // cluster is a real hub-and-spoke - the strongest on-page signal for topical authority / AI-citation fan-out.

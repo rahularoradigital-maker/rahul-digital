@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { listPublishedArticles } from "@/lib/growth/articles";
 
-// Public blog index. Renders PUBLISHED articles only (owner-approved). SEO/AEO surface for rahul-digital.vercel.app.
+// Public blog index. Renders PUBLISHED articles only (owner-approved). SEO/AEO surface for adscaledigital.co.
 export const dynamic = "force-dynamic";
 export const metadata = {
   title: "AdScale Blog — how to decide what to change in your ads",
