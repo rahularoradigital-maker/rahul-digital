@@ -1,5 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "//regions": "Run serverless functions in Tokyo (hnd1), co-located with the Supabase DB (ap-northeast-1 / Tokyo). Functions defaulted to iad1 (US East), so every dashboard DB query round-tripped US<->Tokyo (~150-200ms each, and the cockpit/health make several) - measured /api/health at 6-39s. Co-locating collapses each round-trip to ~local; the one user<->function hop stays. Static/ISR marketing pages are edge-served regardless, unaffected.",
+  "regions": ["hnd1"],
   "crons": [
     {
       "path": "/api/cron/sync",
