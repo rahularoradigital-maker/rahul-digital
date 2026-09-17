@@ -35,11 +35,20 @@ export async function GET() {
 
   try {
     const admin = createAdminClient();
-    const { data, error } = await admin.from("ad_sync_state").select("last_ok, last_synced_date, updated_at");
-    if (error) db = "down";
-    const rows = (data ?? []) as { last_ok: boolean | null; last_synced_date: string | null; updated_at: string | null }[];
-    syncAccounts = rows.length;
     const staleCutoff = new Date(Date.now() - STALE_AFTER_DAYS * 86_400_000).toISOString().slice(0, 10);
+    const conflictCutoff = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    // async-parallel: the four health reads are independent, so fire them in ONE round-trip wave instead
+    // of four sequential awaits. This matters most while the function runs cross-region from the DB
+    // (Supabase in Tokyo): 4 sequential round-trips became 1, cutting the endpoint's DB latency ~4x.
+    const [syncRes, changeRes, rollupRes, conflictRes] = await Promise.all([
+      admin.from("ad_sync_state").select("last_ok, last_synced_date, updated_at"),
+      admin.from("change_sync_state").select("last_ok"),
+      admin.from("account_rollups").select("computed_at").eq("window_days", 90),
+      admin.from("account_verifications").select("id", { count: "exact", head: true }).eq("trustworthy", false).gte("created_at", conflictCutoff),
+    ]);
+    if (syncRes.error) db = "down";
+    const rows = (syncRes.data ?? []) as { last_ok: boolean | null; last_synced_date: string | null; updated_at: string | null }[];
+    syncAccounts = rows.length;
     for (const r of rows) {
       if (r.last_ok === false) syncErrors++;
       if (!r.last_synced_date || r.last_synced_date < staleCutoff) syncStale++;
@@ -47,14 +56,12 @@ export async function GET() {
     }
     // Change-history ingestion health (separate pipeline: /activities -> ad_changes). Empty across all
     // accounts means the media-buyer Change-Impact feature has no data to show.
-    const { data: cData } = await admin.from("change_sync_state").select("last_ok");
-    const cRows = (cData ?? []) as { last_ok: boolean | null }[];
+    const cRows = (changeRes.data ?? []) as { last_ok: boolean | null }[];
     changeAccounts = cRows.length;
     for (const r of cRows) if (r.last_ok === false) changeErrors++;
     // Instant-app rollup coverage: how many accounts have a precomputed rollup, and how many are fresh. A
     // dead rollup path shows as fresh << connected here, the same way automationStale surfaces a dead cron.
-    const { data: rData } = await admin.from("account_rollups").select("computed_at").eq("window_days", 90);
-    const rRows = (rData ?? []) as { computed_at: string | null }[];
+    const rRows = (rollupRes.data ?? []) as { computed_at: string | null }[];
     rollupAccounts = rRows.length;
     const rollupCutoff = Date.now() - AUTOMATION_STALE_HOURS * 3_600_000;
     let oldestMs: number | null = null;
@@ -67,13 +74,7 @@ export async function GET() {
     }
     rollupOldestAgeHours = oldestMs === null ? null : Math.round((Date.now() - oldestMs) / 3_600_000);
     // Data-trust: any store-vs-Meta verification that CONFLICTED in the last 7 days (a real accuracy alarm).
-    const conflictCutoff = new Date(Date.now() - 7 * 86_400_000).toISOString();
-    const { count: cCount } = await admin
-      .from("account_verifications")
-      .select("id", { count: "exact", head: true })
-      .eq("trustworthy", false)
-      .gte("created_at", conflictCutoff);
-    recentConflicts = cCount ?? 0;
+    recentConflicts = conflictRes.count ?? 0;
   } catch {
     db = "down";
   }
