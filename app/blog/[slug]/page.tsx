@@ -2,9 +2,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getArticleBySlug } from "@/lib/growth/articles";
+import { getCuratedArticles } from "@/lib/blog/file-articles";
 import { Markdown } from "../md";
 
-export const dynamic = "force-dynamic";
+// ISR, not force-dynamic: each article was re-rendered + fetched from Supabase on every request
+// (measured cache MISS). Articles change rarely, so cache the render at the edge and revalidate hourly;
+// new slugs render on-demand then cache (dynamicParams default). This is the single biggest blog-speed win.
+export const revalidate = 3600;
+
+// Prerender the curated articles at build so their FIRST request is an edge HIT, not a cold render.
+// Scout-written DB articles are not known at build; they render on-demand then cache (dynamicParams default).
+export function generateStaticParams() {
+  return getCuratedArticles().map((a) => ({ slug: a.slug }));
+}
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 

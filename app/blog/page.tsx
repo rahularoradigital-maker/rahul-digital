@@ -3,7 +3,11 @@ import Image from "next/image";
 import { listPublishedArticles } from "@/lib/growth/articles";
 
 // Public blog index. Renders PUBLISHED articles only (owner-approved). SEO/AEO surface for adscaledigital.co.
-export const dynamic = "force-dynamic";
+// ISR, not force-dynamic: the blog index was re-rendering + hitting Supabase on EVERY request (measured
+// ~5.7s TTFB, x-vercel-cache MISS). A published post is not time-critical, so cache the render at the edge
+// and revalidate hourly - new posts still appear within the hour, and the DB is hit once per hour, not
+// once per visitor. (Matches the sitemap's 3600s cadence.)
+export const revalidate = 3600;
 export const metadata = {
   title: "AdScale Blog — how to decide what to change in your ads",
   description: "Practical, no-hype guides on reading Meta and Google ad performance and deciding what to act on.",
