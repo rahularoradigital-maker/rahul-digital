@@ -289,6 +289,16 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
   const roas = totals.roas;
   const conc = view.concentration;
 
+  // Honest-state guard for Account Health under a revenue-hiding filter. Account Health is computed from
+  // the ANALYZED ads (which respect the Event/Objective filter), while the headline ROAS uses the true
+  // scope totals. When a filter narrows the analyzed set to ads with no attributed revenue (e.g. an
+  // awareness/engagement event), every ad scores ~0 and Health collapses to "0 / At risk / 100% wasted"
+  // even though the scope is profitable - two cards reading different data. That contradiction is a
+  // measurement artifact, not a real verdict, so when the scope is profitable (ROAS >= 1) yet Health is 0
+  // we show an honest "not scorable for this filter" state instead of a misleading zero. Normal accounts
+  // (Health > 0, or a genuinely unprofitable scope) are completely unaffected.
+  const healthNotScorable = health.score === 0 && roas !== null && roas >= 1;
+
   // Confidence-inspectable pillars (measurement canon rule 5): every headline pillar carries an
   // evidence tag + a fetch/formula/logic/example disclosure. The Example is built from THIS
   // account's real numbers (or an honest "not available"), never invented. To extend this to
@@ -360,7 +370,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
 
       {/* Account Health */}
       <div className="grid grid-cols-1 items-center gap-8 rounded-xl border border-border bg-card text-card-foreground shadow-sm p-6 md:grid-cols-[200px_1fr]">
-        <HealthRing score={health.score} />
+        <HealthRing score={health.score} notScored={healthNotScorable} />
         <div>
           <div className="mb-3.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
@@ -373,8 +383,18 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
               Internal calculation · {health.factLabel}
             </span>
           </div>
-          <div className="mb-4 text-[13px] text-[var(--ink-muted)]">{health.basis}</div>
-          <HealthComposition rows={compositionRows(view)} />
+          {healthNotScorable ? (
+            // Revenue-hiding filter: don't show a misleading 0. Explain the divergence honestly and point
+            // the user to the fix (clear the filter), showing the real profitable headline for context.
+            <div className="text-[13px] text-[var(--ink-muted)]">
+              <span className="font-medium text-[var(--ink)]">Not scorable for this filter.</span> The selected event or objective has no attributed revenue in the analyzed ads, so a spend-weighted health score would read a misleading 0 - but this scope earned {rupees.format(totals.revenueRs)} at {roas!.toFixed(2)}x in the window. Clear the Event or Objective filter to score account health.
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 text-[13px] text-[var(--ink-muted)]">{health.basis}</div>
+              <HealthComposition rows={compositionRows(view)} />
+            </>
+          )}
         </div>
       </div>
 
