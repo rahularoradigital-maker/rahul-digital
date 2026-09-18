@@ -6,6 +6,9 @@
 // SplitText, ScrollReveal, ShinyText, Particles) - owned, MIT-licensed animation, matched to the reference's
 // feel. Colours + spacing match the reference; all copy, product and imagery are AdScale's.
 import { useEffect } from "react";
+import Lenis from "lenis";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Montserrat, JetBrains_Mono } from "next/font/google";
 import TrueFocus from "@/components/TrueFocus";
 import Particles from "@/components/Particles";
@@ -37,13 +40,43 @@ function SecHead({ num, title, sub }: { num: string; title: string; sub?: string
 export default function RedesignPreview() {
   // Scroll-reveal every card/frame/step so motion runs through the whole page (not just the hero).
   useEffect(() => {
-    const els = Array.from(document.querySelectorAll<HTMLElement>(".rd .rv"));
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    gsap.registerPlugin(ScrollTrigger);
+
+    // 1) Smooth momentum scrolling (Lenis), synced to ScrollTrigger so all scroll animations stay aligned.
+    const lenis = new Lenis({ duration: 1.15, smoothWheel: true });
+    lenis.on("scroll", ScrollTrigger.update);
+    const raf = (time: number) => lenis.raf(time * 1000);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+    if (reduce) lenis.stop();
+
+    // Scroll-reveal for cards/frames/steps.
     const io = new IntersectionObserver(
       (ents) => ents.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
       { threshold: 0.14 },
     );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    document.querySelectorAll<HTMLElement>(".rd .rv").forEach((el) => io.observe(el));
+
+    const ctx = gsap.context(() => {
+      if (reduce) return;
+      // 2) Scroll-driven parallax: particles drift slower, hero content lifts + fades as you leave the hero.
+      gsap.to(".rd .pfield", { yPercent: 24, ease: "none", scrollTrigger: { trigger: ".rd .hero", start: "top top", end: "bottom top", scrub: true } });
+      gsap.to(".rd .hero-in", { yPercent: 16, opacity: 0.25, ease: "none", scrollTrigger: { trigger: ".rd .hero", start: "top top", end: "bottom top", scrub: true } });
+      // headings drift at their own pace as sections pass
+      gsap.utils.toArray<HTMLElement>(".rd .sh-body").forEach((el) => {
+        gsap.fromTo(el, { y: 34 }, { y: -22, ease: "none", scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } });
+      });
+      // 3+4) Pinned, horizontal product gallery: the work section sticks and scrolls sideways, then releases.
+      const track = document.querySelector<HTMLElement>(".rd .work-track");
+      const pin = document.querySelector<HTMLElement>(".rd .work-pin");
+      if (track && pin && track.scrollWidth > window.innerWidth) {
+        const dist = track.scrollWidth - pin.clientWidth;
+        gsap.to(track, { x: -dist, ease: "none", scrollTrigger: { trigger: pin, start: "top top", end: () => `+=${dist}`, scrub: 0.6, pin: true, anticipatePin: 1, invalidateOnRefresh: true } });
+      }
+    });
+
+    return () => { ctx.revert(); io.disconnect(); lenis.destroy(); gsap.ticker.remove(raf); };
   }, []);
 
   return (
@@ -136,6 +169,16 @@ export default function RedesignPreview() {
         .rd .win .cap h4{margin:0;font-size:1rem;font-weight:600;}
         .rd .win .cap span{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;}
 
+        /* Lenis smooth scroll */
+        html.lenis,html.lenis body{height:auto;}
+        .lenis.lenis-smooth{scroll-behavior:auto!important;}
+        .lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain;}
+        .lenis.lenis-stopped{overflow:hidden;}
+        /* pinned horizontal product gallery */
+        .rd .work-pin{overflow:hidden;padding-inline:28px;}
+        .rd .work-track{display:flex;gap:28px;width:max-content;}
+        .rd .work-track .win{flex:0 0 min(78vw,540px);}
+        @media(prefers-reduced-motion:reduce){.rd .work-pin{overflow-x:auto;}}
         .rd .marq{overflow:hidden;border-block:1px solid var(--line);padding:22px 0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);}
         .rd .marq .track{display:flex;gap:56px;width:max-content;animation:marq 26s linear infinite;}
         @media(prefers-reduced-motion:reduce){.rd .marq .track{animation:none;}}
@@ -186,11 +229,13 @@ export default function RedesignPreview() {
 
       <section className="blk" id="work">
         <div className="wrap">
-          <SecHead num="/ 01" title="Inside the product." sub="The screens where the decisions actually happen. Real account data, day-wise, with a reason on every card." />
-          <div className="work">
+          <SecHead num="/ 01" title="Inside the product." sub="The screens where the decisions actually happen. Real account data, day-wise, with a reason on every card. Scroll to move through them." />
+        </div>
+        <div className="work-pin">
+          <div className="work-track">
             <div className="win rv">
-              <div className="bar"><i /><i /><i /><span className="u" style={{ marginLeft: 12, fontFamily: "var(--mono)", fontSize: 11, color: "var(--faint)" }}>adscaledigital.co/app</span></div>
-              <iframe className="shot" src="/preview/cockpit" title="AdScale Cockpit" loading="lazy" />
+              <div className="bar"><i /><i /><i /><span style={{ marginLeft: 12, fontFamily: "var(--mono)", fontSize: 11, color: "var(--faint)" }}>adscaledigital.co/app</span></div>
+              <div className="ph">The Cockpit<br />[ product screenshot to drop in ]</div>
               <div className="cap"><h4>The Cockpit</h4><span>Scale · Refresh · Kill</span></div>
             </div>
             {[["adscaledigital.co/app/creative-production", "Creative Studio", "Shopify → AI static ads"], ["adscaledigital.co/app/funnel", "Funnel Diagnosis", "Find the leaking step"], ["adscaledigital.co/app/market", "Market", "Competitor creative intel"]].map(([u, h, s]) => (
