@@ -21,6 +21,24 @@ const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500"], variab
 
 const ACCENT = "#2f7d5f";
 
+const FAQS: { q: string; a: string }[] = [
+  { q: "What does AdScale do?", a: "AdScale reads your Meta and Google ad accounts and tells you what to scale, refresh, or kill, with a clear reason for every call. It turns raw ad metrics into a decision you can act on." },
+  { q: "How is AdScale different from Meta Ads Manager?", a: "Ads Manager shows you the numbers. AdScale reads those numbers and gives you the decision plus the reason. It first checks whether there is enough spend behind a metric to trust it, so you do not act on a lucky or unlucky day." },
+  { q: "Does AdScale change my ads automatically?", a: "No. AdScale recommends; you decide and act. It never edits, pauses, or spends on your account by itself." },
+  { q: "Which ad platforms does AdScale support?", a: "Meta (Facebook and Instagram) and Google Ads. You can view decisions for one platform or both together." },
+  { q: "How does AdScale decide what to scale or kill?", a: "It checks three things in order: is there enough spend to judge the metric at all, what is the trend over a real window, and how the ad stands against your own other ads on the same objective. A single good or bad day is never enough on its own." },
+  { q: "Will AdScale recommend acting on a paused or ended campaign?", a: "No. AdScale never points you to anything paused or ended as a next action. It can, however, tell you when a paused or ended campaign was the cause of a recent drop in performance." },
+  { q: "Is my ad account data safe?", a: "AdScale connects through the official Meta and Google APIs and reads your data only to analyse it. It does not post, edit, or change anything on your account." },
+  { q: "Does AdScale work for agencies with multiple accounts?", a: "Yes. AdScale works across multiple ad accounts, so an agency can see the decisions for every client in one place." },
+  { q: "How much does AdScale cost?", a: "AdScale is in early access. Book a demo and we will walk you through how it works and current pricing." },
+];
+const GUIDES = [
+  { slug: "how-to-decide-what-to-change-in-meta-ads", t: "How to decide what to change in your Meta ads" },
+  { slug: "good-roas-for-d2c-brand", t: "What is a good ROAS for a D2C brand?" },
+  { slug: "meta-ads-vs-google-ads-where-to-start", t: "Meta Ads vs Google Ads: where to start" },
+];
+const faqLd = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) };
+
 function SecHead({ num, title, sub }: { num: string; title: string; sub?: string }) {
   return (
     <div className="sh">
@@ -231,13 +249,26 @@ export default function HomeRedesign() {
         .rd .form input{width:100%;background:var(--bg);border:1px solid var(--line2);padding:13px 14px;font-family:var(--sans);font-size:15px;color:var(--ink);}
         .rd .form input:focus{outline:2px solid var(--accent);outline-offset:1px;}
 
+        .rd .faq{display:flex;flex-direction:column;border-top:1px solid var(--line);}
+        .rd .qa{border-bottom:1px solid var(--line);}
+        .rd .qa summary{cursor:pointer;list-style:none;padding:22px 4px;font-size:1.08rem;font-weight:600;display:flex;justify-content:space-between;gap:16px;align-items:center;}
+        .rd .qa summary::-webkit-details-marker{display:none;}
+        .rd .qa summary::after{content:"+";font-family:var(--mono);color:var(--accent);font-weight:400;font-size:1.2rem;}
+        .rd .qa[open] summary::after{content:"\\2013";}
+        .rd .qa p{margin:0 4px 24px;color:var(--muted);font-size:15px;max-width:74ch;line-height:1.6;}
+        .rd .guides{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);}
+        @media(max-width:820px){.rd .guides{grid-template-columns:1fr 1fr;}}
+        .rd .guide{background:var(--bg);padding:26px 22px;min-height:150px;display:flex;flex-direction:column;gap:12px;transition:.2s;}
+        .rd .guide:hover{background:var(--bg2);}
+        .rd .guide .k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);}
+        .rd .guide h4{margin:auto 0 0;font-size:1.02rem;font-weight:600;line-height:1.3;}
         .rd footer{border-top:1px solid var(--line);padding:30px 0;}
         .rd .foot{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
       `}</style>
 
       <header className="hud">
         <div className="brand"><span className="g">A</span> Ad<b>Scale</b></div>
-        <nav><a href="#work">Product</a><a href="#engine">Engine</a><a href="#how">Method</a><a href="#access">Access</a></nav>
+        <nav><a href="#work">Product</a><a href="#how">Method</a><a href="#faq">FAQ</a><a href="/blog">Blog</a><a href="#access">Access</a></nav>
         <div className="stat"><span className="dot" /> Private beta</div>
       </header>
 
@@ -351,6 +382,26 @@ export default function HomeRedesign() {
               <div><label htmlFor="rq-acct">Ad account / brand</label><input id="rq-acct" name="account" placeholder="Brand or store URL" /></div>
               <button type="submit" className="btn solid" style={{ marginTop: 4 }}>Request access</button>
             </form>
+          </div>
+        </div>
+      </section>
+
+      <section className="blk" id="faq">
+        <div className="wrap">
+          <SecHead num="/ 07" title="Questions, answered." sub="The straight answers, before you book a demo." />
+          <div className="faq">
+            {FAQS.map((f, i) => (<details className="qa rv" key={i}><summary>{f.q}</summary><p>{f.a}</p></details>))}
+          </div>
+          <script type="application/ld+json">{JSON.stringify(faqLd)}</script>
+        </div>
+      </section>
+
+      <section className="blk" id="guides">
+        <div className="wrap">
+          <SecHead num="/ 08" title="Guides for media buyers." sub="Practical, no-hype reads on deciding what to change in your ads." />
+          <div className="guides">
+            {GUIDES.map((g) => (<a className="guide rv" href={`/blog/${g.slug}`} key={g.slug}><span className="k">Guide</span><h4>{g.t}</h4></a>))}
+            <a className="guide rv" href="/blog"><span className="k">Index</span><h4>All guides &rarr;</h4></a>
           </div>
         </div>
       </section>
