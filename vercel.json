@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "//regions": "Run serverless functions in Tokyo (hnd1), co-located with the Supabase DB (ap-northeast-1 / Tokyo). Functions defaulted to iad1 (US East), so every dashboard DB query round-tripped US<->Tokyo (~150-200ms each, and the cockpit/health make several) - measured /api/health at 6-39s. Co-locating collapses each round-trip to ~local; the one user<->function hop stays. Static/ISR marketing pages are edge-served regardless, unaffected.",
-  "regions": ["hnd1"],
+  "//region-note": "The Supabase DB is in Tokyo (ap-northeast-1) but functions run in the default iad1 (US East), so dashboard DB queries round-trip US<->Tokyo. The fix is to set the function region to Tokyo (hnd1), but a `regions` pin here is NOT allowed on the Hobby plan and FAILS the build (froze prod at cb3c6a9 on 2026-09-18). To move the region: set it in the Vercel dashboard (Settings -> Functions -> Region) on Hobby, or upgrade to Pro and re-add `\"regions\": [\"hnd1\"]` here.",
   "crons": [
     {
       "path": "/api/cron/sync",
