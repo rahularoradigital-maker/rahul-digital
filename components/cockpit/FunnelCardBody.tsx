@@ -6,6 +6,8 @@ import { DAILY_KPIS, type DailyKpiKey, type DailyPoint, type WindowTotals } from
 import { windowHeadline } from "@/lib/cockpit/daily-series";
 import type { LevelFunnels, GroupFunnel } from "@/lib/cockpit/level-funnel";
 import { Sparkline } from "@/components/app/analytics/sparkline";
+import { FormulaHint } from "@/components/cockpit/FormulaHint";
+import { formulaFor } from "@/lib/cockpit/formulas";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { rupees, rupeesPrecise } from "@/lib/format";
@@ -100,10 +102,13 @@ function useMetricSelection(level: Level): [MetricKey[], (k: MetricKey) => void,
   return [sel, toggle, reset];
 }
 
-function MetricCard({ label, hint, value, values }: { label: string; hint?: string; value: string; values?: (number | null)[] }) {
+function MetricCard({ label, hint, value, values, formula }: { label: string; hint?: string; value: string; values?: (number | null)[]; formula?: string }) {
   return (
     <div>
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">{label}</div>
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-muted)]">
+        {label}
+        {formula && <FormulaHint formula={formula} label={label} />}
+      </div>
       <div className="mt-1 text-[22px] font-semibold tabular-nums">{value}</div>
       {hint && <div className="mt-0.5 text-[11px] text-[var(--ink-muted)]">{hint}</div>}
       {values && values.some((v) => v != null && Number.isFinite(v)) && <div className="mt-2"><Sparkline values={values} height={24} /></div>}
@@ -114,12 +119,12 @@ function MetricCard({ label, hint, value, values }: { label: string; hint?: stri
 // One metric -> its card, resolving daily (headline + sparkline) vs native (window number, no series).
 function renderCard(key: MetricKey, headline: Record<DailyKpiKey, number | null>, series: DailyPoint[], native: GroupFunnel["native"]) {
   if (isNative(key)) {
-    if (key === "budget") return native?.budgetRs != null ? <MetricCard key={key} label="Budget" hint={native.budgetType === "daily" ? "per day" : native.budgetType === "lifetime" ? "lifetime" : undefined} value={rupees.format(native.budgetRs)} /> : <MetricCard key={key} label="Budget" value="n/a" />;
-    if (key === "reach") return <MetricCard key={key} label="Reach" hint="unique people" value={compactNum(native?.reach)} />;
-    return <MetricCard key={key} label="Frequency" hint="impressions per person" value={native?.frequency != null ? native.frequency.toFixed(2) : "n/a"} />;
+    if (key === "budget") return native?.budgetRs != null ? <MetricCard key={key} label="Budget" hint={native.budgetType === "daily" ? "per day" : native.budgetType === "lifetime" ? "lifetime" : undefined} value={rupees.format(native.budgetRs)} formula={formulaFor("budget")} /> : <MetricCard key={key} label="Budget" value="n/a" formula={formulaFor("budget")} />;
+    if (key === "reach") return <MetricCard key={key} label="Reach" hint="unique people" value={compactNum(native?.reach)} formula={formulaFor("reach")} />;
+    return <MetricCard key={key} label="Frequency" hint="impressions per person" value={native?.frequency != null ? native.frequency.toFixed(2) : "n/a"} formula={formulaFor("frequency")} />;
   }
   const m = KPI_META.get(key);
-  return <MetricCard key={key} label={m?.label ?? key} value={fmtVal(headline[key], m?.fmt ?? "int")} values={series.map((p) => p[key])} />;
+  return <MetricCard key={key} label={m?.label ?? key} value={fmtVal(headline[key], m?.fmt ?? "int")} values={series.map((p) => p[key])} formula={formulaFor(key)} />;
 }
 
 function Pill({ level, active, onClick, children }: { level: Level; active: boolean; onClick: (l: Level) => void; children: React.ReactNode }) {

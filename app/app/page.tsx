@@ -21,6 +21,8 @@ import { AdLink } from "@/components/cockpit/AdLink";
 import { HealthRing } from "@/components/cockpit/HealthRing";
 import { HealthComposition, type CompositionRow } from "@/components/cockpit/HealthComposition";
 import { KpiCard } from "@/components/cockpit/KpiCard";
+import { FormulaHint } from "@/components/cockpit/FormulaHint";
+import { METRIC_FORMULA } from "@/lib/cockpit/formulas";
 import { ActionList } from "@/components/cockpit/ActionList";
 import { FatigueRadar } from "@/components/cockpit/FatigueRadar";
 import { WhatsWorking } from "@/components/cockpit/WhatsWorking";
@@ -363,6 +365,7 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
           <div className="mb-3.5 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div className="text-base font-normal">Account Health</div>
+              <FormulaHint formula={METRIC_FORMULA.accountHealth} label="Account Health" />
               <WhyDrawer explanation={view.accountHealth.explain} />
               <MetricDrawer title="Account Health" tier="Y" disclosure={healthDisclosure} />
             </div>
@@ -379,14 +382,14 @@ function Cockpit({ view, accountName, accountId, dateParam, adsAnalyzed, process
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard
           label="Blended ROAS"
-          tip="Revenue divided by spend, blended across the account. Source: connected Meta account."
+          tip={METRIC_FORMULA.blendedRoas}
           value={roas === null ? "n/a" : `${roas.toFixed(2)}x`}
           sub={`${rupees.format(totals.revenueRs)} on ${rupees.format(totals.spendRs)}`}
           disclosure={<MetricDrawer title="Blended ROAS" tier="A" disclosure={roasDisclosure} />}
         />
         <KpiCard
           label="Concentration"
-          tip="Share of spend on the single top ad. Internal calculation over your account."
+          tip={METRIC_FORMULA.concentration}
           value={conc.status === "ok" ? `${Math.round(conc.top1Share * 100)}%` : undefined}
           insufficient={conc.status === "ok" ? undefined : "Not enough spend to assess"}
           sub={conc.status === "ok" ? "top ad share of spend" : undefined}

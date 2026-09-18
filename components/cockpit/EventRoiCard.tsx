@@ -4,6 +4,7 @@ import { eventBleedToContract } from "@/lib/intelligence/from-event-roi";
 import { ReasoningTrace } from "@/components/intelligence/ReasoningTrace";
 import { eventMoneyMapHtml } from "@/lib/scoring/money-map";
 import { DownloadButton } from "@/components/cockpit/DownloadButton";
+import { FormulaHint } from "@/components/cockpit/FormulaHint";
 
 const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 
@@ -13,19 +14,6 @@ const FORMULA =
   "ROI% = (revenue - spend) / spend x 100, shown ONLY for events that produce real purchase revenue. " +
   "Events with no rupee revenue (Add to Cart, Lead, Traffic) show n/a - judged by cost per result, not ROI, so no value is invented. " +
   "Events below a spend floor are marked too small to judge.";
-
-function InfoDot() {
-  return (
-    <span className="group relative inline-flex">
-      <button type="button" aria-label="How event ROI is calculated" className="flex h-4 w-4 items-center justify-center rounded-full border border-[var(--hairline)] text-[10px] text-[var(--ink-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]">
-        i
-      </button>
-      <span className="pointer-events-none absolute left-0 top-6 z-10 hidden w-72 rounded-[8px] border border-[var(--hairline)] bg-[var(--surface)] p-3 text-left text-[12px] font-normal leading-relaxed text-[var(--ink)] shadow-md group-hover:block group-focus-within:block">
-        {FORMULA}
-      </span>
-    </span>
-  );
-}
 
 // A small trend chip: only shown where the event had real revenue in BOTH windows and the ROI moved beyond
 // the noise threshold. "worsening" is the one a media buyer must see first, so it carries the alert colour.
@@ -48,7 +36,7 @@ export function EventRoiCard({ rows, trend }: { rows: EventRoi[]; trend?: Map<st
       <div className="mb-1 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="text-base font-normal">Spend &amp; return by event</div>
-          <InfoDot />
+          <FormulaHint formula={FORMULA} label="event ROI" />
         </div>
         {rows.length > 0 && <DownloadButton content={eventMoneyMapHtml(rows, { trend })} filename="money-map.html" mime="text/html" label="Money map" />}
       </div>
