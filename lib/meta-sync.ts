@@ -557,7 +557,14 @@ type CacheEntry = { at: number; value: LiveCockpit };
 // (a day) on purpose: a day-old view shown instantly while it refreshes in the
 // background beats making the user watch a 9s spinner after being idle overnight.
 const FRESH_MS = 300_000; // 5 minutes: serve without a background refresh
-const STALE_MS = 86_400_000; // 24 hours: still serve instantly, refresh in the background
+// 7 days: still serve the last-known cockpit INSTANTLY (labeled stale + "synced X ago"), and kick a
+// background refresh so the next load is fresh. Was 24h, which made a user returning after a multi-day
+// gap hit an 8s cold block (worse with the DB cross-region). The stale view is shown for exactly one
+// load - the background refresh replaces it within seconds - so a wider window trades a one-time
+// clearly-labeled staleness for never watching a cold spinner. Also the L2 purge bound (rows older than
+// this are deleted), so servable rows survive the whole window. Truly cold (no cache, or >7 days) still
+// blocks behind the skeleton, capped at COLD_PULL_TIMEOUT_MS.
+const STALE_MS = 604_800_000; // 7 days
 const COLD_PULL_TIMEOUT_MS = 8_000; // cap the blocking cold pull so a slow Meta pull can't 504 the page
 // Cache SCHEMA version: part of the cache key. BUMP THIS whenever the LiveCockpit shape changes
 // (new required field on the connected payload, e.g. scopeTotals / dataQuality / marginal).
