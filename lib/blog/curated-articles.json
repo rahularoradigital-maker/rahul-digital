@@ -430,5 +430,53 @@
         "a": "Not with a tiny budget. Splitting it thinly often means neither channel exits its learning phase or gathers enough data to judge. Get one channel to a profitable, verified number first, then expand to the second, and measure both on blended ROAS or MER."
       }
     ]
+  },
+  {
+    "id": "file:how-much-to-spend-before-judging-a-meta-ad",
+    "slug": "how-much-to-spend-before-judging-a-meta-ad",
+    "title": "How much should you spend before judging a Meta ad?",
+    "topic": "ad economics",
+    "dek": "Enough to clear a real sample and exit learning, scaled to your price point. Judge sooner and you are reading noise.",
+    "body_md": "Spend enough to clear two gates before you judge a Meta ad: a real statistical sample AND the learning phase, scaled to your price point. A common working floor is roughly 1,000 impressions and about 50 to 100 dollars, but the honest bar is the spend it takes to see the number of conversions you would need to trust the result at your average order value. Judge before that and you are reacting to noise, not signal.\n\nA single dollar figure (\"spend 50 then decide\") is the wrong mental model, because it ignores what you sell and how Meta delivers early.\n\n## The two gates\n\nAn ad is not judgeable until both are true.\n\n**Gate one: a real sample.** A handful of impressions and one or two purchases can swing your cost per result wildly. You want enough clicks and conversions that the result would roughly hold if you ran the same ad again. Roughly 1,000 impressions and 50 to 100 dollars is a common starting floor, but it is a floor, not a finish line.\n\n**Gate two: the learning phase.** During learning, Meta is still working out who to show the ad to, and cost per result is noisy and usually worse than it will settle to. A verdict made mid-learning is a verdict on unstable delivery. Let the ad exit learning, or get close, before you read the numbers as signal. More on that in [the Meta learning phase, explained](/blog/meta-learning-phase-explained).\n\n## Scale the bar to your average order value\n\nThis is the part the flat \"spend 50 dollars\" rule misses. A 40-dollar product and a 400-dollar product do not deserve the same judging bar. Higher-priced products convert less often per click, so you need more spend before one purchase (or zero purchases) actually means something.\n\n| Average order value | Rough spend before you can judge | Why |\n|---|---|---|\n| Low (under ~50) | ~50 to 100 | conversions come quickly, sample fills fast |\n| Mid (~50 to 150) | ~150 to 300 | fewer conversions per click, needs more volume |\n| High (~150+) | ~300+ | rare conversions, one sale is noise until spend is real |\n\nThese are directional, not laws. The real test is always: do I have enough conversions that this number would repeat?\n\n## Materiality: did the ad even get a fair chance?\n\nOne more check before you judge: did the ad get real delivery? If it spent only a tiny slice of its ad set budget, it never had a fair shot, so its bad number is the ad set starving it, not the ad failing. Do not judge an ad that never got enough delivery to be judged.\n\n## What to do while you wait\n\nDo not sit and stare at an ad that has not cleared the gates. Make sure the ad set is not starving it, keep the creative pipeline moving so you always have the next test ready ([creative testing framework](/blog/meta-creative-testing-framework)), and resist editing the live ad, since editing resets its learning. Once both gates are cleared and the ad is clearly below target on a rolling window, then you have earned a decision: [when to kill a Meta ad vs give it more time](/blog/when-to-kill-a-meta-ad).\n\nThe whole point is patience with a rule attached: enough spend to form signal, scaled to your price, out of learning, with fair delivery. That is when a Meta ad is finally judgeable. For where this sits in the full decision loop, see [how to decide what to change in your Meta ads](/blog/how-to-decide-what-to-change-in-meta-ads).",
+    "status": "published",
+    "published_at": "2026-09-18T00:00:00.000Z",
+    "faq": [
+      {
+        "q": "How much should you spend before judging a Meta ad?",
+        "a": "Enough to clear two gates, scaled to your price point: a real sample (a common floor is ~1,000 impressions and 50 to 100 dollars) AND the learning phase. For higher average order values you need more (roughly 150 to 300+), because conversions are rarer per click. The honest bar is enough conversions that the result would repeat."
+      },
+      {
+        "q": "How long before a Meta ad is judgeable?",
+        "a": "It is about spend and delivery, not days. The ad must have a real sample, be out of (or near the end of) the learning phase, and have received a fair share of its ad set's budget. Until all three are true, the answer is give it more time."
+      },
+      {
+        "q": "Why is a flat spend threshold like 'spend $50' wrong?",
+        "a": "Because it ignores your average order value. A 40-dollar product fills its sample fast at 50 dollars; a 400-dollar product may need 300+ before one purchase or zero purchases means anything. Scale the judging bar to what you sell."
+      }
+    ]
+  },
+  {
+    "id": "file:why-did-my-meta-cpms-jump",
+    "slug": "why-did-my-meta-cpms-jump",
+    "title": "Why did my Meta CPMs suddenly jump? (and how to diagnose it)",
+    "topic": "diagnostics",
+    "dek": "A CPM spike has only a few real causes, and each needs a different fix. Diagnose before you react.",
+    "body_md": "A sudden CPM jump means the auction is charging you more to show your ad, and it almost always traces to one of four causes: creative fatigue (rising frequency), a shrinking or over-narrow audience, seasonal auction pressure, or a targeting and placement change you made. The fix for each is different, so diagnose which one it is before you react.\n\nCPM (cost per thousand impressions) is not a lever you set. It is a price the auction charges, and it rises when either demand for your audience goes up or your ad earns less engagement for the same delivery.\n\n## The four real causes\n\n**Creative fatigue.** As the same people see your ad more times, they engage less, and the auction charges more to keep showing it. The tell is CPM rising together with climbing frequency and falling click-through rate. This is the most common cause on a scaling ad. See [the fatigue signals to watch](/blog/meta-ads-creative-fatigue-signals) and [when frequency is actually too high](/blog/meta-ad-frequency-too-high).\n\n**A shrinking or over-narrow audience.** A small audience gets saturated fast, so you pay more to keep reaching the same limited pool. The tell is high frequency on a small audience size, or a CPM that was always high on a tight retargeting set. The fix is a broader audience, not a new creative.\n\n**Seasonal auction pressure.** During high-demand windows (holidays, big sale events, elections), every advertiser bids for the same eyeballs, so CPMs rise for everyone. The tell is a CPM jump that lines up with a known event and hits your whole account, not one ad. This is the market, not your ad, and it usually passes.\n\n**A change you made.** A new placement, a narrower target, a bid or budget change, or a shift to more expensive inventory (like a premium placement) can all raise CPM. The tell is a CPM jump that starts exactly when you changed something.\n\n## How to tell them apart\n\n| Cause | The tell | The fix |\n|---|---|---|\n| Creative fatigue | CPM up + frequency up + CTR down, on one aging ad | Fresh creative, not a bid change |\n| Narrow audience | High frequency on a small audience | Broaden the audience |\n| Seasonality | Account-wide jump lining up with an event | Wait it out; it is the market |\n| A change you made | Jump starts when you changed a setting | Reverse or reassess the change |\n\nRead the tells in that order. If frequency and CTR are moving, it is fatigue. If the audience is small, it is saturation. If it is account-wide and timed to an event, it is the market. If it started when you touched a setting, it is the setting.\n\n## When a high CPM is fine\n\nA high CPM is not automatically a problem. What matters is whether the ad still hits your target after the higher cost. A premium audience that converts can justify a high CPM; a cheap CPM that never converts is worse. So do not chase CPM down for its own sake. Judge the outcome (cost per result, ROAS against your break-even), and only treat CPM as a diagnostic clue. If results dropped alongside the CPM rise, run the [why did my ROAS drop diagnostic](/blog/why-meta-ad-roas-dropped-diagnostic), and for the full decision loop see [how to decide what to change in your Meta ads](/blog/how-to-decide-what-to-change-in-meta-ads).",
+    "status": "published",
+    "published_at": "2026-09-18T00:00:00.000Z",
+    "faq": [
+      {
+        "q": "Why did my Meta CPMs suddenly go up?",
+        "a": "A CPM jump is the auction charging more to show your ad. It almost always traces to one of four causes: creative fatigue (frequency up, CTR down), a shrinking or over-narrow audience, seasonal auction pressure (holidays and sale events), or a targeting/placement/bid change you made. Diagnose which before reacting, because each has a different fix."
+      },
+      {
+        "q": "How do you know if a CPM jump is fatigue or seasonality?",
+        "a": "Fatigue shows up on one aging ad as CPM rising together with climbing frequency and falling click-through rate. Seasonality shows up account-wide and lines up with a known high-demand event (a holiday or sale). If it is one ad with moving frequency, it is fatigue; if it is everything at once around an event, it is the market."
+      },
+      {
+        "q": "Is a high CPM always bad?",
+        "a": "No. CPM is a price, not a verdict. A high CPM is fine if the ad still hits your target cost per result or ROAS; a low CPM that never converts is worse. Treat CPM as a diagnostic clue and judge the actual outcome, not the CPM on its own."
+      }
+    ]
   }
 ]
