@@ -37,6 +37,43 @@ function SecHead({ num, title, sub }: { num: string; title: string; sub?: string
   );
 }
 
+// Original product mockups drawn in SVG (AdScale's own screens, my own artwork) to fill the showcase
+// frames - not screenshots and not copied from anywhere. Palette matches the page.
+function Shot({ kind }: { kind: "cockpit" | "studio" | "funnel" | "market" }) {
+  const INK = "#15150f", MUT = "#a2a29a", LINE = "#dcdad4", AC = "#2f7d5f";
+  return (
+    <svg className="shot" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${kind} preview`}>
+      <rect width="320" height="200" fill="#eceae6" />
+      {kind === "cockpit" && (
+        <g>
+          <circle cx="60" cy="76" r="30" fill="none" stroke={LINE} strokeWidth="7" />
+          <circle cx="60" cy="76" r="30" fill="none" stroke={AC} strokeWidth="7" strokeLinecap="round" strokeDasharray="135 188" transform="rotate(-90 60 76)" />
+          <text x="60" y="82" fontFamily="monospace" fontSize="17" fontWeight="700" fill={INK} textAnchor="middle">72</text>
+          {[0, 1, 2].map((i) => (<g key={i}><rect x={116 + i * 66} y="48" width="56" height="46" rx="2" fill="#fff" stroke={LINE} /><rect x={124 + i * 66} y="58" width="24" height="4" rx="2" fill={MUT} /><rect x={124 + i * 66} y="72" width={30 - i * 6} height="8" rx="2" fill={i === 0 ? AC : INK} /></g>))}
+          {[["#2f7d5f", "SCALE"], ["#b45309", "REFRESH"], ["#b91c1c", "KILL"]].map(([c, t], i) => (<g key={t}><circle cx="26" cy={128 + i * 22} r="4" fill={c} /><text x="38" y={132 + i * 22} fontFamily="monospace" fontSize="9" fill={INK}>{t}</text><rect x="96" y={124 + i * 22} width={180 - i * 40} height="7" rx="3" fill={c} opacity="0.22" /></g>))}
+        </g>
+      )}
+      {kind === "studio" && (
+        <g>
+          {[0, 1, 2, 3, 4, 5].map((i) => { const x = 22 + (i % 3) * 96, y = 26 + Math.floor(i / 3) * 70; const on = i === 0 || i === 4; return (<g key={i}><rect x={x} y={y} width="84" height="58" rx="3" fill={on ? "#dfeee7" : "#fff"} stroke={on ? AC : LINE} /><rect x={x + 10} y={y + 12} width="44" height="6" rx="3" fill={on ? AC : MUT} /><rect x={x + 10} y={y + 26} width="60" height="4" rx="2" fill={LINE} /><rect x={x + 10} y={y + 36} width="40" height="4" rx="2" fill={LINE} /></g>); })}
+          <rect x="90" y="176" width="140" height="16" rx="8" fill={AC} /><text x="160" y="187" fontFamily="monospace" fontSize="9" fill="#fff" textAnchor="middle">GENERATE</text>
+        </g>
+      )}
+      {kind === "funnel" && (
+        <g>
+          {[[260, "Impressions"], [210, "Clicks"], [150, "Landing"], [96, "Add to cart"], [58, "Purchase"]].map(([w, t], i) => { const leak = i === 2; return (<g key={t}><rect x={(320 - (w as number)) / 2} y={30 + i * 30} width={w as number} height="18" rx="2" fill={leak ? "none" : INK} opacity={leak ? 1 : 0.82} stroke={leak ? "#b91c1c" : "none"} strokeWidth="2" strokeDasharray={leak ? "5 4" : "0"} /><text x="10" y={43 + i * 30} fontFamily="monospace" fontSize="8" fill={leak ? "#b91c1c" : MUT}>{t}</text></g>); })}
+          <text x="256" y="105" fontFamily="monospace" fontSize="8" fill="#b91c1c">leak</text>
+        </g>
+      )}
+      {kind === "market" && (
+        <g>
+          {[[210, true], [150, false], [176, false], [120, false]].map(([w, hi], i) => (<g key={i}><rect x="20" y={30 + i * 38} width="70" height="24" rx="2" fill="#fff" stroke={LINE} /><circle cx="32" cy={42 + i * 38} r="5" fill={hi ? AC : MUT} /><rect x="42" y={39 + i * 38} width="36" height="6" rx="3" fill={MUT} /><rect x="104" y={38 + i * 38} width={w as number} height="8" rx="4" fill={hi ? AC : INK} opacity={hi ? 1 : 0.35} /></g>))}
+        </g>
+      )}
+    </svg>
+  );
+}
+
 export default function RedesignPreview() {
   // Scroll-reveal every card/frame/step so motion runs through the whole page (not just the hero).
   useEffect(() => {
@@ -235,13 +272,13 @@ export default function RedesignPreview() {
           <div className="work-track">
             <div className="win rv">
               <div className="bar"><i /><i /><i /><span style={{ marginLeft: 12, fontFamily: "var(--mono)", fontSize: 11, color: "var(--faint)" }}>adscaledigital.co/app</span></div>
-              <div className="ph">The Cockpit<br />[ product screenshot to drop in ]</div>
+              <Shot kind="cockpit" />
               <div className="cap"><h4>The Cockpit</h4><span>Scale · Refresh · Kill</span></div>
             </div>
-            {[["adscaledigital.co/app/creative-production", "Creative Studio", "Shopify → AI static ads"], ["adscaledigital.co/app/funnel", "Funnel Diagnosis", "Find the leaking step"], ["adscaledigital.co/app/market", "Market", "Competitor creative intel"]].map(([u, h, s]) => (
+            {([["adscaledigital.co/app/creative-production", "Creative Studio", "Shopify → AI static ads", "studio"], ["adscaledigital.co/app/funnel", "Funnel Diagnosis", "Find the leaking step", "funnel"], ["adscaledigital.co/app/market", "Market", "Competitor creative intel", "market"]] as const).map(([u, h, s, kind]) => (
               <div className="win rv" key={h}>
                 <div className="bar"><i /><i /><i /><span style={{ marginLeft: 12, fontFamily: "var(--mono)", fontSize: 11, color: "var(--faint)" }}>{u}</span></div>
-                <div className="ph">{h}<br />[ product screenshot to drop in ]</div>
+                <Shot kind={kind} />
                 <div className="cap"><h4>{h}</h4><span>{s}</span></div>
               </div>
             ))}
