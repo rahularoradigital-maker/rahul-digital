@@ -1,16 +1,9 @@
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
+import { ThemeShell } from "@/components/marketing/theme-shell";
 
-// SEO / IA (Phase-0 audit): /blog and /blog/[slug] rendered a bare <main> with NO site header or footer -
-// the primary organic landing surface was a navigational dead end (no logo-home, no Pricing/Product nav,
-// no footer legal links, no signup CTA), and internal PageRank from posts could not flow to money pages.
-// Every other public page wraps itself in SiteHeader/SiteFooter; this layout gives the blog the same chrome.
+// SEO / IA (Phase-0 audit): /blog and /blog/[slug] must not be navigational dead ends. Every public page
+// now wraps itself in the shared marketing theme (ThemeShell), which provides the HUD nav (logo-home,
+// Product/Pricing/Blog/Book-demo) and footer, so internal PageRank from posts flows to the money pages.
+// ThemeShell also carries the light technical theme + smooth-scroll/reveal motion used site-wide.
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <SiteHeader />
-      {children}
-      <SiteFooter />
-    </>
-  );
+  return <ThemeShell active="/blog">{children}</ThemeShell>;
 }

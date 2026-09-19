@@ -91,6 +91,14 @@ export const THEME_CSS = `
   .rd .guide:hover{background:var(--bg2);}
   .rd .guide .k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);}
   .rd .guide h4{margin:auto 0 0;font-size:1.02rem;font-weight:600;line-height:1.3;}
+  .rd .postrow{display:grid;gap:22px;grid-template-columns:200px 1fr;align-items:start;}
+  @media(max-width:640px){.rd .postrow{grid-template-columns:1fr;}}
+  .rd .prose-rd{max-width:70ch;}
+  .rd .prose-rd h2{font-size:1.35rem;font-weight:600;letter-spacing:-.01em;margin:2.2em 0 .5em;}
+  .rd .prose-rd h3{font-size:1.12rem;font-weight:600;margin:1.8em 0 .4em;}
+  .rd .prose-rd p{font-size:16px;line-height:1.7;color:var(--ink);margin:1em 0;}
+  .rd .prose-rd li{font-size:16px;line-height:1.7;}
+  .rd .prose-rd a{color:var(--accent);}
   .rd .close{text-align:center;padding:120px 0;border-top:1px solid var(--line);}
   .rd .close h2{font-size:clamp(2rem,5vw,3.2rem);font-weight:600;letter-spacing:-.03em;margin:0 0 16px;text-wrap:balance;}
   .rd .close p{color:var(--muted);max-width:48ch;margin:0 auto 28px;}

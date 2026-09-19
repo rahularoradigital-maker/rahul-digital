@@ -24,35 +24,39 @@ export const metadata = {
 export default async function BlogIndex() {
   const articles = await listPublishedArticles();
   return (
-    <main className="mx-auto max-w-2xl px-5 py-12">
-      <h1 className="text-[28px] font-normal tracking-tight">AdScale Blog</h1>
-      <p className="mt-2 text-[15px] text-[var(--ink-muted)]">Practical guides on deciding what to change in your Meta and Google ads — with a reason for every call.</p>
-      {articles.length === 0 ? (
-        <p className="mt-10 text-[14px] text-[var(--ink-muted)]">No posts yet. Check back soon.</p>
-      ) : (
-        <ul className="mt-10 space-y-8">
-          {articles.map((a) => (
-            <li key={a.id} className="border-t border-[var(--hairline)] pt-8 first:border-0 first:pt-0">
-              <Link href={`/blog/${a.slug}`} className="group grid gap-4 sm:grid-cols-[200px_1fr] sm:gap-5">
-                <Image
-                  src={`/blog/${a.slug}/opengraph-image`}
-                  alt={a.title}
-                  width={1200}
-                  height={630}
-                  sizes="(min-width: 640px) 200px, 100vw"
-                  className="h-auto w-full rounded-[10px] border border-[var(--hairline)]"
-                />
-                <div>
-                  {a.topic && <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--accent)]">{a.topic}</p>}
-                  <p className="mt-1 text-[18px] font-semibold leading-snug text-[var(--ink)] group-hover:text-[var(--accent)]">{a.title}</p>
-                  {a.dek && <p className="mt-1 text-[14px] text-[var(--ink-muted)]">{a.dek}</p>}
-                  {a.published_at && <p className="mt-2 text-[12px] text-[var(--ink-muted)]">{a.published_at.slice(0, 10)}</p>}
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+    <section className="page-hero" style={{ borderBottom: "none" }}>
+      <div className="wrap" style={{ maxWidth: 760 }}>
+        <div className="eyebrow"><span className="tick" /><span className="lab">Field notes</span></div>
+        <h1>AdScale Blog.</h1>
+        <p className="lede">Practical guides on deciding what to change in your Meta and Google ads, with a reason for every call.</p>
+
+        {articles.length === 0 ? (
+          <p style={{ marginTop: 40, color: "var(--muted)", fontSize: 14 }}>No posts yet. Check back soon.</p>
+        ) : (
+          <ul style={{ listStyle: "none", padding: 0, margin: "10px 0 0", display: "flex", flexDirection: "column" }}>
+            {articles.map((a) => (
+              <li key={a.id} className="rv" style={{ borderTop: "1px solid var(--line)", padding: "30px 0" }}>
+                <Link href={`/blog/${a.slug}`} className="group postrow">
+                  <Image
+                    src={`/blog/${a.slug}/opengraph-image`}
+                    alt={a.title}
+                    width={1200}
+                    height={630}
+                    sizes="(min-width: 640px) 200px, 100vw"
+                    style={{ height: "auto", width: "100%", border: "1px solid var(--line2)" }}
+                  />
+                  <div>
+                    {a.topic && <p className="lab" style={{ color: "var(--accent)" }}>{a.topic}</p>}
+                    <p style={{ marginTop: 6, fontSize: 18, fontWeight: 600, lineHeight: 1.3, color: "var(--ink)" }}>{a.title}</p>
+                    {a.dek && <p style={{ marginTop: 6, fontSize: 14, color: "var(--muted)" }}>{a.dek}</p>}
+                    {a.published_at && <p style={{ marginTop: 10, fontFamily: "var(--mono)", fontSize: 11.5, color: "var(--faint)" }}>{a.published_at.slice(0, 10)}</p>}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 }

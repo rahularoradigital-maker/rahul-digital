@@ -89,67 +89,67 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const jsonLd = JSON.stringify(ldBlocks);
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-12">
-      <script type="application/ld+json">{jsonLd}</script>
-      <Link href="/blog" className="text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">← All posts</Link>
-      <article className="mt-6">
-        {a.topic && (
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-[var(--accent)]">{a.topic}</p>
-        )}
-        <h1 className="mt-2 text-[28px] font-normal leading-tight tracking-tight text-balance">{a.title}</h1>
-        {a.dek && <p className="mt-2 text-[16px] text-[var(--ink-muted)]">{a.dek}</p>}
-        <p className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-[var(--ink-muted)]">
-          <span className="text-[var(--ink)]">By the AdScale team</span>
-          <span aria-hidden>·</span>
-          {a.published_at && <time dateTime={a.published_at}>{a.published_at.slice(0, 10)}</time>}
-          {a.published_at && <span aria-hidden>·</span>}
-          <span>{readingMinutes(a.body_md)} min read</span>
-        </p>
-        {slug !== PILLAR_SLUG && (
-          <p className="mt-3 text-[13px]">
-            <Link href={`/blog/${PILLAR_SLUG}`} className="text-[var(--accent)] hover:underline">
-              Part of: How to decide what to change in your Meta ads →
-            </Link>
+    <section className="page-hero" style={{ borderBottom: "none" }}>
+      <div className="wrap" style={{ maxWidth: 760 }}>
+        <script type="application/ld+json">{jsonLd}</script>
+        <Link href="/blog" className="lab" style={{ display: "inline-block", marginBottom: 24 }}>&larr; All posts</Link>
+        <article>
+          {a.topic && <p className="lab" style={{ color: "var(--accent)" }}>{a.topic}</p>}
+          <h1 style={{ marginTop: 12, fontSize: "clamp(1.9rem,4.5vw,2.8rem)", fontWeight: 600, lineHeight: 1.08, letterSpacing: "-.02em", textWrap: "balance", maxWidth: "20ch" }}>{a.title}</h1>
+          {a.dek && <p style={{ marginTop: 12, fontSize: 17, color: "var(--muted)", lineHeight: 1.5 }}>{a.dek}</p>}
+          <p style={{ marginTop: 14, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, fontFamily: "var(--mono)", fontSize: 11.5, letterSpacing: ".04em", color: "var(--faint)" }}>
+            <span style={{ color: "var(--muted)" }}>By the AdScale team</span>
+            <span aria-hidden>&middot;</span>
+            {a.published_at && <time dateTime={a.published_at}>{a.published_at.slice(0, 10)}</time>}
+            {a.published_at && <span aria-hidden>&middot;</span>}
+            <span>{readingMinutes(a.body_md)} min read</span>
           </p>
-        )}
-        {/* Real image only: the article's own branded share card, matching og:image. No stock photography.
-            next/image so the LCP hero is served right-sized + WebP; priority since it is above the fold. */}
-        <Image
-          src={`/blog/${slug}/opengraph-image`}
-          alt={`${a.title} — AdScale`}
-          width={1200}
-          height={630}
-          priority
-          className="mt-6 h-auto w-full rounded-[12px] border border-[var(--hairline)]"
-        />
-        <div className="mt-8">
-          <Markdown md={a.body_md} />
-        </div>
-        {a.faq?.length ? (
-          <section className="mt-10">
-            <h2 className="text-[19px] font-semibold">Frequently asked questions</h2>
-            <div className="mt-3 space-y-4">
-              {a.faq.map((f, i) => (
-                <div key={i}>
-                  <h3 className="text-[15px] font-semibold text-[var(--ink)]">{f.q}</h3>
-                  <p className="mt-1 text-[15px] leading-relaxed text-[var(--ink-muted)]">{f.a}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : null}
-        {/* Intent-appropriate next action: an informational reader learns, then can try the product. */}
-        <aside className="mt-12 rounded-[10px] border border-[var(--hairline)] bg-[var(--surface-alt)] p-5">
-          <p className="text-[14px] text-[var(--ink)]">See what AdScale flags in your own ad account - what to scale, refresh, or kill, with a reason for every call.</p>
-          <Link href="/product" className="mt-3 inline-block text-[14px] font-medium text-[var(--accent)] hover:underline">How AdScale works →</Link>
-        </aside>
-        {/* Google's "how/why" disclosure: honest about production, so the content is people-first, not search-first. */}
-        <p className="mt-8 border-t border-[var(--hairline)] pt-5 text-[12px] leading-relaxed text-[var(--ink-muted)]">
-          Written by the AdScale team from established Meta and Google media-buying practice, AI-assisted and
-          reviewed for accuracy. We do not invent statistics, results, or case studies; figures are sourced to
-          the platforms&apos; own documentation where cited.
-        </p>
-      </article>
-    </main>
+          {slug !== PILLAR_SLUG && (
+            <p style={{ marginTop: 14, fontSize: 13 }}>
+              <Link href={`/blog/${PILLAR_SLUG}`} style={{ color: "var(--accent)" }}>
+                Part of: How to decide what to change in your Meta ads &rarr;
+              </Link>
+            </p>
+          )}
+          {/* Real image only: the article's own branded share card, matching og:image. No stock photography.
+              next/image so the LCP hero is served right-sized + WebP; priority since it is above the fold. */}
+          <Image
+            src={`/blog/${slug}/opengraph-image`}
+            alt={`${a.title} — AdScale`}
+            width={1200}
+            height={630}
+            priority
+            style={{ marginTop: 28, height: "auto", width: "100%", border: "1px solid var(--line2)" }}
+          />
+          <div className="prose-rd" style={{ marginTop: 32 }}>
+            <Markdown md={a.body_md} />
+          </div>
+          {a.faq?.length ? (
+            <section style={{ marginTop: 48 }}>
+              <h2 style={{ fontSize: "1.35rem", fontWeight: 600 }}>Frequently asked questions</h2>
+              <div className="faq" style={{ marginTop: 12 }}>
+                {a.faq.map((f, i) => (
+                  <details className="qa" key={i}>
+                    <summary>{f.q}</summary>
+                    <p>{f.a}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          ) : null}
+          {/* Intent-appropriate next action: an informational reader learns, then can try the product. */}
+          <aside style={{ marginTop: 56, border: "1px solid var(--line2)", background: "var(--bg2)", padding: "24px 26px" }}>
+            <p style={{ fontSize: 15, color: "var(--ink)", margin: 0 }}>See what AdScale flags in your own ad account, what to scale, refresh, or kill, with a reason for every call.</p>
+            <Link href="/product" className="btn solid" style={{ marginTop: 16 }}>How AdScale works</Link>
+          </aside>
+          {/* Google's "how/why" disclosure: honest about production, so the content is people-first, not search-first. */}
+          <p style={{ marginTop: 36, borderTop: "1px solid var(--line)", paddingTop: 22, fontSize: 12, lineHeight: 1.6, color: "var(--faint)" }}>
+            Written by the AdScale team from established Meta and Google media-buying practice, AI-assisted and
+            reviewed for accuracy. We do not invent statistics, results, or case studies; figures are sourced to
+            the platforms&apos; own documentation where cited.
+          </p>
+        </article>
+      </div>
+    </section>
   );
 }
