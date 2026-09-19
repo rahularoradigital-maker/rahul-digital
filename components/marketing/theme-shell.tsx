@@ -78,6 +78,19 @@ export const THEME_CSS = `
   @media(max-width:820px){.rd .three{grid-template-columns:1fr!important;}}
   .rd .chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line2);padding:10px 16px;transition:.2s;}
   .rd .chip:hover{border-color:var(--accent);color:var(--accent);}
+  .rd .faq{display:flex;flex-direction:column;border-top:1px solid var(--line);}
+  .rd .qa{border-bottom:1px solid var(--line);}
+  .rd .qa summary{cursor:pointer;list-style:none;padding:22px 4px;font-size:1.08rem;font-weight:600;display:flex;justify-content:space-between;gap:16px;align-items:center;}
+  .rd .qa summary::-webkit-details-marker{display:none;}
+  .rd .qa summary::after{content:"+";font-family:var(--mono);color:var(--accent);font-weight:400;font-size:1.2rem;}
+  .rd .qa[open] summary::after{content:"\\2013";}
+  .rd .qa p{margin:0 4px 24px;color:var(--muted);font-size:15px;max-width:74ch;line-height:1.6;}
+  .rd .guides{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);}
+  @media(max-width:820px){.rd .guides{grid-template-columns:1fr 1fr;}}
+  .rd .guide{background:var(--bg);padding:26px 22px;min-height:150px;display:flex;flex-direction:column;gap:12px;transition:.2s;}
+  .rd .guide:hover{background:var(--bg2);}
+  .rd .guide .k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);}
+  .rd .guide h4{margin:auto 0 0;font-size:1.02rem;font-weight:600;line-height:1.3;}
   .rd .close{text-align:center;padding:120px 0;border-top:1px solid var(--line);}
   .rd .close h2{font-size:clamp(2rem,5vw,3.2rem);font-weight:600;letter-spacing:-.03em;margin:0 0 16px;text-wrap:balance;}
   .rd .close p{color:var(--muted);max-width:48ch;margin:0 auto 28px;}

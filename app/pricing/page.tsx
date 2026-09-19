@@ -1,7 +1,4 @@
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
-import { PricingTiers } from "@/components/marketing/pricing-tiers";
-import { PricingEstimator } from "@/components/marketing/pricing-estimator";
+import PricingThemed from "@/components/marketing/pricing-themed";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 
@@ -19,35 +16,15 @@ export const metadata = {
   },
 };
 
-// Pricing FAQ. Answers the exact questions the research says usage-based buyers ask ("what's a credit", "what
-// if I run out", "do they roll over"). Every answer is TRUE to the current plan: monthly reset, run-out pauses +
-// upgrade prompt (self-serve billing is a later phase, so we do NOT promise instant paid checkout here), no
-// fabricated overage mechanics. FAQPage JSON-LD is for LLM parsing (Google removed FAQ rich results in 2026).
+// Pricing FAQ. Every answer is TRUE to the current plan (monthly reset, run-out pauses + upgrade prompt, no
+// fabricated overage). FAQPage JSON-LD is for LLM parsing (Google removed FAQ rich results in 2026).
 const FAQS: { q: string; a: string }[] = [
-  {
-    q: "What is a token?",
-    a: "Tokens power the AI extras: chat answers and creative generation. Every plan includes unlimited ad-account decisions - tokens are only spent when you ask the AI a question (1 token), generate ad copy (2 tokens), or generate an image (about 20 tokens).",
-  },
-  {
-    q: "What happens when I run out of tokens?",
-    a: "Your unlimited decisions keep working. Only AI chat and creative generation pause until your tokens reset at the start of the next month, and we prompt you to upgrade. We never silently charge you overage.",
-  },
-  {
-    q: "Do tokens roll over?",
-    a: "Monthly tokens reset at the start of each billing cycle, so each month starts fresh. This keeps the plan simple and predictable.",
-  },
-  {
-    q: "Is the Free plan really free?",
-    a: "Yes. Free includes unlimited scale, refresh, and kill decisions, plus 50 tokens a month for AI chat and ad copy. Image generation needs a paid plan. AdScale is currently in private beta, so access is granted by approval - request access and we will get you in.",
-  },
-  {
-    q: "Will AdScale change my ads automatically?",
-    a: "No. On every plan AdScale only reads your accounts and recommends what to do; you decide and act. It never edits, pauses, or spends on your account by itself.",
-  },
-  {
-    q: "Does it work for agencies with several accounts?",
-    a: "Yes. Paid plans work across multiple ad accounts, so an agency can see decisions for every client in one place. Higher plans simply include more tokens.",
-  },
+  { q: "What is a token?", a: "Tokens power the AI extras: chat answers and creative generation. Every plan includes unlimited ad-account decisions - tokens are only spent when you ask the AI a question (1 token), generate ad copy (2 tokens), or generate an image (about 20 tokens)." },
+  { q: "What happens when I run out of tokens?", a: "Your unlimited decisions keep working. Only AI chat and creative generation pause until your tokens reset at the start of the next month, and we prompt you to upgrade. We never silently charge you overage." },
+  { q: "Do tokens roll over?", a: "Monthly tokens reset at the start of each billing cycle, so each month starts fresh. This keeps the plan simple and predictable." },
+  { q: "Is the Free plan really free?", a: "Yes. Free includes unlimited scale, refresh, and kill decisions, plus 50 tokens a month for AI chat and ad copy. Image generation needs a paid plan. AdScale is currently in private beta, so access is granted by approval - request access and we will get you in." },
+  { q: "Will AdScale change my ads automatically?", a: "No. On every plan AdScale only reads your accounts and recommends what to do; you decide and act. It never edits, pauses, or spends on your account by itself." },
+  { q: "Does it work for agencies with several accounts?", a: "Yes. Paid plans work across multiple ad accounts, so an agency can see decisions for every client in one place. Higher plans simply include more tokens." },
 ];
 
 export default function PricingPage() {
@@ -70,58 +47,7 @@ export default function PricingPage() {
   return (
     <>
       <script type="application/ld+json">{jsonLd}</script>
-      <SiteHeader />
-      <main className="flex-1">
-        <section className="mx-auto max-w-6xl px-6 pt-20 pb-8 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-[var(--hairline)] bg-[var(--surface)] px-4 py-1.5 text-sm text-[var(--ink-muted)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-            Pricing
-          </span>
-          <h1 className="mx-auto mt-6 max-w-2xl text-5xl leading-[1.06] tracking-tight sm:text-6xl">
-            Simple, usage-based pricing.
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg text-[var(--ink-muted)]">
-            Every plan includes unlimited scale, refresh, and kill decisions, with a reason for each. Tokens power
-            the AI extras - chat answers and creative generation - so you only pay for what actually costs to produce.
-          </p>
-          <p className="mx-auto mt-3 max-w-xl text-sm text-[var(--ink-muted)]">
-            AdScale is currently in private beta - access is granted by approval. Request access and we will get you in.
-          </p>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-6 pb-16">
-          <PricingTiers />
-        </section>
-
-        <section className="mx-auto max-w-6xl px-6 pb-16">
-          <PricingEstimator />
-        </section>
-
-        <section className="border-t border-[var(--hairline)] py-20">
-          <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-center text-[32px] leading-tight">Pricing questions</h2>
-            {/* Collapsible via native <details> (2026-09-03): answers stay in the HTML + JSON-LD, so AEO is
-                preserved while the list collapses. No client JS. */}
-            <div className="mt-10 divide-y divide-[var(--hairline)]">
-              {FAQS.map((f) => (
-                <details key={f.q} className="group">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-6 [&::-webkit-details-marker]:hidden">
-                    <h3 className="text-[18px] font-medium leading-snug text-[var(--ink)]">{f.q}</h3>
-                    <span
-                      aria-hidden
-                      className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full border border-[var(--hairline)] text-[18px] leading-none text-[var(--ink-muted)] transition-transform duration-200 group-open:rotate-45"
-                    >
-                      +
-                    </span>
-                  </summary>
-                  <p className="-mt-1 max-w-2xl pb-6 text-[15px] leading-relaxed text-[var(--ink-muted)]">{f.a}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-      </main>
-      <SiteFooter />
+      <PricingThemed faqs={FAQS} />
     </>
   );
 }
