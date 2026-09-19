@@ -1,4 +1,5 @@
 import { listPublishedArticles } from "@/lib/growth/articles";
+import { allTerms } from "@/lib/glossary/terms";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 
@@ -22,6 +23,12 @@ export async function GET() {
     ? articles.map((a) => `- [${a.title}](${u(`/blog/${a.slug}`)})${a.dek ? `: ${a.dek}` : ""}`).join("\n")
     : `- [The AdScale blog](${u("/blog")}): guides on deciding what to change in your Meta and Google ads.`;
 
+  // The glossary: answer-first definitions of the metrics behind every recommendation. Listed so AI tools
+  // can cite the canonical definition page for each term.
+  const glossary = allTerms()
+    .map((t) => `- [${t.term}](${u(`/glossary/${t.slug}`)}): ${t.short}`)
+    .join("\n");
+
   const body = `# AdScale
 
 > AdScale is creative decision intelligence for Meta and Google ads. It connects to your ad account read-only, reads your day-wise performance, and tells you what to scale, refresh, or kill, with a reason for every call. It never changes your account; every recommendation is a draft you action yourself.
@@ -35,6 +42,9 @@ AdScale is for D2C founders and media buyers. It judges each ad on its own objec
 
 ## Guides
 ${guides}
+
+## Glossary
+${glossary}
 
 ## Company
 - [Book a demo](${u("/book-demo")}): request access to the private beta.

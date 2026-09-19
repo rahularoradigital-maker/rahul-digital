@@ -102,7 +102,10 @@ export const THEME_CSS = `
   .rd .close{text-align:center;padding:120px 0;border-top:1px solid var(--line);}
   .rd .close h2{font-size:clamp(2rem,5vw,3.2rem);font-weight:600;letter-spacing:-.03em;margin:0 0 16px;text-wrap:balance;}
   .rd .close p{color:var(--muted);max-width:48ch;margin:0 auto 28px;}
-  .rd footer{border-top:1px solid var(--line);padding:34px 0;}
+  .rd footer{border-top:1px solid var(--line);padding:56px 0 34px;}
+  .rd .footgrid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:32px;}
+  @media(max-width:760px){.rd .footgrid{grid-template-columns:1fr 1fr;gap:28px;}}
+  .rd .footgrid a:hover{color:var(--ink);}
   .rd .foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
   .rd .foot a:hover{color:var(--ink);}
 `;
@@ -137,7 +140,15 @@ export function ThemeShell({ children, active }: { children: ReactNode; active?:
     ["/product", "Product"],
     ["/pricing", "Pricing"],
     ["/blog", "Blog"],
+    ["/glossary", "Glossary"],
     ["/book-demo", "Book demo"],
+  ];
+  // Footer link columns: every page links to the key money + content pages, so internal link equity flows
+  // sitewide (blog posts and glossary terms are never dead ends) and crawlers find the whole surface.
+  const footCols: { h: string; links: [string, string][] }[] = [
+    { h: "Product", links: [["/product", "How it works"], ["/integrations/meta", "Meta integration"], ["/integrations/google-ads", "Google integration"], ["/pricing", "Pricing"]] },
+    { h: "Learn", links: [["/blog", "Blog"], ["/glossary", "Glossary"], ["/book-demo", "Book a demo"]] },
+    { h: "Company", links: [["/privacy", "Privacy"], ["/terms", "Terms"], ["/cookie-policy", "Cookies"], ["/data-deletion", "Data deletion"]] },
   ];
   return (
     <div className={`${mont.variable} ${mono.variable} rd`}>
@@ -148,7 +159,27 @@ export function ThemeShell({ children, active }: { children: ReactNode; active?:
         <div className="stat"><span className="dot" /> Private beta</div>
       </header>
       <main>{children}</main>
-      <footer><div className="wrap foot"><span>AdScale &middot; Creative decision intelligence</span><span>Meta + Google &middot; Read-only &middot; Draft-only</span></div></footer>
+      <footer>
+        <div className="wrap">
+          <div className="footgrid">
+            <div>
+              <a className="brand" href="/" style={{ marginBottom: 10 }}><span className="g">A</span> Ad<b>Scale</b></a>
+              <p style={{ color: "var(--muted)", fontSize: 13, maxWidth: "28ch", margin: "10px 0 0" }}>Creative decision intelligence for Meta &amp; Google ads. Read-only, draft-only.</p>
+            </div>
+            {footCols.map((c) => (
+              <div key={c.h}>
+                <p className="lab" style={{ marginBottom: 12 }}>{c.h}</p>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 9 }}>
+                  {c.links.map(([h, t]) => (<li key={h}><a href={h} style={{ fontSize: 14, color: "var(--muted)" }}>{t}</a></li>))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div className="foot" style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+            <span>&copy; {new Date().getFullYear()} AdScale AI</span><span>Meta + Google &middot; Read-only &middot; Draft-only</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

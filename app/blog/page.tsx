@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { listPublishedArticles } from "@/lib/growth/articles";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
+
 // Public blog index. Renders PUBLISHED articles only (owner-approved). SEO/AEO surface for adscaledigital.co.
 // ISR, not force-dynamic: the blog index was re-rendering + hitting Supabase on EVERY request (measured
 // ~5.7s TTFB, x-vercel-cache MISS). A published post is not time-critical, so cache the render at the edge
@@ -23,8 +25,36 @@ export const metadata = {
 
 export default async function BlogIndex() {
   const articles = await listPublishedArticles();
+  // Blog + ItemList + Breadcrumb entity signals (the index carried no structured data before). Honest: only
+  // real published posts, in display order, each pointing at its canonical URL.
+  const jsonLd = JSON.stringify([
+    {
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      "@id": `${SITE_URL}/blog#blog`,
+      name: "AdScale Blog",
+      url: `${SITE_URL}/blog`,
+      description: "Practical, no-hype guides on reading Meta and Google ad performance and deciding what to act on.",
+      publisher: { "@id": `${SITE_URL}#organization` },
+      blogPost: articles.map((a) => ({ "@type": "BlogPosting", headline: a.title, url: `${SITE_URL}/blog/${a.slug}`, datePublished: a.published_at ?? undefined })),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      itemListElement: articles.map((a, i) => ({ "@type": "ListItem", position: i + 1, url: `${SITE_URL}/blog/${a.slug}`, name: a.title })),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+        { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+      ],
+    },
+  ]);
   return (
     <section className="page-hero" style={{ borderBottom: "none" }}>
+      <script type="application/ld+json">{jsonLd}</script>
       <div className="wrap" style={{ maxWidth: 760 }}>
         <div className="eyebrow"><span className="tick" /><span className="lab">Field notes</span></div>
         <h1>AdScale Blog.</h1>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getArticleBySlug } from "@/lib/growth/articles";
+import { getArticleBySlug, listPublishedArticles } from "@/lib/growth/articles";
 import { getCuratedArticles } from "@/lib/blog/file-articles";
 import { Markdown } from "../md";
 
@@ -47,6 +47,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const a = await getArticleBySlug(slug);
   if (!a) notFound();
+
+  // Related guides: same-topic spokes first, then recent others, so every post links out to 3 siblings.
+  // Strengthens the topic cluster and spreads internal link equity (no post is a dead end).
+  const all = await listPublishedArticles();
+  const pool = all.filter((x) => x.slug !== slug);
+  const sameTopic = a.topic ? pool.filter((x) => x.topic === a.topic) : [];
+  const related = [...sameTopic, ...pool.filter((x) => !sameTopic.includes(x))].slice(0, 3);
 
   const url = `${SITE_URL}/blog/${slug}`;
   // Article + breadcrumb entity signals. Honest only: author is the AdScale organization (no fabricated
@@ -135,6 +142,19 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                   </details>
                 ))}
               </div>
+            </section>
+          ) : null}
+          {related.length ? (
+            <section style={{ marginTop: 48, borderTop: "1px solid var(--line)", paddingTop: 26 }}>
+              <p className="lab" style={{ marginBottom: 14 }}>Related guides</p>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+                {related.map((r) => (
+                  <li key={r.slug}>
+                    <Link href={`/blog/${r.slug}`} style={{ color: "var(--ink)", fontSize: 16, fontWeight: 600, lineHeight: 1.3 }}>{r.title}</Link>
+                    {r.dek && <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: 14 }}>{r.dek}</p>}
+                  </li>
+                ))}
+              </ul>
             </section>
           ) : null}
           {/* Intent-appropriate next action: an informational reader learns, then can try the product. */}
