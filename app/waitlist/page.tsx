@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { SiteHeader } from "@/components/site-header";
-import { SiteFooter } from "@/components/site-footer";
+import { ThemeShell } from "@/components/marketing/theme-shell";
 import { getAccessState } from "@/lib/app/access";
 import { signOut } from "@/app/(auth)/actions";
 import { Button } from "@/components/ui/button";
@@ -27,38 +26,36 @@ export default async function WaitlistPage() {
     : "AdScale is in private access right now. Your account is ready, but product access hasn't been enabled yet.";
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-      <main className="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center px-5 py-20">
-        <div className="rounded-[14px] border border-[var(--hairline)] bg-[var(--surface)] p-8">
-          <span className="inline-flex items-center gap-2 rounded-full bg-[var(--surface-alt)] px-3 py-1 text-[12px] font-medium text-[var(--ink-muted)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-            Private access
-          </span>
-          <h1 className="mt-4 text-[26px] font-semibold tracking-tight text-[var(--ink)]">{heading}</h1>
-          <p className="mt-3 text-[15px] leading-relaxed text-[var(--ink-muted)]">{line}</p>
+    <ThemeShell>
+      <section className="page-hero" style={{ borderBottom: "none" }}>
+        <div className="wrap" style={{ maxWidth: 640 }}>
+          <div style={{ border: "1px solid var(--line2)", background: "var(--bg2)", padding: "38px 34px" }}>
+            <div className="lab" style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }} />
+              Private access
+            </div>
+            <h1 style={{ fontSize: "clamp(1.7rem,4vw,2.4rem)", margin: "0 0 14px" }}>{heading}</h1>
+            <p style={{ color: "var(--muted)", fontSize: 15, lineHeight: 1.6, margin: 0 }}>{line}</p>
 
-          {!blocked && (
-            <ul className="mt-5 space-y-2 text-[14px] text-[var(--ink)]">
-              <li className="flex gap-2"><span className="text-[var(--accent)]">✓</span> Your account has been created{a.email ? ` (${a.email})` : ""}.</li>
-              <li className="flex gap-2"><span className="text-[var(--accent)]">✓</span> You are on the list to request access.</li>
-              <li className="flex gap-2"><span className="text-[var(--ink-muted)]">•</span> We will turn on product access as we open more seats.</li>
-            </ul>
-          )}
+            {!blocked && (
+              <ul style={{ listStyle: "none", padding: 0, margin: "22px 0 0", display: "flex", flexDirection: "column", gap: 10, fontSize: 14 }}>
+                <li style={{ display: "flex", gap: 10 }}><span style={{ color: "var(--accent)" }}>&#10003;</span> Your account has been created{a.email ? ` (${a.email})` : ""}.</li>
+                <li style={{ display: "flex", gap: 10 }}><span style={{ color: "var(--accent)" }}>&#10003;</span> You are on the list to request access.</li>
+                <li style={{ display: "flex", gap: 10, color: "var(--muted)" }}><span>&middot;</span> We will turn on product access as we open more seats.</li>
+              </ul>
+            )}
 
-          <div className="mt-7 flex flex-wrap items-center gap-3">
-            <a href="mailto:rahul.arora@ekaleido.co?subject=AdScale%20access%20request" className="rounded-[10px] bg-[var(--ink)] px-4 py-2.5 text-[14px] font-medium text-[var(--surface)] hover:opacity-90">
-              Request access
-            </a>
-            <Link href="/blog" className="text-[14px] font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]">Read the blog →</Link>
-            <form action={signOut} className="ml-auto">
-              <Button type="submit" variant="link" size="sm" className="h-auto p-0 text-[13px] text-[var(--ink-muted)] hover:text-[var(--ink)]">Sign out</Button>
-            </form>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14, marginTop: 28 }}>
+              <a className="btn solid" href="mailto:rahul.arora@ekaleido.co?subject=AdScale%20access%20request">Request access</a>
+              <Link href="/blog" style={{ fontFamily: "var(--mono)", fontSize: 12, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted)" }}>Read the blog &rarr;</Link>
+              <form action={signOut} style={{ marginLeft: "auto" }}>
+                <Button type="submit" variant="link" size="sm" className="h-auto p-0 text-[13px]" style={{ color: "var(--muted)" }}>Sign out</Button>
+              </form>
+            </div>
           </div>
+          <p style={{ marginTop: 16, fontSize: 12, color: "var(--faint)" }}>No subscription is required or available yet. Access is granted by approval during the private beta.</p>
         </div>
-        <p className="mt-4 px-1 text-[12px] text-[var(--ink-muted)]">No subscription is required or available yet. Access is granted by approval during the private beta.</p>
-      </main>
-      <SiteFooter />
-    </div>
+      </section>
+    </ThemeShell>
   );
 }
