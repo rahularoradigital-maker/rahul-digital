@@ -262,13 +262,17 @@ export default function HomeRedesign() {
         .rd .guide:hover{background:var(--bg2);}
         .rd .guide .k{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);}
         .rd .guide h4{margin:auto 0 0;font-size:1.02rem;font-weight:600;line-height:1.3;}
-        .rd footer{border-top:1px solid var(--line);padding:30px 0;}
+        .rd footer{border-top:1px solid var(--line);padding:56px 0 30px;}
+        .rd .footgrid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:32px;}
+        @media(max-width:760px){.rd .footgrid{grid-template-columns:1fr 1fr;gap:28px;}}
+        .rd .footgrid a{color:var(--muted);font-size:14px;}
+        .rd .footgrid a:hover{color:var(--ink);}
         .rd .foot{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
       `}</style>
 
       <header className="hud">
         <div className="brand"><span className="g">A</span> Ad<b>Scale</b></div>
-        <nav><a href="#work">Product</a><a href="#how">Method</a><a href="#faq">FAQ</a><a href="/blog">Blog</a><a href="#access">Access</a></nav>
+        <nav><a href="/product">Product</a><a href="/pricing">Pricing</a><a href="/blog">Blog</a><a href="/glossary">Glossary</a><a href="#access">Access</a></nav>
         <div className="stat"><span className="dot" /> Private beta</div>
       </header>
 
@@ -402,6 +406,7 @@ export default function HomeRedesign() {
           <div className="guides">
             {GUIDES.map((g) => (<a className="guide rv" href={`/blog/${g.slug}`} key={g.slug}><span className="k">Guide</span><h4>{g.t}</h4></a>))}
             <a className="guide rv" href="/blog"><span className="k">Index</span><h4>All guides &rarr;</h4></a>
+            <a className="guide rv" href="/glossary"><span className="k">Glossary</span><h4>Every ad metric, defined &rarr;</h4></a>
           </div>
         </div>
       </section>
@@ -417,7 +422,45 @@ export default function HomeRedesign() {
         </div>
       </section>
 
-      <footer><div className="wrap foot"><span>AdScale · Creative decision intelligence</span><span>Staged preview · /preview/home</span></div></footer>
+      <footer>
+        <div className="wrap">
+          <div className="footgrid">
+            <div>
+              <a className="brand" href="/"><span className="g">A</span> Ad<b>Scale</b></a>
+              <p style={{ color: "var(--muted)", fontSize: 13, maxWidth: "28ch", margin: "10px 0 0" }}>Creative decision intelligence for Meta &amp; Google ads. Read-only, draft-only.</p>
+            </div>
+            <div>
+              <p className="lab" style={{ marginBottom: 12 }}>Product</p>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 9 }}>
+                <li><a href="/product">How it works</a></li>
+                <li><a href="/integrations/meta">Meta integration</a></li>
+                <li><a href="/integrations/google-ads">Google integration</a></li>
+                <li><a href="/pricing">Pricing</a></li>
+              </ul>
+            </div>
+            <div>
+              <p className="lab" style={{ marginBottom: 12 }}>Learn</p>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 9 }}>
+                <li><a href="/blog">Blog</a></li>
+                <li><a href="/glossary">Glossary</a></li>
+                <li><a href="/book-demo">Book a demo</a></li>
+              </ul>
+            </div>
+            <div>
+              <p className="lab" style={{ marginBottom: 12 }}>Company</p>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 9 }}>
+                <li><a href="/privacy">Privacy</a></li>
+                <li><a href="/terms">Terms</a></li>
+                <li><a href="/cookie-policy">Cookies</a></li>
+                <li><a href="/data-deletion">Data deletion</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="foot" style={{ marginTop: 40, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+            <span>&copy; {new Date().getFullYear()} AdScale AI</span><span>Meta + Google · Read-only · Draft-only</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
