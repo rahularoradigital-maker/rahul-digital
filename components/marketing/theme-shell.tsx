@@ -140,14 +140,14 @@ export function ThemeShell({ children, active }: { children: ReactNode; active?:
     ["/product", "Product"],
     ["/pricing", "Pricing"],
     ["/blog", "Blog"],
-    ["/glossary", "Glossary"],
+    ["/tools", "Tools"],
     ["/book-demo", "Book demo"],
   ];
   // Footer link columns: every page links to the key money + content pages, so internal link equity flows
   // sitewide (blog posts and glossary terms are never dead ends) and crawlers find the whole surface.
   const footCols: { h: string; links: [string, string][] }[] = [
     { h: "Product", links: [["/product", "How it works"], ["/integrations/meta", "Meta integration"], ["/integrations/google-ads", "Google integration"], ["/pricing", "Pricing"]] },
-    { h: "Learn", links: [["/blog", "Blog"], ["/glossary", "Glossary"], ["/book-demo", "Book a demo"]] },
+    { h: "Learn", links: [["/blog", "Blog"], ["/glossary", "Glossary"], ["/tools", "Free tools"], ["/book-demo", "Book a demo"]] },
     { h: "Company", links: [["/privacy", "Privacy"], ["/terms", "Terms"], ["/cookie-policy", "Cookies"], ["/data-deletion", "Data deletion"]] },
   ];
   return (

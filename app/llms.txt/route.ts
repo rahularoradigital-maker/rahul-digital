@@ -1,5 +1,6 @@
 import { listPublishedArticles } from "@/lib/growth/articles";
 import { allTerms } from "@/lib/glossary/terms";
+import { allTools } from "@/lib/tools/tools";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 
@@ -29,6 +30,11 @@ export async function GET() {
     .map((t) => `- [${t.term}](${u(`/glossary/${t.slug}`)}): ${t.short}`)
     .join("\n");
 
+  // Free calculators (no sign-up): the user enters their own numbers; each is a real media-buying identity.
+  const tools = allTools()
+    .map((t) => `- [${t.name}](${u(`/tools/${t.slug}`)}): ${t.dek}`)
+    .join("\n");
+
   const body = `# AdScale
 
 > AdScale is creative decision intelligence for Meta and Google ads. It connects to your ad account read-only, reads your day-wise performance, and tells you what to scale, refresh, or kill, with a reason for every call. It never changes your account; every recommendation is a draft you action yourself.
@@ -45,6 +51,9 @@ ${guides}
 
 ## Glossary
 ${glossary}
+
+## Free tools
+${tools}
 
 ## Company
 - [Book a demo](${u("/book-demo")}): request access to the private beta.

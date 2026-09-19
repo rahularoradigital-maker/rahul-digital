@@ -272,7 +272,7 @@ export default function HomeRedesign() {
 
       <header className="hud">
         <div className="brand"><span className="g">A</span> Ad<b>Scale</b></div>
-        <nav><a href="/product">Product</a><a href="/pricing">Pricing</a><a href="/blog">Blog</a><a href="/glossary">Glossary</a><a href="#access">Access</a></nav>
+        <nav><a href="/product">Product</a><a href="/pricing">Pricing</a><a href="/blog">Blog</a><a href="/tools">Tools</a><a href="#access">Access</a></nav>
         <div className="stat"><span className="dot" /> Private beta</div>
       </header>
 
@@ -407,6 +407,7 @@ export default function HomeRedesign() {
             {GUIDES.map((g) => (<a className="guide rv" href={`/blog/${g.slug}`} key={g.slug}><span className="k">Guide</span><h4>{g.t}</h4></a>))}
             <a className="guide rv" href="/blog"><span className="k">Index</span><h4>All guides &rarr;</h4></a>
             <a className="guide rv" href="/glossary"><span className="k">Glossary</span><h4>Every ad metric, defined &rarr;</h4></a>
+            <a className="guide rv" href="/tools"><span className="k">Free tools</span><h4>ROAS &amp; scale/kill calculators &rarr;</h4></a>
           </div>
         </div>
       </section>
@@ -443,6 +444,7 @@ export default function HomeRedesign() {
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 9 }}>
                 <li><a href="/blog">Blog</a></li>
                 <li><a href="/glossary">Glossary</a></li>
+                <li><a href="/tools">Free tools</a></li>
                 <li><a href="/book-demo">Book a demo</a></li>
               </ul>
             </div>

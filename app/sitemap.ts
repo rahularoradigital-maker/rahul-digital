@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { listPublishedArticles } from "@/lib/growth/articles";
 import { GLOSSARY } from "@/lib/glossary/terms";
+import { TOOLS } from "@/lib/tools/tools";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
 
@@ -11,11 +12,18 @@ export const revalidate = 3600;
 // disallowed in robots.ts). The blog index + every PUBLISHED article are included dynamically so new
 // posts are discoverable without a code change. A DB hiccup degrades to the static pages - never a build break.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticPaths = ["", "/product", "/pricing", "/integrations/meta", "/integrations/google-ads", "/blog", "/glossary", "/book-demo", "/privacy", "/terms", "/cookie-policy", "/data-deletion"];
+  const staticPaths = ["", "/product", "/pricing", "/integrations/meta", "/integrations/google-ads", "/blog", "/glossary", "/tools", "/book-demo", "/privacy", "/terms", "/cookie-policy", "/data-deletion"];
   const staticEntries: MetadataRoute.Sitemap = staticPaths.map((p) => ({
     url: `${SITE_URL}${p}`,
     changeFrequency: p === "/blog" ? "weekly" : "monthly",
-    priority: p === "" ? 1 : p === "/pricing" ? 0.9 : p === "/blog" || p === "/product" || p === "/glossary" ? 0.8 : 0.5,
+    priority: p === "" ? 1 : p === "/pricing" ? 0.9 : p === "/blog" || p === "/product" || p === "/glossary" || p === "/tools" ? 0.8 : 0.5,
+  }));
+
+  // Free calculator pages (static, indexable backlink-magnet surface).
+  const toolEntries: MetadataRoute.Sitemap = TOOLS.map((t) => ({
+    url: `${SITE_URL}/tools/${t.slug}`,
+    changeFrequency: "monthly",
+    priority: 0.7,
   }));
 
   // Every glossary term is a static, indexable page (AEO surface). Included so all definitions are crawled.
@@ -38,5 +46,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // DB unavailable at build/request time -> ship the static pages, skip posts (they'll appear on next revalidate).
   }
 
-  return [...staticEntries, ...glossaryEntries, ...posts];
+  return [...staticEntries, ...toolEntries, ...glossaryEntries, ...posts];
 }
