@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ThemeShell } from "@/components/marketing/theme-shell";
 import { Markdown } from "@/app/blog/md";
-import { allTerms, getTerm, GLOSSARY } from "@/lib/glossary/terms";
+import { allTerms, getTerm, GLOSSARY, GLOSSARY_UPDATED } from "@/lib/glossary/terms";
+import { autolinkTerms } from "@/lib/glossary/autolink";
 import { getCuratedArticleBySlug } from "@/lib/blog/file-articles";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://adscaledigital.co";
@@ -50,6 +51,7 @@ export default async function TermPage({ params }: { params: Promise<{ term: str
       url,
       inDefinedTermSet: `${SITE_URL}/glossary#set`,
       termCode: t.category,
+      dateModified: GLOSSARY_UPDATED,
     },
     {
       "@context": "https://schema.org",
@@ -87,8 +89,10 @@ export default async function TermPage({ params }: { params: Promise<{ term: str
             ) : null}
 
             <div className="prose-rd" style={{ marginTop: 26 }}>
-              <Markdown md={t.body} />
+              <Markdown md={autolinkTerms(t.body, t.slug)} />
             </div>
+
+            <p style={{ marginTop: 22, fontFamily: "var(--mono)", fontSize: 11.5, letterSpacing: ".04em", color: "var(--faint)" }}>Last reviewed {GLOSSARY_UPDATED}</p>
 
             {related.length ? (
               <section style={{ marginTop: 44 }}>

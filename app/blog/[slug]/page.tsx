@@ -3,6 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getArticleBySlug, listPublishedArticles } from "@/lib/growth/articles";
 import { getCuratedArticles } from "@/lib/blog/file-articles";
+import { autolinkTerms } from "@/lib/glossary/autolink";
 import { Markdown } from "../md";
 
 // ISR, not force-dynamic: each article was re-rendered + fetched from Supabase on every request
@@ -129,7 +130,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             style={{ marginTop: 28, height: "auto", width: "100%", border: "1px solid var(--line2)" }}
           />
           <div className="prose-rd" style={{ marginTop: 32 }}>
-            <Markdown md={a.body_md} />
+            {/* Auto-link the first mention of each glossary term to its definition (topic-authority internal links). */}
+            <Markdown md={autolinkTerms(a.body_md)} />
           </div>
           {a.faq?.length ? (
             <section style={{ marginTop: 48 }}>

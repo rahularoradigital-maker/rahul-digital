@@ -175,6 +175,10 @@ export const GLOSSARY: Term[] = [
   },
 ];
 
+// Real last-reviewed date for the glossary (freshness signal for search + AI answers, which favour recent
+// content). Bump this only when the definitions are genuinely reviewed/updated — never fake it.
+export const GLOSSARY_UPDATED = "2026-09-19";
+
 export function allTerms(): Term[] {
   return [...GLOSSARY].sort((a, b) => a.term.localeCompare(b.term));
 }
